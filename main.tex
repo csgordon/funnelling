@@ -1,0 +1,567 @@
+\documentclass[a4paper,UKenglish,cleveref, autoref, thm-restate]{lipics-v2021}
+\pdfoutput=1 %uncomment to ensure pdflatex processing (mandatatory e.g. to submit to arXiv)
+\hideLIPIcs  %uncomment to remove references to LIPIcs series (logo, DOI, ...), e.g. when preparing a pre-final version to be uploaded to arXiv or another public repository
+
+\bibliographystyle{plainurl}% the mandatory bibstyle
+
+\author{Marco Servetto}{School of Engineering and Computer Science, Victoria University of Wellington, New Zealand}{marco.servetto@vuw.ac.nz}{https://orcid.org/0000-0003-1458-2868}{}%TODO mandatory, please use full name; only 1 author per \author macro; first two parameters are mandatory, other parameters can be empty. Please provide at least the name of the affiliation and the country. The full address is optional. Use additional curly braces to indicate the correct name splitting when the last name consists of multiple name parts.
+
+\author{Colin S. Gordon}{School of Computer \& Information Sciences, Drexel University, United States of America}{csgordon@drexel.edu}{https://orcid.org/0000-0002-9012-4490}{[funding]}
+
+\authorrunning{M. Servetto and C. S. Gordon} %TODO mandatory. First: Use abbreviated first/middle names. Second (only in severe cases): Use first author plus 'et al.'
+
+\Copyright{Marco Servetto and Colin S. Gordon} %TODO mandatory, please use full first names. LIPIcs license is "CC-BY";  http://creativecommons.org/licenses/by/3.0/
+
+\ccsdesc[100]{\textcolor{red}{Replace ccsdesc macro with valid one}} %TODO mandatory: Please choose ACM 2012 classifications from https://dl.acm.org/ccs/ccs_flat.cfm 
+
+\keywords{Dummy keyword} %TODO mandatory; please add comma-separated list of keywords
+
+\category{} %optional, e.g. invited paper
+
+\relatedversion{} %optional, e.g. full version hosted on arXiv, HAL, or other respository/website
+%\relatedversiondetails[linktext={opt. text shown instead of the URL}, cite=DBLP:books/mk/GrayR93]{Classification (e.g. Full Version, Extended Version, Previous Version}{URL to related version} %linktext and cite are optional
+
+%\supplement{}%optional, e.g. related research data, source code, ... hosted on a repository like zenodo, figshare, GitHub, ...
+%\supplementdetails[linktext={opt. text shown instead of the URL}, cite=DBLP:books/mk/GrayR93, subcategory={Description, Subcategory}, swhid={Software Heritage Identifier}]{General Classification (e.g. Software, Dataset, Model, ...)}{URL to related version} %linktext, cite, and subcategory are optional
+
+%\funding{(Optional) general funding statement \dots}%optional, to capture a funding statement, which applies to all authors. Please enter author specific funding statements as fifth argument of the \author macro.
+
+\acknowledgements{I want to thank \dots}%optional
+
+%\nolinenumbers %uncomment to disable line numbering
+
+
+
+%Editor-only macros:: begin (do not touch as author)%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\EventEditors{John Q. Open and Joan R. Access}
+\EventNoEds{2}
+\EventLongTitle{42nd Conference on Very Important Topics (CVIT 2016)}
+\EventShortTitle{CVIT 2016}
+\EventAcronym{CVIT}
+\EventYear{2016}
+\EventDate{December 24--27, 2016}
+\EventLocation{Little Whinging, United Kingdom}
+\EventLogo{}
+\SeriesVolume{42}
+\ArticleNo{23}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\usepackage{graphicx} % Required for inserting images
+\usepackage{listings}
+\usepackage{todonotes}
+
+% From: https://gist.github.com/Blaisorblade/1722948
+% Merged from http://tihlde.org/~eivindw/latex-listings-for-scala/ and 
+% http://lampsvn.epfl.ch/trac/scala/export/26099/scala-tool-support/trunk/src/latex/scaladoc.sty
+% "define" Scala
+%Keyword list taken from the scaladoc definition.
+\lstdefinelanguage{scala}{
+  morekeywords={%
+          abstract,case,catch,class,def,do,else,extends,%
+          false,final,finally,for,forSome,if,implicit,import,lazy,%
+          match,new,null,object,override,package,private,protected,%
+          return,sealed,super,this,throw,trait,true,try,type,%
+          val,var,while,with,yield},
+  otherkeywords={=>,<-,<\%,<:,>:,\#,@},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[n]{/*}{*/},
+  morestring=[b]",
+  morestring=[b]',
+  morestring=[b]"""
+}[keywords,comments,strings]
+
+
+
+\lstset{columns=fullflexible, language=Java, morekeywords={funnel}, keywordstyle=\bfseries\color{blue}, escapeinside={(*}{*)}}
+
+\title{funnelling}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    ...
+\end{abstract}
+
+\section{Introduction}
+Java includes a useful feature called \emph{method-local inner classes}, which is surprisingly subtle.
+Like anonymous inner classes, this is a way for a method in a Java program to declare a class whose details are defined
+locally, entirely within the method, when the identity of the class is not needed outside the method's scope.
+However, these local classes are named, which allows them to be used with other language features exploiting nominal types.
+For example, one can cast objects to the method-local class type.
+
+Unfortunately, as Servetto et al.~\cite{unsound_presentation} pointed out, these features interact unsoundly with Java generics.
+In generic methods (or methods of generic classes), a method-local inner class \lstinline|MyFoo| 
+which extends a type that depends on generic parameters is treated the same regardless of whether it was allocated with the same
+generic parameters, or different generic parameters. Servetto et al. probed the behaviour of JVM languages which
+supported the same feature (Scala and Kotlin) and found that these had the same unsoundness problem for some use cases,
+but did flag concerns in other cases. However this was not systematically investigated.
+
+In this paper we clearly articulate the problem they observed, characterize the key properties that lead to the issue, and demonstrate
+both dynamic and static approaches to resolve the issue in future languages. 
+The dynamic approach is a specific interpretation of type tests with reified generics, providing guidance to language implementors on a subtle design choice available in that space.
+The static approach is a general solution for tracking when a nominal object type \emph{declaration} effectively captures generic parameter instantiations from its dynamic context.
+
+\begin{figure}
+\begin{lstlisting}[numbers=left]
+public class Broken {
+  static <X> Foo<X> m(Object other, final X x){
+    class MyFoo extends Foo<X>{ public X x(){ return x; } } (*\label{line:MyFoo}*)
+    if(!(other instanceof MyFoo)){ return new MyFoo(); }
+    return ((MyFoo)other); // cast passes with no warnings
+  }
+  public static void main(String[] a) {
+    Foo<Integer> r1= Broken.<Integer>m("anything",5); (*\label{line:intcall}*)
+    Foo<String> r2= Broken.<String>m(r1,"Hi"); (*\label{line:strcall}*)
+    System.out.println(r1.x()); //5
+    System.out.println(r2.x()); //Throws ClassCastException: ..
+  }
+}
+class Foo<X>{ public X x() {return x();} }
+\end{lstlisting}
+\caption{Subtly broken Java code}
+\label{fig:original_example}
+\end{figure}
+
+Figure \ref{fig:original_example} demonstrates the issue. Line \ref{line:MyFoo} declares a method-local inner class
+\lstinline|MyFoo|, which depends on the generic parameter instantiation for \lstinline|X| when the method is invoked.
+The \lstinline|main| method invokes \lstinline|m| twice. Line \ref{line:intcall} invokes it for \lstinline|Integer|s.
+Since the \lstinline|other| argument for that call is not a \lstinline|MyFoo|, the first invocation returns
+a \lstinline|MyFoo| which is a \lstinline|Foo<Integer>|.
+This result is then passed back in to the second call to \lstinline|m| on Line \ref{line:strcall}.
+This time, the \lstinline|instanceof| check succeeds, because \lstinline|other| in this case \emph{is} a \lstinline|MyFoo|,
+so the method (successfully) casts the \lstinline|other| argument to \lstinline|MyFoo|.
+Since \lstinline|MyFoo| is declared as extending \lstinline|Foo<X>|, this is a valid result for the function.
+Thus the \lstinline|Foo<Integer>| that was passed as the second argument on Line \ref{line:strcall} is returned
+as a \lstinline|Foo<String>|.
+
+Clearly this is wrong, because there are now two aliased variables of incompatible types; consequently, the later code fails (we discuss the failure point later).
+The description of execution above employed some (here, intentionally) sloppy reasoning to parallel the checks in the Java compiler.
+\begin{itemize}
+\item The \lstinline|instanceof| check could have been statically flagged.
+\item The cast could have been statically flagged.
+\item The \lstinline|instanceof| could have returned false in the second invocation, since it was used on a \lstinline|MyFoo| from a different generic parameter instantiation
+\item The case could have failed, again because it was used on a \lstinline|MyFoo| from a different generic parameter instantiation
+\end{itemize}
+Unfortunately two key factors lead to Java accepting this code and only incidentally discovering the problem later:
+\begin{enumerate}
+    \item Java implements generics by erasure. So the runtime representation of \lstinline|MyFoo| doesn't differ across the two calls. No information is kept around to distinguish the two classes of \lstinline|MyFoo|. This rules out the dynamic solutions.
+    \item The Java compiler does not treat \lstinline|MyFoo| as generic. Attempts to cast to, or use \lstinline|instanceof| with \lstinline|Foo<Integer>| are statically flagged specifically because erasure means the generic parameters cannot be dynamically checked. But because \lstinline|MyFoo| \emph{syntactically} lacks generic parameters of its own, the compiler treats it as \emph{non-generic} and allows the \lstinline|instanceof| and cast without complaint.
+\end{enumerate}
+
+It is tempting to accept this as a quirk of Java, which is already known to have other unsoundness~\cite{amin2016java}.
+However this problem is broader in both scope and impact, as we show in the rest of the paper.
+This issue affects all statically typed languages on the JVM, including Scala and Kotlin.
+It also propagates to other compilation targets for JVM languages, including Scala Native~\todo{cite}
+and GraalVM's Native Image support.
+
+In the remainder of this paper:
+\begin{itemize}
+\item We detail the breadth of the problem (surveying forms that use class generics rather than methods generics, closures, and other manifestations), and how it is handled by various existing language implementations
+\item We develop three variants of a core language modeling common implementation choices for generics, and show that only one catches the problem dynamically before allowing multiple incompatible types for aliased variables.
+\item We develop a new type system mechanism for systematically tracking would-be implicit dependence of a
+method-local class on generic parameters, and show that it soundly prevents the problem across any of the runtime semantics.
+\end{itemize}
+
+\section{Scope of the Problem}
+
+\section{Miscellaneous}
+
+//--------
+MARCO: (5th time)
+This is not about generic erasure
+In a language with reified generics, if the language still decides that MyFoo is not generic,
+no impact of those reified generics is going to be seen in the case (MyFoo)other
+MyFoo extends Foo<X> is 'as generic' as
+String extends Comparable<String>{}
+A cast to String, would not look in the generics of Comparable<String>
+A cast to MyFoo, would not look in the generics of Foo<X>
+If subtyping has (nominal-)'reflexitity' then String <: String (no need to look at the generics in Comparable<String>, available or not.
+A language with implicity 'type scope' that could conceptually add to the 'name' when types are identified in the type system could change this.
+Eg: scala foo.Bar is a type and foo.Bar != beer.Bar //existential types on constants/values
+Broken.<X>m.MyFoo  //existential types on generic-instantiated methods
+//----------
+COLIN: This is ambiguous: with reified generics, there are two implementation strategies, which yield different behaviours:
+1. MyFoo allocated as a Foo<String> gets a different class table from MyFoo allocated as a Foo<Integer>. In this case, the cast will fail
+2. All MyFoo will get the same inherited class table, but keep a separate field with the choice of X for Foo<X>, used for inherited methods. In this case, there are *two possible cast implementations*:
+    a. Cast checks only vtable, and cast succeeds. Arguably a compiler that "treats MyFoo as non-generic" could lean towards this
+    b. Cast checks both vtable and the runtime representation of the type parameter of Foo. Arguably a compiler that preserves this for inherited methods from Foo to work correctly would be likely to check this (since it would be checked in a cast to Foo<Integer>).
+
+//----------
+
+This is a problem in other languages (cite cite) as shown in greater details in Rel Work.
+
+Now, assume we have a readable small step reduction over a version of FJ rich enough to express the problem.
+We will assume: 
+- Simple generics
+- A syntax like anonymous inner classes, but where we give them names. We can call them
+named inner classes.
+This imports the concept of method local inner classes within an expression based calculus.
+//our model will also need casts + instanceof
+\begin{lstlisting}
+class Any{}
+class A{ A onlyA()-> new A() }
+class B{ B onlyB()-> new B() }
+class Foo<X> extends Any{ X x() {return x();} }
+public class Broken {
+  <X> Foo<X> m(Any other, X x) ->
+    if(other instanceof MyFoo)
+      then ((MyFoo)other)
+      else new MyFoo() extends Foo<X>{ X x(){ return x; } }//Bad
+  }
+main:
+  new Broken().<B>m(new Broken().<A>m(new Any(),new A()),new B()).x().onlyB();
+\end{lstlisting}
+
+
+\begin{lstlisting}
+class Foo<X> extends Any{ X x() {return x();} }
+public class Broken {
+  <X> Foo<X> m(Any other, X x) ->
+    if(other instanceof MyFoo<X>) //unchecked instanceof (ill typed in our core)?
+      then ((MyFoo<X>)other)//unchecked cast (ill typed in our core)?
+      else new MyFoo<X>() extends Foo<X>{ public X x(){ return x; } }//good
+  }
+\end{lstlisting}
+
+Note how funnelling purpose is to insert the generics. Without funnelling, MyFoo is a non generic type, so the question about generic reification does not even arise.
+
+small step reduction
+\begin{verbatim}
+01:  new Broken().<B>m(new Broken().<A>m(new Any(),new A()),new B()).x().onlyB();
+02:  new Broken().<B>m(
+    if(new Any() instanceof MyFoo<X>)
+      then (MyFoo<A>) new Any()
+      else new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+      ,new B()).x().onlyB();
+03:  new Broken().<B>m(
+    if(false)
+      then (MyFoo<A>) new Any()
+      else new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+      ,new B()).x().onlyB();
+04:  new Broken().<B>m(
+       new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+      ,new B()).x().onlyB();
+05:   (if(new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } } instanceof MyFoo<B>)
+       then (MyFoo<A>) new MyFoo<A>() extends Foo<A>{ public A x()->new A() }
+       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
+06a:  (if(false)//reified gen
+       then (MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
+07a:  (new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
+08a:  new B().onlyB()
+09a:  new B()//success and different semantic
+06b:  (if(true)//Java
+       then (MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
+07b:  ((MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }).x().onlyB()
+08b:  (new MyFoo<A>() extends Foo<A>{ public A x()->new A() }).x().onlyB()
+     //assuming cast and instanceof behave consistently (unchecked)
+09b:  new A().x().onlyB()
+10b:  new A().onlyB() //stuck!!
+6c:  (if(err)//compile or at least run time
+       then ((MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
+\end{verbatim}
+
+// Maybe above we want MyFoo:Any<A> and MyFoo:Any<B>?
+
+\begin{lstlisting}
+public class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    if(!(other instanceof MyFoo)){ return new MyFoo(); }
+    MyFoo local= (MyFoo)other;//cast pass with no warnings
+    System.out.println("Pass with " + x);
+    System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException
+    return local;
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+public class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    if(!(other instanceof MyFoo)){ return new MyFoo(); }
+    MyFoo local= (MyFoo)other;//cast pass with no warnings
+    System.out.println("Pass with " + x);
+    System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException
+    return local;
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+public class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
+      System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
+     }
+  return new MyFoo();//snekly it is MyFoo<Integer>
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+
+// TODO: could talk about doing this with modern Java type-switch
+\begin{lstlisting}[language=Java]
+// Compiles without error, fails, on jdk 25.0.1
+import java.util.function.Function;
+class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    switch (other) {
+        case MyFoo local: // implicit unchecked cast
+            System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+            System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException (on the return of f.apply)
+            break;
+        default:
+            break;
+    }
+    if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
+      System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
+     }
+  return new MyFoo();//snekly it is MyFoo<Integer>
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->(s.length())+""); //Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+//Example that breaks in a NEW WAY in the bytecode
+// https://godbolt.org/z/sMnxPG1TE
+import java.util.function.Function;
+class Broken {
+  static <X> Object m(Object other, final X x, Function<X,Integer> f){
+    class MyFoo{ public X x(){ return x; } }
+    switch (other) {
+        case MyFoo local:
+            System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+            System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException 
+            break;
+        default:
+            break;
+    }
+    if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
+      System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
+     }
+  return new MyFoo();//snekly it is MyFoo<Integer>
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->i);
+    Broken.<String>m(r1,"Hi",s->s.length());
+  }
+}
+// Above seems to fail but without explicit checkcast, failing one of the virtual method calls
+\end{lstlisting}
+With investiagion in bytecode and trying both s->s.length() and String::length we think that in order to save on
+bytecode size, our JVM enviroment under test adds casts in all lambda calls so that meth refecences lambda calls do not need specialized bytecode (eg MyInterface a=String::length)
+
+
+Marco had this idea that casts may be avoided by using dynamic dispatch returning this.
+Can not work, since Meth local class is private, there is no way an external interface can mention it to provide the cast method.
+Of course, the method local is private to the body (this means also the method signature can not use it)
+This means no self:Foo method, nor self:T method of a generic class eventually instantiating T=Foo.
+
+This means the core language DO NEED if(e instanceof T x){} else {}
+
+
+
+
+//nested funnelling:
+  new A<X>(){ B<X> f()-> new B<X>(){} }
+  new A<X>(){ <K>B<X,K> f()-> new B<X,K>(){} }
+
+using 'extends' for declarations in top level classes and generic methods
+using 'funnel' for named inner classes
+  new A<X funnel Any>(){ B<X> f()-> new B<X funnel Any>(){} }
+  new A<X funnel Any>(){ <K extends Any> B<X,K> f()-> new B<X funnel Any,K funnel Any>(){} }
+  or, if the bounds are not repeated
+  new A<X funnel>(){ <K extends Any> B<X,K> f()-> new B<X funnel,K funnel>(){} }
+Very funky syntax:
+we get new B<X funnel Any,K funnel Any>(){}
+but, during reduction, this can become 
+we get new B<Person,K funnel Any>(){}
+where we have a mixture of concrete types and generic funnelling
+
+Global class definition uses class C<X extends Bar>{..}
+named method local class uses new C<X funnel>(){..}
+normal new: new C<Ts>()
+
+\begin{verbatim}
+e ::= x | e.m(es) | e.f | new C<Ts>(es) | new C<Fs>(){Ms} | if (e0 instanceof T x){ e1 }else{ e2 }
+T ::= C<Ts> | X
+F ::= C<CCs> | X funnel// Important, can not be T | X funnel, otherwise we could have an X not 'funnelled'
+CC::= C<CCs> //types with zero free type variables
+B::=  X extends T // Need T, not F, to be able to do things like (Java) class Bar<X,Y extends X> {}
+Dec::= class C<Bs>{ Ms Ss} //assume standard constructor
+S ::= T x; //field/slot
+M ::= Sig; | Sig{ return e; }
+Sig::= <Bs> T m(x1:T1,..xn:Tn)
+G ::= x1:T1..xn:Tn
+\end{verbatim}
+//we do not need Object to be able to write 'extends Object'
+//this is exactly as the distinction of checked and unchecked exceptions: formally it evaporates in syntacitc sugar where all is checked
+//and all methods 'throws Error, RTE'
+// Can assume the user provides their own Object / Any type 
+Note: an use of X is just X, a declaration of X is X extends T; a funnelling of X is X funnel
+Program is just many Dec plus an e typable in empty
+MARCO TODO: 
+  typechecking
+    Decs;Bs;G|-e:T
+    Decs|-Dec:ok
+    Decs;T|-M:ok
+    e --> e'
+Note, there are multiple semantics/ts:
+  e instanceof CC //always clear
+  e instanceof T with T not of form CC would not typecheck
+
+  e --> e' for 
+  Java with warn->err: just have CC in instanceof
+  Java with magic reifined cast: just have T in instanceof (since reduction will replace(thus remember) generics
+  Java with warn->off:
+        AT RUN TIME instanceof only checks base class, ignores generic parameters
+        AT COMPLILE TIME, instanceof can be err if the full type (including generics) is not potentially correlated)?? unobvious consider interfaces
+        In prose, should explain that we won't flag cast of some type Foo to some type Bar, even though Java sometimes flags unrelated casts
+
+<X extends List<Y funnel>>
+
+class Foo<X> {
+    class Getter<X funnel> {
+        <Y extends List<X>> X getFirst(Y y) { y.getOrElse(0,null) }
+    }
+}
+
+<Y> .. return foo<Y,MyX>();
+<Y,X extends List<Y>> foo(){ return Foo<X funnel>(){... X }; }
+
+\section{Related Work}
+It is not uncommon to have ``intentional unsoundness'' in industrial languages,
+such as Java's covariant array subtyping, or TypeScript's covariant method subtyping.
+However these are intentionally designed into the language to improve ease of use, and in most cases (like Java's array handling)
+problematic uses are detected at runtime (e.g., Java checks upon storing into an array that the new entry value
+is a subtype of the array's original content type).
+
+However, unintentional unsoundness in industrial type systems is rarer.
+The most notable example is Amin and Tate's discovery~\cite{amin2016java} that Java and Scala's handling of generic type constraints
+was rendered unsound by the fact that \lstinline|null| is treated as inhabiting all reference types, making all
+type constraints (even nonsensical ones) satisfiable.
+Servetto et al.~\cite{unsound_presentation} first pointed out the issue publicly, though in the 
+Q\&A session after the talk, multiple Java designers were unsurprised --- as Gilad Bracha put it, ``Once I saw the title of your talk, I understood what the problem was.''
+\todo[inline]{Colin says: As I listened to the Q\&A session again, James framed this as a question of whether 
+two instances allocated in different contexts should be considered the same or not. I think that might be useful framing to bring up early here.
+Gilad also pointed out that (paraphrasing) the BETA people knew an inner class was a property of the instance, not its own class.
+}
+
+\todo[inline]{discuss C\# casts with reified generics}
+
+The key issues at work in the interaction of method-local inner classes and generics arise from the interaction of (1) nominal dynamic downcasts, (2) design choices about what runtime information about generic parameters is both persisted \emph{and checked} by casts, and (3) (not) tracking all dependencies on type parameters in the type system.
+Essentially, Java and Scala both treat \lstinline|MyFoo| as a sort of existential type --- that there exists some \lstinline|X|  such that
+\lstinline|MyFoo| extends \lstinline|Foo<X>|. However, treating \lstinline|MyFoo| as a closed rather than generic type is equivalent
+to assuming that there is only one existential for all instances --- associated with the declaration site --- rather than potentially
+different existentials for different instances. This combined with the fact that the JVM is unable to dynamically check for different instantiations
+leads to the unsoundness.
+Our dynamic solution resolves this with a specific implementation of casts on reified generics.
+Our static solution effectively prohibits the de facto existential capture of the enclosing type parameter.
+
+
+The decision to treat types like the \lstinline|MyFoo| variants in our examples as closed existential types that depend on other choices of types is not
+without parallels in other languages. Haskell and Rust, for example, include associated types~\cite{chakravarty2005associated}, where
+a typeclass has a type as a member.
+A yet closer analogue is Scala's path-dependent types~\cite{dot}, where types may be \emph{members} of an individual object, rather than associated with an individual class. The code below adapts the troublesome example method using Scala's type members:
+\begin{lstlisting}[language=Scala]
+trait Foo { type X; def x() : X; }
+def m[Y](other: Any, newx: Y) : Foo2 = 
+    class MyFoo extends Foo { type X = Y; override def x() : X = newx; }
+    newx match { 
+        case f: MyFoo => f
+        case _ => MyFoo()
+    }
+\end{lstlisting}
+This code compiles without warnings --- and is not an issue. In this case the dependency of \lstinline|MyFoo| instances
+on the type parameter used to call \lstinline|m| is made explicit with a type member. But Scala now treats thes
+
+\bibliography{bib}
+
+\end{document}
+
+
+interface Shape{ Square toSquare(); }
+class Square extends Shape{Square toSquare(){ return this; } }
+
+
+
+public class Broken {
+  static <X> Foo<X,?> m(Top<?> other, final X x){
+    class MyFoo extends Foo<X,MyFoo>{
+      public X x(){ return x; }
+      public MyFoo myFooOrElse(MyFoo myFoo){ return this; }
+    }
+    return other.selfOrElse(new MyFoo());
+  }
+  public static void main(String[] a) {
+    Foo<Integer> r1= Broken.<Integer>m(new Top<String>(),5);
+    Foo<String> r2= Broken.<String>m(r1,"Hi");
+    System.out.println(r1.x());//5
+    System.out.println(r2.x());//Throws ClassCastException: ..
+  }
+}
+class Top<S>{
+  public S selfOrElse(S s){ return s; }
+  }
+class Foo<X,S> extends Top<S>{ public X x() {return x();} }
+
+
+
+Tasks for Gordon:
+Import the Unsound paper, make formatting so that this compile on a reasonable style
+Try to put our notes into a decent introduction with ... when needed.
+
+Related work:
+ Big obvious task where you know much more then me, C#, Kotling etc
+
+ More related works:
+ Two other ways Java is unsound:
+ - The famous first paper
+
+-the well known snewaky throws
+
+public interface CheckedFunction<T, R> { R apply(T t) throws Exception; }
+@SuppressWarnings("unchecked")
+public static <T, E extends Exception> T sneakyThrow(Exception e) throws E {
+    throw (E) e;
+}
+
+public static <T, R> Function<T, R> unchecked(CheckedFunction<T, R> checkedFunction) {
+    return t -> {
+        try {
+            return checkedFunction.apply(t);
+        } catch (Exception e) {
+            return sneakyThrow(e);
+        }
+    };
+}
+ 

@@ -1,0 +1,253 @@
+e ::= x | e.<Ts>m(es) | e.[T]<Ts>m(es) | e.f | new C<Ts>(es) 
+   | new C<Fs> extends C'<Ts>(es){Ms} 
+   | if (e0 instanceof T x){ e1 } else { e2 }
+T ::= C<Ts> | X
+F ::= G | X funnel
+G ::= C<Gs> //types with zero free type variables
+B ::=  X extends T
+// Need T, not F, to be able to do things like (Java) class Bar<X,Y extends X> {}
+Dec::= class C<Bs> extends C'<Ts>{ Ms Ss} //assume standard constructor
+S ::= T f; //field/slot
+M ::= Sig{ return e; }  //no such a thing as an abstract method
+Sig::= <Bs> T m(x1:T1,..xn:Tn)
+G ::= x1:T1..xn:Tn
+v::=new C<Gs>(vs) | new C<Gs> extends C'<Gs'>(vs){Ms} // could be extends C<Gs>(vs){Ms}
+ctx::= [] 
+   | [].<Gs>m(es) | v.<Gs>m(vs [] es)
+   | [].[G]<Gs>m(es) | v.[G]<Gs>m(vs [] es)|
+   | [].f | new C<Gs>(vs [] es) 
+   | new C<Gs> extends C'<Gs'>(vs [] es){Ms} 
+   | if ([] instanceof G x){ e1 } else { e2 }
+
+
+   class C<Bs> extends C'<Ts>{ Ms T1 f1..Tn fn} in Decs
+----------------------------------------------------------(simpleFieldFound)
+   new C<Gs>(v1..vn vs).fi --> vi
+
+   class C<Bs> extends C'<Ts>{ Ms T1 f1..Tn fn} in Decs
+   f notin {f1..fn}
+---------------------------------------------------------(simpleFieldSuper)
+   new C<Gs>(v1..vn vs).f --> new C'<Ts[Bs=Gs]>(vs).f
+
+Note: ok because inner classes currently don't have their own fields
+----------------------------------------------------------(innerFieldFound)
+   new C<Gs> extends C'<Gs'>(vs){Ms}.f --> new C'<Gs'>(vs).f
+
+  v in { new C<_>(_), new C<_> extends _(_){_} }
+-----------------------------------------------------------(ifThen)
+  if (v instanceof C<_> x){ e1 } else { e2 } --> e1[x=v]
+
+  not v in { new C<_>(_), new C<_> extends _(_){_} }
+----------------------------------------------------------(ifElse)
+  if (v instanceof C'<_> x){ e1 } else { e2 } --> e2
+
+   v = new C<Gs>(_)
+-----------------------------------------------------(simpleAddSuper)
+   v.<Gs'>m(vs) --> v.[C<Gs>]<Gs'>m(vs)
+
+   class C<Bs> _ { Ms Ss} in Decs
+   <Bs'>T0 m(T1 x1,..Tn xn){ return e0; } in Ms
+   e = e0[Bs,Bs'=Gs,Gs'][this,x1..xn=v0..vn]
+---------------------------------------------------(simpleFound)
+   v0.[C<Gs>]<Gs'>m(v1..vn) --> e
+% ^^ Note: for local classes, this syntax skips the value entirely (this rule is not applicable if C<Gs> is meth local
+
+   v0 = new _ extends _ (_){Ms}
+   <Bs'>T0 m(T1 x1,..Tn xn){ return e0; } in Ms
+   e = e0[Bs'=Gs'][this,x1..xn=v0..vn]
+-------------------------------------------------(innerFound)
+   v0.<Gs'>m(v1..vn) --> e
+
+   v = new _ extends C<Gs> (_){Ms}
+   m notin dom(Ms)
+------------------------------------------------(innerSuper)
+   v.<Gs'>m(vs) --> v.[C<Gs>]<Gs'>m(vs)
+
+   class C<Bs> extends C'<Ts>{ Ms Ss} in Decs  
+   m notin dom(Ms)
+------------------------------------------------(searchSuper)
+   v.[C<Gs>]<Gs'>m(vs) --> v.[C'<Ts[Bs=Gs]>]<Gs'>m(vs)
+
+         e --> e'
+------------------------------------------------(ctx)
+   Ctx[e] --> Ctx[e']
+
+--------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------
+
+
+ Bs;G |- e : T
+
+
+  Bs;G |- e : T1
+  Bs |- T1 <= T2
+  Bs|- T2 : Ok% ^^ May or may not need to check kinding of T2
+---------------------(subs)
+  Bs;G |- e : T2
+
+
+---------------------(x)
+  Bs;G |- x : G(x)
+
+  Bs;G |- e : C<Ts>//assume fields can never shadow each other
+  class C<Bs> extends C'<Ts'>{ Ms T1 f1..Tn fn} in Decs
+----------------------------------------------------------------
+  Bs;G |- e.fi : Ti[Bs=Ts] //thanks to subsumption, no need of multiple rules (C<Ts> can simply be set to supertype of relevance, via subsumption)
+
+  Bs;G |- e0 : C0<Ts0>    //assume methods ok will require identical signature, no co/contra-variant override
+  class C0<Bs0> extends C'<Ts'>{ Ms Ss} in Decs
+  <Bs1> T0 m(T1 x1..Tn xn){_} in Ms
+  T'i = Ti[Bs0,Bs1=Ts0,Ts1]
+  Bs;G |- e1 : T'1 .. Bs;G |- en : T'n
+  Bs|- Ts1 : Ok
+-----------------------------------------
+  Bs;G |- e0.<Ts1>m(e1..en) :T'0
+
+  Bs2;G |- e0 : C0<Ts0>    //assume methods ok will require identical signature, no co/contra-variant override
+  class C<Bs>{ _ <Bs'> _(_) e; _} in Decs //conceptually adding those three lines to the one before
+  new C0<Fs> _(_){Ms} in e
+  Bs0 = Bs,Bs' \ dom(Fs) % leave only dom(Fs)
+  <Bs1> T0 m(T1 x1..Tn xn){_} in Ms
+  T'i = Ti[Bs0,Bs1=Ts0,Ts1] //this is the crucial line! if Fs is not explicit, how to connect here
+  Bs2;G |- e1 : T'1 .. Bs2;G |- en : T'n
+  Bs2|- Ts1 : Ok
+-----------------------------------------
+  Bs2;G |- e0.<Ts1>m(e1..en) :T'0
+//NOTE: still insufficient: C0<Ts0> could be declared in the Ms of another method local type
+
+  Bs;G |- e0 : T
+  topLevelClass(T)
+  Bs |- T <= C0<Ts0>
+  class C0<Bs0> extends C'<Ts'>{ Ms Ss} in Decs
+  <Bs1> T0 m(T1 x1..Tn xn){_} in Ms
+  T'i = Ti[Bs0,Bs1=Ts0,Ts1]
+  Bs;G |- e1 : T'1 .. Bs;G |- en : T'n
+  Bs|- T : Ok     Bs|- Ts1 : Ok
+------------------------------------------
+  Bs;G |- e.[T]<Ts1>m(es)
+
+
+  class C<Bs> extends C'<Ts'>{ Ms T1 f1..Tn fn} in Decs
+  Bs;G |- e1 : T1[Bs=Ts] .. Bs;G |- en : Tn[Bs=Ts]
+  Bs;G |- new C'<Ts'[Bs=Ts]>(es) : _
+  Bs|- Ts : Ok
+--------------------------------------------------------
+  Bs;G |- new C<Ts>(e1..en es) : C<Ts>
+
+
+  Bs;G |- new C'<Ts'>(es) : _//incredibly subtle: is Bs;G or Bs';G' // need Bs;G for es that internally use non-funneled types but reduce to terms with funneled types
+  Bs' |- C'<Ts'> : Ok // Not redundant with first line, b/c need to ensure supertype only depends on funneled things
+  Ti= Xi if Fi = Xi funnel //those two lines do declare T1..Tn
+  Ti= Gi if Fi = Gi        //those two lines do declare T1..Tn
+  Bs' |- C<T1..Tn> : Ok
+  Bs'= {X extends T | X extends T in Bs, Fi=X funnel} // Bs' = Bs \ dom(F1..Fn)
+  forall Fi = Xi funnel, Xi extends _ in Bs
+  G' = G/FTV(T1..Tn) //remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
+  Bs';G',this:C<T1..Tn> |- M1 : Ok
+  ..
+  Bs';G',this:C<T1..Tn> |- Mk : Ok
+-------------------------------------------------------------------------
+  Bs;G,this:_ |- new C<F1..Fn> extends C'<Ts'>(es){M1..Mk} : C<T1..Tn>
+
+Note: we still need formal definition of substitution e[Xs=Ts]; it is crucial to go in the details for e of form meth local with funnelling
+We will replace every occurrence of X when doing substitution, *including* in method signatures in a local class
+Should be a clearer when substitution is formalized
+
+
+  Bs,Bs';G,x1:T1,..xn:Tn |- e : T0
+  Bs,Bs'|- T0 : Ok .. Bs|- Tn : Ok
+------------------------------------------------------------------------
+  Bs;G |- <Bs'> T0 m(T1 x1..Tn xn){return e;} : Ok
+
+
+  Kinding
+Bs|- T : Ok
+
+   X extends _ in Bs
+-----------------------
+  Bs|- X : Ok
+
+
+  Bs|- T1 : Ok ..   Bs|- Tn : Ok  
+  class C<X1 extends T'1..Xn extends T'n> _{_} in Decs //what if C is named inner class
+  Bs|- T1 <= T'1 .. Bs|- Tn <= T'n
+---------------------------------------------------------(wf-outer)
+  Bs|- C<T1..Tn> : Ok
+
+  Bs|- T1 : Ok ..   Bs|- Tn : Ok  
+  class C<Bs>{ _ <Bs'> _(_) e; _} in Decs
+  new C0<Fs> _(_){Ms} in e
+  Bs,Bs' \ dom(Fs) = X1 extends T'1..Xn extends T'n
+  Bs|- T1 <= T'1 .. Bs|- Tn <= T'n
+---------------------------------------------------------(wf-inner1) // Needs generalization for nested inner classes
+  Bs|- C0<T1..Tn> : Ok
+
+
+
+Subtyping between X and Y type variables
+
+Substitution
+e[Xs=Ts]
+
+x[Xs=Ts] = x
+e.<Ts'>m(es)[Xs=Ts] = e[Xs=Ts].<Ts'[Xs=Ts]>m(es[Xs=Ts])
+e.[T]<Ts'>m(es)[Xs=Ts] = e[Xs=Ts].[T[Xs=Ts]]<Ts'[Xs=Ts]>m(es[Xs=Ts])
+e.f[Xs=Ts] = e[Xs=Ts].f
+new C<Ts'>(es)[Xs=Ts] = new C<Ts'[Xs=Ts]>(es[Xs=Ts])
+if (e0 instanceof T x){ e1 } else { e2 }[Xs=Ts] = if (e0[Xs=Ts] instanceof T[Xs=Ts] x){ e1[Xs=Ts] } else { e2[Xs=Ts] }
+new C<Fs> extends C'<Ts'>(es){Ms}[Xs=Ts] = new C<Fs[Xs=Ts]> extends C'<Ts'[Xs=Ts]>(es[Xs=Ts]){Ms[Xs=Ts]}
+
+F[Xs=Ts]
+X funnel [Xs=Ts] = X funnel ~~ if X\not\in Xs
+X funnel [Xs=Ts] = Ti ~~ if X = Xi \in Xs
+C<Gs>[Xs=Ts] = C<Gs>
+
+//assert dom(Xs) disjoint FV(Ts) : no need of alpha renaming. This simply can not happen (proof will show)
+//assert dom(Xs) disjoint dom(Bs) : no need of alpha renaming. This simply can not happen (proof will show)
+M[Xs=Ts] // We forbid shadowing of type variables except via funnelling
+<Bs> T m(x1:T1,..xn:Tn){ return e; }[Xs=Ts] = <Bs[Xs=Ts]> T[Xs=Ts] m(x1:T1[Xs=Ts],..xn:Tn[Xs=Ts]){ return e[Xs=Ts]; }
+
+Bs[Xs=Ts] // This works for F-bounded polymorphism as well (X extends Comparable<X>)
+(X extends T) [Xs=Ts] = X extends T[Xs=Ts]
+
+T[Xs=Ts]
+C<Ts'>[Xs=Ts] = C<Ts'[Xs=Ts]>
+X[Xs=Ts] = X ~~ if X\not\in Xs
+X[Xs=Ts] = Ti ~~ if X = Xi \in Xs
+
+
+
+------------------
+funky examples but they rely on overloading
+new MyMap<K,E> extends Map<K,E>(expSize[K,V]){ E get(K a){ return foo.<E,K>bla(); } }[ K=Str]
+new MyMap<Str,E> extends Map<Str,E>(expSize[Str,V]){ E get(K/Str a){ return foo.<E,K/Str>bla(); } }
+This is different wrt fearless
+
+
+class A<T>{ int foo(T t); }    class A{ int foo(Object t); }
+class B: A<Str>{ int foo(Str t){..} }class B: A{ int foo(Object t){ return int foo((Str)t); } int foo(Str t){..} }
+^^ Is this there as analogue to substitution in signatures, or only for raw types?
+class B: A<Str>{ int foo(T t)[T=Str]{..} }
+
+
+class A<T>{ int foo(T t); int foo(Str t); }    class A{ int foo(Object t); int foo(Str t); }
+class B: A<Str>{ int foo(Str t){..} }  class B: A{ int foo(Object t){ return int foo((Str)t); } int foo(Str t){..} }
+
+
+Example related to method overloading and substitution
+class A<T> {
+    int foo(T t) { return 0; }
+    int foo(String s) { return 1; }
+}
+class B extends A<String> {} // rejected
+class C extends A<String> {
+    // Okay b/c we've implemented both signatures
+    int foo(String s) { return 2; }
+}
+
+class Text {
+    public static void main(String[] args) {
+        System.out.println(new B().foo("asdf"));
+    }
+}
