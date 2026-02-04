@@ -187,6 +187,28 @@ Bs|- T : Ok
 
 Subtyping between X and Y type variables
 
+------------ (sub-refl)
+Bs |- T <: T
+
+
+class C<Bs0> extends C'<Ts'>{ Ms Ss} in Decs
+Bs |- C'<Ts'>[dom(Bs0)=T1...Tn] <: D<U1...Un> // Single step, can recur w/ same rule until hitting refl
+--------------------------------------------------------- (sub-inherit)
+Bs |- C<T1...Tn> <: D<U1...Un>
+
+// TODO: Need analogue of above for inner classes, but not sure where to find them...
+// TODO: Can look in bodies of every M in every class in Decls, but that doesn't include main expression, or
+// TODO: inside the Ms of another method local type
+// Same issue exists with a type rule earlier, marked with:
+	//NOTE: still insufficient: C0<Ts0> could be declared in the Ms of another method local type
+
+X extends T in Bs // T could be a variable
+-----------------(sub-var)
+Bs |- X <: T
+
+
+
+
 Substitution
 e[Xs=Ts]
 
