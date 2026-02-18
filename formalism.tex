@@ -191,10 +191,17 @@ Subtyping between X and Y type variables
 Bs |- T <: T
 
 
-class C<Bs0> extends C'<Ts'>{ Ms Ss} in Decs
-Bs |- C'<Ts'>[dom(Bs0)=T1...Tn] <: D<U1...Un> // Single step, can recur w/ same rule until hitting refl
+  class C<Bs0> extends C'<Ts'>{ Ms Ss} in Decs
+  Bs |- C'<Ts'>[dom(Bs0)=T1...Tn] <: T // Single step, can recur until hitting refl
 --------------------------------------------------------- (sub-inherit)
-Bs |- C<T1...Tn> <: D<U1...Un>
+  Bs |- C<T1...Tn> <: T
+
+
+  new C<Fs> extends C'<Ts'>(es){ Ms } in Decs  //'in' here does the nested lookup
+  Bs |- C'<Ts'>[dom(Fs)=T1...Tn] <: T // Single step, can recur until hitting refl
+--------------------------------------------------------- (sub-inherit)
+  Bs |- C<T1...Tn> <: T
+
 
 // TODO: Need analogue of above for inner classes, but not sure where to find them...
 // TODO: Can look in bodies of every M in every class in Decls, but that doesn't include main expression, or
@@ -207,8 +214,37 @@ X extends T in Bs // T could be a variable
 Bs |- X <: T
 
 
+_______
+#Define Dec in Decs
+
+--------------------------------------------(topLevel)
+  Deci in Dec1..Decn
+
+  _{ _ new C<Fs> extends T (es){ Ms } _ } in Decs
+-----------------------------------------------------------------(nestedLevel)
+  new C<Fs> extends T (es){ Ms } _} in Decs
+
+ TBD if we want two rules with "brutal" underscores, or 3 rules
+------
+
+class C<Bs0> extends C'<Ts'>{ Ms Ss} \in Decs
+--------------------------------------------(topLevel)
+class C<Bs0> extends C'<Ts'>{ Ms Ss} in Decs
+
+new C<Fs0> extends C'<Ts'>{ Ms Ss} in Decs
+new D<Fs> extends D'<Ts''>(es){ Ms' } \in Ms
+--------------------------------------------(inner)
+new D<Fs> extends D'<Ts''>(es){ Ms' } in Decs
+
+class C<Bs0> extends C'<Ts'>{ Ms Ss} in Decs
+new D<Fs> extends D'<Ts''>(es){ Ms' } \in Ms
+--------------------------------------------(inner)
+new D<Fs> extends D'<Ts''>(es){ Ms' } in Decs
+
+... main? Could ban inner classes in main
 
 
+-----------
 Substitution
 e[Xs=Ts]
 

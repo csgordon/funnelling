@@ -50,6 +50,8 @@
 
 \usepackage{graphicx} % Required for inserting images
 \usepackage{listings}
+\usepackage{mathpartir}
+\usepackage{xspace}
 \usepackage{todonotes}
 
 % From: https://gist.github.com/Blaisorblade/1722948
@@ -168,6 +170,305 @@ method-local class on generic parameters, and show that it soundly prevents the 
 \end{itemize}
 
 \section{Scope of the Problem}
+
+\section{A Core Language for Funnelling}
+\newcommand{\decls}{\ensuremath{\mathsf{Decls}}\xspace}
+\newcommand{\subclass}[6]{\ensuremath{\mathsf{class}\;#1\langle#2\rangle\;\mathsf{extends}\;#3\langle#4\rangle\;\{\;#5\;#6\;\}}}
+\newcommand{\obj}[3]{\ensuremath{\mathsf{new}\;#1\langle#2\rangle(#3)}\xspace}
+\newcommand{\innerobj}[6]{\ensuremath{\mathsf{new}\;#1\langle#2\rangle\;\mathsf{extends}\;#3\langle#4\rangle(#5)\{#6\}}\xspace}
+\newcommand{\step}[2]{\ensuremath{#1\rightarrow#2}\xspace}
+\newcommand{\ctx}[1]{\ensuremath{\mathcal{E}[#1]}\xspace}
+\newcommand{\ifthen}[5]{\ensuremath{\mathsf{if}\;(#1\;\mathsf{instanceof}\;#2\;#3)\;\{#4\}\;\mathsf{else}\;\{\;#5\;\}}}
+
+
+\newcommand{\call}[4]{\ensuremath{#1.\langle #2\rangle#3(#4)}\xspace}
+\newcommand{\explicitcall}[5]{\ensuremath{#1.[#2]\langle #3\rangle#4(#5)}\xspace}
+\newcommand{\methodsig}[4]{\ensuremath{\langle{#1}\rangle#2\;#3(#4)}\xspace}
+\newcommand{\method}[5]{\ensuremath{\methodsig{#1}{#2}{#3}{#4}\;\{\;#5\;\}}\xspace}
+\newcommand{\this}[0]{\ensuremath{\mathsf{this}}\xspace}
+
+\newcommand{\tsubst}[3]{\ensuremath{#1[#2=#3]}\xspace}
+\newcommand{\match}[2]{\ensuremath{\mathsf{match}(#1,#2)}\xspace}
+
+\begin{figure}
+\centering
+\[
+\begin{array}{rrcl}
+\textsf{Expressions} & e & ::= & x \mid \call{e}{Ts}{m}{es} \mid \explicitcall{e}{T}{Ts}{m}{es}
+    \mid e.f
+    \mid \obj{C}{Ts}{es}\\
+    &&&\mid \innerobj{C}{Ts}{D}{Ts'}{es}{Ms}\\
+    &&& \ifthen{e}{T?}{x}{e}{e}\\
+\textrm{Patterns} & P & ::= & C \mid C\langle Ts\rangle\\
+\textrm{Types} & T & ::= & C\langle Ts\rangle \mid X\\
+\textrm{Funnels} & F & ::= & G \mid X~\mathsf{funnel}\\
+\textrm{Ground Types} & G & ::= & C\langle Gs\rangle\\
+\\
+\textrm{Type Env.} & \Gamma & ::= & \epsilon \mid \Gamma,T\;x\\
+\textrm{Bounds} & \Delta & ::= & \epsilon \mid \Delta,X~\mathsf{extends}~T\\
+%// Need T, not F, to be able to do things like (Java) class Bar<X,Y extends X> {}
+\textrm{Declaration} & \mathsf{Dec} & ::= & \subclass{C}{\Delta}{C'}{Ts}{Ms}{Ss}\\
+\textrm{(Field) Slots} & S & ::= & T~f
+%Dec::= class C<Bs> extends C'<Ts>{ Ms Ss} //assume standard constructor
+%S ::= T f; //field/slot
+%M ::= Sig{ return e; }  //no such a thing as an abstract method
+%Sig::= <Bs> T m(x1:T1,..xn:Tn)
+%G ::= x1:T1..xn:Tn
+%v::=new C<Gs>(vs) | new C<Gs> extends C'<Gs'>(vs){Ms} // could be extends C<Gs>(vs){Ms}
+%ctx::= [] 
+%   | [].<Gs>m(es) | v.<Gs>m(vs [] es)
+%   | [].[G]<Gs>m(es) | v.[G]<Gs>m(vs [] es)|
+%   | [].f | new C<Gs>(vs [] es) 
+%   | new C<Gs> extends C'<Gs'>(vs [] es){Ms} 
+%   | if ([] instanceof G x){ e1 } else { e2 }
+%
+\end{array}
+\]
+\caption{Syntax}
+\label{fig:syntax}
+\end{figure}
+
+\begin{figure}
+    \centering
+\begin{mathpar}
+\fbox{$\step{e}{e'}$}
+\and
+\inferrule*[left=simpleFieldFound]{
+    \subclass{C}{Bs}{C'}{Ts}{Ms}{T_1 f_1\ldots T_n f_n}\in\decls\\
+    f_i\in f_1\ldots f_n
+}{
+    \step{
+        \obj{C}{Gs}{v_1\ldots v_n\;vs}.f_i
+    }{
+        v_i
+    }
+}
+\and
+\inferrule*[left=simpleFieldSuper]{
+    \subclass{C}{Bs}{C'}{Ts}{Ms}{T_1 f_1\ldots T_n f_n}\in\decls\\
+    f\not\in f_1\ldots f_n
+}{
+    \step{
+        \obj{C}{Gs}{v_1\ldots v_n\;vs}.f
+    }{
+        \obj{C'}{\tsubst{Ts}{Bs}{Gs}}{vs}.f
+    }
+}
+\and
+%Note: ok because inner classes currently don't have their own fields
+\inferrule*[left=innerFieldFound]{
+}{
+    \step{
+        \innerobj{C}{Gs}{C'}{Ts}{v_1\ldots v_n\;vs}{Ms}.f
+    }{
+        \obj{C'}{\tsubst{Ts}{Bs}{Gs}}{vs}.f
+    }
+}
+\and
+\inferrule*[left=ifThenErased]{
+    v\in\{\obj{C}{Gs}{\_}, \innerobj{C}{Gs}{\_}{\_}{\_}{\_}\}\\
+    \epsilon\vdash C\langle Gs\rangle <: D\langle\_\rangle
+    %\match{v}{C\langle\_\rangle} = \mathsf{true}
+}{
+    \step{\ifthen{v}{D}{x}{e_1}{e_2}}
+    {\tsubst{e_1}{x}{v}}
+}
+\and
+\inferrule*[left=ifElseErased]{
+    %v\not\in\{\obj{C}{\_}{\_}, \innerobj{C}{\_}{\_}{\_}{\_}{\_}\}
+    %\match{v}{C\langle\_\rangle} = \mathsf{false}
+    v\in\{\obj{C}{Gs}{\_}, \innerobj{C}{Gs}{\_}{\_}{\_}{\_}\}\\
+    \epsilon\not\vdash C\langle Gs\rangle <: D\langle\_\rangle
+}{
+    \step{\ifthen{v}{D}{x}{e_1}{e_2}}
+    {e_2}
+}
+\and
+\inferrule*[left=ifThenReified]{
+    %v\in\{\obj{C}{Ts}{\_}, \innerobj{C}{Ts}{\_}{\_}{\_}{\_}\}
+    %\match{v}{C\langle Ts\rangle} = \mathsf{true}
+    v\in\{\obj{C}{Gs}{\_}, \innerobj{C}{Gs}{\_}{\_}{\_}{\_}\}\\
+    \epsilon\vdash C\langle Gs\rangle <: D\langle Ts\rangle
+}{
+    \step{\ifthen{v}{D\langle Ts\rangle}{x}{e_1}{e_2}}
+    {\tsubst{e_1}{x}{v}}
+}
+\and
+\inferrule*[left=ifElseReified]{
+    %v\not\in\{\obj{C}{Ts}{\_}, \innerobj{C}{Ts}{\_}{\_}{\_}{\_}\}
+    %\match{v}{C\langle Ts\rangle} = \mathsf{false}
+    v\in\{\obj{C}{Gs}{\_}, \innerobj{C}{Gs}{\_}{\_}{\_}{\_}\}\\
+    \epsilon\not\vdash C\langle Gs\rangle <: D\langle Ts\rangle
+}{
+    \step{\ifthen{v}{D\langle Ts\rangle}{x}{e_1}{e_2}}
+    {e_2}
+}
+\and
+\inferrule[simpleAddSuper]{
+    v = \obj{C}{Gs}{\_}
+}{
+    \step{
+        \call{v}{Gs'}{m}{vs} 
+    }{
+        \explicitcall{v}{C\langle Gs\rangle}{Gs'}{m}{vs}
+    }
+}
+\and
+\inferrule[simpleFound]{
+    \subclass{C}{Bs}{\_}{\_}{Ms}{Ss}\in\decls\\
+    \method{Bs'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\mathsf{return}\;e0} \in Ms\\
+    e = \tsubst{\tsubst{e_0}{Bs,Bs'}{Gs,Gs'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
+}{
+    \step{\explicitcall{v_0}{C\langle Gs\rangle}{Gs'}{m}{v_1\ldots v_n}}{e}
+}
+%% ^^ Note: for local classes, this syntax skips the value entirely (this rule is not applicable if C<Gs> is meth local
+\and
+\inferrule[innerFound]{
+    v_0 = \innerobj{\_}{\_}{\_}{\_}{\_}{Ms}\\
+    \method{Bs'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\mathsf{return}\;e0} \in Ms\\
+    e = \tsubst{\tsubst{e_0}{Bs,Bs'}{Gs,Gs'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
+}{
+    \step{\call{v_0}{Gs'}{m}{v_1\ldots v_n}}{e}
+}
+\and
+\inferrule[innerSuper]{
+    v = \innerobj{\_}{\_}{C}{Gs}{\_}{Ms}\\
+    m\not\in Ms
+}{
+    \step{\call{v_0}{Gs'}{m}{v_1\ldots v_n}}{
+        \explicitcall{v}{C\langle Gs\rangle}{Gs'}{m}{vs}
+    }
+}
+\and
+\inferrule[searchSuper]{
+    \subclass{C}{Bs}{\_}{\_}{Ms}{Ss}\in\decls\\
+    m\not\in Ms
+}{
+    \step{
+        \explicitcall{v}{C\langle Gs\rangle}{Gs'}{m}{vs}
+    }{
+        \explicitcall{v}{C'\langle \tsubst{Ts}{Bs}{Gs}\rangle}{Gs'}{m}{vs}
+    }
+}
+\and
+\inferrule[ctx]{
+    \step{e}{e'}
+}{
+    \step{\ctx{e}}{\ctx{e'}}
+}
+\end{mathpar}
+    \caption{Operational Semantics}
+    \label{fig:opsem}
+\end{figure}
+
+%Not totally sure about Ts vs Gs vs Fs in LHS of match
+%\[
+%    \begin{array}{rcl}
+%    \match{\obj{C}{Gs}{vs}}{C\langle Gs\rangle} & = & \mathsf{true}\\
+%    \match{\obj{C}{Gs}{vs}}{C\langle Gs'\rangle} & = & \mathsf{false}\\
+%    \match{\obj{C}{Gs}{v_1\ldots v_n\;vs}}{D\langle Gs'\rangle} & = & \match{\obj{C'}{\tsubst{Ts}{Bs}{Gs}}{vs}}{D\langle Gs'\rangle} \quad \textrm{if}~\subclass{C}{Bs}{C'}{Ts}{Ms}{fs}\in\decls\\
+%    \match{\obj{C}{Gs}{v_1\ldots v_n\;vs}}{D\langle Gs'\rangle} & = & \mathsf{false} \quad \textrm{otherwise}\\
+%    \match{\innerobj{C}{Gs}{C'}{Gs'}{vs}{Ms}}{C\langle Gs\rangle} &=& \mathsf{true}\\
+%    \match{\innerobj{C}{Gs}{C'}{Gs'}{vs}{Ms}}{D\langle Gs''\rangle} &=& \match{\obj{C'}{Gs'}{vs}}{D\langle Gs''\rangle}\\
+%    \hline
+%    \match{\obj{C}{Gs}{vs}}{C\langle\_\rangle} & = & \mathsf{true}\\
+%    \match{\obj{C}{Gs}{v_1\ldots v_n\;vs}}{D\langle\_\rangle} & = & \match{\obj{C'}{\tsubst{Ts}{Bs}{Gs}}{vs}}{D\langle\_\rangle} \quad \textrm{if}~\subclass{C}{Bs}{C'}{Ts}{Ms}{fs}\in\decls\\
+%    \match{\obj{C}{Gs}{v_1\ldots v_n\;vs}}{D\langle\_\rangle} & = & \mathsf{false} \quad \textrm{otherwise}\\
+%    \match{\innerobj{C}{Gs}{C'}{Gs'}{vs}{Ms}}{C\langle\_\rangle} &=& \mathsf{true}\\
+%    \match{\innerobj{C}{Gs}{C'}{Gs'}{vs}{Ms}}{D\langle\_\rangle} &=& \match{\obj{C'}{Gs'}{vs}}{D\langle\_\rangle}\\
+%    \end{array}
+%\]
+
+\begin{figure}
+    \centering
+    \begin{mathpar}
+\fbox{$\Delta;\Gamma\vdash e : T$}
+%Bs;G |- e : T
+%
+%
+%  Bs;G |- e : T1
+%  Bs |- T1 <= T2
+%  Bs|- T2 : Ok% ^^ May or may not need to check kinding of T2
+%---------------------(subs)
+%  Bs;G |- e : T2
+%
+%
+%---------------------(x)
+%  Bs;G |- x : G(x)
+%
+%  Bs;G |- e : C<Ts>//assume fields can never shadow each other
+%  class C<Bs> extends C'<Ts'>{ Ms T1 f1..Tn fn} in Decs
+%----------------------------------------------------------------
+%  Bs;G |- e.fi : Ti[Bs=Ts] //thanks to subsumption, no need of multiple rules (C<Ts> can simply be set to supertype of relevance, via subsumption)
+%
+%  Bs;G |- e0 : C0<Ts0>    //assume methods ok will require identical signature, no co/contra-variant override
+%  class C0<Bs0> extends C'<Ts'>{ Ms Ss} in Decs
+%  <Bs1> T0 m(T1 x1..Tn xn){_} in Ms
+%  T'i = Ti[Bs0,Bs1=Ts0,Ts1]
+%  Bs;G |- e1 : T'1 .. Bs;G |- en : T'n
+%  Bs|- Ts1 : Ok
+%-----------------------------------------
+%  Bs;G |- e0.<Ts1>m(e1..en) :T'0
+%
+%  Bs2;G |- e0 : C0<Ts0>    //assume methods ok will require identical signature, no co/contra-variant override
+%  class C<Bs>{ _ <Bs'> _(_) e; _} in Decs //conceptually adding those three lines to the one before
+%  new C0<Fs> _(_){Ms} in e
+%  Bs0 = Bs,Bs' \ dom(Fs) % leave only dom(Fs)
+%  <Bs1> T0 m(T1 x1..Tn xn){_} in Ms
+%  T'i = Ti[Bs0,Bs1=Ts0,Ts1] //this is the crucial line! if Fs is not explicit, how to connect here
+%  Bs2;G |- e1 : T'1 .. Bs2;G |- en : T'n
+%  Bs2|- Ts1 : Ok
+%-----------------------------------------
+%  Bs2;G |- e0.<Ts1>m(e1..en) :T'0
+%//NOTE: still insufficient: C0<Ts0> could be declared in the Ms of another method local type
+%
+%  Bs;G |- e0 : T
+%  topLevelClass(T)
+%  Bs |- T <= C0<Ts0>
+%  class C0<Bs0> extends C'<Ts'>{ Ms Ss} in Decs
+%  <Bs1> T0 m(T1 x1..Tn xn){_} in Ms
+%  T'i = Ti[Bs0,Bs1=Ts0,Ts1]
+%  Bs;G |- e1 : T'1 .. Bs;G |- en : T'n
+%  Bs|- T : Ok     Bs|- Ts1 : Ok
+%------------------------------------------
+%  Bs;G |- e.[T]<Ts1>m(es)
+%
+%
+%  class C<Bs> extends C'<Ts'>{ Ms T1 f1..Tn fn} in Decs
+%  Bs;G |- e1 : T1[Bs=Ts] .. Bs;G |- en : Tn[Bs=Ts]
+%  Bs;G |- new C'<Ts'[Bs=Ts]>(es) : _
+%  Bs|- Ts : Ok
+%--------------------------------------------------------
+%  Bs;G |- new C<Ts>(e1..en es) : C<Ts>
+%
+%
+%  Bs;G |- new C'<Ts'>(es) : _//incredibly subtle: is Bs;G or Bs';G' // need Bs;G for es that internally use non-funneled types but reduce to terms with funneled types
+%  Bs' |- C'<Ts'> : Ok // Not redundant with first line, b/c need to ensure supertype only depends on funneled things
+%  Ti= Xi if Fi = Xi funnel //those two lines do declare T1..Tn
+%  Ti= Gi if Fi = Gi        //those two lines do declare T1..Tn
+%  Bs' |- C<T1..Tn> : Ok
+%  Bs'= {X extends T | X extends T in Bs, Fi=X funnel} // Bs' = Bs \ dom(F1..Fn)
+%  forall Fi = Xi funnel, Xi extends _ in Bs
+%  G' = G/FTV(T1..Tn) //remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
+%  Bs';G',this:C<T1..Tn> |- M1 : Ok
+%  ..
+%  Bs';G',this:C<T1..Tn> |- Mk : Ok
+%-------------------------------------------------------------------------
+%  Bs;G,this:_ |- new C<F1..Fn> extends C'<Ts'>(es){M1..Mk} : C<T1..Tn>
+%
+%Note: we still need formal definition of substitution e[Xs=Ts]; it is crucial to go in the details for e of form meth local with funnelling
+%We will replace every occurrence of X when doing substitution, *including* in method signatures in a local class
+%Should be a clearer when substitution is formalized
+%
+%
+%  Bs,Bs';G,x1:T1,..xn:Tn |- e : T0
+%  Bs,Bs'|- T0 : Ok .. Bs|- Tn : Ok
+%------------------------------------------------------------------------
+%  Bs;G |- <Bs'> T0 m(T1 x1..Tn xn){return e;} : Ok
+    \end{mathpar}
+    \caption{Typing}
+    \label{fig:typing}
+\end{figure}
 
 \section{Miscellaneous}
 
