@@ -309,3 +309,28 @@ class Text {
         System.out.println(new B().foo("asdf"));
     }
 }
+
+A extends B, B extends C
+
+<C,B> m ....
+<C,A> m ....
+
+<Foo extends Object, Bar extends Foo> Beer<List<Bar>> m(Foo f){
+  new Local<Bar funnel> extends Beer<List<Bar>>{
+    
+  };  
+}
+
+
+l:List<X>
+al=(ArrayList<X>)l;
+
+Foo<Y> extends Bar<Beer<Y>>{}
+
+!!MISSING IF RULE!!
+  Delta,Gamma      |- e0 : T0
+  Delta,Gamma, x:T |- e1 : T'
+  Delta,Gamma      |- e0 : T'
+  Delta |- T0 => T   // and T0 != T no, subsumption could always be used to satify this so is pointless attempt
+---------------------------------------------------------------
+  Delta,Gamma |-  if ( e0 instanceof T x) then e1 else e2 :T'

@@ -6,7 +6,7 @@
 
 \author{Marco Servetto}{School of Engineering and Computer Science, Victoria University of Wellington, New Zealand}{marco.servetto@vuw.ac.nz}{https://orcid.org/0000-0003-1458-2868}{}%TODO mandatory, please use full name; only 1 author per \author macro; first two parameters are mandatory, other parameters can be empty. Please provide at least the name of the affiliation and the country. The full address is optional. Use additional curly braces to indicate the correct name splitting when the last name consists of multiple name parts.
 
-\author{Colin S. Gordon}{School of Computer \& Information Sciences, Drexel University, United States of America}{csgordon@drexel.edu}{https://orcid.org/0000-0002-9012-4490}{[funding]}
+\author{Colin S. Gordon}{School of Computer \& Information Sciences, Drexel University, United States of America}{csgordon@drexel.edu}{https://orcid.org/0000-0002-9012-4490}{US NSF CISE Award CCF-2007582}
 
 \authorrunning{M. Servetto and C. S. Gordon} %TODO mandatory. First: Use abbreviated first/middle names. Second (only in severe cases): Use first author plus 'et al.'
 
@@ -179,6 +179,15 @@ method-local class on generic parameters, and show that it soundly prevents the 
 
 \section{Scope of the Problem}
 
+\subsection{Generic Reification} A natural suspicion is that this is ``simply'' a problem with generic erasure, that of course a language that cannot distinguish generic instantiations of a class at runtime will have difficulties of this sort.
+However, this is subtly incorrect. Consider reinterpreting Figure \ref{fig:original_example} in C\# --- which has reified generics, but does \emph{not} have method-local inner classes.
+First, notice that \lstinline|MyFoo| has no generic parameters of its own, so conceptually checking the immediate type parameters is insufficient. Instead, C\# will produce a different monomorphic copy of \lstinline|m| for every instantiation of \lstinline|X| ---
+and the natural extension would in fact be \emph{different copies of \lstinline|MyFoo| for each instantiation}, each of which inherits
+from a different monomorphized version of \lstinline|Foo|.
+\todo[inline]{hmm, try looking at symbols in AOT-compiled C\#...}
+
+\todo[inline]{ah, we need to check Flix, where maybe we can cook up something roughly like this?}
+
 \section{A Core Language for Funnelling}
 \newcommand{\decls}{\ensuremath{\mathsf{Decls}}\xspace}
 \newcommand{\subclass}[6]{\ensuremath{\mathsf{class}\;#1\langle#2\rangle\;\mathsf{extends}\;#3\langle#4\rangle\;\{\;#5\;#6\;\}}}
@@ -304,7 +313,7 @@ method-local class on generic parameters, and show that it soundly prevents the 
     \epsilon\vdash C\langle Gs\rangle <: D\langle\_\rangle
     %\match{v}{C\langle\_\rangle} = \mathsf{true}
 }{
-    \step{\ifthen{v}{D}{x}{e_1}{e_2}}
+    \step{\ifthen{v}{D\langle Ts\rangle}{x}{e_1}{e_2}}
     {\tsubst{e_1}{x}{v}}
 }
 \and
@@ -314,29 +323,29 @@ method-local class on generic parameters, and show that it soundly prevents the 
     v\in\{\obj{C}{Gs}{\_}, \innerobj{C}{Gs}{\_}{\_}{\_}{\_}\}\\
     \epsilon\not\vdash C\langle Gs\rangle <: D\langle\_\rangle
 }{
-    \step{\ifthen{v}{D}{x}{e_1}{e_2}}
-    {e_2}
-}
-\and
-\inferrule*[left=ifThenReified]{
-    %v\in\{\obj{C}{Ts}{\_}, \innerobj{C}{Ts}{\_}{\_}{\_}{\_}\}
-    %\match{v}{C\langle Ts\rangle} = \mathsf{true}
-    v\in\{\obj{C}{Gs}{\_}, \innerobj{C}{Gs}{\_}{\_}{\_}{\_}\}\\
-    \epsilon\vdash C\langle Gs\rangle <: D\langle Ts\rangle
-}{
-    \step{\ifthen{v}{D\langle Ts\rangle}{x}{e_1}{e_2}}
-    {\tsubst{e_1}{x}{v}}
-}
-\and
-\inferrule*[left=ifElseReified]{
-    %v\not\in\{\obj{C}{Ts}{\_}, \innerobj{C}{Ts}{\_}{\_}{\_}{\_}\}
-    %\match{v}{C\langle Ts\rangle} = \mathsf{false}
-    v\in\{\obj{C}{Gs}{\_}, \innerobj{C}{Gs}{\_}{\_}{\_}{\_}\}\\
-    \epsilon\not\vdash C\langle Gs\rangle <: D\langle Ts\rangle
-}{
     \step{\ifthen{v}{D\langle Ts\rangle}{x}{e_1}{e_2}}
     {e_2}
 }
+%\and
+%\inferrule*[left=ifThenReified]{
+%    %v\in\{\obj{C}{Ts}{\_}, \innerobj{C}{Ts}{\_}{\_}{\_}{\_}\}
+%    %\match{v}{C\langle Ts\rangle} = \mathsf{true}
+%    v\in\{\obj{C}{Gs}{\_}, \innerobj{C}{Gs}{\_}{\_}{\_}{\_}\}\\
+%    \epsilon\vdash C\langle Gs\rangle <: D\langle Ts\rangle
+%}{
+%    \step{\ifthen{v}{D\langle Ts\rangle}{x}{e_1}{e_2}}
+%    {\tsubst{e_1}{x}{v}}
+%}
+%\and
+%\inferrule*[left=ifElseReified]{
+%    %v\not\in\{\obj{C}{Ts}{\_}, \innerobj{C}{Ts}{\_}{\_}{\_}{\_}\}
+%    %\match{v}{C\langle Ts\rangle} = \mathsf{false}
+%    v\in\{\obj{C}{Gs}{\_}, \innerobj{C}{Gs}{\_}{\_}{\_}{\_}\}\\
+%    \epsilon\not\vdash C\langle Gs\rangle <: D\langle Ts\rangle
+%}{
+%    \step{\ifthen{v}{D\langle Ts\rangle}{x}{e_1}{e_2}}
+%    {e_2}
+%}
 \and
 \inferrule[simpleAddSuper]{
     v = \obj{C}{Gs}{\_}
@@ -440,7 +449,7 @@ method-local class on generic parameters, and show that it soundly prevents the 
 }{
   % thanks to subsumption, no need of multiple rules (C<Ts> can simply be set to supertype of relevance, via subsumption)
   \typing{\Delta}{\Gamma}{e.f_i}{\tsubst{T_i}{\Delta'}{\overline{T}}}
-  \subclass{C_0}{\Delta_0}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}\in\decls
+  %\subclass{C_0}{\Delta_0}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}\in\decls
 }
 \and
 \inferrule[call-top]{
@@ -456,7 +465,7 @@ method-local class on generic parameters, and show that it soundly prevents the 
 \and
 \inferrule[call-local]{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\overline{T_0}}}\\
-  \declared{\obj{C_0}{Fs}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}}\\
+  \declared{\innerobj{C_0}{Fs}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}}\\
   \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \overline{M}\\
   T_i'=\tsubst{T_i}{Fs,\Delta_1}{\overline{T_0},\overline{T_1}}\\
   \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
@@ -493,22 +502,21 @@ method-local class on generic parameters, and show that it soundly prevents the 
 \and
 \inferrule[new-local]{
   \typing{\Delta}{\Gamma}{\obj{C'}{\overline{T'}}{\overline{e}}}{\_}\\
-  \kind{\Delta'}{C'\langle\overline{T}}\\
+  \kind{\Delta'}{C'\langle\overline{T}\rangle}\\
   F_i=X_i~\mathsf{funnel}\Rightarrow T_i=X_i\\ % flipped to implication to ensure this requires them all to be defined.
   F_i=G_i\Rightarrow T_i=G_i\\
-  \kind{\Delta'}{C\langle T_1\ldots T_n}\\
+  \kind{\Delta'}{C\langle T_1\ldots T_n\rangle}\\
   \Delta' = \{ X~\mathsf{extends}~T \mid X~\mathsf{extends}~T\in\Delta \land \exists i\ldotp F_i=X~\mathsf{funnel} \}\\ % Bs' = Bs | dom(F1..Fn)
   \forall i\ldotp F_i=X_i~\mathsf{funnel} \Rightarrow X_i~\mathsf{extends}~\_\in\Delta ~~\textrm{\textcolor{red}{what about $X_i~\mathsf{extends}~Y$ where $Y$ isn't funnelled?}}\\
   \Gamma'=\Gamma\setminus\ftv{T_1\ldots T_n}\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
   \mok{\Delta'}{\Gamma',\mathrm{this}:C\langle T_1\ldots T_n\rangle}{M_1}
-  \ldots
+  ~\ldots~
   \mok{\Delta'}{\Gamma',\mathrm{this}:C\langle T_1\ldots T_n\rangle}{M_k}
 }{
   \typing{\Delta}{\Gamma}{
     \innerobj{C}{F_1\ldots F_n}{C'}{\overline{T'}}{\overline{e}}{M_1\ldots M_k}
   }{C\langle T_1\ldots T_n\rangle}
 }
-\and\todo[inline]{Colin says: I think we need a second variant of \textsc{new-local} to model what Java checks, so we can highlight the differences}
 %
 %  Bs;G |- new C'<Ts'>(es) : _//incredibly subtle: is Bs;G or Bs';G' // need Bs;G for es that internally use non-funneled types but reduce to terms with funneled types
 %  Bs' |- C'<Ts'> : Ok // Not redundant with first line, b/c need to ensure supertype only depends on funneled things
@@ -561,17 +569,25 @@ expression satisfies the funnelling constraints by checking kinding under the mo
 \begin{mathpar}
 \inferrule[new-local-java]{
   \typing{\Delta}{\Gamma}{\obj{C'}{\overline{T'}}{\overline{e}}}{\_}\\
-  \kind{\Delta}{C'\langle\overline{T}}\\
-  \kind{\Delta}{C\langle T_1\ldots T_n}\\
-  \mok{\Delta}{\Gamma,\mathrm{this}:C\langle T_1\ldots T_n\rangle}{M_1}
+  \kind{\Delta}{C'\langle\overline{T}\rangle}\\
+  %\kind{\Delta}{C\langle\rangle}\\
+  \mok{\Delta}{\Gamma,\mathrm{this}:C\langle\rangle}{M_1}
   \ldots
-  \mok{\Delta}{\Gamma,\mathrm{this}:C\langle T_1\ldots T_n\rangle}{M_k}
+  \mok{\Delta}{\Gamma,\mathrm{this}:C\langle\rangle}{M_k}
 }{
   \typing{\Delta}{\Gamma}{
-    \innerobj{C}{F_1\ldots F_n}{C'}{\overline{T'}}{\overline{e}}{M_1\ldots M_k}
-  }{C\langle T_1\ldots T_n\rangle}
+    \innerobj{C}{}{C'}{\overline{T'}}{\overline{e}}{M_1\ldots M_k}
+  }{C\langle\rangle}
 }
 \end{mathpar}
+\todo[inline]{briefly note that Java allows extra, ``fresh'' generic parameters in local classes}
+
+\todo[inline]{call out that we're allowed to declare return types that mention an inner class; inner classes are ``public'', and our approach works even in this case, the more restrictive case of Java is naturally covered}
+
+\todo[inline]{articulate early:
+    It's not just about generic reification: just checking type parameters aren't enough, as our MyFoo cases have no generic params.
+    You need to *deeply* check reified generics, you need to check not just the base type but also check the choice(s) of parent types from the context into the runtime check.
+}
 
 \section{(Un)Soundness of Method Local Classes}
 With our language primitives in place, we now consider type safety of 4 variants of our language, with varied typing rules and cast semantics.
@@ -587,7 +603,7 @@ As a result we consider:
 \section{Miscellaneous}
 
 //--------
-MARCO: (5th time)
+MARCO: (6th time)
 This is not about generic erasure
 In a language with reified generics, if the language still decides that MyFoo is not generic,
 no impact of those reified generics is going to be seen in the case (MyFoo)other
