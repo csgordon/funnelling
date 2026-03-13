@@ -53,6 +53,7 @@
 \usepackage{mathpartir}
 \usepackage{xspace}
 \usepackage{todonotes}
+\newcommand{\tocite}[1]{\todo{cite #1}}
 
 % From: https://gist.github.com/Blaisorblade/1722948
 % Merged from http://tihlde.org/~eivindw/latex-listings-for-scala/ and 
@@ -190,6 +191,9 @@ method-local class on generic parameters, and show that it soundly prevents the 
 \newcommand{\tsubst}[3]{\ensuremath{#1[#2=#3]}\xspace}
 \newcommand{\match}[2]{\ensuremath{\mathsf{match}(#1,#2)}\xspace}
 
+\newcommand{\declared}[1]{\ensuremath{#1~\mathsf{declared}}}
+
+
 \begin{figure}
 \centering
 \[
@@ -197,8 +201,8 @@ method-local class on generic parameters, and show that it soundly prevents the 
 \textsf{Expressions} & e & ::= & x \mid \call{e}{Ts}{m}{es} \mid \explicitcall{e}{T}{Ts}{m}{es}
     \mid e.f
     \mid \obj{C}{Ts}{es}\\
-    &&&\mid \innerobj{C}{Ts}{D}{Ts'}{es}{Ms}\\
-    &&& \ifthen{e}{T?}{x}{e}{e}\\
+    &&&\mid \innerobj{C}{Fs}{D}{Ts'}{es}{Ms}\\
+    &&& \ifthen{e}{T?}{x}{e}{e}\\ 
 \textrm{Patterns} & P & ::= & C \mid C\langle Ts\rangle\\
 \textrm{Types} & T & ::= & C\langle Ts\rangle \mid X\\
 \textrm{Funnels} & F & ::= & G \mid X~\mathsf{funnel}\\
@@ -224,11 +228,34 @@ method-local class on generic parameters, and show that it soundly prevents the 
 %
 \end{array}
 \]
-\caption{Syntax}
+\begin{mathpar}
+\fbox{\declared{D}}
+\and
+\inferrule{
+  \subclass{C}{\Delta}{C'}{Ts}{Ms}{Ss}\in\decls
+}{
+  \declared{\subclass{C}{\Delta}{C'}{Ts}{Ms}{Ss}}
+}
+\and
+\inferrule{
+  \declared{\subclass{C}{\Delta}{C'}{Ts}{Ms}{Ss}}\\
+  \innerobj{C}{Fs}{D}{\overline{T'}}{\overline{e}}{\overline{M}}\in Ms
+}{
+  \declared{\innerobj{C}{Fs}{D}{\overline{T'}}{\overline{e}}{\overline{M}}}
+}
+\and
+\inferrule{
+  \declared{\innerobj{C}{Fs}{D}{\overline{T}}{\_}{Ms}}\\
+  \innerobj{C'}{Fs'}{D'}{\overline{T'}}{\overline{e}}{\overline{M}}\in Ms
+}{
+  \declared{\innerobj{C}{Fs}{D}{\overline{T'}}{\overline{e}}{\overline{M}}}
+}
+\end{mathpar}
+\caption{Syntax and Declaration Checking}
 \label{fig:syntax}
 \end{figure}
 
-\begin{figure}
+\begin{figure}\small
     \centering
 \begin{mathpar}
 \fbox{$\step{e}{e'}$}
@@ -379,68 +406,102 @@ method-local class on generic parameters, and show that it soundly prevents the 
 %    \end{array}
 %\]
 
-\begin{figure}
+\newcommand{\typing}[4]{\ensuremath{#1;#2\vdash #3 : #4}\xspace}
+\newcommand{\subtype}[3]{\ensuremath{#1\vdash #2 <: #3}\xspace}
+\newcommand{\kind}[2]{\ensuremath{#1 \vdash #2 ~\mathrm{Ok}}\xspace}
+\newcommand{\mok}[3]{\ensuremath{#1;#2\vdash #3~\mathrm{Ok}}\xspace}
+\newcommand{\ftv}[1]{\ensuremath{\mathsf{FTV}(#1)}\xspace}
+\newcommand{\classtype}[2]{\ensuremath{#1\langle #2\rangle}\xspace}
+
+\begin{figure}\small
     \centering
     \begin{mathpar}
-\fbox{$\Delta;\Gamma\vdash e : T$}
-%Bs;G |- e : T
-%
-%
-%  Bs;G |- e : T1
-%  Bs |- T1 <= T2
-%  Bs|- T2 : Ok% ^^ May or may not need to check kinding of T2
-%---------------------(subs)
-%  Bs;G |- e : T2
-%
-%
-%---------------------(x)
-%  Bs;G |- x : G(x)
-%
-%  Bs;G |- e : C<Ts>//assume fields can never shadow each other
-%  class C<Bs> extends C'<Ts'>{ Ms T1 f1..Tn fn} in Decs
-%----------------------------------------------------------------
-%  Bs;G |- e.fi : Ti[Bs=Ts] //thanks to subsumption, no need of multiple rules (C<Ts> can simply be set to supertype of relevance, via subsumption)
-%
-%  Bs;G |- e0 : C0<Ts0>    //assume methods ok will require identical signature, no co/contra-variant override
-%  class C0<Bs0> extends C'<Ts'>{ Ms Ss} in Decs
-%  <Bs1> T0 m(T1 x1..Tn xn){_} in Ms
-%  T'i = Ti[Bs0,Bs1=Ts0,Ts1]
-%  Bs;G |- e1 : T'1 .. Bs;G |- en : T'n
-%  Bs|- Ts1 : Ok
-%-----------------------------------------
-%  Bs;G |- e0.<Ts1>m(e1..en) :T'0
-%
-%  Bs2;G |- e0 : C0<Ts0>    //assume methods ok will require identical signature, no co/contra-variant override
-%  class C<Bs>{ _ <Bs'> _(_) e; _} in Decs //conceptually adding those three lines to the one before
-%  new C0<Fs> _(_){Ms} in e
-%  Bs0 = Bs,Bs' \ dom(Fs) % leave only dom(Fs)
-%  <Bs1> T0 m(T1 x1..Tn xn){_} in Ms
-%  T'i = Ti[Bs0,Bs1=Ts0,Ts1] //this is the crucial line! if Fs is not explicit, how to connect here
-%  Bs2;G |- e1 : T'1 .. Bs2;G |- en : T'n
-%  Bs2|- Ts1 : Ok
-%-----------------------------------------
-%  Bs2;G |- e0.<Ts1>m(e1..en) :T'0
-%//NOTE: still insufficient: C0<Ts0> could be declared in the Ms of another method local type
-%
-%  Bs;G |- e0 : T
-%  topLevelClass(T)
-%  Bs |- T <= C0<Ts0>
-%  class C0<Bs0> extends C'<Ts'>{ Ms Ss} in Decs
-%  <Bs1> T0 m(T1 x1..Tn xn){_} in Ms
-%  T'i = Ti[Bs0,Bs1=Ts0,Ts1]
-%  Bs;G |- e1 : T'1 .. Bs;G |- en : T'n
-%  Bs|- T : Ok     Bs|- Ts1 : Ok
-%------------------------------------------
-%  Bs;G |- e.[T]<Ts1>m(es)
-%
-%
-%  class C<Bs> extends C'<Ts'>{ Ms T1 f1..Tn fn} in Decs
-%  Bs;G |- e1 : T1[Bs=Ts] .. Bs;G |- en : Tn[Bs=Ts]
-%  Bs;G |- new C'<Ts'[Bs=Ts]>(es) : _
-%  Bs|- Ts : Ok
-%--------------------------------------------------------
-%  Bs;G |- new C<Ts>(e1..en es) : C<Ts>
-%
+\fbox{\typing{\Delta}{\Gamma}{e}{T}}
+\and
+\inferrule[subs]{
+	\typing{\Delta}{\Gamma}{e}{T_1}\\
+	\subtype{\Delta}{T_1}{T_2}% ^^ May or may not need to check kinding of T2
+}{
+	\typing{\Delta}{\Gamma}{e}{T_2}
+}
+\and
+\inferrule[var]{ }{\typing{\Delta}{\Gamma}{x}{\Gamma(x)}}
+\and
+\inferrule[declField]{
+  \typing{\Delta}{\Gamma}{e}{\classtype{C}{\overline{T}}}\\
+  \subclass{C}{\Delta'}{C'}{\overline{T'}}{Ms}{T_1 f_1\ldots T_n f_n}\in\decls
+}{
+  % thanks to subsumption, no need of multiple rules (C<Ts> can simply be set to supertype of relevance, via subsumption)
+  \typing{\Delta}{\Gamma}{e.f_i}{\tsubst{T_i}{\Delta'}{\overline{T}}}
+  \subclass{C_0}{\Delta_0}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}\in\decls
+}
+\and
+\inferrule[call-top]{
+  \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\overline{T_0}}}\\
+  \declared{\subclass{C_0}{\Delta_0}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}}\\
+  \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \overline{M}\\
+  T_i'=\tsubst{T_i}{\Delta_0,\Delta_1}{\overline{T_0},\overline{T_1}}\\
+  \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
+  \kind{\Delta}{\overline{T_1}}
+}{
+  \typing{\Delta}{\Gamma}{e_0.\langle\overline{T_1}\rangle m(e_1,\ldots,e_n)}{T_0'}
+}
+\and
+\inferrule[call-local]{
+  \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\overline{T_0}}}\\
+  \declared{\obj{C_0}{Fs}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}}\\
+  \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \overline{M}\\
+  T_i'=\tsubst{T_i}{Fs,\Delta_1}{\overline{T_0},\overline{T_1}}\\
+  \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
+  \kind{\Delta}{\overline{T_1}}
+}{
+  \typing{\Delta}{\Gamma}{
+    \call{e_0}{\overline{T_1}}{m}{e_1,\ldots,e_n}
+  }{T_0'}
+}
+\and
+\inferrule[call-lb-runtime]{
+  \typing{\Delta}{\Gamma}{e_0}{T}\\
+  \mathsf{topLevelClass}(T)\\
+  \subtype{\Delta}{T}{C_0\langle\overline{T_0}}\\
+  \declared{\subclass{C_0}{\Delta_0}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}}\\
+  \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \overline{M}\\
+  T_i'=\tsubst{T_i}{\Delta_0,\Delta_1}{\overline{T_0},\overline{T_1}}\\
+  \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
+  \kind{\Delta}{\overline{T}}
+  \kind{\Delta}{\overline{T_1}}
+}{
+  \typing{\Delta}{\Gamma}{
+    \explicitcall{e_0}{T}{\overline{T_1}}{m}{e_1,\ldots,e_n}
+  }{T_0'}
+}
+\and
+\inferrule[new-top]{
+  \declared{\subclass{C}{\Delta'}{C'}{\overline{T'}}{\overline{M}}{T_1\;f_1\ldots T_n\;f_n}}\\
+  \typing{\Delta}{\Gamma}{\obj{C'}{\tsubst{\overline{T'}}{\Delta'}{\overline{T}}}{\overline{e}}}{\_}\\
+  \kind{\Delta}{\overline{T}}
+}{
+  \typing{\Delta}{\Gamma}{\obj{C}{\overline{T}}{e_1\ldots e_n ~ \overline{e}}}{C\langle\overline{T}\rangle}
+}
+\and
+\inferrule[new-local]{
+  \typing{\Delta}{\Gamma}{\obj{C'}{\overline{T'}}{\overline{e}}}{\_}\\
+  \kind{\Delta'}{C'\langle\overline{T}}\\
+  F_i=X_i~\mathsf{funnel}\Rightarrow T_i=X_i\\ % flipped to implication to ensure this requires them all to be defined.
+  F_i=G_i\Rightarrow T_i=G_i\\
+  \kind{\Delta'}{C\langle T_1\ldots T_n}\\
+  \Delta' = \{ X~\mathsf{extends}~T \mid X~\mathsf{extends}~T\in\Delta \land \exists i\ldotp F_i=X~\mathsf{funnel} \}\\ % Bs' = Bs | dom(F1..Fn)
+  \forall i\ldotp F_i=X_i~\mathsf{funnel} \Rightarrow X_i~\mathsf{extends}~\_\in\Delta ~~\textrm{\textcolor{red}{what about $X_i~\mathsf{extends}~Y$ where $Y$ isn't funnelled?}}\\
+  \Gamma'=\Gamma\setminus\ftv{T_1\ldots T_n}\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
+  \mok{\Delta'}{\Gamma',\mathrm{this}:C\langle T_1\ldots T_n\rangle}{M_1}
+  \ldots
+  \mok{\Delta'}{\Gamma',\mathrm{this}:C\langle T_1\ldots T_n\rangle}{M_k}
+}{
+  \typing{\Delta}{\Gamma}{
+    \innerobj{C}{F_1\ldots F_n}{C'}{\overline{T'}}{\overline{e}}{M_1\ldots M_k}
+  }{C\langle T_1\ldots T_n\rangle}
+}
+\and\todo[inline]{Colin says: I think we need a second variant of \textsc{new-local} to model what Java checks, so we can highlight the differences}
 %
 %  Bs;G |- new C'<Ts'>(es) : _//incredibly subtle: is Bs;G or Bs';G' // need Bs;G for es that internally use non-funneled types but reduce to terms with funneled types
 %  Bs' |- C'<Ts'> : Ok // Not redundant with first line, b/c need to ensure supertype only depends on funneled things
@@ -460,6 +521,15 @@ method-local class on generic parameters, and show that it soundly prevents the 
 %We will replace every occurrence of X when doing substitution, *including* in method signatures in a local class
 %Should be a clearer when substitution is formalized
 %
+\and
+\fbox{\mok{\Gamma}{\Delta}{M}}
+\and
+\inferrule[method-ok]{
+  \typing{\Delta,\Delta'}{\Gamma,x_1:T_1,\ldots,x_n:T_n}{e}{T_0}\\
+  \kind{\Delta,\Delta'}{T_0}\ldots\kind{\Delta,\Delta'}{T_n}
+}{
+  \mok{\Delta}{\Gamma}{\method{\Delta'}{T_0}{m}{T_1~x_1\ldots T_n~x_n}{\mathsf{return}~e;}}
+}
 %
 %  Bs,Bs';G,x1:T1,..xn:Tn |- e : T0
 %  Bs,Bs'|- T0 : Ok .. Bs|- Tn : Ok
@@ -469,6 +539,43 @@ method-local class on generic parameters, and show that it soundly prevents the 
     \caption{Typing}
     \label{fig:typing}
 \end{figure}
+
+\ldots
+
+The rule \textsc{new-local} is the heart of funneling, including subtle management of type environments.
+The management of type environments in \textsc{new-local} is subtle. The rule constructs a restricted set of type bounds and variable bindings reflecting only the explicitly-funnelled type variables:
+$\Delta'$ includes only the explicitly-funnelled type variables and $\Gamma'$ is restricted to just those variables free in the result type (which must be well-kinded under $\Delta'$).
+However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\overline{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., an explicit call), but will reduce to a value which no longer depends on such type variables.
+This is why the first antecedent checks the effective supertype instance under $\Delta;\Gamma$, but the second antecedent ensures the resulting type of that
+expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
+
+\ldots
+
+\begin{mathpar}
+\inferrule[new-local-java]{
+  \typing{\Delta}{\Gamma}{\obj{C'}{\overline{T'}}{\overline{e}}}{\_}\\
+  \kind{\Delta}{C'\langle\overline{T}}\\
+  \kind{\Delta}{C\langle T_1\ldots T_n}\\
+  \mok{\Delta}{\Gamma,\mathrm{this}:C\langle T_1\ldots T_n\rangle}{M_1}
+  \ldots
+  \mok{\Delta}{\Gamma,\mathrm{this}:C\langle T_1\ldots T_n\rangle}{M_k}
+}{
+  \typing{\Delta}{\Gamma}{
+    \innerobj{C}{F_1\ldots F_n}{C'}{\overline{T'}}{\overline{e}}{M_1\ldots M_k}
+  }{C\langle T_1\ldots T_n\rangle}
+}
+\end{mathpar}
+
+\section{(Un)Soundness of Method Local Classes}
+With our language primitives in place, we now consider type safety of 4 variants of our language, with varied typing rules and cast semantics.
+We schematically denote these languages by $\zeta(C,T)$ for our language with cast dynamics $C$ and type rule $T$.
+As a result we consider:
+\begin{enumerate}
+\item $\zeta(\mathsf{erased},\mathsf{Java})$, which models Java's generic erasure in case semantics, and Java's type checking
+\item $\zeta(\mathsf{reified},\mathsf{Java})$, which models Java's type checking \emph{but} reifies generics and checks their instantiation as part of casts (similar to C\#)
+\item $\zeta(\mathsf{erased},\mathsf{funnelled})$, which applies funnelling to a model with generic erasure
+\item $\zeta(\mathsf{reified},\mathsf{funnelled})$, which applies funnelling to a model with reified generics that are checked during casts
+\end{enumerate}
 
 \section{Miscellaneous}
 
@@ -792,7 +899,7 @@ Our static solution effectively prohibits the de facto existential capture of th
 The decision to treat types like the \lstinline|MyFoo| variants in our examples as closed existential types that depend on other choices of types is not
 without parallels in other languages. Haskell and Rust, for example, include associated types~\cite{chakravarty2005associated}, where
 a typeclass has a type as a member.
-A yet closer analogue is Scala's path-dependent types~\cite{dot}, where types may be \emph{members} of an individual object, rather than associated with an individual class. The code below adapts the troublesome example method using Scala's type members:
+A yet closer analogue is Scala's path-dependent types~\tocite{dot}, where types may be \emph{members} of an individual object, rather than associated with an individual class. The code below adapts the troublesome example method using Scala's type members:
 \begin{lstlisting}[language=Scala]
 trait Foo { type X; def x() : X; }
 def m[Y](other: Any, newx: Y) : Foo2 = 
