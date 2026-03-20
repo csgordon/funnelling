@@ -178,13 +178,61 @@ method-local class on generic parameters, and show that it soundly prevents the 
 \end{itemize}
 
 \section{Scope of the Problem}
+This problem arises in essentially all JVM languages, all of which must interact with Java and have therefore chosen to also support method-local classes.
+
+\begin{figure}
+\begin{lstlisting}[numbers=left,language=c++,escapeinside={(*}{*)}]
+class Object{};
+template<typename X> class Foo : public Object {
+    public: X x() { return x(); } };
+template<typename X>
+Foo<X>* m(Object* other, const X* x) {
+    class MyFoo : public Foo<X> { public: X x() { return x; } };
+    MyFoo* d = dynamic_cast<MyFoo*>(other);(*\label{line:cpp_err}*)
+    if(d == nullptr) { return new MyFoo(); }
+    return d;
+}
+\end{lstlisting}
+\caption{C++ equivalent of Figure \ref{fig:original_example}.}
+\label{fig:cpp}
+\end{figure}
 
 \subsection{Generic Reification} A natural suspicion is that this is ``simply'' a problem with generic erasure, that of course a language that cannot distinguish generic instantiations of a class at runtime will have difficulties of this sort.
-However, this is subtly incorrect. Consider reinterpreting Figure \ref{fig:original_example} in C\# --- which has reified generics, but does \emph{not} have method-local inner classes.
-First, notice that \lstinline|MyFoo| has no generic parameters of its own, so conceptually checking the immediate type parameters is insufficient. Instead, C\# will produce a different monomorphic copy of \lstinline|m| for every instantiation of \lstinline|X| ---
-and the natural extension would in fact be \emph{different copies of \lstinline|MyFoo| for each instantiation}, each of which inherits
-from a different monomorphized version of \lstinline|Foo|.
-\todo[inline]{hmm, try looking at symbols in AOT-compiled C\#...}
+There is some truth to this: Java is permitting a cast that it cannot actually check due to type erasure.
+However there is more to it than that: Java will eagerly flag code such as \lstinline|(List<String>)(new LinkedList<Integer>())|.
+So the language does intend to warn about uses of uncheckable casts.
+And while reified generics do provide enough information to check casts dynamically, only certain forms of reification
+make correct casts straightforward.
+
+In a language which implements parametric polymorphism by templating / heterogeneous compilation
+(C++, C\#, or early experiments with generic Java~\cite{agesen1997adding}), the check is straightforward:
+each instantiation of \lstinline|m| with different generic parameters is compiled separately, resulting in separate
+class declarations for each instantiation.
+Consider reinterpreting Figure \ref{fig:original_example} in C++ as in Figure \ref{fig:cpp}.
+\texttt{gcc} reports for Line \ref{line:cpp_err}:
+\begin{verbatim}
+<source>:7:16: error: cannot 'dynamic_cast' 'other' (of type 'class Object*')
+to type 'class m<Integer>(Object*, const Integer*)::MyFoo*' (source type is not polymorphic)
+    7 |     MyFoo* d = dynamic_cast<MyFoo*>(other);
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+\end{verbatim}
+\todo[inline]{not perfect, because this is C++ giving a static warning, not catching the error dynamically...}
+Notice that the error message uses the instantiation of the method signature as a scope for a declaration of \lstinline|MyFoo|.
+But heterogeneous compilation has subtle costs and wide-ranging consequences for language design, not just implementation,
+and complex performance consequences~\cite{odersky2001two,kennedy2001design}. Even if this does fix the problem,
+it is not universally appropriate.
+
+An alternative, common conception of generic reification is to simply save the type parameters along with the
+single implementations of classes, for it to be checked when needed. But note again that \lstinline|MyFoo|
+has no generic parameters of its own. So a shallow check with this variant of reified generics is insufficient ---
+each \lstinline|MyFoo| would need to contain a representation of, or reference to, its parent type's generic parameters.
+And because this phenomenon is not limited to a single step in the inheritance hierarchy, the cast must traverse and compare
+a substantial amount of data --- not a mere comparison of virtual table pointers. This again has multiple implementation
+approaches, neither ideal (chains of parent type instantiations hurt cache locality, inlining data can bloat small instances).
+
+So there remains a need to articulate a solution to this problem where generics are implemented via erasure.
+
+
 
 \todo[inline]{ah, we need to check Flix, where maybe we can cook up something roughly like this?}
 
