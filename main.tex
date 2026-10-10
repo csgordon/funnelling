@@ -350,9 +350,9 @@ So there remains a need to articulate a solution to this problem where generics 
 \inferrule*[left=innerFieldFound]{
 }{
     \step{
-        \innerobj{C}{Gs}{C'}{Ts}{v_1\ldots v_n\;vs}{Ms}.f
+        \innerobj{C}{Gs}{C'}{Gs'}{vs}{Ms}.f
     }{
-        \obj{C'}{\tsubst{Ts}{Bs}{Gs}}{vs}.f
+        \obj{C'}{Gs'}{vs}.f
     }
 }
 \and
@@ -416,18 +416,18 @@ So there remains a need to articulate a solution to this problem where generics 
 \and
 \inferrule[innerFound]{
     v_0 = \innerobj{\_}{\_}{\_}{\_}{\_}{Ms}\\
-    \method{Bs'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\mathsf{return}\;e0} \in Ms\\
-    e = \tsubst{\tsubst{e_0}{Bs,Bs'}{Gs,Gs'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
+    \method{Bs'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\mathsf{return}\;e_0} \in Ms\\
+    e = \tsubst{\tsubst{e_0}{Bs'}{Gs'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
 }{
     \step{\call{v_0}{Gs'}{m}{v_1\ldots v_n}}{e}
 }
 \and
 \inferrule[innerSuper]{
-    v = \innerobj{\_}{\_}{C}{Gs}{\_}{Ms}\\
+    v_0 = \innerobj{\_}{\_}{C}{Gs}{\_}{Ms}\\
     m\not\in Ms
 }{
     \step{\call{v_0}{Gs'}{m}{v_1\ldots v_n}}{
-        \explicitcall{v}{C\langle Gs\rangle}{Gs'}{m}{vs}
+        \explicitcall{v_0}{C\langle Gs\rangle}{Gs'}{m}{v_1\ldots v_n}
     }
 }
 \and
@@ -484,7 +484,8 @@ So there remains a need to articulate a solution to this problem where generics 
 \and
 \inferrule[subs]{
 	\typing{\Delta}{\Gamma}{e}{T_1}\\
-	\subtype{\Delta}{T_1}{T_2}% ^^ May or may not need to check kinding of T2
+	\subtype{\Delta}{T_1}{T_2}\\
+	\kind{\Delta}{T_2}
 }{
 	\typing{\Delta}{\Gamma}{e}{T_2}
 }
@@ -585,6 +586,15 @@ So there remains a need to articulate a solution to this problem where generics 
 %Should be a clearer when substitution is formalized
 %
 \and
+\inferrule[if-instanceof]{
+  \typing{\Delta}{\Gamma}{e_0}{T_0}\\
+  \kind{\Delta}{T}\\
+  \typing{\Delta}{\Gamma,T\;x}{e_1}{T'}\\
+  \typing{\Delta}{\Gamma}{e_2}{T'}
+}{
+  \typing{\Delta}{\Gamma}{\ifthen{e_0}{T}{x}{e_1}{e_2}}{T'}
+}
+\and
 \fbox{\mok{\Gamma}{\Delta}{M}}
 \and
 \inferrule[method-ok]{
@@ -602,6 +612,103 @@ So there remains a need to articulate a solution to this problem where generics 
     \caption{Typing}
     \label{fig:typing}
 \end{figure}
+
+\begin{figure}\small
+    \centering
+    \begin{mathpar}
+\fbox{\kind{\Delta}{T}}
+\and
+\inferrule[wf-var]{
+  X~\mathsf{extends}~\_\in\Delta
+}{
+  \kind{\Delta}{X}
+}
+\and
+\inferrule[wf-outer]{
+  \kind{\Delta}{T_1}\ldots\kind{\Delta}{T_n}\\
+  \subclass{C}{X_1~\mathsf{extends}~T'_1,\ldots,X_n~\mathsf{extends}~T'_n}{\_}{\_}{\_}{\_}\in\decls\\
+  \subtype{\Delta}{T_i}{\tsubst{T'_i}{\overline{X}}{\overline{T}}}
+}{
+  \kind{\Delta}{C\langle T_1\ldots T_n\rangle}
+}
+\and
+\inferrule[wf-inner]{
+  \kind{\Delta}{T_1}\ldots\kind{\Delta}{T_n}\\
+  \subclass{C}{\Delta_C}{\_}{\_}{\_}{\_}\in\decls\\
+  \method{\Delta_M}{\_}{m}{\_}{\mathsf{return}\;e;}\in Ms_C\\
+  \innerobj{C_0}{F_1\ldots F_n}{\_}{\_}{\_}{\_}\textrm{ occurs in }e\\
+  F_i=X_i~\mathsf{funnel}\Rightarrow X_i~\mathsf{extends}~T'_i\in\Delta_C,\Delta_M\land\subtype{\Delta}{T_i}{\tsubst{T'_i}{\overline{X}}{\overline{T}}}\\
+  F_i=G_i\Rightarrow T_i=G_i
+}{
+  \kind{\Delta}{C_0\langle T_1\ldots T_n\rangle}
+}
+\and
+\fbox{\subtype{\Delta}{T}{T'}}
+\and
+\inferrule[sub-refl]{ }{\subtype{\Delta}{T}{T}}
+\and
+\inferrule[sub-inherit]{
+  \subclass{C}{\Delta_0}{C'}{\overline{T'}}{\_}{\_}\in\decls\\
+  \subtype{\Delta}{\tsubst{C'\langle\overline{T'}\rangle}{\Delta_0}{\overline{T}}}{T''}
+}{
+  \subtype{\Delta}{C\langle\overline{T}\rangle}{T''}
+}
+\and
+\inferrule[sub-inherit-local]{
+  \declared{\innerobj{C}{Fs}{C'}{\overline{T'}}{\_}{\_}}\\
+  \subtype{\Delta}{\tsubst{C'\langle\overline{T'}\rangle}{\mathsf{dom}(Fs)}{\overline{T}}}{T''}
+}{
+  \subtype{\Delta}{C\langle\overline{T}\rangle}{T''}
+}
+\and
+\inferrule[sub-var]{
+  X~\mathsf{extends}~T\in\Delta\\
+  \subtype{\Delta}{T}{T'}
+}{
+  \subtype{\Delta}{X}{T'}
+}
+    \end{mathpar}
+    \caption{Kinding and Subtyping}
+    \label{fig:kinding}
+\end{figure}
+
+\begin{figure}\scriptsize
+    \centering
+\[
+\begin{array}{rcl}
+\tsubst{x}{\overline{X}}{\overline{T}} & = & x\\
+\tsubst{\call{e}{\overline{T'}}{m}{\overline{e'}}}{\overline{X}}{\overline{T}} & = &
+  \call{\tsubst{e}{\overline{X}}{\overline{T}}}{\tsubst{\overline{T'}}{\overline{X}}{\overline{T}}}{m}{\tsubst{\overline{e'}}{\overline{X}}{\overline{T}}}\\
+\tsubst{\explicitcall{e}{T'}{\overline{T''}}{m}{\overline{e'}}}{\overline{X}}{\overline{T}} & = &
+  \explicitcall{\tsubst{e}{\overline{X}}{\overline{T}}}{\tsubst{T'}{\overline{X}}{\overline{T}}}{\tsubst{\overline{T''}}{\overline{X}}{\overline{T}}}{m}{\tsubst{\overline{e'}}{\overline{X}}{\overline{T}}}\\
+\tsubst{e.f}{\overline{X}}{\overline{T}} & = & \tsubst{e}{\overline{X}}{\overline{T}}.f\\
+\tsubst{\obj{C}{\overline{T'}}{\overline{e}}}{\overline{X}}{\overline{T}} & = &
+  \obj{C}{\tsubst{\overline{T'}}{\overline{X}}{\overline{T}}}{\tsubst{\overline{e}}{\overline{X}}{\overline{T}}}\\
+\tsubst{\ifthen{e_0}{T'}{x}{e_1}{e_2}}{\overline{X}}{\overline{T}} & = & \\
+  & & \ifthen{\tsubst{e_0}{\overline{X}}{\overline{T}}}{\tsubst{T'}{\overline{X}}{\overline{T}}}{x}{\tsubst{e_1}{\overline{X}}{\overline{T}}}{\tsubst{e_2}{\overline{X}}{\overline{T}}}\\
+\tsubst{\innerobj{C}{\overline{F}}{C'}{\overline{T'}}{\overline{e}}{\overline{M}}}{\overline{X}}{\overline{T}} & = & \\
+  & & \innerobj{C}{\tsubst{\overline{F}}{\overline{X}}{\overline{T}}}{C'}{\tsubst{\overline{T'}}{\overline{X}}{\overline{T}}}{\tsubst{\overline{e}}{\overline{X}}{\overline{T}}}{\tsubst{\overline{M}}{\overline{X}}{\overline{T}}}\\
+\\
+\tsubst{X'~\mathsf{funnel}}{\overline{X}}{\overline{T}} & = & X'~\mathsf{funnel} \quad\textrm{if }X'\not\in\overline{X}\\
+\tsubst{X_i~\mathsf{funnel}}{\overline{X}}{\overline{T}} & = & T_i\\
+\tsubst{G}{\overline{X}}{\overline{T}} & = & G\\
+\\
+\tsubst{\method{\Delta}{T_0}{m}{\overline{T\;x}}{\mathsf{return}\;e;}}{\overline{X}}{\overline{T'}} & = & \\
+  & & \method{\tsubst{\Delta}{\overline{X}}{\overline{T'}}}{\tsubst{T_0}{\overline{X}}{\overline{T'}}}{m}{\tsubst{\overline{T}}{\overline{X}}{\overline{T'}}\;\overline{x}}{\mathsf{return}\;\tsubst{e}{\overline{X}}{\overline{T'}};}\\
+\tsubst{(X'~\mathsf{extends}~T')}{\overline{X}}{\overline{T}} & = & X'~\mathsf{extends}~\tsubst{T'}{\overline{X}}{\overline{T}}\\
+\\
+\tsubst{C\langle\overline{T'}\rangle}{\overline{X}}{\overline{T}} & = & C\langle\tsubst{\overline{T'}}{\overline{X}}{\overline{T}}\rangle\\
+\tsubst{X'}{\overline{X}}{\overline{T}} & = & X' \quad\textrm{if }X'\not\in\overline{X}\\
+\tsubst{X_i}{\overline{X}}{\overline{T}} & = & T_i
+\end{array}
+\]
+    \caption{Substitution of type variables}
+    \label{fig:substitution}
+\end{figure}
+
+Substitution replaces every occurrence of a type variable, \emph{including} the ones in the method signatures of a method-local class.
+A funnelled variable is the only form of shadowing of type variables that we allow; the domain of the substitution is disjoint from
+the free type variables of the substituted types and from the bounds in scope, so no renaming is ever needed.
 
 \ldots
 
