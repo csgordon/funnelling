@@ -296,6 +296,13 @@ So there remains a need to articulate a solution to this problem where generics 
 \textrm{Funnels} & F & ::= & G \mid \funnel{X}\\
 \textrm{Ground Types} & G & ::= & \gen{C}{\pl{G}}\\
 \\
+\textrm{Values} & v & ::= & \obj{C}{\pl{G}}{\pl{v}} \mid \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v}}{\pl{M}}\\
+\textrm{Eval. Ctx.} & \mathcal{E} & ::= & \square \mid \call{\mathcal{E}}{\pl{G}}{m}{\pl{e}} \mid \call{v}{\pl{G}}{m}{\pl{v}\;\mathcal{E}\;\pl{e}}\\
+    &&& \mid \explicitcall{\mathcal{E}}{G}{\pl{G}}{m}{\pl{e}} \mid \explicitcall{v}{G}{\pl{G}}{m}{\pl{v}\;\mathcal{E}\;\pl{e}}\\
+    &&& \mid \mathcal{E}\fstop f \mid \obj{C}{\pl{G}}{\pl{v}\;\mathcal{E}\;\pl{e}}\\
+    &&& \mid \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v}\;\mathcal{E}\;\pl{e}}{\pl{M}}\\
+    &&& \mid \ifthen{\mathcal{E}}{G}{x}{e_1}{e_2}\\
+\\
 \textrm{Type Env.} & \Gamma & ::= & T_1\;x_1,\ldots,T_n\;x_n\\
 \textrm{Bounds} & \Delta & ::= & \ext{X_1}{T_1},\ldots,\ext{X_n}{T_n}\\
 %// Need T, not F, to be able to do things like (Java) class Bar<X,Y extends X> {}
