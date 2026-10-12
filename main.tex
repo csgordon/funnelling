@@ -237,20 +237,36 @@ So there remains a need to articulate a solution to this problem where generics 
 \todo[inline]{ah, we need to check Flix, where maybe we can cook up something roughly like this?}
 
 \section{A Core Language for Funnelling}
+\newcommand{\QQ}[1]{\ensuremath{\text{\ttfamily #1}}}
+\newcommand{\kw}[1]{\ensuremath{\text{\ttfamily\bfseries\color{blue}#1}}}
+\newcommand{\OR}{\QQ{(}}
+\newcommand{\CR}{\QQ{)}}
+\newcommand{\OS}{\QQ{[}}
+\newcommand{\CS}{\QQ{]}}
+\newcommand{\OA}{\QQ{<}}
+\newcommand{\CA}{\QQ{>}}
+\newcommand{\OC}{\QQ{\{}}
+\newcommand{\CC}{\QQ{\}}}
+\newcommand{\fstop}{\QQ{.}}
+\newcommand{\semi}{\QQ{;}}
+\newcommand{\gen}[2]{\ensuremath{#1\OA#2\CA}}
+\newcommand{\funnel}[1]{\ensuremath{#1~\kw{funnel}}}
+\newcommand{\ext}[2]{\ensuremath{#1~\kw{extends}~#2}}
+\newcommand{\ret}[1]{\ensuremath{\kw{return}\;#1\semi}}
 \newcommand{\decls}{\ensuremath{\mathsf{Decls}}\xspace}
-\newcommand{\subclass}[6]{\ensuremath{\mathsf{class}\;#1\langle#2\rangle\;\mathsf{extends}\;#3\langle#4\rangle\;\{\;#5\;#6\;\}}}
-\newcommand{\obj}[3]{\ensuremath{\mathsf{new}\;#1\langle#2\rangle(#3)}\xspace}
-\newcommand{\innerobj}[6]{\ensuremath{\mathsf{new}\;#1\langle#2\rangle\;\mathsf{extends}\;#3\langle#4\rangle(#5)\{#6\}}\xspace}
+\newcommand{\subclass}[6]{\ensuremath{\kw{class}\;\gen{#1}{#2}\;\kw{extends}\;\gen{#3}{#4}\;\OC\;#5\;#6\;\CC}}
+\newcommand{\obj}[3]{\ensuremath{\kw{new}\;\gen{#1}{#2}\OR#3\CR}\xspace}
+\newcommand{\innerobj}[6]{\ensuremath{\kw{new}\;\gen{#1}{#2}\;\kw{extends}\;\gen{#3}{#4}\OR#5\CR\OC#6\CC}\xspace}
 \newcommand{\step}[2]{\ensuremath{#1\rightarrow#2}\xspace}
 \newcommand{\ctx}[1]{\ensuremath{\mathcal{E}[#1]}\xspace}
-\newcommand{\ifthen}[5]{\ensuremath{\mathsf{if}\;(#1\;\mathsf{instanceof}\;#2\;#3)\;\{#4\}\;\mathsf{else}\;\{\;#5\;\}}}
+\newcommand{\ifthen}[5]{\ensuremath{\kw{if}\;\OR#1\;\kw{instanceof}\;#2\;#3\CR\;\OC\;#4\;\CC\;\kw{else}\;\OC\;#5\;\CC}}
 
 
-\newcommand{\call}[4]{\ensuremath{#1.\langle #2\rangle#3(#4)}\xspace}
-\newcommand{\explicitcall}[5]{\ensuremath{#1.[#2]\langle #3\rangle#4(#5)}\xspace}
-\newcommand{\methodsig}[4]{\ensuremath{\langle{#1}\rangle#2\;#3(#4)}\xspace}
-\newcommand{\method}[5]{\ensuremath{\methodsig{#1}{#2}{#3}{#4}\;\{\;#5\;\}}\xspace}
-\newcommand{\this}[0]{\ensuremath{\mathsf{this}}\xspace}
+\newcommand{\call}[4]{\ensuremath{#1\fstop\OA#2\CA#3\OR#4\CR}\xspace}
+\newcommand{\explicitcall}[5]{\ensuremath{#1\fstop\OS#2\CS\OA#3\CA#4\OR#5\CR}\xspace}
+\newcommand{\methodsig}[4]{\ensuremath{\OA#1\CA#2\;#3\OR#4\CR}\xspace}
+\newcommand{\method}[5]{\ensuremath{\methodsig{#1}{#2}{#3}{#4}\;\OC\;#5\;\CC}\xspace}
+\newcommand{\this}[0]{\kw{this}\xspace}
 
 \newcommand{\tsubst}[3]{\ensuremath{#1[#2=#3]}\xspace}
 \newcommand{\match}[2]{\ensuremath{\mathsf{match}(#1,#2)}\xspace}
@@ -263,20 +279,20 @@ So there remains a need to articulate a solution to this problem where generics 
 \[
 \begin{array}{rrcl}
 \textsf{Expressions} & e & ::= & x \mid \call{e}{Ts}{m}{es} \mid \explicitcall{e}{T}{Ts}{m}{es}
-    \mid e.f
+    \mid e\fstop f
     \mid \obj{C}{Ts}{es}\\
     &&&\mid \innerobj{C}{Fs}{D}{Ts'}{es}{Ms}\\
-    &&& \ifthen{e}{T?}{x}{e}{e}\\ 
-\textrm{Patterns} & P & ::= & C \mid C\langle Ts\rangle\\
-\textrm{Types} & T & ::= & C\langle Ts\rangle \mid X\\
-\textrm{Funnels} & F & ::= & G \mid X~\mathsf{funnel}\\
-\textrm{Ground Types} & G & ::= & C\langle Gs\rangle\\
+    &&& \mid \ifthen{e}{T?}{x}{e}{e}\\
+\textrm{Patterns} & P & ::= & C \mid \gen{C}{Ts}\\
+\textrm{Types} & T & ::= & \gen{C}{Ts} \mid X\\
+\textrm{Funnels} & F & ::= & G \mid \funnel{X}\\
+\textrm{Ground Types} & G & ::= & \gen{C}{Gs}\\
 \\
 \textrm{Type Env.} & \Gamma & ::= & \epsilon \mid \Gamma,T\;x\\
-\textrm{Bounds} & \Delta & ::= & \epsilon \mid \Delta,X~\mathsf{extends}~T\\
+\textrm{Bounds} & \Delta & ::= & \epsilon \mid \Delta,\ext{X}{T}\\
 %// Need T, not F, to be able to do things like (Java) class Bar<X,Y extends X> {}
 \textrm{Declaration} & \mathsf{Dec} & ::= & \subclass{C}{\Delta}{C'}{Ts}{Ms}{Ss}\\
-\textrm{(Field) Slots} & S & ::= & T~f
+\textrm{(Field) Slots} & S & ::= & T\;f\semi
 %Dec::= class C<Bs> extends C'<Ts>{ Ms Ss} //assume standard constructor
 %S ::= T f; //field/slot
 %M ::= Sig{ return e; }  //no such a thing as an abstract method
@@ -329,7 +345,7 @@ So there remains a need to articulate a solution to this problem where generics 
     f_i\in f_1\ldots f_n
 }{
     \step{
-        \obj{C}{Gs}{v_1\ldots v_n\;vs}.f_i
+        \obj{C}{Gs}{v_1\ldots v_n\;vs}\fstop f_i
     }{
         v_i
     }
@@ -340,9 +356,9 @@ So there remains a need to articulate a solution to this problem where generics 
     f\not\in f_1\ldots f_n
 }{
     \step{
-        \obj{C}{Gs}{v_1\ldots v_n\;vs}.f
+        \obj{C}{Gs}{v_1\ldots v_n\;vs}\fstop f
     }{
-        \obj{C'}{\tsubst{Ts}{Bs}{Gs}}{vs}.f
+        \obj{C'}{\tsubst{Ts}{Bs}{Gs}}{vs}\fstop f
     }
 }
 \and
@@ -350,18 +366,18 @@ So there remains a need to articulate a solution to this problem where generics 
 \inferrule*[left=innerFieldFound]{
 }{
     \step{
-        \innerobj{C}{Gs}{C'}{Gs'}{vs}{Ms}.f
+        \innerobj{C}{Gs}{C'}{Gs'}{vs}{Ms}\fstop f
     }{
-        \obj{C'}{Gs'}{vs}.f
+        \obj{C'}{Gs'}{vs}\fstop f
     }
 }
 \and
 \inferrule*[left=ifThenErased]{
     v\in\{\obj{C}{Gs}{\_}, \innerobj{C}{Gs}{\_}{\_}{\_}{\_}\}\\
-    \epsilon\vdash C\langle Gs\rangle <: D\langle\_\rangle
+    \epsilon\vdash \gen{C}{Gs} <: \gen{D}{\_}
     %\match{v}{C\langle\_\rangle} = \mathsf{true}
 }{
-    \step{\ifthen{v}{D\langle Ts\rangle}{x}{e_1}{e_2}}
+    \step{\ifthen{v}{\gen{D}{Ts}}{x}{e_1}{e_2}}
     {\tsubst{e_1}{x}{v}}
 }
 \and
@@ -369,9 +385,9 @@ So there remains a need to articulate a solution to this problem where generics 
     %v\not\in\{\obj{C}{\_}{\_}, \innerobj{C}{\_}{\_}{\_}{\_}{\_}\}
     %\match{v}{C\langle\_\rangle} = \mathsf{false}
     v\in\{\obj{C}{Gs}{\_}, \innerobj{C}{Gs}{\_}{\_}{\_}{\_}\}\\
-    \epsilon\not\vdash C\langle Gs\rangle <: D\langle\_\rangle
+    \epsilon\not\vdash \gen{C}{Gs} <: \gen{D}{\_}
 }{
-    \step{\ifthen{v}{D\langle Ts\rangle}{x}{e_1}{e_2}}
+    \step{\ifthen{v}{\gen{D}{Ts}}{x}{e_1}{e_2}}
     {e_2}
 }
 %\and
@@ -401,22 +417,22 @@ So there remains a need to articulate a solution to this problem where generics 
     \step{
         \call{v}{Gs'}{m}{vs} 
     }{
-        \explicitcall{v}{C\langle Gs\rangle}{Gs'}{m}{vs}
+        \explicitcall{v}{\gen{C}{Gs}}{Gs'}{m}{vs}
     }
 }
 \and
 \inferrule[simpleFound]{
     \subclass{C}{Bs}{\_}{\_}{Ms}{Ss}\in\decls\\
-    \method{Bs'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\mathsf{return}\;e0} \in Ms\\
+    \method{Bs'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\ret{e_0}} \in Ms\\
     e = \tsubst{\tsubst{e_0}{Bs,Bs'}{Gs,Gs'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
 }{
-    \step{\explicitcall{v_0}{C\langle Gs\rangle}{Gs'}{m}{v_1\ldots v_n}}{e}
+    \step{\explicitcall{v_0}{\gen{C}{Gs}}{Gs'}{m}{v_1\ldots v_n}}{e}
 }
 %% ^^ Note: for local classes, this syntax skips the value entirely (this rule is not applicable if C<Gs> is meth local
 \and
 \inferrule[innerFound]{
     v_0 = \innerobj{\_}{\_}{\_}{\_}{\_}{Ms}\\
-    \method{Bs'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\mathsf{return}\;e_0} \in Ms\\
+    \method{Bs'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\ret{e_0}} \in Ms\\
     e = \tsubst{\tsubst{e_0}{Bs'}{Gs'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
 }{
     \step{\call{v_0}{Gs'}{m}{v_1\ldots v_n}}{e}
@@ -427,7 +443,7 @@ So there remains a need to articulate a solution to this problem where generics 
     m\not\in Ms
 }{
     \step{\call{v_0}{Gs'}{m}{v_1\ldots v_n}}{
-        \explicitcall{v_0}{C\langle Gs\rangle}{Gs'}{m}{v_1\ldots v_n}
+        \explicitcall{v_0}{\gen{C}{Gs}}{Gs'}{m}{v_1\ldots v_n}
     }
 }
 \and
@@ -436,9 +452,9 @@ So there remains a need to articulate a solution to this problem where generics 
     m\not\in Ms
 }{
     \step{
-        \explicitcall{v}{C\langle Gs\rangle}{Gs'}{m}{vs}
+        \explicitcall{v}{\gen{C}{Gs}}{Gs'}{m}{vs}
     }{
-        \explicitcall{v}{C'\langle \tsubst{Ts}{Bs}{Gs}\rangle}{Gs'}{m}{vs}
+        \explicitcall{v}{\gen{C'}{\tsubst{Ts}{Bs}{Gs}}}{Gs'}{m}{vs}
     }
 }
 \and
@@ -475,7 +491,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \newcommand{\kind}[2]{\ensuremath{#1 \vdash #2 ~\mathrm{Ok}}\xspace}
 \newcommand{\mok}[3]{\ensuremath{#1;#2\vdash #3~\mathrm{Ok}}\xspace}
 \newcommand{\ftv}[1]{\ensuremath{\mathsf{FTV}(#1)}\xspace}
-\newcommand{\classtype}[2]{\ensuremath{#1\langle #2\rangle}\xspace}
+\newcommand{\classtype}[2]{\gen{#1}{#2}\xspace}
 
 \begin{figure}\small
     \centering
@@ -497,7 +513,7 @@ So there remains a need to articulate a solution to this problem where generics 
   \subclass{C}{\Delta'}{C'}{\overline{T'}}{Ms}{T_1 f_1\ldots T_n f_n}\in\decls
 }{
   % thanks to subsumption, no need of multiple rules (C<Ts> can simply be set to supertype of relevance, via subsumption)
-  \typing{\Delta}{\Gamma}{e.f_i}{\tsubst{T_i}{\Delta'}{\overline{T}}}
+  \typing{\Delta}{\Gamma}{e\fstop f_i}{\tsubst{T_i}{\Delta'}{\overline{T}}}
   %\subclass{C_0}{\Delta_0}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}\in\decls
 }
 \and
@@ -509,7 +525,7 @@ So there remains a need to articulate a solution to this problem where generics 
   \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
   \kind{\Delta}{\overline{T_1}}
 }{
-  \typing{\Delta}{\Gamma}{e_0.\langle\overline{T_1}\rangle m(e_1,\ldots,e_n)}{T_0'}
+  \typing{\Delta}{\Gamma}{\call{e_0}{\overline{T_1}}{m}{e_1,\ldots,e_n}}{T_0'}
 }
 \and
 \inferrule[call-local]{
@@ -528,12 +544,12 @@ So there remains a need to articulate a solution to this problem where generics 
 \inferrule[call-lb-runtime]{
   \typing{\Delta}{\Gamma}{e_0}{T}\\
   \mathsf{topLevelClass}(T)\\
-  \subtype{\Delta}{T}{C_0\langle\overline{T_0}}\\
+  \subtype{\Delta}{T}{\gen{C_0}{\overline{T_0}}}\\
   \declared{\subclass{C_0}{\Delta_0}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}}\\
   \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \overline{M}\\
   T_i'=\tsubst{T_i}{\Delta_0,\Delta_1}{\overline{T_0},\overline{T_1}}\\
   \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
-  \kind{\Delta}{\overline{T}}
+  \kind{\Delta}{T}\\
   \kind{\Delta}{\overline{T_1}}
 }{
   \typing{\Delta}{\Gamma}{
@@ -546,25 +562,25 @@ So there remains a need to articulate a solution to this problem where generics 
   \typing{\Delta}{\Gamma}{\obj{C'}{\tsubst{\overline{T'}}{\Delta'}{\overline{T}}}{\overline{e}}}{\_}\\
   \kind{\Delta}{\overline{T}}
 }{
-  \typing{\Delta}{\Gamma}{\obj{C}{\overline{T}}{e_1\ldots e_n ~ \overline{e}}}{C\langle\overline{T}\rangle}
+  \typing{\Delta}{\Gamma}{\obj{C}{\overline{T}}{e_1\ldots e_n ~ \overline{e}}}{\gen{C}{\overline{T}}}
 }
 \and
 \inferrule[new-local]{
   \typing{\Delta}{\Gamma}{\obj{C'}{\overline{T'}}{\overline{e}}}{\_}\\
-  \kind{\Delta'}{C'\langle\overline{T}\rangle}\\
-  F_i=X_i~\mathsf{funnel}\Rightarrow T_i=X_i\\ % flipped to implication to ensure this requires them all to be defined.
+  \kind{\Delta'}{\gen{C'}{\overline{T}}}\\
+  F_i=\funnel{X_i}\Rightarrow T_i=X_i\\ % flipped to implication to ensure this requires them all to be defined.
   F_i=G_i\Rightarrow T_i=G_i\\
-  \kind{\Delta'}{C\langle T_1\ldots T_n\rangle}\\
-  \Delta' = \{ X~\mathsf{extends}~T \mid X~\mathsf{extends}~T\in\Delta \land \exists i\ldotp F_i=X~\mathsf{funnel} \}\\ % Bs' = Bs | dom(F1..Fn)
-  \forall i\ldotp F_i=X_i~\mathsf{funnel} \Rightarrow X_i~\mathsf{extends}~\_\in\Delta ~~\textrm{\textcolor{red}{what about $X_i~\mathsf{extends}~Y$ where $Y$ isn't funnelled?}}\\
+  \kind{\Delta'}{\gen{C}{T_1\ldots T_n}}\\
+  \Delta' = \{ \ext{X}{T} \mid \ext{X}{T}\in\Delta \land \exists i\ldotp F_i=\funnel{X} \}\\ % Bs' = Bs | dom(F1..Fn)
+  \forall i\ldotp F_i=\funnel{X_i} \Rightarrow \ext{X_i}{\_}\in\Delta ~~\textrm{\textcolor{red}{what about $\ext{X_i}{Y}$ where $Y$ isn't funnelled?}}\\
   \Gamma'=\Gamma\setminus\ftv{T_1\ldots T_n}\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
-  \mok{\Delta'}{\Gamma',\mathrm{this}:C\langle T_1\ldots T_n\rangle}{M_1}
+  \mok{\Delta'}{\Gamma',\this:\gen{C}{T_1\ldots T_n}}{M_1}
   ~\ldots~
-  \mok{\Delta'}{\Gamma',\mathrm{this}:C\langle T_1\ldots T_n\rangle}{M_k}
+  \mok{\Delta'}{\Gamma',\this:\gen{C}{T_1\ldots T_n}}{M_k}
 }{
   \typing{\Delta}{\Gamma}{
     \innerobj{C}{F_1\ldots F_n}{C'}{\overline{T'}}{\overline{e}}{M_1\ldots M_k}
-  }{C\langle T_1\ldots T_n\rangle}
+  }{\gen{C}{T_1\ldots T_n}}
 }
 %
 %  Bs;G |- new C'<Ts'>(es) : _//incredibly subtle: is Bs;G or Bs';G' // need Bs;G for es that internally use non-funneled types but reduce to terms with funneled types
@@ -601,7 +617,7 @@ So there remains a need to articulate a solution to this problem where generics 
   \typing{\Delta,\Delta'}{\Gamma,x_1:T_1,\ldots,x_n:T_n}{e}{T_0}\\
   \kind{\Delta,\Delta'}{T_0}\ldots\kind{\Delta,\Delta'}{T_n}
 }{
-  \mok{\Delta}{\Gamma}{\method{\Delta'}{T_0}{m}{T_1~x_1\ldots T_n~x_n}{\mathsf{return}~e;}}
+  \mok{\Delta}{\Gamma}{\method{\Delta'}{T_0}{m}{T_1~x_1\ldots T_n~x_n}{\ret{e}}}
 }
 %
 %  Bs,Bs';G,x1:T1,..xn:Tn |- e : T0
@@ -619,28 +635,28 @@ So there remains a need to articulate a solution to this problem where generics 
 \fbox{\kind{\Delta}{T}}
 \and
 \inferrule[wf-var]{
-  X~\mathsf{extends}~\_\in\Delta
+  \ext{X}{\_}\in\Delta
 }{
   \kind{\Delta}{X}
 }
 \and
 \inferrule[wf-outer]{
   \kind{\Delta}{T_1}\ldots\kind{\Delta}{T_n}\\
-  \subclass{C}{X_1~\mathsf{extends}~T'_1,\ldots,X_n~\mathsf{extends}~T'_n}{\_}{\_}{\_}{\_}\in\decls\\
+  \subclass{C}{\ext{X_1}{T'_1},\ldots,\ext{X_n}{T'_n}}{\_}{\_}{\_}{\_}\in\decls\\
   \subtype{\Delta}{T_i}{\tsubst{T'_i}{\overline{X}}{\overline{T}}}
 }{
-  \kind{\Delta}{C\langle T_1\ldots T_n\rangle}
+  \kind{\Delta}{\gen{C}{T_1\ldots T_n}}
 }
 \and
 \inferrule[wf-inner]{
   \kind{\Delta}{T_1}\ldots\kind{\Delta}{T_n}\\
   \subclass{C}{\Delta_C}{\_}{\_}{\_}{\_}\in\decls\\
-  \method{\Delta_M}{\_}{m}{\_}{\mathsf{return}\;e;}\in Ms_C\\
+  \method{\Delta_M}{\_}{m}{\_}{\ret{e}}\in Ms_C\\
   \innerobj{C_0}{F_1\ldots F_n}{\_}{\_}{\_}{\_}\textrm{ occurs in }e\\
-  F_i=X_i~\mathsf{funnel}\Rightarrow X_i~\mathsf{extends}~T'_i\in\Delta_C,\Delta_M\land\subtype{\Delta}{T_i}{\tsubst{T'_i}{\overline{X}}{\overline{T}}}\\
+  F_i=\funnel{X_i}\Rightarrow \ext{X_i}{T'_i}\in\Delta_C,\Delta_M\land\subtype{\Delta}{T_i}{\tsubst{T'_i}{\overline{X}}{\overline{T}}}\\
   F_i=G_i\Rightarrow T_i=G_i
 }{
-  \kind{\Delta}{C_0\langle T_1\ldots T_n\rangle}
+  \kind{\Delta}{\gen{C_0}{T_1\ldots T_n}}
 }
 \and
 \fbox{\subtype{\Delta}{T}{T'}}
@@ -649,20 +665,20 @@ So there remains a need to articulate a solution to this problem where generics 
 \and
 \inferrule[sub-inherit]{
   \subclass{C}{\Delta_0}{C'}{\overline{T'}}{\_}{\_}\in\decls\\
-  \subtype{\Delta}{\tsubst{C'\langle\overline{T'}\rangle}{\Delta_0}{\overline{T}}}{T''}
+  \subtype{\Delta}{\tsubst{\gen{C'}{\overline{T'}}}{\Delta_0}{\overline{T}}}{T''}
 }{
-  \subtype{\Delta}{C\langle\overline{T}\rangle}{T''}
+  \subtype{\Delta}{\gen{C}{\overline{T}}}{T''}
 }
 \and
 \inferrule[sub-inherit-local]{
   \declared{\innerobj{C}{Fs}{C'}{\overline{T'}}{\_}{\_}}\\
-  \subtype{\Delta}{\tsubst{C'\langle\overline{T'}\rangle}{\mathsf{dom}(Fs)}{\overline{T}}}{T''}
+  \subtype{\Delta}{\tsubst{\gen{C'}{\overline{T'}}}{\mathrm{dom}(Fs)}{\overline{T}}}{T''}
 }{
-  \subtype{\Delta}{C\langle\overline{T}\rangle}{T''}
+  \subtype{\Delta}{\gen{C}{\overline{T}}}{T''}
 }
 \and
 \inferrule[sub-var]{
-  X~\mathsf{extends}~T\in\Delta\\
+  \ext{X}{T}\in\Delta\\
   \subtype{\Delta}{T}{T'}
 }{
   \subtype{\Delta}{X}{T'}
@@ -672,32 +688,32 @@ So there remains a need to articulate a solution to this problem where generics 
     \label{fig:kinding}
 \end{figure}
 
-\begin{figure}\scriptsize
+\begin{figure}\footnotesize
     \centering
 \[
 \begin{array}{rcl}
 \tsubst{x}{\overline{X}}{\overline{T}} & = & x\\
 \tsubst{\call{e}{\overline{T'}}{m}{\overline{e'}}}{\overline{X}}{\overline{T}} & = &
   \call{\tsubst{e}{\overline{X}}{\overline{T}}}{\tsubst{\overline{T'}}{\overline{X}}{\overline{T}}}{m}{\tsubst{\overline{e'}}{\overline{X}}{\overline{T}}}\\
-\tsubst{\explicitcall{e}{T'}{\overline{T''}}{m}{\overline{e'}}}{\overline{X}}{\overline{T}} & = &
-  \explicitcall{\tsubst{e}{\overline{X}}{\overline{T}}}{\tsubst{T'}{\overline{X}}{\overline{T}}}{\tsubst{\overline{T''}}{\overline{X}}{\overline{T}}}{m}{\tsubst{\overline{e'}}{\overline{X}}{\overline{T}}}\\
-\tsubst{e.f}{\overline{X}}{\overline{T}} & = & \tsubst{e}{\overline{X}}{\overline{T}}.f\\
+\tsubst{\explicitcall{e}{T'}{\overline{T''}}{m}{\overline{e'}}}{\overline{X}}{\overline{T}} & = & \\
+  \multicolumn{3}{l}{\qquad \explicitcall{\tsubst{e}{\overline{X}}{\overline{T}}}{\tsubst{T'}{\overline{X}}{\overline{T}}}{\tsubst{\overline{T''}}{\overline{X}}{\overline{T}}}{m}{\tsubst{\overline{e'}}{\overline{X}}{\overline{T}}}}\\
+\tsubst{e\fstop f}{\overline{X}}{\overline{T}} & = & \tsubst{e}{\overline{X}}{\overline{T}}\fstop f\\
 \tsubst{\obj{C}{\overline{T'}}{\overline{e}}}{\overline{X}}{\overline{T}} & = &
   \obj{C}{\tsubst{\overline{T'}}{\overline{X}}{\overline{T}}}{\tsubst{\overline{e}}{\overline{X}}{\overline{T}}}\\
 \tsubst{\ifthen{e_0}{T'}{x}{e_1}{e_2}}{\overline{X}}{\overline{T}} & = & \\
-  & & \ifthen{\tsubst{e_0}{\overline{X}}{\overline{T}}}{\tsubst{T'}{\overline{X}}{\overline{T}}}{x}{\tsubst{e_1}{\overline{X}}{\overline{T}}}{\tsubst{e_2}{\overline{X}}{\overline{T}}}\\
+  \multicolumn{3}{l}{\qquad \ifthen{\tsubst{e_0}{\overline{X}}{\overline{T}}}{\tsubst{T'}{\overline{X}}{\overline{T}}}{x}{\tsubst{e_1}{\overline{X}}{\overline{T}}}{\tsubst{e_2}{\overline{X}}{\overline{T}}}}\\
 \tsubst{\innerobj{C}{\overline{F}}{C'}{\overline{T'}}{\overline{e}}{\overline{M}}}{\overline{X}}{\overline{T}} & = & \\
-  & & \innerobj{C}{\tsubst{\overline{F}}{\overline{X}}{\overline{T}}}{C'}{\tsubst{\overline{T'}}{\overline{X}}{\overline{T}}}{\tsubst{\overline{e}}{\overline{X}}{\overline{T}}}{\tsubst{\overline{M}}{\overline{X}}{\overline{T}}}\\
+  \multicolumn{3}{l}{\qquad \innerobj{C}{\tsubst{\overline{F}}{\overline{X}}{\overline{T}}}{C'}{\tsubst{\overline{T'}}{\overline{X}}{\overline{T}}}{\tsubst{\overline{e}}{\overline{X}}{\overline{T}}}{\tsubst{\overline{M}}{\overline{X}}{\overline{T}}}}\\
 \\
-\tsubst{X'~\mathsf{funnel}}{\overline{X}}{\overline{T}} & = & X'~\mathsf{funnel} \quad\textrm{if }X'\not\in\overline{X}\\
-\tsubst{X_i~\mathsf{funnel}}{\overline{X}}{\overline{T}} & = & T_i\\
+\tsubst{\funnel{X'}}{\overline{X}}{\overline{T}} & = & \funnel{X'} \quad\textrm{if }X'\not\in\overline{X}\\
+\tsubst{\funnel{X_i}}{\overline{X}}{\overline{T}} & = & T_i\\
 \tsubst{G}{\overline{X}}{\overline{T}} & = & G\\
 \\
-\tsubst{\method{\Delta}{T_0}{m}{\overline{T\;x}}{\mathsf{return}\;e;}}{\overline{X}}{\overline{T'}} & = & \\
-  & & \method{\tsubst{\Delta}{\overline{X}}{\overline{T'}}}{\tsubst{T_0}{\overline{X}}{\overline{T'}}}{m}{\tsubst{\overline{T}}{\overline{X}}{\overline{T'}}\;\overline{x}}{\mathsf{return}\;\tsubst{e}{\overline{X}}{\overline{T'}};}\\
-\tsubst{(X'~\mathsf{extends}~T')}{\overline{X}}{\overline{T}} & = & X'~\mathsf{extends}~\tsubst{T'}{\overline{X}}{\overline{T}}\\
+\tsubst{\method{\Delta}{T_0}{m}{\overline{T\;x}}{\ret{e}}}{\overline{X}}{\overline{T'}} & = & \\
+  \multicolumn{3}{l}{\qquad \method{\tsubst{\Delta}{\overline{X}}{\overline{T'}}}{\tsubst{T_0}{\overline{X}}{\overline{T'}}}{m}{\tsubst{\overline{T}}{\overline{X}}{\overline{T'}}\;\overline{x}}{\ret{\tsubst{e}{\overline{X}}{\overline{T'}}}}}\\
+\tsubst{(\ext{X'}{T'})}{\overline{X}}{\overline{T}} & = & \ext{X'}{\tsubst{T'}{\overline{X}}{\overline{T}}}\\
 \\
-\tsubst{C\langle\overline{T'}\rangle}{\overline{X}}{\overline{T}} & = & C\langle\tsubst{\overline{T'}}{\overline{X}}{\overline{T}}\rangle\\
+\tsubst{\gen{C}{\overline{T'}}}{\overline{X}}{\overline{T}} & = & \gen{C}{\tsubst{\overline{T'}}{\overline{X}}{\overline{T}}}\\
 \tsubst{X'}{\overline{X}}{\overline{T}} & = & X' \quad\textrm{if }X'\not\in\overline{X}\\
 \tsubst{X_i}{\overline{X}}{\overline{T}} & = & T_i
 \end{array}
@@ -724,15 +740,15 @@ expression satisfies the funnelling constraints by checking kinding under the mo
 \begin{mathpar}
 \inferrule[new-local-java]{
   \typing{\Delta}{\Gamma}{\obj{C'}{\overline{T'}}{\overline{e}}}{\_}\\
-  \kind{\Delta}{C'\langle\overline{T}\rangle}\\
+  \kind{\Delta}{\gen{C'}{\overline{T}}}\\
   %\kind{\Delta}{C\langle\rangle}\\
-  \mok{\Delta}{\Gamma,\mathrm{this}:C\langle\rangle}{M_1}
+  \mok{\Delta}{\Gamma,\this:\gen{C}{}}{M_1}
   \ldots
-  \mok{\Delta}{\Gamma,\mathrm{this}:C\langle\rangle}{M_k}
+  \mok{\Delta}{\Gamma,\this:\gen{C}{}}{M_k}
 }{
   \typing{\Delta}{\Gamma}{
     \innerobj{C}{}{C'}{\overline{T'}}{\overline{e}}{M_1\ldots M_k}
-  }{C\langle\rangle}
+  }{\gen{C}{}}
 }
 \end{mathpar}
 \todo[inline]{briefly note that Java allows extra, ``fresh'' generic parameters in local classes}
