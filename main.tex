@@ -326,16 +326,16 @@ So there remains a need to articulate a solution to this problem where generics 
 \and
 \inferrule{
   \declared{\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}}\\
-  \innerobj{C}{\pl{F}}{D}{\overline{T'}}{\overline{e}}{\overline{M}}\in \pl{M}
+  \innerobj{C}{\pl{F}}{D}{\pl{T}'}{\pl{e}}{\pl{M}}\in \pl{M}
 }{
-  \declared{\innerobj{C}{\pl{F}}{D}{\overline{T'}}{\overline{e}}{\overline{M}}}
+  \declared{\innerobj{C}{\pl{F}}{D}{\pl{T}'}{\pl{e}}{\pl{M}}}
 }
 \and
 \inferrule{
-  \declared{\innerobj{C}{\pl{F}}{D}{\overline{T}}{\_}{\pl{M}}}\\
-  \innerobj{C'}{\pl{F}'}{D'}{\overline{T'}}{\overline{e}}{\overline{M}}\in \pl{M}
+  \declared{\innerobj{C}{\pl{F}}{D}{\pl{T}}{\_}{\pl{M}}}\\
+  \innerobj{C'}{\pl{F}'}{D'}{\pl{T}'}{\pl{e}}{\pl{M}}\in \pl{M}
 }{
-  \declared{\innerobj{C}{\pl{F}}{D}{\overline{T'}}{\overline{e}}{\overline{M}}}
+  \declared{\innerobj{C}{\pl{F}}{D}{\pl{T}'}{\pl{e}}{\pl{M}}}
 }
 \end{mathpar}
 \caption{Syntax and Declaration Checking}
@@ -518,65 +518,65 @@ So there remains a need to articulate a solution to this problem where generics 
 \inferrule[var]{ }{\typing{\Delta}{\Gamma}{x}{\Gamma(x)}}
 \and
 \inferrule[declField]{
-  \typing{\Delta}{\Gamma}{e}{\classtype{C}{\overline{T}}}\\
-  \subclass{C}{\Delta'}{C'}{\overline{T'}}{\pl{M}}{T_1 f_1\ldots T_n f_n}\in\decls
+  \typing{\Delta}{\Gamma}{e}{\classtype{C}{\pl{T}}}\\
+  \subclass{C}{\Delta'}{C'}{\pl{T}'}{\pl{M}}{T_1 f_1\ldots T_n f_n}\in\decls
 }{
   % thanks to subsumption, no need of multiple rules (C<Ts> can simply be set to supertype of relevance, via subsumption)
-  \typing{\Delta}{\Gamma}{e\fstop f_i}{\tsubst{T_i}{\Delta'}{\overline{T}}}
+  \typing{\Delta}{\Gamma}{e\fstop f_i}{\tsubst{T_i}{\Delta'}{\pl{T}}}
   %\subclass{C_0}{\Delta_0}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}\in\decls
 }
 \and
 \inferrule[call-top]{
-  \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\overline{T_0}}}\\
-  \declared{\subclass{C_0}{\Delta_0}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}}\\
-  \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \overline{M}\\
-  T_i'=\tsubst{T_i}{\Delta_0,\Delta_1}{\overline{T_0},\overline{T_1}}\\
+  \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\
+  \declared{\subclass{C_0}{\Delta_0}{C'}{\pl{T}'}{\pl{M}}{\pl{S}}}\\
+  \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\
+  T_i'=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\
   \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
-  \kind{\Delta}{\overline{T_1}}
+  \kind{\Delta}{\pl{T}_1}
 }{
-  \typing{\Delta}{\Gamma}{\call{e_0}{\overline{T_1}}{m}{e_1,\ldots,e_n}}{T_0'}
+  \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}}{T_0'}
 }
 \and
 \inferrule[call-local]{
-  \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\overline{T_0}}}\\
-  \declared{\innerobj{C_0}{\pl{F}}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}}\\
-  \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \overline{M}\\
-  T_i'=\tsubst{T_i}{\pl{F},\Delta_1}{\overline{T_0},\overline{T_1}}\\
+  \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\
+  \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}'}{\pl{M}}{\pl{S}}}\\
+  \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\
+  T_i'=\tsubst{T_i}{\pl{F},\Delta_1}{\pl{T}_0,\pl{T}_1}\\
   \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
-  \kind{\Delta}{\overline{T_1}}
+  \kind{\Delta}{\pl{T}_1}
 }{
   \typing{\Delta}{\Gamma}{
-    \call{e_0}{\overline{T_1}}{m}{e_1,\ldots,e_n}
+    \call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}
   }{T_0'}
 }
 \and
 \inferrule[call-lb-runtime]{
   \typing{\Delta}{\Gamma}{e_0}{T}\\
   \mathsf{topLevelClass}(T)\\
-  \subtype{\Delta}{T}{\gen{C_0}{\overline{T_0}}}\\
-  \declared{\subclass{C_0}{\Delta_0}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}}\\
-  \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \overline{M}\\
-  T_i'=\tsubst{T_i}{\Delta_0,\Delta_1}{\overline{T_0},\overline{T_1}}\\
+  \subtype{\Delta}{T}{\gen{C_0}{\pl{T}_0}}\\
+  \declared{\subclass{C_0}{\Delta_0}{C'}{\pl{T}'}{\pl{M}}{\pl{S}}}\\
+  \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\
+  T_i'=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\
   \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
   \kind{\Delta}{T}\\
-  \kind{\Delta}{\overline{T_1}}
+  \kind{\Delta}{\pl{T}_1}
 }{
   \typing{\Delta}{\Gamma}{
-    \explicitcall{e_0}{T}{\overline{T_1}}{m}{e_1,\ldots,e_n}
+    \explicitcall{e_0}{T}{\pl{T}_1}{m}{e_1,\ldots,e_n}
   }{T_0'}
 }
 \and
 \inferrule[new-top]{
-  \declared{\subclass{C}{\Delta'}{C'}{\overline{T'}}{\overline{M}}{T_1\;f_1\ldots T_n\;f_n}}\\
-  \typing{\Delta}{\Gamma}{\obj{C'}{\tsubst{\overline{T'}}{\Delta'}{\overline{T}}}{\overline{e}}}{\_}\\
-  \kind{\Delta}{\overline{T}}
+  \declared{\subclass{C}{\Delta'}{C'}{\pl{T}'}{\pl{M}}{T_1\;f_1\ldots T_n\;f_n}}\\
+  \typing{\Delta}{\Gamma}{\obj{C'}{\tsubst{\pl{T}'}{\Delta'}{\pl{T}}}{\pl{e}}}{\_}\\
+  \kind{\Delta}{\pl{T}}
 }{
-  \typing{\Delta}{\Gamma}{\obj{C}{\overline{T}}{e_1\ldots e_n ~ \overline{e}}}{\gen{C}{\overline{T}}}
+  \typing{\Delta}{\Gamma}{\obj{C}{\pl{T}}{e_1\ldots e_n ~ \pl{e}}}{\gen{C}{\pl{T}}}
 }
 \and
 \inferrule[new-local]{
-  \typing{\Delta}{\Gamma}{\obj{C'}{\overline{T'}}{\overline{e}}}{\_}\\
-  \kind{\Delta'}{\gen{C'}{\overline{T}}}\\
+  \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}'}{\pl{e}}}{\_}\\
+  \kind{\Delta'}{\gen{C'}{\pl{T}}}\\
   F_i=\funnel{X_i}\Rightarrow T_i=X_i\\ % flipped to implication to ensure this requires them all to be defined.
   F_i=G_i\Rightarrow T_i=G_i\\
   \kind{\Delta'}{\gen{C}{T_1\ldots T_n}}\\
@@ -588,7 +588,7 @@ So there remains a need to articulate a solution to this problem where generics 
   \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{M_k}
 }{
   \typing{\Delta}{\Gamma}{
-    \innerobj{C}{F_1\ldots F_n}{C'}{\overline{T'}}{\overline{e}}{M_1\ldots M_k}
+    \innerobj{C}{F_1\ldots F_n}{C'}{\pl{T}'}{\pl{e}}{M_1\ldots M_k}
   }{\gen{C}{T_1\ldots T_n}}
 }
 %
@@ -612,15 +612,15 @@ So there remains a need to articulate a solution to this problem where generics 
 %
 \and
 \inferrule[new-local-java]{
-  \typing{\Delta}{\Gamma}{\obj{C'}{\overline{T'}}{\overline{e}}}{\_}\\
-  \kind{\Delta}{\gen{C'}{\overline{T}}}\\
+  \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}'}{\pl{e}}}{\_}\\
+  \kind{\Delta}{\gen{C'}{\pl{T}}}\\
   %\kind{\Delta}{C\langle\rangle}\\
   \mok{\Delta}{\Gamma,\gen{C}{}\;\this}{M_1}
   \ldots
   \mok{\Delta}{\Gamma,\gen{C}{}\;\this}{M_k}
 }{
   \typing{\Delta}{\Gamma}{
-    \innerobj{C}{}{C'}{\overline{T'}}{\overline{e}}{M_1\ldots M_k}
+    \innerobj{C}{}{C'}{\pl{T}'}{\pl{e}}{M_1\ldots M_k}
   }{\gen{C}{}}
 }
 \and
@@ -666,7 +666,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \inferrule[wf-outer]{
   \kind{\Delta}{T_1}\ldots\kind{\Delta}{T_n}\\
   \subclass{C}{\ext{X_1}{T'_1},\ldots,\ext{X_n}{T'_n}}{\_}{\_}{\_}{\_}\in\decls\\
-  \subtype{\Delta}{T_i}{\tsubst{T'_i}{\overline{X}}{\overline{T}}}
+  \subtype{\Delta}{T_i}{\tsubst{T'_i}{\pl{X}}{\pl{T}}}
 }{
   \kind{\Delta}{\gen{C}{T_1\ldots T_n}}
 }
@@ -676,7 +676,7 @@ So there remains a need to articulate a solution to this problem where generics 
   \subclass{C}{\Delta_C}{\_}{\_}{\_}{\_}\in\decls\\
   \method{\Delta_M}{\_}{m}{\_}{\ret{e}}\in \pl{M}_C\\
   \innerobj{C_0}{F_1\ldots F_n}{\_}{\_}{\_}{\_}\textrm{ occurs in }e\\
-  F_i=\funnel{X_i}\Rightarrow \ext{X_i}{T'_i}\in\Delta_C,\Delta_M\land\subtype{\Delta}{T_i}{\tsubst{T'_i}{\overline{X}}{\overline{T}}}\\
+  F_i=\funnel{X_i}\Rightarrow \ext{X_i}{T'_i}\in\Delta_C,\Delta_M\land\subtype{\Delta}{T_i}{\tsubst{T'_i}{\pl{X}}{\pl{T}}}\\
   F_i=G_i\Rightarrow T_i=G_i
 }{
   \kind{\Delta}{\gen{C_0}{T_1\ldots T_n}}
@@ -687,17 +687,17 @@ So there remains a need to articulate a solution to this problem where generics 
 \inferrule[sub-refl]{ }{\subtype{\Delta}{T}{T}}
 \and
 \inferrule[sub-inherit]{
-  \subclass{C}{\Delta_0}{C'}{\overline{T'}}{\_}{\_}\in\decls\\
-  \subtype{\Delta}{\tsubst{\gen{C'}{\overline{T'}}}{\Delta_0}{\overline{T}}}{T''}
+  \subclass{C}{\Delta_0}{C'}{\pl{T}'}{\_}{\_}\in\decls\\
+  \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}'}}{\Delta_0}{\pl{T}}}{T''}
 }{
-  \subtype{\Delta}{\gen{C}{\overline{T}}}{T''}
+  \subtype{\Delta}{\gen{C}{\pl{T}}}{T''}
 }
 \and
 \inferrule[sub-inherit-local]{
-  \declared{\innerobj{C}{\pl{F}}{C'}{\overline{T'}}{\_}{\_}}\\
-  \subtype{\Delta}{\tsubst{\gen{C'}{\overline{T'}}}{\mathrm{dom}(\pl{F})}{\overline{T}}}{T''}
+  \declared{\innerobj{C}{\pl{F}}{C'}{\pl{T}'}{\_}{\_}}\\
+  \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}'}}{\mathrm{dom}(\pl{F})}{\pl{T}}}{T''}
 }{
-  \subtype{\Delta}{\gen{C}{\overline{T}}}{T''}
+  \subtype{\Delta}{\gen{C}{\pl{T}}}{T''}
 }
 \and
 \inferrule[sub-var]{
@@ -746,12 +746,12 @@ So there remains a need to articulate a solution to this problem where generics 
 }
 \and
 \inferrule[cast-down]{
-  \subtype{\Delta}{\gen{C}{\overline{T}}}{\gen{D}{\overline{T_0}}}\\
-  \generic{C}=\gen{C}{\overline{T''}}\\
-  \subtype{\Delta}{\gen{C}{\overline{T''}}}{\gen{D}{\overline{T'}}}\\
-  \ftv{\overline{T''}}\subseteq\ftv{\overline{T'}}
+  \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{D}{\pl{T}_0}}\\
+  \generic{C}=\gen{C}{\pl{T}''}\\
+  \subtype{\Delta}{\gen{C}{\pl{T}''}}{\gen{D}{\pl{T}'}}\\
+  \ftv{\pl{T}''}\subseteq\ftv{\pl{T}'}
 }{
-  \cast{\Delta}{\gen{D}{\overline{T_0}}}{\gen{C}{\overline{T}}}
+  \cast{\Delta}{\gen{D}{\pl{T}_0}}{\gen{C}{\pl{T}}}
 }
     \end{mathpar}
     \caption{Checked Casts}
@@ -762,30 +762,30 @@ So there remains a need to articulate a solution to this problem where generics 
     \centering
 \[
 \begin{array}{rcl}
-\tsubst{x}{\overline{X}}{\overline{T}} & = & x\\
-\tsubst{\call{e}{\overline{T'}}{m}{\overline{e'}}}{\overline{X}}{\overline{T}} & = &
-  \call{\tsubst{e}{\overline{X}}{\overline{T}}}{\tsubst{\overline{T'}}{\overline{X}}{\overline{T}}}{m}{\tsubst{\overline{e'}}{\overline{X}}{\overline{T}}}\\
-\tsubst{\explicitcall{e}{T'}{\overline{T''}}{m}{\overline{e'}}}{\overline{X}}{\overline{T}} & = & \\
-  \multicolumn{3}{l}{\qquad \explicitcall{\tsubst{e}{\overline{X}}{\overline{T}}}{\tsubst{T'}{\overline{X}}{\overline{T}}}{\tsubst{\overline{T''}}{\overline{X}}{\overline{T}}}{m}{\tsubst{\overline{e'}}{\overline{X}}{\overline{T}}}}\\
-\tsubst{e\fstop f}{\overline{X}}{\overline{T}} & = & \tsubst{e}{\overline{X}}{\overline{T}}\fstop f\\
-\tsubst{\obj{C}{\overline{T'}}{\overline{e}}}{\overline{X}}{\overline{T}} & = &
-  \obj{C}{\tsubst{\overline{T'}}{\overline{X}}{\overline{T}}}{\tsubst{\overline{e}}{\overline{X}}{\overline{T}}}\\
-\tsubst{\ifthen{e_0}{T'}{x}{e_1}{e_2}}{\overline{X}}{\overline{T}} & = & \\
-  \multicolumn{3}{l}{\qquad \ifthen{\tsubst{e_0}{\overline{X}}{\overline{T}}}{\tsubst{T'}{\overline{X}}{\overline{T}}}{x}{\tsubst{e_1}{\overline{X}}{\overline{T}}}{\tsubst{e_2}{\overline{X}}{\overline{T}}}}\\
-\tsubst{\innerobj{C}{\overline{F}}{C'}{\overline{T'}}{\overline{e}}{\overline{M}}}{\overline{X}}{\overline{T}} & = & \\
-  \multicolumn{3}{l}{\qquad \innerobj{C}{\tsubst{\overline{F}}{\overline{X}}{\overline{T}}}{C'}{\tsubst{\overline{T'}}{\overline{X}}{\overline{T}}}{\tsubst{\overline{e}}{\overline{X}}{\overline{T}}}{\tsubst{\overline{M}}{\overline{X}}{\overline{T}}}}\\
+\tsubst{x}{\pl{X}}{\pl{T}} & = & x\\
+\tsubst{\call{e}{\pl{T}'}{m}{\pl{e}'}}{\pl{X}}{\pl{T}} & = &
+  \call{\tsubst{e}{\pl{X}}{\pl{T}}}{\tsubst{\pl{T}'}{\pl{X}}{\pl{T}}}{m}{\tsubst{\pl{e}'}{\pl{X}}{\pl{T}}}\\
+\tsubst{\explicitcall{e}{T'}{\pl{T}''}{m}{\pl{e}'}}{\pl{X}}{\pl{T}} & = & \\
+  \multicolumn{3}{l}{\quad\explicitcall{\tsubst{e}{\pl{X}}{\pl{T}}}{\tsubst{T'}{\pl{X}}{\pl{T}}}{\tsubst{\pl{T}''}{\pl{X}}{\pl{T}}}{m}{\tsubst{\pl{e}'}{\pl{X}}{\pl{T}}}}\\
+\tsubst{e\fstop f}{\pl{X}}{\pl{T}} & = & \tsubst{e}{\pl{X}}{\pl{T}}\fstop f\\
+\tsubst{\obj{C}{\pl{T}'}{\pl{e}}}{\pl{X}}{\pl{T}} & = &
+  \obj{C}{\tsubst{\pl{T}'}{\pl{X}}{\pl{T}}}{\tsubst{\pl{e}}{\pl{X}}{\pl{T}}}\\
+\tsubst{\ifthen{e_0}{T'}{x}{e_1}{e_2}}{\pl{X}}{\pl{T}} & = & \\
+  \multicolumn{3}{l}{\quad\ifthen{\tsubst{e_0}{\pl{X}}{\pl{T}}}{\tsubst{T'}{\pl{X}}{\pl{T}}}{x}{\tsubst{e_1}{\pl{X}}{\pl{T}}}{\tsubst{e_2}{\pl{X}}{\pl{T}}}}\\
+\tsubst{\innerobj{C}{\pl{F}}{C'}{\pl{T}'}{\pl{e}}{\pl{M}}}{\pl{X}}{\pl{T}} & = & \\
+  \multicolumn{3}{l}{\quad\innerobj{C}{\tsubst{\pl{F}}{\pl{X}}{\pl{T}}}{C'}{\tsubst{\pl{T}'}{\pl{X}}{\pl{T}}}{\tsubst{\pl{e}}{\pl{X}}{\pl{T}}}{\tsubst{\pl{M}}{\pl{X}}{\pl{T}}}}\\
 \\
-\tsubst{\funnel{X'}}{\overline{X}}{\overline{T}} & = & \funnel{X'} \quad\textrm{if }X'\not\in\overline{X}\\
-\tsubst{\funnel{X_i}}{\overline{X}}{\overline{T}} & = & T_i\\
-\tsubst{G}{\overline{X}}{\overline{T}} & = & G\\
+\tsubst{\funnel{X'}}{\pl{X}}{\pl{T}} & = & \funnel{X'} \quad\textrm{if }X'\not\in\pl{X}\\
+\tsubst{\funnel{X_i}}{\pl{X}}{\pl{T}} & = & T_i\\
+\tsubst{G}{\pl{X}}{\pl{T}} & = & G\\
 \\
-\tsubst{\method{\Delta}{T_0}{m}{\overline{T\;x}}{\ret{e}}}{\overline{X}}{\overline{T'}} & = & \\
-  \multicolumn{3}{l}{\qquad \method{\tsubst{\Delta}{\overline{X}}{\overline{T'}}}{\tsubst{T_0}{\overline{X}}{\overline{T'}}}{m}{\tsubst{\overline{T}}{\overline{X}}{\overline{T'}}\;\overline{x}}{\ret{\tsubst{e}{\overline{X}}{\overline{T'}}}}}\\
-\tsubst{(\ext{X'}{T'})}{\overline{X}}{\overline{T}} & = & \ext{X'}{\tsubst{T'}{\overline{X}}{\overline{T}}}\\
+\tsubst{\method{\Delta}{T_0}{m}{\pl{T}\;\pl{x}}{\ret{e}}}{\pl{X}}{\pl{T}'} & = & \\
+  \multicolumn{3}{l}{\quad\method{\tsubst{\Delta}{\pl{X}}{\pl{T}'}}{\tsubst{T_0}{\pl{X}}{\pl{T}'}}{m}{\tsubst{\pl{T}}{\pl{X}}{\pl{T}'}\;\pl{x}}{\ret{\tsubst{e}{\pl{X}}{\pl{T}'}}}}\\
+\tsubst{(\ext{X'}{T'})}{\pl{X}}{\pl{T}} & = & \ext{X'}{\tsubst{T'}{\pl{X}}{\pl{T}}}\\
 \\
-\tsubst{\gen{C}{\overline{T'}}}{\overline{X}}{\overline{T}} & = & \gen{C}{\tsubst{\overline{T'}}{\overline{X}}{\overline{T}}}\\
-\tsubst{X'}{\overline{X}}{\overline{T}} & = & X' \quad\textrm{if }X'\not\in\overline{X}\\
-\tsubst{X_i}{\overline{X}}{\overline{T}} & = & T_i
+\tsubst{\gen{C}{\pl{T}'}}{\pl{X}}{\pl{T}} & = & \gen{C}{\tsubst{\pl{T}'}{\pl{X}}{\pl{T}}}\\
+\tsubst{X'}{\pl{X}}{\pl{T}} & = & X' \quad\textrm{if }X'\not\in\pl{X}\\
+\tsubst{X_i}{\pl{X}}{\pl{T}} & = & T_i
 \end{array}
 \]
     \caption{Substitution of type variables}
@@ -802,7 +802,7 @@ the free type variables of the substituted types and from the bounds in scope, s
 The rule \textsc{new-local} is the heart of funneling, including subtle management of type environments.
 The management of type environments in \textsc{new-local} is subtle. The rule constructs a restricted set of type bounds and variable bindings reflecting only the explicitly-funnelled type variables:
 $\Delta'$ includes only the explicitly-funnelled type variables and $\Gamma'$ is restricted to just those variables free in the result type (which must be well-kinded under $\Delta'$).
-However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\overline{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., an explicit call), but will reduce to a value which no longer depends on such type variables.
+However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., an explicit call), but will reduce to a value which no longer depends on such type variables.
 This is why the first antecedent checks the effective supertype instance under $\Delta;\Gamma$, but the second antecedent ensures the resulting type of that
 expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
 
