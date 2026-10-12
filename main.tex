@@ -55,6 +55,7 @@
 \usepackage{todonotes}
 \usepackage{float}
 \newcommand{\tocite}[1]{\todo{cite #1}}
+\newcommand{\mjnote}[1]{\todo[inline,color=green!20]{\textbf{Modern Java:} #1}}
 
 % From: https://gist.github.com/Blaisorblade/1722948
 % Merged from http://tihlde.org/~eivindw/latex-listings-for-scala/ and 
@@ -108,6 +109,7 @@ but did flag concerns in other cases. However this was not systematically invest
 In this paper we clearly articulate the problem they observed, characterize the key properties that lead to the issue, and demonstrate
 both dynamic and static approaches to resolve the issue in future languages. 
 The dynamic approach is a specific interpretation of type tests with reified generics, providing guidance to language implementors on a subtle design choice available in that space.
+\mjnote{modern Java accepts \texttt{instanceof C<Ts>} only when the static type determines \texttt{Ts}; with that rule an erased and a reified runtime give the same answer on every well-typed program. The dynamic approach then only concerns languages without that rule (C\#-like). Funnelling could be presented as the solution, with reification as a side remark.}
 The static approach is a general solution for tracking when a nominal object type \emph{declaration} effectively captures generic parameter instantiations from its dynamic context.
 
 \begin{figure}
@@ -156,6 +158,7 @@ Unfortunately two key factors lead to Java accepting this code and only incident
     \item Java implements generics by erasure. So the runtime representation of \lstinline|MyFoo| doesn't differ across the two calls. No information is kept around to distinguish the two classes of \lstinline|MyFoo|. This rules out the dynamic solutions.
     \item The Java compiler does not treat \lstinline|MyFoo| as generic. Attempts to cast to, or use \lstinline|instanceof| with \lstinline|Foo<Integer>| are statically flagged specifically because erasure means the generic parameters cannot be dynamically checked. But because \lstinline|MyFoo| \emph{syntactically} lacks generic parameters of its own, the compiler treats it as \emph{non-generic} and allows the \lstinline|instanceof| and cast without complaint.
 \end{enumerate}
+\mjnote{precise behaviour (JDK 26): from \texttt{Object}, \texttt{o instanceof Foo<Integer>} is a compile-time error (since Java 16; before that every non-reifiable \texttt{instanceof} target is an error), while the cast \texttt{(Foo<Integer>)o} is an unchecked warning; \texttt{instanceof} never warns. From a type that determines the argument (\texttt{Foo<Integer>} out of a \texttt{Bar<List<Integer>{}>} when \texttt{Foo<T> extends Bar<List<T>{}>}) both are accepted silently. The hole is that \texttt{MyFoo} is reifiable, so both forms are accepted with no warning. Item 2 and the list above can be restated in these terms.}
 
 Subtler still is the actual cause of the failure. The two \lstinline|println| calls actually dispatch to different overloads:
 the first to a version accepting an \lstinline|Object|, and the second to the more specific overload expecting a \lstinline|String|.
@@ -174,6 +177,7 @@ In the remainder of this paper:
 \begin{itemize}
 \item We detail the breadth of the problem (surveying forms that use class generics rather than methods generics, closures, and other manifestations), and how it is handled by various existing language implementations
 \item We develop three variants of a core language modeling common implementation choices for generics, and show that only one catches the problem dynamically before allowing multiple incompatible types for aliased variables.
+\mjnote{with the checked-cast premise of rule \textsc{if-instanceof} (Figure~\ref{fig:cast}) the core has a single runtime semantics (erased, as in Java), and the comparison reduces to Java typing (unsound) versus funnelled typing (sound). This bullet can become: we model modern Java's type test and show that funnelling makes it sound.}
 \item We develop a new type system mechanism for systematically tracking would-be implicit dependence of a
 method-local class on generic parameters, and show that it soundly prevents the problem across any of the runtime semantics.
 \end{itemize}
@@ -202,6 +206,7 @@ Foo<X>* m(Object* other, const X* x) {
 There is some truth to this: Java is permitting a cast that it cannot actually check due to type erasure.
 However there is more to it than that: Java will eagerly flag code such as \lstinline|(List<String>)(new LinkedList<Integer>())|.
 So the language does intend to warn about uses of uncheckable casts.
+\mjnote{\texttt{(List<String>)(new LinkedList<Integer>())} is an incompatible-types error, not an unchecked one. The contrast that matters here: an unchecked cast is a warning, an unchecked \texttt{instanceof} is an error.}
 And while reified generics do provide enough information to check casts dynamically, only certain forms of reification
 make correct casts straightforward.
 
@@ -232,6 +237,7 @@ a substantial amount of data --- not a mere comparison of virtual table pointers
 approaches, neither ideal (chains of parent type instantiations hurt cache locality, inlining data can bloat small instances).
 
 So there remains a need to articulate a solution to this problem where generics are implemented via erasure.
+\mjnote{under erasure, Java's checked-cast rule is already enough once the dependency of \texttt{MyFoo} on \texttt{X} is visible in its type, and that is what funnelling provides. This paragraph can lead straight into Section~3.}
 
 
 
@@ -285,13 +291,12 @@ So there remains a need to articulate a solution to this problem where generics 
     \mid \obj{C}{\pl{T}}{\pl{e}}\\
     &&&\mid \innerobj{C}{\pl{F}}{D}{\pl{T}'}{\pl{e}}{\pl{M}}\\
     &&& \mid \ifthen{e_0}{T}{x}{e_1}{e_2}\\
-\textrm{Patterns} & P & ::= & C \mid \gen{C}{\pl{T}}\\
 \textrm{Types} & T & ::= & \gen{C}{\pl{T}} \mid X\\
 \textrm{Funnels} & F & ::= & G \mid \funnel{X}\\
 \textrm{Ground Types} & G & ::= & \gen{C}{\pl{G}}\\
 \\
-\textrm{Type Env.} & \Gamma & ::= & T_1\;x_1\ldots T_n\;x_n\\
-\textrm{Bounds} & \Delta & ::= & \ext{X_1}{T_1}\ldots\ext{X_n}{T_n}\\
+\textrm{Type Env.} & \Gamma & ::= & T_1\;x_1,\ldots,T_n\;x_n\\
+\textrm{Bounds} & \Delta & ::= & \ext{X_1}{T_1},\ldots,\ext{X_n}{T_n}\\
 %// Need T, not F, to be able to do things like (Java) class Bar<X,Y extends X> {}
 \textrm{Declaration} & \mathsf{Dec} & ::= & \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}\\
 \textrm{(Field) Slots} & S & ::= & T\;f\semi
@@ -492,6 +497,8 @@ So there remains a need to articulate a solution to this problem where generics 
 \newcommand{\subtype}[3]{\ensuremath{#1\vdash #2 <: #3}\xspace}
 \newcommand{\kind}[2]{\ensuremath{#1 \vdash #2 ~\mathrm{Ok}}\xspace}
 \newcommand{\mok}[3]{\ensuremath{#1;#2\vdash #3~\mathrm{Ok}}\xspace}
+\newcommand{\cast}[3]{\ensuremath{#1\vdash #2 \rightsquigarrow #3}\xspace}
+\newcommand{\generic}[1]{\ensuremath{\mathrm{generic}(#1)}\xspace}
 \newcommand{\ftv}[1]{\ensuremath{\mathsf{FTV}(#1)}\xspace}
 \newcommand{\classtype}[2]{\gen{#1}{#2}\xspace}
 
@@ -620,6 +627,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \inferrule[if-instanceof]{
   \typing{\Delta}{\Gamma}{e_0}{T_0}\\
   \kind{\Delta}{T}\\
+  \cast{\Delta}{T_0}{T}\\
   \typing{\Delta}{\Gamma,T\;x}{e_1}{T'}\\
   \typing{\Delta}{\Gamma}{e_2}{T'}
 }{
@@ -629,10 +637,10 @@ So there remains a need to articulate a solution to this problem where generics 
 \fbox{\mok{\Gamma}{\Delta}{M}}
 \and
 \inferrule[method-ok]{
-  \typing{\Delta,\Delta'}{\Gamma,T_1\;x_1\ldots T_n\;x_n}{e}{T_0}\\
+  \typing{\Delta,\Delta'}{\Gamma,T_1\;x_1,\ldots,T_n\;x_n}{e}{T_0}\\
   \kind{\Delta,\Delta'}{T_0}\ldots\kind{\Delta,\Delta'}{T_n}
 }{
-  \mok{\Delta}{\Gamma}{\method{\Delta'}{T_0}{m}{T_1~x_1\ldots T_n~x_n}{\ret{e}}}
+  \mok{\Delta}{\Gamma}{\method{\Delta'}{T_0}{m}{T_1~x_1,\ldots,T_n~x_n}{\ret{e}}}
 }
 %
 %  Bs,Bs';G,x1:T1,..xn:Tn |- e : T0
@@ -703,6 +711,53 @@ So there remains a need to articulate a solution to this problem where generics 
     \label{fig:kinding}
 \end{figure}
 
+\begin{figure}[H]\small
+    \centering
+    \begin{mathpar}
+\fbox{$\generic{C}=T$}
+\and
+\inferrule[generic-top]{
+  \subclass{C}{\ext{X_1}{\_},\ldots,\ext{X_n}{\_}}{\_}{\_}{\_}{\_}\in\decls
+}{
+  \generic{C}=\gen{C}{X_1\ldots X_n}
+}
+\and
+\inferrule[generic-local]{
+  \declared{\innerobj{C}{F_1\ldots F_n}{\_}{\_}{\_}{\_}}\\
+  F_i=\funnel{X_i}\Rightarrow T_i=X_i\\
+  F_i=G_i\Rightarrow T_i=G_i
+}{
+  \generic{C}=\gen{C}{T_1\ldots T_n}
+}
+\and
+\fbox{\cast{\Delta}{T}{T'}}
+\and
+\inferrule[cast-up]{
+  \subtype{\Delta}{T}{T'}
+}{
+  \cast{\Delta}{T}{T'}
+}
+\and
+\inferrule[cast-var]{
+  \ext{X}{T}\in\Delta\\
+  \cast{\Delta}{T}{T'}
+}{
+  \cast{\Delta}{X}{T'}
+}
+\and
+\inferrule[cast-down]{
+  \subtype{\Delta}{\gen{C}{\overline{T}}}{\gen{D}{\overline{T_0}}}\\
+  \generic{C}=\gen{C}{\overline{T''}}\\
+  \subtype{\Delta}{\gen{C}{\overline{T''}}}{\gen{D}{\overline{T'}}}\\
+  \ftv{\overline{T''}}\subseteq\ftv{\overline{T'}}
+}{
+  \cast{\Delta}{\gen{D}{\overline{T_0}}}{\gen{C}{\overline{T}}}
+}
+    \end{mathpar}
+    \caption{Checked Casts}
+    \label{fig:cast}
+\end{figure}
+
 \begin{figure}[H]\footnotesize
     \centering
 \[
@@ -740,6 +795,7 @@ So there remains a need to articulate a solution to this problem where generics 
 Substitution replaces every occurrence of a type variable, \emph{including} the ones in the method signatures of a method-local class.
 A funnelled variable is the only form of shadowing of type variables that we allow; the domain of the substitution is disjoint from
 the free type variables of the substituted types and from the bounds in scope, so no renaming is ever needed.
+\mjnote{rule \textsc{if-instanceof} follows Java 16+: the target \texttt{T} is accepted only if it is a supertype of the static type, or a subtype whose arguments the static type determines (Figure~\ref{fig:cast}). Under Java typing a local class is declared \texttt{new MyFoo<> extends Foo<X>}, so \texttt{generic(MyFoo)} has no variables and \textsc{cast-down} accepts \texttt{instanceof MyFoo<>} from \texttt{Any}: this is the unsoundness. Under funnelling \texttt{generic(MyFoo)=MyFoo<X>}, accepted from \texttt{Foo<X>} but not from \texttt{Any}. The prose should explain this.}
 
 \ldots
 
@@ -771,6 +827,7 @@ As a result we consider:
 \item $\zeta(\mathsf{erased},\mathsf{funnelled})$, which applies funnelling to a model with generic erasure
 \item $\zeta(\mathsf{reified},\mathsf{funnelled})$, which applies funnelling to a model with reified generics that are checked during casts
 \end{enumerate}
+\mjnote{with the checked-cast premise, erased and reified agree on well-typed programs, so the four variants collapse to two: $\zeta(\mathsf{Java})$, unsound because \textsc{cast-down} accepts \texttt{MyFoo<>} from \texttt{Any}, and $\zeta(\mathsf{funnelled})$, sound. The reified runtime matters only without the premise, where $\zeta(\mathsf{reified},\mathsf{Java})$ also depends on a shallow or deep check (see Colin's note in Miscellaneous).}
 
 \section{Miscellaneous}
 
@@ -795,6 +852,7 @@ COLIN: This is ambiguous: with reified generics, there are two implementation st
     b. Cast checks both vtable and the runtime representation of the type parameter of Foo. Arguably a compiler that preserves this for inherited methods from Foo to work correctly would be likely to check this (since it would be checked in a cast to Foo<Integer>).
 
 //----------
+\mjnote{the shallow/deep question (2a/2b) only arises for a language that checks casts at run time instead of requiring the checked-cast premise; under modern Java it does not arise.}
 
 This is a problem in other languages (cite cite) as shown in greater details in Rel Work.
 
@@ -830,6 +888,7 @@ public class Broken {
       else new MyFoo<X>() extends Foo<X>{ public X x(){ return x; } }//good
   }
 \end{lstlisting}
+\mjnote{answered by Figure~\ref{fig:cast}: with \texttt{other : Any}, \texttt{other instanceof MyFoo<X>} is ill typed, because \texttt{X} is not determined by \texttt{Any} (as javac: \texttt{Object cannot be safely cast to MyFoo<X>}). With \texttt{other : Foo<X>} it is well typed and sound under erasure.}
 
 Note how funnelling purpose is to insert the generics. Without funnelling, MyFoo is a non generic type, so the question about generic reification does not even arise.
 
@@ -1049,6 +1108,7 @@ Note, there are multiple semantics/ts:
         AT RUN TIME instanceof only checks base class, ignores generic parameters
         AT COMPLILE TIME, instanceof can be err if the full type (including generics) is not potentially correlated)?? unobvious consider interfaces
         In prose, should explain that we won't flag cast of some type Foo to some type Bar, even though Java sometimes flags unrelated casts
+\mjnote{these three semantics are replaced by the single one of Java 16+: erased run-time check, plus the checked-cast premise of rule \textsc{if-instanceof} (Figure~\ref{fig:cast}). Unrelated types are rejected by it, as in Java.}
 
 <X extends List<Y funnel>>
 
@@ -1088,6 +1148,7 @@ to assuming that there is only one existential for all instances --- associated 
 different existentials for different instances. This combined with the fact that the JVM is unable to dynamically check for different instantiations
 leads to the unsoundness.
 Our dynamic solution resolves this with a specific implementation of casts on reified generics.
+\mjnote{under modern Java there is no separate dynamic solution; see the note on the dynamic approach in the introduction.}
 Our static solution effectively prohibits the de facto existential capture of the enclosing type parameter.
 
 
