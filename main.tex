@@ -54,6 +54,7 @@
 \usepackage{xspace}
 \usepackage{todonotes}
 \usepackage{float}
+\raggedbottom
 \newcommand{\tocite}[1]{\todo{cite #1}}
 \newcommand{\mjnote}[1]{\todo[inline,color=green!20]{\textbf{Modern Java:} #1}}
 
@@ -299,7 +300,8 @@ So there remains a need to articulate a solution to this problem where generics 
 \textrm{Bounds} & \Delta & ::= & \ext{X_1}{T_1},\ldots,\ext{X_n}{T_n}\\
 %// Need T, not F, to be able to do things like (Java) class Bar<X,Y extends X> {}
 \textrm{Declaration} & \mathsf{Dec} & ::= & \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}\\
-\textrm{(Field) Slots} & S & ::= & T\;f\semi
+\textrm{(Field) Slots} & S & ::= & T\;f\semi\\
+\textrm{Class Decl.} & K & ::= & \mathsf{Dec} \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}
 %Dec::= class C<Bs> extends C'<Ts>{ Ms Ss} //assume standard constructor
 %S ::= T f; //field/slot
 %M ::= Sig{ return e; }  //no such a thing as an abstract method
@@ -316,31 +318,36 @@ So there remains a need to articulate a solution to this problem where generics 
 \end{array}
 \]
 \begin{mathpar}
-\fbox{\declared{D}}
+\fbox{\declared{K}}
 \and
-\inferrule{
-  \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}\in\decls
+\inferrule[decl-top]{
+  \mathsf{Dec}\in\decls
 }{
-  \declared{\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}}
+  \declared{\mathsf{Dec}}
 }
 \and
-\inferrule{
-  \declared{\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}}\\
-  \innerobj{C}{\pl{F}}{D}{\pl{T}'}{\pl{e}}{\pl{M}}\in \pl{M}
+\inferrule[decl-in-class]{
+  \declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\
+  \method{\Delta'}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\
+  \innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}\textrm{ occurs in }e
 }{
-  \declared{\innerobj{C}{\pl{F}}{D}{\pl{T}'}{\pl{e}}{\pl{M}}}
+  \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}}
 }
 \and
-\inferrule{
-  \declared{\innerobj{C}{\pl{F}}{D}{\pl{T}}{\_}{\pl{M}}}\\
-  \innerobj{C'}{\pl{F}'}{D'}{\pl{T}'}{\pl{e}}{\pl{M}}\in \pl{M}
+\inferrule[decl-in-local]{
+  \declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}}\\
+  \method{\Delta'}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\
+  \innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}\textrm{ occurs in }e
 }{
-  \declared{\innerobj{C}{\pl{F}}{D}{\pl{T}'}{\pl{e}}{\pl{M}}}
+  \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}}
 }
 \end{mathpar}
 \caption{Syntax and Declaration Checking}
 \label{fig:syntax}
 \end{figure}
+
+Class names are unique across top-level and local classes, and the main expression contains no local classes;
+thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 
 \begin{figure}[H]\small
     \centering
@@ -539,7 +546,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \and
 \inferrule[call-local]{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\
-  \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}'}{\pl{M}}{\pl{S}}}\\
+  \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}'}{\_}{\pl{M}}}\\
   \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\
   T_i'=\tsubst{T_i}{\pl{F},\Delta_1}{\pl{T}_0,\pl{T}_1}\\
   \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
@@ -760,6 +767,7 @@ So there remains a need to articulate a solution to this problem where generics 
 
 \begin{figure}[H]\footnotesize
     \centering
+    \setlength{\arraycolsep}{3pt}
 \[
 \begin{array}{rcl}
 \tsubst{x}{\pl{X}}{\pl{T}} & = & x\\
