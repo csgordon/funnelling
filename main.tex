@@ -53,6 +53,7 @@
 \usepackage{mathpartir}
 \usepackage{xspace}
 \usepackage{todonotes}
+\usepackage{float}
 \newcommand{\tocite}[1]{\todo{cite #1}}
 
 % From: https://gist.github.com/Blaisorblade/1722948
@@ -253,6 +254,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \newcommand{\funnel}[1]{\ensuremath{#1~\kw{funnel}}}
 \newcommand{\ext}[2]{\ensuremath{#1~\kw{extends}~#2}}
 \newcommand{\ret}[1]{\ensuremath{\kw{return}\;#1\semi}}
+\newcommand{\pl}[1]{\ensuremath{#1\mkern-2mu s}}
 \newcommand{\decls}{\ensuremath{\mathsf{Decls}}\xspace}
 \newcommand{\subclass}[6]{\ensuremath{\kw{class}\;\gen{#1}{#2}\;\kw{extends}\;\gen{#3}{#4}\;\OC\;#5\;#6\;\CC}}
 \newcommand{\obj}[3]{\ensuremath{\kw{new}\;\gen{#1}{#2}\OR#3\CR}\xspace}
@@ -274,24 +276,24 @@ So there remains a need to articulate a solution to this problem where generics 
 \newcommand{\declared}[1]{\ensuremath{#1~\mathsf{declared}}}
 
 
-\begin{figure}
+\begin{figure}[H]
 \centering
 \[
 \begin{array}{rrcl}
-\textsf{Expressions} & e & ::= & x \mid \call{e}{Ts}{m}{es} \mid \explicitcall{e}{T}{Ts}{m}{es}
+\textsf{Expressions} & e & ::= & x \mid \call{e}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}
     \mid e\fstop f
-    \mid \obj{C}{Ts}{es}\\
-    &&&\mid \innerobj{C}{Fs}{D}{Ts'}{es}{Ms}\\
-    &&& \mid \ifthen{e}{T?}{x}{e}{e}\\
-\textrm{Patterns} & P & ::= & C \mid \gen{C}{Ts}\\
-\textrm{Types} & T & ::= & \gen{C}{Ts} \mid X\\
+    \mid \obj{C}{\pl{T}}{\pl{e}}\\
+    &&&\mid \innerobj{C}{\pl{F}}{D}{\pl{T}'}{\pl{e}}{\pl{M}}\\
+    &&& \mid \ifthen{e_0}{T}{x}{e_1}{e_2}\\
+\textrm{Patterns} & P & ::= & C \mid \gen{C}{\pl{T}}\\
+\textrm{Types} & T & ::= & \gen{C}{\pl{T}} \mid X\\
 \textrm{Funnels} & F & ::= & G \mid \funnel{X}\\
-\textrm{Ground Types} & G & ::= & \gen{C}{Gs}\\
+\textrm{Ground Types} & G & ::= & \gen{C}{\pl{G}}\\
 \\
-\textrm{Type Env.} & \Gamma & ::= & \epsilon \mid \Gamma,T\;x\\
-\textrm{Bounds} & \Delta & ::= & \epsilon \mid \Delta,\ext{X}{T}\\
+\textrm{Type Env.} & \Gamma & ::= & T_1\;x_1\ldots T_n\;x_n\\
+\textrm{Bounds} & \Delta & ::= & \ext{X_1}{T_1}\ldots\ext{X_n}{T_n}\\
 %// Need T, not F, to be able to do things like (Java) class Bar<X,Y extends X> {}
-\textrm{Declaration} & \mathsf{Dec} & ::= & \subclass{C}{\Delta}{C'}{Ts}{Ms}{Ss}\\
+\textrm{Declaration} & \mathsf{Dec} & ::= & \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}\\
 \textrm{(Field) Slots} & S & ::= & T\;f\semi
 %Dec::= class C<Bs> extends C'<Ts>{ Ms Ss} //assume standard constructor
 %S ::= T f; //field/slot
@@ -312,53 +314,53 @@ So there remains a need to articulate a solution to this problem where generics 
 \fbox{\declared{D}}
 \and
 \inferrule{
-  \subclass{C}{\Delta}{C'}{Ts}{Ms}{Ss}\in\decls
+  \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}\in\decls
 }{
-  \declared{\subclass{C}{\Delta}{C'}{Ts}{Ms}{Ss}}
+  \declared{\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}}
 }
 \and
 \inferrule{
-  \declared{\subclass{C}{\Delta}{C'}{Ts}{Ms}{Ss}}\\
-  \innerobj{C}{Fs}{D}{\overline{T'}}{\overline{e}}{\overline{M}}\in Ms
+  \declared{\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}}\\
+  \innerobj{C}{\pl{F}}{D}{\overline{T'}}{\overline{e}}{\overline{M}}\in \pl{M}
 }{
-  \declared{\innerobj{C}{Fs}{D}{\overline{T'}}{\overline{e}}{\overline{M}}}
+  \declared{\innerobj{C}{\pl{F}}{D}{\overline{T'}}{\overline{e}}{\overline{M}}}
 }
 \and
 \inferrule{
-  \declared{\innerobj{C}{Fs}{D}{\overline{T}}{\_}{Ms}}\\
-  \innerobj{C'}{Fs'}{D'}{\overline{T'}}{\overline{e}}{\overline{M}}\in Ms
+  \declared{\innerobj{C}{\pl{F}}{D}{\overline{T}}{\_}{\pl{M}}}\\
+  \innerobj{C'}{\pl{F}'}{D'}{\overline{T'}}{\overline{e}}{\overline{M}}\in \pl{M}
 }{
-  \declared{\innerobj{C}{Fs}{D}{\overline{T'}}{\overline{e}}{\overline{M}}}
+  \declared{\innerobj{C}{\pl{F}}{D}{\overline{T'}}{\overline{e}}{\overline{M}}}
 }
 \end{mathpar}
 \caption{Syntax and Declaration Checking}
 \label{fig:syntax}
 \end{figure}
 
-\begin{figure}\small
+\begin{figure}[H]\small
     \centering
 \begin{mathpar}
 \fbox{$\step{e}{e'}$}
 \and
 \inferrule*[left=simpleFieldFound]{
-    \subclass{C}{Bs}{C'}{Ts}{Ms}{T_1 f_1\ldots T_n f_n}\in\decls\\
+    \subclass{C}{\pl{B}}{C'}{\pl{T}}{\pl{M}}{T_1 f_1\ldots T_n f_n}\in\decls\\
     f_i\in f_1\ldots f_n
 }{
     \step{
-        \obj{C}{Gs}{v_1\ldots v_n\;vs}\fstop f_i
+        \obj{C}{\pl{G}}{v_1\ldots v_n\;\pl{v}}\fstop f_i
     }{
         v_i
     }
 }
 \and
 \inferrule*[left=simpleFieldSuper]{
-    \subclass{C}{Bs}{C'}{Ts}{Ms}{T_1 f_1\ldots T_n f_n}\in\decls\\
+    \subclass{C}{\pl{B}}{C'}{\pl{T}}{\pl{M}}{T_1 f_1\ldots T_n f_n}\in\decls\\
     f\not\in f_1\ldots f_n
 }{
     \step{
-        \obj{C}{Gs}{v_1\ldots v_n\;vs}\fstop f
+        \obj{C}{\pl{G}}{v_1\ldots v_n\;\pl{v}}\fstop f
     }{
-        \obj{C'}{\tsubst{Ts}{Bs}{Gs}}{vs}\fstop f
+        \obj{C'}{\tsubst{\pl{T}}{\pl{B}}{\pl{G}}}{\pl{v}}\fstop f
     }
 }
 \and
@@ -366,28 +368,28 @@ So there remains a need to articulate a solution to this problem where generics 
 \inferrule*[left=innerFieldFound]{
 }{
     \step{
-        \innerobj{C}{Gs}{C'}{Gs'}{vs}{Ms}\fstop f
+        \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v}}{\pl{M}}\fstop f
     }{
-        \obj{C'}{Gs'}{vs}\fstop f
+        \obj{C'}{\pl{G}'}{\pl{v}}\fstop f
     }
 }
 \and
 \inferrule*[left=ifThenErased]{
-    v\in\{\obj{C}{Gs}{\_}, \innerobj{C}{Gs}{\_}{\_}{\_}{\_}\}\\
-    \epsilon\vdash \gen{C}{Gs} <: \gen{D}{\_}
+    v\in\{\obj{C}{\pl{G}}{\_}, \innerobj{C}{\pl{G}}{\_}{\_}{\_}{\_}\}\\
+    \epsilon\vdash \gen{C}{\pl{G}} <: \gen{D}{\_}
     %\match{v}{C\langle\_\rangle} = \mathsf{true}
 }{
-    \step{\ifthen{v}{\gen{D}{Ts}}{x}{e_1}{e_2}}
+    \step{\ifthen{v}{\gen{D}{\pl{T}}}{x}{e_1}{e_2}}
     {\tsubst{e_1}{x}{v}}
 }
 \and
 \inferrule*[left=ifElseErased]{
     %v\not\in\{\obj{C}{\_}{\_}, \innerobj{C}{\_}{\_}{\_}{\_}{\_}\}
     %\match{v}{C\langle\_\rangle} = \mathsf{false}
-    v\in\{\obj{C}{Gs}{\_}, \innerobj{C}{Gs}{\_}{\_}{\_}{\_}\}\\
-    \epsilon\not\vdash \gen{C}{Gs} <: \gen{D}{\_}
+    v\in\{\obj{C}{\pl{G}}{\_}, \innerobj{C}{\pl{G}}{\_}{\_}{\_}{\_}\}\\
+    \epsilon\not\vdash \gen{C}{\pl{G}} <: \gen{D}{\_}
 }{
-    \step{\ifthen{v}{\gen{D}{Ts}}{x}{e_1}{e_2}}
+    \step{\ifthen{v}{\gen{D}{\pl{T}}}{x}{e_1}{e_2}}
     {e_2}
 }
 %\and
@@ -412,49 +414,49 @@ So there remains a need to articulate a solution to this problem where generics 
 %}
 \and
 \inferrule[simpleAddSuper]{
-    v = \obj{C}{Gs}{\_}
+    v = \obj{C}{\pl{G}}{\_}
 }{
     \step{
-        \call{v}{Gs'}{m}{vs} 
+        \call{v}{\pl{G}'}{m}{\pl{v}} 
     }{
-        \explicitcall{v}{\gen{C}{Gs}}{Gs'}{m}{vs}
+        \explicitcall{v}{\gen{C}{\pl{G}}}{\pl{G}'}{m}{\pl{v}}
     }
 }
 \and
 \inferrule[simpleFound]{
-    \subclass{C}{Bs}{\_}{\_}{Ms}{Ss}\in\decls\\
-    \method{Bs'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\ret{e_0}} \in Ms\\
-    e = \tsubst{\tsubst{e_0}{Bs,Bs'}{Gs,Gs'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
+    \subclass{C}{\pl{B}}{\_}{\_}{\pl{M}}{\pl{S}}\in\decls\\
+    \method{\pl{B}'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\ret{e_0}} \in \pl{M}\\
+    e = \tsubst{\tsubst{e_0}{\pl{B},\pl{B}'}{\pl{G},\pl{G}'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
 }{
-    \step{\explicitcall{v_0}{\gen{C}{Gs}}{Gs'}{m}{v_1\ldots v_n}}{e}
+    \step{\explicitcall{v_0}{\gen{C}{\pl{G}}}{\pl{G}'}{m}{v_1\ldots v_n}}{e}
 }
 %% ^^ Note: for local classes, this syntax skips the value entirely (this rule is not applicable if C<Gs> is meth local
 \and
 \inferrule[innerFound]{
-    v_0 = \innerobj{\_}{\_}{\_}{\_}{\_}{Ms}\\
-    \method{Bs'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\ret{e_0}} \in Ms\\
-    e = \tsubst{\tsubst{e_0}{Bs'}{Gs'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
+    v_0 = \innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}\\
+    \method{\pl{B}'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\ret{e_0}} \in \pl{M}\\
+    e = \tsubst{\tsubst{e_0}{\pl{B}'}{\pl{G}'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
 }{
-    \step{\call{v_0}{Gs'}{m}{v_1\ldots v_n}}{e}
+    \step{\call{v_0}{\pl{G}'}{m}{v_1\ldots v_n}}{e}
 }
 \and
 \inferrule[innerSuper]{
-    v_0 = \innerobj{\_}{\_}{C}{Gs}{\_}{Ms}\\
-    m\not\in Ms
+    v_0 = \innerobj{\_}{\_}{C}{\pl{G}}{\_}{\pl{M}}\\
+    m\not\in \pl{M}
 }{
-    \step{\call{v_0}{Gs'}{m}{v_1\ldots v_n}}{
-        \explicitcall{v_0}{\gen{C}{Gs}}{Gs'}{m}{v_1\ldots v_n}
+    \step{\call{v_0}{\pl{G}'}{m}{v_1\ldots v_n}}{
+        \explicitcall{v_0}{\gen{C}{\pl{G}}}{\pl{G}'}{m}{v_1\ldots v_n}
     }
 }
 \and
 \inferrule[searchSuper]{
-    \subclass{C}{Bs}{\_}{\_}{Ms}{Ss}\in\decls\\
-    m\not\in Ms
+    \subclass{C}{\pl{B}}{\_}{\_}{\pl{M}}{\pl{S}}\in\decls\\
+    m\not\in \pl{M}
 }{
     \step{
-        \explicitcall{v}{\gen{C}{Gs}}{Gs'}{m}{vs}
+        \explicitcall{v}{\gen{C}{\pl{G}}}{\pl{G}'}{m}{\pl{v}}
     }{
-        \explicitcall{v}{\gen{C'}{\tsubst{Ts}{Bs}{Gs}}}{Gs'}{m}{vs}
+        \explicitcall{v}{\gen{C'}{\tsubst{\pl{T}}{\pl{B}}{\pl{G}}}}{\pl{G}'}{m}{\pl{v}}
     }
 }
 \and
@@ -493,7 +495,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \newcommand{\ftv}[1]{\ensuremath{\mathsf{FTV}(#1)}\xspace}
 \newcommand{\classtype}[2]{\gen{#1}{#2}\xspace}
 
-\begin{figure}\small
+\begin{figure}[H]\small
     \centering
     \begin{mathpar}
 \fbox{\typing{\Delta}{\Gamma}{e}{T}}
@@ -510,7 +512,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \and
 \inferrule[declField]{
   \typing{\Delta}{\Gamma}{e}{\classtype{C}{\overline{T}}}\\
-  \subclass{C}{\Delta'}{C'}{\overline{T'}}{Ms}{T_1 f_1\ldots T_n f_n}\in\decls
+  \subclass{C}{\Delta'}{C'}{\overline{T'}}{\pl{M}}{T_1 f_1\ldots T_n f_n}\in\decls
 }{
   % thanks to subsumption, no need of multiple rules (C<Ts> can simply be set to supertype of relevance, via subsumption)
   \typing{\Delta}{\Gamma}{e\fstop f_i}{\tsubst{T_i}{\Delta'}{\overline{T}}}
@@ -530,9 +532,9 @@ So there remains a need to articulate a solution to this problem where generics 
 \and
 \inferrule[call-local]{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\overline{T_0}}}\\
-  \declared{\innerobj{C_0}{Fs}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}}\\
+  \declared{\innerobj{C_0}{\pl{F}}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}}\\
   \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \overline{M}\\
-  T_i'=\tsubst{T_i}{Fs,\Delta_1}{\overline{T_0},\overline{T_1}}\\
+  T_i'=\tsubst{T_i}{\pl{F},\Delta_1}{\overline{T_0},\overline{T_1}}\\
   \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
   \kind{\Delta}{\overline{T_1}}
 }{
@@ -571,12 +573,12 @@ So there remains a need to articulate a solution to this problem where generics 
   F_i=\funnel{X_i}\Rightarrow T_i=X_i\\ % flipped to implication to ensure this requires them all to be defined.
   F_i=G_i\Rightarrow T_i=G_i\\
   \kind{\Delta'}{\gen{C}{T_1\ldots T_n}}\\
-  \Delta' = \{ \ext{X}{T} \mid \ext{X}{T}\in\Delta \land \exists i\ldotp F_i=\funnel{X} \}\\ % Bs' = Bs | dom(F1..Fn)
+  \Delta' = \{ \ext{X}{T} \mid \ext{X}{T}\in\Delta \land \exists i\ldotp F_i=\funnel{X} \}\\ % \pl{B}' = \pl{B} | dom(F1..Fn)
   \forall i\ldotp F_i=\funnel{X_i} \Rightarrow \ext{X_i}{\_}\in\Delta ~~\textrm{\textcolor{red}{what about $\ext{X_i}{Y}$ where $Y$ isn't funnelled?}}\\
   \Gamma'=\Gamma\setminus\ftv{T_1\ldots T_n}\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
-  \mok{\Delta'}{\Gamma',\this:\gen{C}{T_1\ldots T_n}}{M_1}
+  \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{M_1}
   ~\ldots~
-  \mok{\Delta'}{\Gamma',\this:\gen{C}{T_1\ldots T_n}}{M_k}
+  \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{M_k}
 }{
   \typing{\Delta}{\Gamma}{
     \innerobj{C}{F_1\ldots F_n}{C'}{\overline{T'}}{\overline{e}}{M_1\ldots M_k}
@@ -602,6 +604,19 @@ So there remains a need to articulate a solution to this problem where generics 
 %Should be a clearer when substitution is formalized
 %
 \and
+\inferrule[new-local-java]{
+  \typing{\Delta}{\Gamma}{\obj{C'}{\overline{T'}}{\overline{e}}}{\_}\\
+  \kind{\Delta}{\gen{C'}{\overline{T}}}\\
+  %\kind{\Delta}{C\langle\rangle}\\
+  \mok{\Delta}{\Gamma,\gen{C}{}\;\this}{M_1}
+  \ldots
+  \mok{\Delta}{\Gamma,\gen{C}{}\;\this}{M_k}
+}{
+  \typing{\Delta}{\Gamma}{
+    \innerobj{C}{}{C'}{\overline{T'}}{\overline{e}}{M_1\ldots M_k}
+  }{\gen{C}{}}
+}
+\and
 \inferrule[if-instanceof]{
   \typing{\Delta}{\Gamma}{e_0}{T_0}\\
   \kind{\Delta}{T}\\
@@ -614,7 +629,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \fbox{\mok{\Gamma}{\Delta}{M}}
 \and
 \inferrule[method-ok]{
-  \typing{\Delta,\Delta'}{\Gamma,x_1:T_1,\ldots,x_n:T_n}{e}{T_0}\\
+  \typing{\Delta,\Delta'}{\Gamma,T_1\;x_1\ldots T_n\;x_n}{e}{T_0}\\
   \kind{\Delta,\Delta'}{T_0}\ldots\kind{\Delta,\Delta'}{T_n}
 }{
   \mok{\Delta}{\Gamma}{\method{\Delta'}{T_0}{m}{T_1~x_1\ldots T_n~x_n}{\ret{e}}}
@@ -629,7 +644,7 @@ So there remains a need to articulate a solution to this problem where generics 
     \label{fig:typing}
 \end{figure}
 
-\begin{figure}\small
+\begin{figure}[H]\small
     \centering
     \begin{mathpar}
 \fbox{\kind{\Delta}{T}}
@@ -651,7 +666,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \inferrule[wf-inner]{
   \kind{\Delta}{T_1}\ldots\kind{\Delta}{T_n}\\
   \subclass{C}{\Delta_C}{\_}{\_}{\_}{\_}\in\decls\\
-  \method{\Delta_M}{\_}{m}{\_}{\ret{e}}\in Ms_C\\
+  \method{\Delta_M}{\_}{m}{\_}{\ret{e}}\in \pl{M}_C\\
   \innerobj{C_0}{F_1\ldots F_n}{\_}{\_}{\_}{\_}\textrm{ occurs in }e\\
   F_i=\funnel{X_i}\Rightarrow \ext{X_i}{T'_i}\in\Delta_C,\Delta_M\land\subtype{\Delta}{T_i}{\tsubst{T'_i}{\overline{X}}{\overline{T}}}\\
   F_i=G_i\Rightarrow T_i=G_i
@@ -671,8 +686,8 @@ So there remains a need to articulate a solution to this problem where generics 
 }
 \and
 \inferrule[sub-inherit-local]{
-  \declared{\innerobj{C}{Fs}{C'}{\overline{T'}}{\_}{\_}}\\
-  \subtype{\Delta}{\tsubst{\gen{C'}{\overline{T'}}}{\mathrm{dom}(Fs)}{\overline{T}}}{T''}
+  \declared{\innerobj{C}{\pl{F}}{C'}{\overline{T'}}{\_}{\_}}\\
+  \subtype{\Delta}{\tsubst{\gen{C'}{\overline{T'}}}{\mathrm{dom}(\pl{F})}{\overline{T}}}{T''}
 }{
   \subtype{\Delta}{\gen{C}{\overline{T}}}{T''}
 }
@@ -688,7 +703,7 @@ So there remains a need to articulate a solution to this problem where generics 
     \label{fig:kinding}
 \end{figure}
 
-\begin{figure}\footnotesize
+\begin{figure}[H]\footnotesize
     \centering
 \[
 \begin{array}{rcl}
@@ -737,20 +752,6 @@ expression satisfies the funnelling constraints by checking kinding under the mo
 
 \ldots
 
-\begin{mathpar}
-\inferrule[new-local-java]{
-  \typing{\Delta}{\Gamma}{\obj{C'}{\overline{T'}}{\overline{e}}}{\_}\\
-  \kind{\Delta}{\gen{C'}{\overline{T}}}\\
-  %\kind{\Delta}{C\langle\rangle}\\
-  \mok{\Delta}{\Gamma,\this:\gen{C}{}}{M_1}
-  \ldots
-  \mok{\Delta}{\Gamma,\this:\gen{C}{}}{M_k}
-}{
-  \typing{\Delta}{\Gamma}{
-    \innerobj{C}{}{C'}{\overline{T'}}{\overline{e}}{M_1\ldots M_k}
-  }{\gen{C}{}}
-}
-\end{mathpar}
 \todo[inline]{briefly note that Java allows extra, ``fresh'' generic parameters in local classes}
 
 \todo[inline]{call out that we're allowed to declare return types that mention an inner class; inner classes are ``public'', and our approach works even in this case, the more restrictive case of Java is naturally covered}
