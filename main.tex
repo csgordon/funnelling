@@ -290,7 +290,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \textsf{Expressions} & e & ::= & x \mid \call{e}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}
     \mid e\fstop f
     \mid \obj{C}{\pl{T}}{\pl{e}}\\
-    &&&\mid \innerobj{C}{\pl{F}}{D}{\pl{T}'}{\pl{e}}{\pl{M}}\\
+    &&&\mid \innerobj{C}{\pl{F}}{C'}{\pl{T}'}{\pl{e}}{\pl{M}}\\
     &&& \mid \ifthen{e_0}{T}{x}{e_1}{e_2}\\
 \textrm{Types} & T & ::= & \gen{C}{\pl{T}} \mid X\\
 \textrm{Funnels} & F & ::= & G \mid \funnel{X}\\
@@ -355,7 +355,7 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 \fbox{$\step{e}{e'}$}
 \and
 \inferrule*[left=simpleFieldFound]{
-    \subclass{C}{\pl{B}}{C'}{\pl{T}}{\pl{M}}{T_1 f_1\ldots T_n f_n}\in\decls\\
+    \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{T_1 f_1\ldots T_n f_n}\in\decls\\
     f_i\in f_1\ldots f_n
 }{
     \step{
@@ -366,13 +366,13 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 }
 \and
 \inferrule*[left=simpleFieldSuper]{
-    \subclass{C}{\pl{B}}{C'}{\pl{T}}{\pl{M}}{T_1 f_1\ldots T_n f_n}\in\decls\\
+    \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{T_1 f_1\ldots T_n f_n}\in\decls\\
     f\not\in f_1\ldots f_n
 }{
     \step{
         \obj{C}{\pl{G}}{v_1\ldots v_n\;\pl{v}}\fstop f
     }{
-        \obj{C'}{\tsubst{\pl{T}}{\pl{B}}{\pl{G}}}{\pl{v}}\fstop f
+        \obj{C'}{\tsubst{\pl{T}}{\Delta}{\pl{G}}}{\pl{v}}\fstop f
     }
 }
 \and
@@ -388,10 +388,10 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 \and
 \inferrule*[left=ifThenErased]{
     v\in\{\obj{C}{\pl{G}}{\_}, \innerobj{C}{\pl{G}}{\_}{\_}{\_}{\_}\}\\
-    \epsilon\vdash \gen{C}{\pl{G}} <: \gen{D}{\_}
+    \epsilon\vdash \gen{C}{\pl{G}} <: \gen{C'}{\_}
     %\match{v}{C\langle\_\rangle} = \mathsf{true}
 }{
-    \step{\ifthen{v}{\gen{D}{\pl{T}}}{x}{e_1}{e_2}}
+    \step{\ifthen{v}{\gen{C'}{\pl{T}}}{x}{e_1}{e_2}}
     {\tsubst{e_1}{x}{v}}
 }
 \and
@@ -399,9 +399,9 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
     %v\not\in\{\obj{C}{\_}{\_}, \innerobj{C}{\_}{\_}{\_}{\_}{\_}\}
     %\match{v}{C\langle\_\rangle} = \mathsf{false}
     v\in\{\obj{C}{\pl{G}}{\_}, \innerobj{C}{\pl{G}}{\_}{\_}{\_}{\_}\}\\
-    \epsilon\not\vdash \gen{C}{\pl{G}} <: \gen{D}{\_}
+    \epsilon\not\vdash \gen{C}{\pl{G}} <: \gen{C'}{\_}
 }{
-    \step{\ifthen{v}{\gen{D}{\pl{T}}}{x}{e_1}{e_2}}
+    \step{\ifthen{v}{\gen{C'}{\pl{T}}}{x}{e_1}{e_2}}
     {e_2}
 }
 %\and
@@ -436,9 +436,9 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 }
 \and
 \inferrule[simpleFound]{
-    \subclass{C}{\pl{B}}{\_}{\_}{\pl{M}}{\pl{S}}\in\decls\\
-    \method{\pl{B}'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\ret{e_0}} \in \pl{M}\\
-    e = \tsubst{\tsubst{e_0}{\pl{B},\pl{B}'}{\pl{G},\pl{G}'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
+    \subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\pl{S}}\in\decls\\
+    \method{\Delta'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\ret{e_0}} \in \pl{M}\\
+    e = \tsubst{\tsubst{e_0}{\Delta,\Delta'}{\pl{G},\pl{G}'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
 }{
     \step{\explicitcall{v_0}{\gen{C}{\pl{G}}}{\pl{G}'}{m}{v_1\ldots v_n}}{e}
 }
@@ -446,8 +446,8 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 \and
 \inferrule[innerFound]{
     v_0 = \innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}\\
-    \method{\pl{B}'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\ret{e_0}} \in \pl{M}\\
-    e = \tsubst{\tsubst{e_0}{\pl{B}'}{\pl{G}'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
+    \method{\Delta'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\ret{e_0}} \in \pl{M}\\
+    e = \tsubst{\tsubst{e_0}{\Delta'}{\pl{G}'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
 }{
     \step{\call{v_0}{\pl{G}'}{m}{v_1\ldots v_n}}{e}
 }
@@ -462,13 +462,13 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 }
 \and
 \inferrule[searchSuper]{
-    \subclass{C}{\pl{B}}{\_}{\_}{\pl{M}}{\pl{S}}\in\decls\\
+    \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\_}\in\decls\\
     m\not\in \pl{M}
 }{
     \step{
         \explicitcall{v}{\gen{C}{\pl{G}}}{\pl{G}'}{m}{\pl{v}}
     }{
-        \explicitcall{v}{\gen{C'}{\tsubst{\pl{T}}{\pl{B}}{\pl{G}}}}{\pl{G}'}{m}{\pl{v}}
+        \explicitcall{v}{\gen{C'}{\tsubst{\pl{T}}{\Delta}{\pl{G}}}}{\pl{G}'}{m}{\pl{v}}
     }
 }
 \and
@@ -583,11 +583,11 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 \and
 \inferrule[new-local]{
   \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}'}{\pl{e}}}{\_}\\
-  \kind{\Delta'}{\gen{C'}{\pl{T}}}\\
+  \kind{\Delta'}{\gen{C'}{\pl{T}'}}\\
   F_i=\funnel{X_i}\Rightarrow T_i=X_i\\ % flipped to implication to ensure this requires them all to be defined.
   F_i=G_i\Rightarrow T_i=G_i\\
   \kind{\Delta'}{\gen{C}{T_1\ldots T_n}}\\
-  \Delta' = \{ \ext{X}{T} \mid \ext{X}{T}\in\Delta \land \exists i\ldotp F_i=\funnel{X} \}\\ % \pl{B}' = \pl{B} | dom(F1..Fn)
+  \Delta' = \{ \ext{X}{T} \mid \ext{X}{T}\in\Delta \land \exists i\ldotp F_i=\funnel{X} \}\\ % \Delta' = \Delta | dom(F1..Fn)
   \forall i\ldotp F_i=\funnel{X_i} \Rightarrow \ext{X_i}{\_}\in\Delta ~~\textrm{\textcolor{red}{what about $\ext{X_i}{Y}$ where $Y$ isn't funnelled?}}\\
   \Gamma'=\Gamma\setminus\ftv{T_1\ldots T_n}\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
   \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{M_1}
@@ -620,7 +620,7 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 \and
 \inferrule[new-local-java]{
   \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}'}{\pl{e}}}{\_}\\
-  \kind{\Delta}{\gen{C'}{\pl{T}}}\\
+  \kind{\Delta}{\gen{C'}{\pl{T}'}}\\
   %\kind{\Delta}{C\langle\rangle}\\
   \mok{\Delta}{\Gamma,\gen{C}{}\;\this}{M_1}
   \ldots
@@ -753,12 +753,12 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 }
 \and
 \inferrule[cast-down]{
-  \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{D}{\pl{T}_0}}\\
+  \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C'}{\pl{T}_0}}\\
   \generic{C}=\gen{C}{\pl{T}''}\\
-  \subtype{\Delta}{\gen{C}{\pl{T}''}}{\gen{D}{\pl{T}'}}\\
+  \subtype{\Delta}{\gen{C}{\pl{T}''}}{\gen{C'}{\pl{T}'}}\\
   \ftv{\pl{T}''}\subseteq\ftv{\pl{T}'}
 }{
-  \cast{\Delta}{\gen{D}{\pl{T}_0}}{\gen{C}{\pl{T}}}
+  \cast{\Delta}{\gen{C'}{\pl{T}_0}}{\gen{C}{\pl{T}}}
 }
     \end{mathpar}
     \caption{Checked Casts}
