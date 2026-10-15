@@ -710,12 +710,12 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
   \forall\ext{X}{T}\in\Delta\ldotp\kind{\Delta}{T}\\
   \subclass{C'}{\_}{\_}{\_}{\_}{\_}\in\decls\\
   \kind{\Delta}{\gen{C'}{\pl{T}'}}\\
-  \kind{\Delta}{\pl{T}}\\
+  \forall T\;f\semi\in\pl{S}\ldotp\kind{\Delta}{T}\\
   \mok{\Delta}{\gen{C}{\mathrm{dom}(\Delta)}\;\this}{\pl{M}}\\
   \forall C'',\pl{T}''\ldotp\subtype{\Delta}{\gen{C'}{\pl{T}'}}{\gen{C''}{\pl{T}''}}\Rightarrow
     \mathsf{overrideOk}(\gen{C''}{\pl{T}''},\pl{M})
 }{
-  \subclass{C}{\Delta}{C'}{\pl{T}'}{\pl{M}}{\pl{T}\;\pl{f}}~\mathrm{Ok}
+  \subclass{C}{\Delta}{C'}{\pl{T}'}{\pl{M}}{\pl{S}}~\mathrm{Ok}
 }
 \and
 \fbox{$\mathsf{overrideOk}(T,M)$}
@@ -729,13 +729,13 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \and
 \inferrule[override-same]{
   \subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}\in\decls\\
-  \method{\Delta''}{T''_0}{m}{\pl{T}''\;\pl{x}'}{\_}\in\pl{M}\\
+  \method{\Delta''}{T''_0}{m}{T''_1\;x'_1,\ldots,T''_n\;x'_n}{\_}\in\pl{M}\\
   \mathrm{dom}(\Delta')=\pl{X}\\
   \mathrm{dom}(\Delta'')=\pl{X}'\\
   \tsubst{\Delta''(\pl{X}')}{\Delta,\pl{X}'}{\pl{T},\pl{X}}=\Delta'(\pl{X})\\
-  \tsubst{T''_0\;\pl{T}''}{\Delta,\pl{X}'}{\pl{T},\pl{X}}=T'_0\;\pl{T}'
+  \tsubst{T''_0\ldots T''_n}{\Delta,\pl{X}'}{\pl{T},\pl{X}}=T'_0\ldots T'_n
 }{
-  \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{\pl{T}'\;\pl{x}}{\_})
+  \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\;x_1,\ldots,T'_n\;x_n}{\_})
 }
     \end{mathpar}
     \caption{Typing of classes and programs}
@@ -757,25 +757,6 @@ A method that a class declares again must keep the signature it has in every sup
   \ext{X}{\_}\in\Delta
 }{
   \kind{\Delta}{X}
-}
-\and
-\inferrule[wf-outer]{
-  \kind{\Delta}{T_1}\ldots\kind{\Delta}{T_n}\\
-  \subclass{C}{\ext{X_1}{T'_1},\ldots,\ext{X_n}{T'_n}}{\_}{\_}{\_}{\_}\in\decls\\
-  \subtype{\Delta}{T_i}{\tsubst{T'_i}{\pl{X}}{\pl{T}}}
-}{
-  \kind{\Delta}{\gen{C}{T_1\ldots T_n}}
-}
-\and
-\inferrule[wf-inner]{
-  \kind{\Delta}{T_1}\ldots\kind{\Delta}{T_n}\\
-  \subclass{C}{\Delta'}{\_}{\_}{\pl{M}}{\_}\in\decls\\
-  \method{\Delta''}{\_}{m}{\_}{\ret{e}}\in \pl{M}\\
-  \innerobj{C_0}{F_1\ldots F_n}{\_}{\_}{\_}{\_}\textrm{ occurs in }e\\
-  F_i=\funnel{X_i}\Rightarrow \ext{X_i}{T'_i}\in\Delta',\Delta''\land\subtype{\Delta}{T_i}{\tsubst{T'_i}{\pl{X}}{\pl{T}}}\\
-  F_i=G_i\Rightarrow T_i=G_i
-}{
-  \kind{\Delta}{\gen{C_0}{T_1\ldots T_n}}
 }
 \and
 \inferrule[wf-class]{
@@ -817,7 +798,12 @@ A method that a class declares again must keep the signature it has in every sup
     \label{fig:kinding}
 \end{figure}
 
-\todo[inline]{Rule \textsc{wf-class} subsumes \textsc{wf-outer} and \textsc{wf-inner}: for a top-level class, $\Delta_0$ is the bounds of the class and $\pl{T}'$ are its type variables; for a local class, $\Delta_0$ is the bounds of the funnelled type variables in the scope where the local class is written. It also kinds a local class written inside a method of another local class, which \textsc{wf-inner} does not.}
+Rule \textsc{wf-class} kinds both top-level and local classes.
+For a top-level class $C$, $\Delta_0$ is the bounds of $C$ and $\pl{T}'=\mathrm{dom}(\Delta_0)$.
+Thus $\pl{T}''=\pl{T}$, and every argument in $\pl{T}$ is checked against its bound.
+For a local class $C$ with funnels $\pl{F}$, $\Delta_0$ is the bounds of the funnelled type variables in the scope where $C$ is written, and $\pl{T}'=|\pl{F}|$.
+Thus the argument at the position of a ground funnel $G$ is $G$ itself, and the argument at the position of a funnel $\funnel{X}$ is checked against the bound of $X$.
+A local class written in a method of another local class is kinded in the same way, since $\mathsf{declared}(C)$ covers it.
 
 \begin{figure}[H]\small
     \centering
@@ -880,8 +866,8 @@ A method that a class declares again must keep the signature it has in every sup
 \tsubst{\funnel{X_i}}{X_1\ldots X_n}{T_1\ldots T_n} & = & T_i\\
 \tsubst{G}{\pl{X}}{\pl{T}} & = & G\\
 \\
-\tsubst{\method{\Delta}{T_0}{m}{\pl{T}\;\pl{x}}{\ret{e}}}{\pl{X}}{\pl{T}'} & = & \\
-  \multicolumn{3}{l}{\quad\method{\tsubst{\Delta}{\pl{X}}{\pl{T}'}}{\tsubst{T_0}{\pl{X}}{\pl{T}'}}{m}{\tsubst{\pl{T}}{\pl{X}}{\pl{T}'}\;\pl{x}}{\ret{\tsubst{e}{\pl{X}}{\pl{T}'}}}}\\
+\tsubst{\method{\Delta}{T'_0}{m}{T'_1\;x_1,\ldots,T'_k\;x_k}{\ret{e}}}{\pl{X}}{\pl{T}} & = & \\
+  \multicolumn{3}{l}{\quad\method{\tsubst{\Delta}{\pl{X}}{\pl{T}}}{\tsubst{T'_0}{\pl{X}}{\pl{T}}}{m}{\tsubst{T'_1}{\pl{X}}{\pl{T}}\;x_1,\ldots,\tsubst{T'_k}{\pl{X}}{\pl{T}}\;x_k}{\ret{\tsubst{e}{\pl{X}}{\pl{T}}}}}\\
 \tsubst{(\ext{X'}{T'})}{\pl{X}}{\pl{T}} & = & \ext{X'}{\tsubst{T'}{\pl{X}}{\pl{T}}}\\
 \\
 \tsubst{\gen{C}{\pl{T}'}}{\pl{X}}{\pl{T}} & = & \gen{C}{\tsubst{\pl{T}'}{\pl{X}}{\pl{T}}}\\
@@ -898,6 +884,8 @@ A funnelled variable is the only form of shadowing of type variables that we all
 the free type variables of the substituted types and from the bounds in scope, so no renaming is ever needed.
 In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables:
 $\tsubst{T}{F_1\ldots F_n}{T_1\ldots T_n}$ replaces $X_i$ with $T_i$ for every $F_i=\funnel{X_i}$, and ignores every $F_i=G_i$.
+Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
+Thus $\tsubst{\funnel{X_i}}{X_1\ldots X_n}{T_1\ldots T_n}=T_i$ is a ground type $G$, and the result is again a funnel.
 
 \begin{figure}[H]\footnotesize
     \centering
@@ -919,8 +907,8 @@ $\tsubst{T}{F_1\ldots F_n}{T_1\ldots T_n}$ replaces $X_i$ with $T_i$ for every $
 \tsubst{\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'} & = & \\
   \multicolumn{3}{l}{\quad\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\tsubst{\pl{e}}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'}}{\tsubst{\pl{M}}{\pl{x},\pl{x}'}{\pl{v},\pl{v}'}}}\\
 \\
-\tsubst{\method{\Delta}{T_0}{m}{\pl{T}\;\pl{x}'}{\ret{e}}}{\pl{x}}{\pl{v}} & = & \\
-  \multicolumn{3}{l}{\quad\method{\Delta}{T_0}{m}{\pl{T}\;\pl{x}'}{\ret{\tsubst{e}{\pl{x}}{\pl{v}}}}}
+\tsubst{\method{\Delta}{T_0}{m}{T_1\;x'_1,\ldots,T_k\;x'_k}{\ret{e}}}{\pl{x}}{\pl{v}} & = & \\
+  \multicolumn{3}{l}{\quad\method{\Delta}{T_0}{m}{T_1\;x'_1,\ldots,T_k\;x'_k}{\ret{\tsubst{e}{\pl{x}}{\pl{v}}}}}
 \end{array}
 \]
     \caption{Substitution of variables}
@@ -929,7 +917,7 @@ $\tsubst{T}{F_1\ldots F_n}{T_1\ldots T_n}$ replaces $X_i$ with $T_i$ for every $
 
 A method-local class binds \this, as in Java: inside the methods of a method-local class, \this is the local object, and the outer \this is hidden.
 Thus substitution of variables enters the methods of a method-local class for every variable except \this.
-The variable $x'$ of an \kw{if} and the parameters $\pl{x}'$ of a method are never in $\pl{x}$, so no renaming is ever needed.
+The variable $x'$ of an \kw{if} and the parameters $x'_1\ldots x'_k$ of a method are never in $\pl{x}$, so no renaming is ever needed.
 \mjnote{rule \textsc{if-instanceof} follows Java 16+: the target \texttt{T} is accepted only if it is a supertype of the static type, or a subtype whose arguments the static type determines (Figure~\ref{fig:cast}). Under Java typing a local class is declared \texttt{new MyFoo<> extends Foo<X>}, so \texttt{generic(MyFoo)} has no variables and \textsc{cast-down} accepts \texttt{instanceof MyFoo<>} from \texttt{Object}: this is the unsoundness. Under funnelling \texttt{generic(MyFoo)=MyFoo<X>}, accepted from \texttt{Foo<X>} but not from \texttt{Object}. The prose should explain this.}
 
 \ldots
