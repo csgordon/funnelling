@@ -619,20 +619,19 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \inferrule[new-local]{
   \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}'}{\pl{e}}}{\_}\\
   \kind{\Delta'}{\gen{C'}{\pl{T}'}}\\
-  F_i=\funnel{X_i}\Rightarrow T_i=X_i\\ % flipped to implication to ensure this requires them all to be defined.
-  F_i=G_i\Rightarrow T_i=G_i\\
-  \kind{\Delta'}{\gen{C}{T_1\ldots T_n}}\\
-  \Delta' = \{ \ext{X}{T} \mid \ext{X}{T}\in\Delta \land \exists i\ldotp F_i=\funnel{X} \}\\ % \Delta' = \Delta | dom(F1..Fn)
-  \forall i\ldotp F_i=\funnel{X_i} \Rightarrow \ext{X_i}{\_}\in\Delta\\
+  \pl{T}=|\pl{F}|\\
+  \kind{\Delta'}{\gen{C}{\pl{T}}}\\
+  \Delta' = \{ \ext{X}{T} \mid \ext{X}{T}\in\Delta \land \funnel{X}\in\pl{F} \}\\ % \Delta' = \Delta | dom(F1..Fn)
+  \ftv{\pl{T}}\subseteq\mathrm{dom}(\Delta)\\
   \forall \ext{X}{T}\in\Delta'\ldotp \ftv{T}\subseteq\mathrm{dom}(\Delta')\\
-  \Gamma'=\{ T\;x \mid T\;x\in\Gamma \land x\neq\this \land \ftv{T}\subseteq\ftv{T_1\ldots T_n} \}\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
-  \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{\pl{M}}\\
+  \Gamma'=\{ T\;x \mid T\;x\in\Gamma \land x\neq\this \land \ftv{T}\subseteq\ftv{\pl{T}} \}\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
+  \mok{\Delta'}{\Gamma',\gen{C}{\pl{T}}\;\this}{\pl{M}}\\
   \forall C'',\pl{T}''\ldotp\subtype{\Delta'}{\gen{C'}{\pl{T}'}}{\gen{C''}{\pl{T}''}}\Rightarrow
     \mathsf{overrideOk}(\gen{C''}{\pl{T}''},\pl{M})
 }{
   \typing{\Delta}{\Gamma}{
-    \innerobj{C}{F_1\ldots F_n}{C'}{\pl{T}'}{\pl{e}}{\pl{M}}
-  }{\gen{C}{T_1\ldots T_n}}
+    \innerobj{C}{\pl{F}}{C'}{\pl{T}'}{\pl{e}}{\pl{M}}
+  }{\gen{C}{\pl{T}}}
 }
 %
 %  Bs;G |- new C'<Ts'>(es) : _//incredibly subtle: is Bs;G or Bs';G' // need Bs;G for es that internally use non-funneled types but reduce to terms with funneled types
@@ -802,7 +801,7 @@ A method that a class declares again must keep the signature it has in every sup
 \and
 \inferrule[sub-inherit-local]{
   \declared{\innerobj{C}{\pl{F}}{C'}{\pl{T}'}{\_}{\_}}\\
-  \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}'}}{\mathrm{dom}(\pl{F})}{\pl{T}}}{T''}
+  \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}'}}{\pl{F}}{\pl{T}}}{T''}
 }{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{T''}
 }
@@ -897,6 +896,8 @@ A method that a class declares again must keep the signature it has in every sup
 Substitution replaces every occurrence of a type variable, \emph{including} the ones in the method signatures of a method-local class.
 A funnelled variable is the only form of shadowing of type variables that we allow; the domain of the substitution is disjoint from
 the free type variables of the substituted types and from the bounds in scope, so no renaming is ever needed.
+In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables:
+$\tsubst{T}{F_1\ldots F_n}{T_1\ldots T_n}$ replaces $X_i$ with $T_i$ for every $F_i=\funnel{X_i}$, and ignores every $F_i=G_i$.
 
 \begin{figure}[H]\footnotesize
     \centering
