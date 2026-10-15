@@ -303,6 +303,13 @@ So there remains a need to articulate a solution to this problem where generics 
     &&& \mid \mathcal{E}\fstop f \mid \obj{C}{\pl{G}}{\pl{v}\;\mathcal{E}\;\pl{e}}\\
     &&& \mid \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v}\;\mathcal{E}\;\pl{e}}{\pl{M}}\\
     &&& \mid \ifthen{\mathcal{E}}{G}{x}{e_1}{e_2}\\
+\textrm{Contexts} & \mathcal{C} & ::= & \square \mid \call{\mathcal{C}}{\pl{T}}{m}{\pl{e}} \mid \call{e}{\pl{T}}{m}{\pl{e}\;\mathcal{C}\;\pl{e}'}\\
+    &&& \mid \explicitcall{\mathcal{C}}{T}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e}\;\mathcal{C}\;\pl{e}'}\\
+    &&& \mid \mathcal{C}\fstop f \mid \obj{C}{\pl{T}}{\pl{e}\;\mathcal{C}\;\pl{e}'}\\
+    &&& \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}\;\mathcal{C}\;\pl{e}'}{\pl{M}}\\
+    &&& \mid \ifthen{\mathcal{C}}{T}{x}{e_1}{e_2}\\
+    &&& \mid \ifthen{e_0}{T}{x}{\mathcal{C}}{e_2}\\
+    &&& \mid \ifthen{e_0}{T}{x}{e_1}{\mathcal{C}}\\
 \\
 \textrm{Type Env.} & \Gamma & ::= & T_1\;x_1,\ldots,T_n\;x_n\\
 \textrm{Bounds} & \Delta & ::= & \ext{X_1}{T_1},\ldots,\ext{X_n}{T_n}\\
@@ -354,10 +361,10 @@ So there remains a need to articulate a solution to this problem where generics 
 \begin{array}{rcl}
 \mathsf{declared}(C) & = & \Delta \quad\textrm{if }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls\\
 \mathsf{declared}(C_0) & = & \{\ext{X}{T}\mid\ext{X}{T}\in\mathsf{declared}(C),\Delta'\land\funnel{X}\in\pl{F}\}\\
-\multicolumn{3}{l}{\quad\textrm{if }\declared{K},}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{if }}K\in\{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_},\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}\},}\\
+\multicolumn{3}{l}{\quad\textrm{if }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}}\\
+\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\textrm{or }\declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}},}\\
 \multicolumn{3}{l}{\quad\phantom{\textrm{if }}\method{\Delta'}{\_}{m}{\_}{\ret{e}}\in\pl{M},}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs directly in }e}
+\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e}
 \end{array}
 \]
 \caption{Syntax and Declaration Checking}
@@ -368,7 +375,8 @@ Class names are unique across top-level and local classes, field names are uniqu
 thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 The bounds $\mathsf{declared}(C)$ are the bounds of the type variables that the methods of $C$ see, without the type variables of the methods themselves:
 the bounds of a top-level class, or the bounds of the funnelled type variables in the scope where a local class is written.
-A literal $L$ occurs directly in $e$ when $L$ occurs in $e$ outside of the methods of every literal in $e$; thus $\mathsf{declared}(C)$ has a single value for every local class $C$.
+An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$.
+Contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{declared}(C)$ has a single value for every local class $C$.
 The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every top-level class reaches \Object.
 
 \begin{figure}[H]\small
@@ -621,8 +629,8 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
   \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{M_1}
   ~\ldots~
   \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{M_k}\\
-  \forall D,\pl{V}\ldotp\subtype{\Delta'}{\gen{C'}{\pl{T}'}}{\gen{D}{\pl{V}}}\Rightarrow
-    \mathsf{overrideOk}(\gen{D}{\pl{V}},M_1)\land\ldots\land\mathsf{overrideOk}(\gen{D}{\pl{V}},M_k)
+  \forall C'',\pl{T}''\ldotp\subtype{\Delta'}{\gen{C'}{\pl{T}'}}{\gen{C''}{\pl{T}''}}\Rightarrow
+    \forall i\ldotp\mathsf{overrideOk}(\gen{C''}{\pl{T}''},M_i)
 }{
   \typing{\Delta}{\Gamma}{
     \innerobj{C}{F_1\ldots F_n}{C'}{\pl{T}'}{\pl{e}}{M_1\ldots M_k}
@@ -711,8 +719,8 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
   \mok{\Delta}{\gen{C}{\mathrm{dom}(\Delta)}\;\this}{M_1}
   \ldots
   \mok{\Delta}{\gen{C}{\mathrm{dom}(\Delta)}\;\this}{M_k}\\
-  \forall D,\pl{V}\ldotp\subtype{\Delta}{\gen{C'}{\pl{T}'}}{\gen{D}{\pl{V}}}\Rightarrow
-    \mathsf{overrideOk}(\gen{D}{\pl{V}},M_1)\land\ldots\land\mathsf{overrideOk}(\gen{D}{\pl{V}},M_k)
+  \forall C'',\pl{T}''\ldotp\subtype{\Delta}{\gen{C'}{\pl{T}'}}{\gen{C''}{\pl{T}''}}\Rightarrow
+    \forall i\ldotp\mathsf{overrideOk}(\gen{C''}{\pl{T}''},M_i)
 }{
   \subclass{C}{\Delta}{C'}{\pl{T}'}{M_1\ldots M_k}{T_1\;f_1\ldots T_n\;f_n}~\mathrm{Ok}
 }
@@ -720,19 +728,21 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \fbox{$\mathsf{overrideOk}(T,M)$}
 \and
 \inferrule[override-new]{
-  \subclass{D}{\_}{\_}{\_}{\pl{M}}{\_}\in\decls\\
+  \subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}\in\decls\\
   m\not\in\pl{M}
 }{
-  \mathsf{overrideOk}(\gen{D}{\pl{V}},\method{\_}{\_}{m}{\_}{\_})
+  \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\_}{\_}{m}{\_}{\_})
 }
 \and
 \inferrule[override-same]{
-  \subclass{D}{\Delta_D}{\_}{\_}{\pl{M}}{\_}\in\decls\\
-  \method{\ext{Y_1}{U'_1},\ldots,\ext{Y_h}{U'_h}}{T'_0}{m}{T'_1~y_1,\ldots,T'_l~y_l}{\_}\in\pl{M}\\
-  \tsubst{U'_i}{\Delta_D,Y_1\ldots Y_h}{\pl{V},X_1\ldots X_h}=U_i\\
-  \tsubst{T'_j}{\Delta_D,Y_1\ldots Y_h}{\pl{V},X_1\ldots X_h}=T_j
+  \subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}\in\decls\\
+  \method{\Delta''}{T'_0}{m}{T'_1~y_1,\ldots,T'_l~y_l}{\_}\in\pl{M}\\
+  \mathrm{dom}(\Delta'')=Y_1\ldots Y_h\\
+  \mathrm{dom}(\Delta')=X_1\ldots X_h\\
+  \tsubst{\Delta''(Y_i)}{\Delta,Y_1\ldots Y_h}{\pl{T},X_1\ldots X_h}=\Delta'(X_i)\\
+  \tsubst{T'_j}{\Delta,Y_1\ldots Y_h}{\pl{T},X_1\ldots X_h}=T_j
 }{
-  \mathsf{overrideOk}(\gen{D}{\pl{V}},\method{\ext{X_1}{U_1},\ldots,\ext{X_h}{U_h}}{T_0}{m}{T_1~x_1,\ldots,T_l~x_l}{\_})
+  \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T_0}{m}{T_1~x_1,\ldots,T_l~x_l}{\_})
 }
     \end{mathpar}
     \caption{Typing of classes and programs}
