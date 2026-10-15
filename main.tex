@@ -282,6 +282,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \newcommand{\match}[2]{\ensuremath{\mathsf{match}(#1,#2)}\xspace}
 
 \newcommand{\declared}[1]{\ensuremath{#1~\mathsf{declared}}}
+\newcommand{\generic}[1]{\ensuremath{\mathrm{generic}(#1)}\xspace}
 
 
 \begin{figure}[H]
@@ -332,6 +333,12 @@ So there remains a need to articulate a solution to this problem where generics 
 %
 \end{array}
 \]
+\caption{Syntax}
+\label{fig:syntax}
+\end{figure}
+
+\begin{figure}[H]
+\centering
 \begin{mathpar}
 \fbox{\declared{K}}
 \and
@@ -359,24 +366,40 @@ So there remains a need to articulate a solution to this problem where generics 
 \end{mathpar}
 \[
 \begin{array}{rcl}
-\mathsf{declared}(C) & = & \Delta \quad\textrm{if }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls\\
-\mathsf{declared}(C_0) & = & \{\ext{X}{T}\mid\ext{X}{T}\in\mathsf{declared}(C),\Delta'\land\funnel{X}\in\pl{F}\}\\
+\mathsf{scope}(\gen{C}{T_1\ldots T_n}) & = & \ext{X_1}{T'_1}\ldots\ext{X_n}{T'_n};T_1\ldots T_n\\
+\multicolumn{3}{l}{\quad\textrm{if }\subclass{C}{\ext{X_1}{T'_1}\ldots\ext{X_n}{T'_n}}{\_}{\_}{\_}{\_}\in\decls}\\
+\mathsf{scope}(\gen{C_0}{T_1\ldots T_n}) & = & (\ext{X_i}{T'_i})_{F_i=\funnel{X_i}};(T_i)_{F_i=\funnel{X_i}}\\
 \multicolumn{3}{l}{\quad\textrm{if }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}}\\
 \multicolumn{3}{l}{\quad\phantom{\textrm{if }}\textrm{or }\declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}},}\\
 \multicolumn{3}{l}{\quad\phantom{\textrm{if }}\method{\Delta'}{\_}{m}{\_}{\ret{e}}\in\pl{M},}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e}
+\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\innerobj{C_0}{F_1\ldots F_n}{\_}{\_}{\_}{\_}\textrm{ occurs in }e,}\\
+\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\mathsf{scope}(\generic{C})=\Delta_C;\_,}\\
+\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\ext{X_i}{T'_i}\in\Delta_C,\Delta'\textrm{ for every }F_i=\funnel{X_i},}\\
+\multicolumn{3}{l}{\quad\phantom{\textrm{if }}T_i=G_i\textrm{ for every }F_i=G_i}
 \end{array}
 \]
-\caption{Syntax and Declaration Checking}
-\label{fig:syntax}
+\[
+\begin{array}{rcl}
+\generic{C} & = & \gen{C}{\mathrm{dom}(\Delta)} \quad\textrm{if }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls\\
+\generic{C} & = & \gen{C}{|\pl{F}|} \quad\textrm{if }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}\\
+|\funnel{X}| & = & X\\
+|G| & = & G
+\end{array}
+\]
+\caption{Declarations}
+\label{fig:declarations}
 \end{figure}
 
 Class names are unique across top-level and local classes, field names are unique across all classes, method names are unique in each class, and the main expression contains no local classes;
 thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
-The bounds $\mathsf{declared}(C)$ are the bounds of the type variables that the methods of $C$ see, without the type variables of the methods themselves:
-the bounds of a top-level class, or the bounds of the funnelled type variables in the scope where a local class is written.
+For a class type $\gen{C}{\pl{T}}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}''$ gives the bounds $\Delta_0$ of the type variables that the methods of $C$ see, without the type variables of the methods themselves.
+It also gives the types $\pl{T}''$ that the arguments $\pl{T}$ assign to the type variables in $\Delta_0$.
+For a top-level class, $\Delta_0$ is the bounds of the class and $\pl{T}''=\pl{T}$.
+For a local class, $\Delta_0$ is the bounds of the funnelled type variables in the scope where the local class is written, and $\pl{T}''$ is the arguments at the positions of the funnelled type variables.
+The argument at the position of a ground funnel $G$ must be $G$ itself.
+The notation $(a_i)_{P(i)}$ is the subsequence of $a_1\ldots a_n$ made of the elements whose index $i$ satisfies $P(i)$.
 An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$.
-Contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{declared}(C)$ has a single value for every local class $C$.
+Contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
 The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every top-level class reaches \Object.
 
 \begin{figure}[H]\small
@@ -535,7 +558,6 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \newcommand{\kind}[2]{\ensuremath{#1 \vdash #2 ~\mathrm{Ok}}\xspace}
 \newcommand{\mok}[3]{\ensuremath{#1;#2\vdash #3~\mathrm{Ok}}\xspace}
 \newcommand{\cast}[3]{\ensuremath{#1\vdash #2 \rightsquigarrow #3}\xspace}
-\newcommand{\generic}[1]{\ensuremath{\mathrm{generic}(#1)}\xspace}
 \newcommand{\ftv}[1]{\ensuremath{\mathsf{FTV}(#1)}\xspace}
 \newcommand{\classtype}[2]{\gen{#1}{#2}\xspace}
 
@@ -743,6 +765,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \end{figure}
 
 A judgement or predicate on a sequence holds when it holds on every element of the sequence: for example $\mok{\Delta}{\Gamma}{\pl{M}}$, $\kind{\Delta}{\pl{T}}$ and $\mathsf{overrideOk}(T,\pl{M})$.
+A judgement on two sequences of the same length holds when it holds on every pair of elements at the same position: for example $\subtype{\Delta}{\pl{T}}{\pl{T}'}$.
 For a sequence of type variables $\pl{X}$, $\Delta(\pl{X})$ is the sequence of their bounds in $\Delta$.
 Rule \textsc{class-ok} types the methods of a top-level class with \this of type $\gen{C}{\mathrm{dom}(\Delta)}$.
 A method that a class declares again must keep the signature it has in every superclass, up to the names of its own type variables:
@@ -760,11 +783,9 @@ A method that a class declares again must keep the signature it has in every sup
 }
 \and
 \inferrule[wf-class]{
-  \mathsf{declared}(C)=\Delta_0\\
-  \generic{C}=\gen{C}{\pl{T}'}\\
-  \tsubst{\gen{C}{\pl{T}'}}{\Delta_0}{\pl{T}''}=\gen{C}{\pl{T}}\\
+  \mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}''\\
   \kind{\Delta}{\pl{T}}\\
-  \forall\ext{X}{T}\in\Delta_0\ldotp\subtype{\Delta}{\tsubst{X}{\Delta_0}{\pl{T}''}}{\tsubst{T}{\Delta_0}{\pl{T}''}}
+  \subtype{\Delta}{\pl{T}''}{\tsubst{\Delta_0(\mathrm{dom}(\Delta_0))}{\Delta_0}{\pl{T}''}}
 }{
   \kind{\Delta}{\gen{C}{\pl{T}}}
 }
@@ -798,23 +819,12 @@ A method that a class declares again must keep the signature it has in every sup
     \label{fig:kinding}
 \end{figure}
 
-Rule \textsc{wf-class} kinds both top-level and local classes.
-For a top-level class $C$, $\Delta_0$ is the bounds of $C$ and $\pl{T}'=\mathrm{dom}(\Delta_0)$.
-Thus $\pl{T}''=\pl{T}$, and every argument in $\pl{T}$ is checked against its bound.
-For a local class $C$ with funnels $\pl{F}$, $\Delta_0$ is the bounds of the funnelled type variables in the scope where $C$ is written, and $\pl{T}'=|\pl{F}|$.
-Thus the argument at the position of a ground funnel $G$ is $G$ itself, and the argument at the position of a funnel $\funnel{X}$ is checked against the bound of $X$.
-A local class written in a method of another local class is kinded in the same way, since $\mathsf{declared}(C)$ covers it.
+Rule \textsc{wf-class} kinds both top-level and local classes, including a local class written in a method of another local class.
+Every type in $\pl{T}''$ is checked against the bound of its type variable in $\Delta_0$.
+A funnelled type variable that is not in scope where its local class $C$ is written leaves $\mathsf{scope}(\gen{C}{\pl{T}})$ undefined; thus no type $\gen{C}{\pl{T}}$ is well kinded.
 
 \begin{figure}[H]\small
     \centering
-\[
-\begin{array}{rcl}
-\generic{C} & = & \gen{C}{\mathrm{dom}(\Delta)} \quad\textrm{if }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls\\
-\generic{C} & = & \gen{C}{|\pl{F}|} \quad\textrm{if }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}\\
-|\funnel{X}| & = & X\\
-|G| & = & G
-\end{array}
-\]
     \begin{mathpar}
 \fbox{\cast{\Delta}{T}{T'}}
 \and
