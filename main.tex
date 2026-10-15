@@ -418,7 +418,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \and
 \inferrule*[left=ifThenErased]{
     v\in\{\obj{C}{\pl{G}}{\_}, \innerobj{C}{\pl{G}}{\_}{\_}{\_}{\_}\}\\
-    \epsilon\vdash \gen{C}{\pl{G}} <: \gen{C'}{\_}
+    \emptyset\vdash \gen{C}{\pl{G}} <: \gen{C'}{\_}
     %\match{v}{C\langle\_\rangle} = \mathsf{true}
 }{
     \step{\ifthen{v}{\gen{C'}{\pl{T}}}{x}{e_1}{e_2}}
@@ -429,7 +429,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
     %v\not\in\{\obj{C}{\_}{\_}, \innerobj{C}{\_}{\_}{\_}{\_}{\_}\}
     %\match{v}{C\langle\_\rangle} = \mathsf{false}
     v\in\{\obj{C}{\pl{G}}{\_}, \innerobj{C}{\pl{G}}{\_}{\_}{\_}{\_}\}\\
-    \epsilon\not\vdash \gen{C}{\pl{G}} <: \gen{C'}{\_}
+    \emptyset\not\vdash \gen{C}{\pl{G}} <: \gen{C'}{\_}
 }{
     \step{\ifthen{v}{\gen{C'}{\pl{T}}}{x}{e_1}{e_2}}
     {e_2}
@@ -626,14 +626,12 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
   \forall i\ldotp F_i=\funnel{X_i} \Rightarrow \ext{X_i}{\_}\in\Delta\\
   \forall \ext{X}{T}\in\Delta'\ldotp \ftv{T}\subseteq\mathrm{dom}(\Delta')\\
   \Gamma'=\{ T\;x \mid T\;x\in\Gamma \land x\neq\this \land \ftv{T}\subseteq\ftv{T_1\ldots T_n} \}\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
-  \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{M_1}
-  ~\ldots~
-  \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{M_k}\\
+  \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{\pl{M}}\\
   \forall C'',\pl{T}''\ldotp\subtype{\Delta'}{\gen{C'}{\pl{T}'}}{\gen{C''}{\pl{T}''}}\Rightarrow
-    \forall i\ldotp\mathsf{overrideOk}(\gen{C''}{\pl{T}''},M_i)
+    \mathsf{overrideOk}(\gen{C''}{\pl{T}''},\pl{M})
 }{
   \typing{\Delta}{\Gamma}{
-    \innerobj{C}{F_1\ldots F_n}{C'}{\pl{T}'}{\pl{e}}{M_1\ldots M_k}
+    \innerobj{C}{F_1\ldots F_n}{C'}{\pl{T}'}{\pl{e}}{\pl{M}}
   }{\gen{C}{T_1\ldots T_n}}
 }
 %
@@ -660,12 +658,10 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
   \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}'}{\pl{e}}}{\_}\\
   \kind{\Delta}{\gen{C'}{\pl{T}'}}\\
   %\kind{\Delta}{C\langle\rangle}\\
-  \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\;\this}{M_1}
-  \ldots
-  \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\;\this}{M_k}
+  \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\;\this}{\pl{M}}
 }{
   \typing{\Delta}{\Gamma}{
-    \innerobj{C}{}{C'}{\pl{T}'}{\pl{e}}{M_1\ldots M_k}
+    \innerobj{C}{}{C'}{\pl{T}'}{\pl{e}}{\pl{M}}
   }{\gen{C}{}}
 }
 \and
@@ -679,7 +675,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
   \typing{\Delta}{\Gamma}{\ifthen{e_0}{T}{x}{e_1}{e_2}}{T'}
 }
 \and
-\fbox{\mok{\Gamma}{\Delta}{M}}
+\fbox{\mok{\Delta}{\Gamma}{M}}
 \and
 \inferrule[method-ok]{
   \typing{\Delta,\Delta'}{\Gamma,T_1\;x_1,\ldots,T_n\;x_n}{e}{T_0}\\
@@ -715,14 +711,12 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
   \forall\ext{X}{T}\in\Delta\ldotp\kind{\Delta}{T}\\
   \subclass{C'}{\_}{\_}{\_}{\_}{\_}\in\decls\\
   \kind{\Delta}{\gen{C'}{\pl{T}'}}\\
-  \kind{\Delta}{T_1}\ldots\kind{\Delta}{T_n}\\
-  \mok{\Delta}{\gen{C}{\mathrm{dom}(\Delta)}\;\this}{M_1}
-  \ldots
-  \mok{\Delta}{\gen{C}{\mathrm{dom}(\Delta)}\;\this}{M_k}\\
+  \kind{\Delta}{\pl{T}}\\
+  \mok{\Delta}{\gen{C}{\mathrm{dom}(\Delta)}\;\this}{\pl{M}}\\
   \forall C'',\pl{T}''\ldotp\subtype{\Delta}{\gen{C'}{\pl{T}'}}{\gen{C''}{\pl{T}''}}\Rightarrow
-    \forall i\ldotp\mathsf{overrideOk}(\gen{C''}{\pl{T}''},M_i)
+    \mathsf{overrideOk}(\gen{C''}{\pl{T}''},\pl{M})
 }{
-  \subclass{C}{\Delta}{C'}{\pl{T}'}{M_1\ldots M_k}{T_1\;f_1\ldots T_n\;f_n}~\mathrm{Ok}
+  \subclass{C}{\Delta}{C'}{\pl{T}'}{\pl{M}}{\pl{T}\;\pl{f}}~\mathrm{Ok}
 }
 \and
 \fbox{$\mathsf{overrideOk}(T,M)$}
@@ -736,19 +730,21 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \and
 \inferrule[override-same]{
   \subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}\in\decls\\
-  \method{\Delta''}{T'_0}{m}{T'_1~y_1,\ldots,T'_l~y_l}{\_}\in\pl{M}\\
-  \mathrm{dom}(\Delta'')=Y_1\ldots Y_h\\
-  \mathrm{dom}(\Delta')=X_1\ldots X_h\\
-  \tsubst{\Delta''(Y_i)}{\Delta,Y_1\ldots Y_h}{\pl{T},X_1\ldots X_h}=\Delta'(X_i)\\
-  \tsubst{T'_j}{\Delta,Y_1\ldots Y_h}{\pl{T},X_1\ldots X_h}=T_j
+  \method{\Delta''}{T''_0}{m}{\pl{T}''\;\pl{x}'}{\_}\in\pl{M}\\
+  \mathrm{dom}(\Delta')=\pl{X}\\
+  \mathrm{dom}(\Delta'')=\pl{X}'\\
+  \tsubst{\Delta''(\pl{X}')}{\Delta,\pl{X}'}{\pl{T},\pl{X}}=\Delta'(\pl{X})\\
+  \tsubst{T''_0\;\pl{T}''}{\Delta,\pl{X}'}{\pl{T},\pl{X}}=T'_0\;\pl{T}'
 }{
-  \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T_0}{m}{T_1~x_1,\ldots,T_l~x_l}{\_})
+  \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{\pl{T}'\;\pl{x}}{\_})
 }
     \end{mathpar}
     \caption{Typing of classes and programs}
     \label{fig:classtyping}
 \end{figure}
 
+A judgement or predicate on a sequence holds when it holds on every element of the sequence: for example $\mok{\Delta}{\Gamma}{\pl{M}}$, $\kind{\Delta}{\pl{T}}$ and $\mathsf{overrideOk}(T,\pl{M})$.
+For a sequence of type variables $\pl{X}$, $\Delta(\pl{X})$ is the sequence of their bounds in $\Delta$.
 Rule \textsc{class-ok} types the methods of a top-level class with \this of type $\gen{C}{\mathrm{dom}(\Delta)}$.
 A method that a class declares again must keep the signature it has in every superclass, up to the names of its own type variables:
 \textsc{call-top} reads the signature from the class chosen by subsumption, while the reduction runs the method of the class of the receiver.
@@ -915,15 +911,15 @@ the free type variables of the substituted types and from the bounds in scope, s
   \multicolumn{3}{l}{\quad\explicitcall{\tsubst{e}{\pl{x}}{\pl{v}}}{T}{\pl{T}}{m}{\tsubst{\pl{e}'}{\pl{x}}{\pl{v}}}}\\
 \tsubst{e\fstop f}{\pl{x}}{\pl{v}} & = & \tsubst{e}{\pl{x}}{\pl{v}}\fstop f\\
 \tsubst{\obj{C}{\pl{T}}{\pl{e}}}{\pl{x}}{\pl{v}} & = & \obj{C}{\pl{T}}{\tsubst{\pl{e}}{\pl{x}}{\pl{v}}}\\
-\tsubst{\ifthen{e_0}{T}{y}{e_1}{e_2}}{\pl{x}}{\pl{v}} & = & \\
-  \multicolumn{3}{l}{\quad\ifthen{\tsubst{e_0}{\pl{x}}{\pl{v}}}{T}{y}{\tsubst{e_1}{\pl{x}}{\pl{v}}}{\tsubst{e_2}{\pl{x}}{\pl{v}}}}\\
+\tsubst{\ifthen{e_0}{T}{x'}{e_1}{e_2}}{\pl{x}}{\pl{v}} & = & \\
+  \multicolumn{3}{l}{\quad\ifthen{\tsubst{e_0}{\pl{x}}{\pl{v}}}{T}{x'}{\tsubst{e_1}{\pl{x}}{\pl{v}}}{\tsubst{e_2}{\pl{x}}{\pl{v}}}}\\
 \tsubst{\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}{\pl{x}}{\pl{v}} & = & \\
   \multicolumn{3}{l}{\quad\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\tsubst{\pl{e}}{\pl{x}}{\pl{v}}}{\tsubst{\pl{M}}{\pl{x}}{\pl{v}}} \quad\textrm{if }\this\not\in\pl{x}}\\
 \tsubst{\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'} & = & \\
   \multicolumn{3}{l}{\quad\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\tsubst{\pl{e}}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'}}{\tsubst{\pl{M}}{\pl{x},\pl{x}'}{\pl{v},\pl{v}'}}}\\
 \\
-\tsubst{\method{\Delta}{T_0}{m}{\pl{T}\;\pl{y}}{\ret{e}}}{\pl{x}}{\pl{v}} & = & \\
-  \multicolumn{3}{l}{\quad\method{\Delta}{T_0}{m}{\pl{T}\;\pl{y}}{\ret{\tsubst{e}{\pl{x}}{\pl{v}}}}}
+\tsubst{\method{\Delta}{T_0}{m}{\pl{T}\;\pl{x}'}{\ret{e}}}{\pl{x}}{\pl{v}} & = & \\
+  \multicolumn{3}{l}{\quad\method{\Delta}{T_0}{m}{\pl{T}\;\pl{x}'}{\ret{\tsubst{e}{\pl{x}}{\pl{v}}}}}
 \end{array}
 \]
     \caption{Substitution of variables}
@@ -932,7 +928,7 @@ the free type variables of the substituted types and from the bounds in scope, s
 
 A method-local class binds \this, as in Java: inside the methods of a method-local class, \this is the local object, and the outer \this is hidden.
 Thus substitution of variables enters the methods of a method-local class for every variable except \this.
-The variable $y$ of an \kw{if} and the parameters $\pl{y}$ of a method are never in $\pl{x}$, so no renaming is ever needed.
+The variable $x'$ of an \kw{if} and the parameters $\pl{x}'$ of a method are never in $\pl{x}$, so no renaming is ever needed.
 \mjnote{rule \textsc{if-instanceof} follows Java 16+: the target \texttt{T} is accepted only if it is a supertype of the static type, or a subtype whose arguments the static type determines (Figure~\ref{fig:cast}). Under Java typing a local class is declared \texttt{new MyFoo<> extends Foo<X>}, so \texttt{generic(MyFoo)} has no variables and \textsc{cast-down} accepts \texttt{instanceof MyFoo<>} from \texttt{Object}: this is the unsoundness. Under funnelling \texttt{generic(MyFoo)=MyFoo<X>}, accepted from \texttt{Foo<X>} but not from \texttt{Object}. The prose should explain this.}
 
 \ldots
