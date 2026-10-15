@@ -276,6 +276,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \newcommand{\methodsig}[4]{\ensuremath{\OA#1\CA#2\;#3\OR#4\CR}\xspace}
 \newcommand{\method}[5]{\ensuremath{\methodsig{#1}{#2}{#3}{#4}\;\OC\;#5\;\CC}\xspace}
 \newcommand{\this}[0]{\kw{this}\xspace}
+\newcommand{\Object}{\QQ{Object}}
 
 \newcommand{\tsubst}[3]{\ensuremath{#1[#2=#3]}\xspace}
 \newcommand{\match}[2]{\ensuremath{\mathsf{match}(#1,#2)}\xspace}
@@ -353,8 +354,10 @@ So there remains a need to articulate a solution to this problem where generics 
 \label{fig:syntax}
 \end{figure}
 
-Class names are unique across top-level and local classes, and the main expression contains no local classes;
+Class names are unique across top-level and local classes, field names are unique across all classes, method names are unique in each class, and the main expression contains no local classes;
 thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
+The class \Object is not declared in \decls: it has no fields and no methods.
+Inheritance among top-level classes is acyclic, so every chain of superclasses ends in \Object.
 
 \begin{figure}[H]\small
     \centering
@@ -580,6 +583,10 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
   }{T_0'}
 }
 \and
+\inferrule[new-object]{ }{
+  \typing{\Delta}{\Gamma}{\obj{\Object}{}{}}{\gen{\Object}{}}
+}
+\and
 \inferrule[new-top]{
   \declared{\subclass{C}{\Delta'}{C'}{\pl{T}'}{\pl{M}}{T_1\;f_1\ldots T_n\;f_n}}\\
   \typing{\Delta}{\Gamma}{\obj{C'}{\tsubst{\pl{T}'}{\Delta'}{\pl{T}}}{\pl{e}}}{\_}\\
@@ -601,7 +608,9 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
   \Gamma'=\{ T\;x \mid T\;x\in\Gamma \land x\neq\this \land \ftv{T}\subseteq\ftv{T_1\ldots T_n} \}\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
   \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{M_1}
   ~\ldots~
-  \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{M_k}
+  \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{M_k}\\
+  \forall D,\pl{V}\ldotp\subtype{\Delta'}{\gen{C'}{\pl{T}'}}{\gen{D}{\pl{V}}}\Rightarrow
+    \mathsf{overrideOk}(\gen{D}{\pl{V}},M_1)\land\ldots\land\mathsf{overrideOk}(\gen{D}{\pl{V}},M_k)
 }{
   \typing{\Delta}{\Gamma}{
     \innerobj{C}{F_1\ldots F_n}{C'}{\pl{T}'}{\pl{e}}{M_1\ldots M_k}
@@ -671,12 +680,74 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 \begin{figure}[H]\small
     \centering
     \begin{mathpar}
+\fbox{$\vdash\decls\;e~\mathrm{Ok}$}
+\and
+\inferrule[prog-ok]{
+  \forall\mathsf{Dec}\in\decls\ldotp\mathsf{Dec}~\mathrm{Ok}\\
+  \typing{\emptyset}{\emptyset}{e}{\_}
+}{
+  \vdash\decls\;e~\mathrm{Ok}
+}
+\and
+\fbox{$\mathsf{Dec}~\mathrm{Ok}$}
+\and
+\inferrule[class-ok]{
+  \forall\ext{X}{T}\in\Delta\ldotp\kind{\Delta}{T}\\
+  C'=\Object\lor\subclass{C'}{\_}{\_}{\_}{\_}{\_}\in\decls\\
+  \kind{\Delta}{\gen{C'}{\pl{T}'}}\\
+  \kind{\Delta}{T_1}\ldots\kind{\Delta}{T_n}\\
+  \mok{\Delta}{\gen{C}{\mathrm{dom}(\Delta)}\;\this}{M_1}
+  \ldots
+  \mok{\Delta}{\gen{C}{\mathrm{dom}(\Delta)}\;\this}{M_k}\\
+  \forall D,\pl{V}\ldotp\subtype{\Delta}{\gen{C'}{\pl{T}'}}{\gen{D}{\pl{V}}}\Rightarrow
+    \mathsf{overrideOk}(\gen{D}{\pl{V}},M_1)\land\ldots\land\mathsf{overrideOk}(\gen{D}{\pl{V}},M_k)
+}{
+  \subclass{C}{\Delta}{C'}{\pl{T}'}{M_1\ldots M_k}{T_1\;f_1\ldots T_n\;f_n}~\mathrm{Ok}
+}
+\and
+\fbox{$\mathsf{overrideOk}(T,M)$}
+\and
+\inferrule[override-object]{ }{
+  \mathsf{overrideOk}(\gen{\Object}{},M)
+}
+\and
+\inferrule[override-new]{
+  \subclass{D}{\_}{\_}{\_}{\pl{M}}{\_}\in\decls\\
+  m\not\in\pl{M}
+}{
+  \mathsf{overrideOk}(\gen{D}{\pl{V}},\method{\_}{\_}{m}{\_}{\_})
+}
+\and
+\inferrule[override-same]{
+  \subclass{D}{\Delta_D}{\_}{\_}{\pl{M}}{\_}\in\decls\\
+  \method{\ext{Y_1}{U'_1},\ldots,\ext{Y_h}{U'_h}}{T'_0}{m}{T'_1~y_1,\ldots,T'_l~y_l}{\_}\in\pl{M}\\
+  \tsubst{U'_i}{\Delta_D,Y_1\ldots Y_h}{\pl{V},X_1\ldots X_h}=U_i\\
+  \tsubst{T'_j}{\Delta_D,Y_1\ldots Y_h}{\pl{V},X_1\ldots X_h}=T_j
+}{
+  \mathsf{overrideOk}(\gen{D}{\pl{V}},\method{\ext{X_1}{U_1},\ldots,\ext{X_h}{U_h}}{T_0}{m}{T_1~x_1,\ldots,T_l~x_l}{\_})
+}
+    \end{mathpar}
+    \caption{Typing of classes and programs}
+    \label{fig:classtyping}
+\end{figure}
+
+Rule \textsc{class-ok} types the methods of a top-level class with \this of type $\gen{C}{\mathrm{dom}(\Delta)}$.
+A method that a class declares again must keep the signature it has in every superclass, up to the names of its own type variables:
+\textsc{call-top} reads the signature from the class chosen by subsumption, while the reduction runs the method of the class of the receiver.
+
+\begin{figure}[H]\small
+    \centering
+    \begin{mathpar}
 \fbox{\kind{\Delta}{T}}
 \and
 \inferrule[wf-var]{
   \ext{X}{\_}\in\Delta
 }{
   \kind{\Delta}{X}
+}
+\and
+\inferrule[wf-object]{ }{
+  \kind{\Delta}{\gen{\Object}{}}
 }
 \and
 \inferrule[wf-outer]{
@@ -830,8 +901,8 @@ the free type variables of the substituted types and from the bounds in scope, s
   \multicolumn{3}{l}{\quad\ifthen{\tsubst{e_0}{\pl{x}}{\pl{v}}}{T}{y}{\tsubst{e_1}{\pl{x}}{\pl{v}}}{\tsubst{e_2}{\pl{x}}{\pl{v}}}}\\
 \tsubst{\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}{\pl{x}}{\pl{v}} & = & \\
   \multicolumn{3}{l}{\quad\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\tsubst{\pl{e}}{\pl{x}}{\pl{v}}}{\tsubst{\pl{M}}{\pl{x}}{\pl{v}}} \quad\textrm{if }\this\not\in\pl{x}}\\
-\tsubst{\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}{\this,\pl{x}}{v,\pl{v}} & = & \\
-  \multicolumn{3}{l}{\quad\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\tsubst{\pl{e}}{\this,\pl{x}}{v,\pl{v}}}{\tsubst{\pl{M}}{\pl{x}}{\pl{v}}}}\\
+\tsubst{\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'} & = & \\
+  \multicolumn{3}{l}{\quad\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\tsubst{\pl{e}}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'}}{\tsubst{\pl{M}}{\pl{x},\pl{x}'}{\pl{v},\pl{v}'}}}\\
 \\
 \tsubst{\method{\Delta}{T_0}{m}{\pl{T}\;\pl{y}}{\ret{e}}}{\pl{x}}{\pl{v}} & = & \\
   \multicolumn{3}{l}{\quad\method{\Delta}{T_0}{m}{\pl{T}\;\pl{y}}{\ret{\tsubst{e}{\pl{x}}{\pl{v}}}}}
@@ -844,7 +915,7 @@ the free type variables of the substituted types and from the bounds in scope, s
 A method-local class binds \this, as in Java: inside the methods of a method-local class, \this is the local object, and the outer \this is hidden.
 Thus substitution of variables enters the methods of a method-local class for every variable except \this.
 The variable $y$ of an \kw{if} and the parameters $\pl{y}$ of a method are never in $\pl{x}$, so no renaming is ever needed.
-\mjnote{rule \textsc{if-instanceof} follows Java 16+: the target \texttt{T} is accepted only if it is a supertype of the static type, or a subtype whose arguments the static type determines (Figure~\ref{fig:cast}). Under Java typing a local class is declared \texttt{new MyFoo<> extends Foo<X>}, so \texttt{generic(MyFoo)} has no variables and \textsc{cast-down} accepts \texttt{instanceof MyFoo<>} from \texttt{Any}: this is the unsoundness. Under funnelling \texttt{generic(MyFoo)=MyFoo<X>}, accepted from \texttt{Foo<X>} but not from \texttt{Any}. The prose should explain this.}
+\mjnote{rule \textsc{if-instanceof} follows Java 16+: the target \texttt{T} is accepted only if it is a supertype of the static type, or a subtype whose arguments the static type determines (Figure~\ref{fig:cast}). Under Java typing a local class is declared \texttt{new MyFoo<> extends Foo<X>}, so \texttt{generic(MyFoo)} has no variables and \textsc{cast-down} accepts \texttt{instanceof MyFoo<>} from \texttt{Object}: this is the unsoundness. Under funnelling \texttt{generic(MyFoo)=MyFoo<X>}, accepted from \texttt{Foo<X>} but not from \texttt{Object}. The prose should explain this.}
 
 \ldots
 
@@ -876,7 +947,7 @@ As a result we consider:
 \item $\zeta(\mathsf{erased},\mathsf{funnelled})$, which applies funnelling to a model with generic erasure
 \item $\zeta(\mathsf{reified},\mathsf{funnelled})$, which applies funnelling to a model with reified generics that are checked during casts
 \end{enumerate}
-\mjnote{with the checked-cast premise, erased and reified agree on well-typed programs, so the four variants collapse to two: $\zeta(\mathsf{Java})$, unsound because \textsc{cast-down} accepts \texttt{MyFoo<>} from \texttt{Any}, and $\zeta(\mathsf{funnelled})$, sound. The reified runtime matters only without the premise, where $\zeta(\mathsf{reified},\mathsf{Java})$ also depends on a shallow or deep check (see Colin's note in Miscellaneous).}
+\mjnote{with the checked-cast premise, erased and reified agree on well-typed programs, so the four variants collapse to two: $\zeta(\mathsf{Java})$, unsound because \textsc{cast-down} accepts \texttt{MyFoo<>} from \texttt{Object}, and $\zeta(\mathsf{funnelled})$, sound. The reified runtime matters only without the premise, where $\zeta(\mathsf{reified},\mathsf{Java})$ also depends on a shallow or deep check (see Colin's note in Miscellaneous).}
 
 \section{Miscellaneous}
 
@@ -913,45 +984,44 @@ named inner classes.
 This imports the concept of method local inner classes within an expression based calculus.
 //our model will also need casts + instanceof
 \begin{lstlisting}
-class Any{}
 class A{ A onlyA()-> new A() }
 class B{ B onlyB()-> new B() }
-class Foo<X> extends Any{ X x() {return x();} }
+class Foo<X> extends Object{ X x() {return x();} }
 public class Broken {
-  <X> Foo<X> m(Any other, X x) ->
+  <X> Foo<X> m(Object other, X x) ->
     if(other instanceof MyFoo)
       then ((MyFoo)other)
       else new MyFoo() extends Foo<X>{ X x(){ return x; } }//Bad
   }
 main:
-  new Broken().<B>m(new Broken().<A>m(new Any(),new A()),new B()).x().onlyB();
+  new Broken().<B>m(new Broken().<A>m(new Object(),new A()),new B()).x().onlyB();
 \end{lstlisting}
 
 
 \begin{lstlisting}
-class Foo<X> extends Any{ X x() {return x();} }
+class Foo<X> extends Object{ X x() {return x();} }
 public class Broken {
-  <X> Foo<X> m(Any other, X x) ->
+  <X> Foo<X> m(Object other, X x) ->
     if(other instanceof MyFoo<X>) //unchecked instanceof (ill typed in our core)?
       then ((MyFoo<X>)other)//unchecked cast (ill typed in our core)?
       else new MyFoo<X>() extends Foo<X>{ public X x(){ return x; } }//good
   }
 \end{lstlisting}
-\mjnote{answered by Figure~\ref{fig:cast}: with \texttt{other : Any}, \texttt{other instanceof MyFoo<X>} is ill typed, because \texttt{X} is not determined by \texttt{Any} (as javac: \texttt{Object cannot be safely cast to MyFoo<X>}). With \texttt{other : Foo<X>} it is well typed and sound under erasure.}
+\mjnote{answered by Figure~\ref{fig:cast}: with \texttt{other : Object}, \texttt{other instanceof MyFoo<X>} is ill typed, because \texttt{X} is not determined by \texttt{Object} (as javac: \texttt{Object cannot be safely cast to MyFoo<X>}). With \texttt{other : Foo<X>} it is well typed and sound under erasure.}
 
 Note how funnelling purpose is to insert the generics. Without funnelling, MyFoo is a non generic type, so the question about generic reification does not even arise.
 
 small step reduction
 \begin{verbatim}
-01:  new Broken().<B>m(new Broken().<A>m(new Any(),new A()),new B()).x().onlyB();
+01:  new Broken().<B>m(new Broken().<A>m(new Object(),new A()),new B()).x().onlyB();
 02:  new Broken().<B>m(
-    if(new Any() instanceof MyFoo<X>)
-      then (MyFoo<A>) new Any()
+    if(new Object() instanceof MyFoo<X>)
+      then (MyFoo<A>) new Object()
       else new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
       ,new B()).x().onlyB();
 03:  new Broken().<B>m(
     if(false)
-      then (MyFoo<A>) new Any()
+      then (MyFoo<A>) new Object()
       else new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
       ,new B()).x().onlyB();
 04:  new Broken().<B>m(
@@ -979,7 +1049,7 @@ small step reduction
        else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
 \end{verbatim}
 
-// Maybe above we want MyFoo:Any<A> and MyFoo:Any<B>?
+// Maybe above we want MyFoo:Object<A> and MyFoo:Object<B>?
 
 \begin{lstlisting}
 public class Broken {
@@ -1108,14 +1178,14 @@ This means the core language DO NEED if(e instanceof T x){} else {}
 
 using 'extends' for declarations in top level classes and generic methods
 using 'funnel' for named inner classes
-  new A<X funnel Any>(){ B<X> f()-> new B<X funnel Any>(){} }
-  new A<X funnel Any>(){ <K extends Any> B<X,K> f()-> new B<X funnel Any,K funnel Any>(){} }
+  new A<X funnel Object>(){ B<X> f()-> new B<X funnel Object>(){} }
+  new A<X funnel Object>(){ <K extends Object> B<X,K> f()-> new B<X funnel Object,K funnel Object>(){} }
   or, if the bounds are not repeated
-  new A<X funnel>(){ <K extends Any> B<X,K> f()-> new B<X funnel,K funnel>(){} }
+  new A<X funnel>(){ <K extends Object> B<X,K> f()-> new B<X funnel,K funnel>(){} }
 Very funky syntax:
-we get new B<X funnel Any,K funnel Any>(){}
+we get new B<X funnel Object,K funnel Object>(){}
 but, during reduction, this can become 
-we get new B<Person,K funnel Any>(){}
+we get new B<Person,K funnel Object>(){}
 where we have a mixture of concrete types and generic funnelling
 
 Global class definition uses class C<X extends Bar>{..}
@@ -1137,7 +1207,7 @@ G ::= x1:T1..xn:Tn
 //we do not need Object to be able to write 'extends Object'
 //this is exactly as the distinction of checked and unchecked exceptions: formally it evaporates in syntacitc sugar where all is checked
 //and all methods 'throws Error, RTE'
-// Can assume the user provides their own Object / Any type 
+// Can assume the user provides their own Object type
 Note: an use of X is just X, a declaration of X is X extends T; a funnelling of X is X funnel
 Program is just many Dec plus an e typable in empty
 MARCO TODO: 
