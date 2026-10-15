@@ -583,7 +583,8 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 \inferrule[new-top]{
   \declared{\subclass{C}{\Delta'}{C'}{\pl{T}'}{\pl{M}}{T_1\;f_1\ldots T_n\;f_n}}\\
   \typing{\Delta}{\Gamma}{\obj{C'}{\tsubst{\pl{T}'}{\Delta'}{\pl{T}}}{\pl{e}}}{\_}\\
-  \kind{\Delta}{\pl{T}}
+  \typing{\Delta}{\Gamma}{e_1}{\tsubst{T_1}{\Delta'}{\pl{T}}}\ldots\typing{\Delta}{\Gamma}{e_n}{\tsubst{T_n}{\Delta'}{\pl{T}}}\\
+  \kind{\Delta}{\gen{C}{\pl{T}}}
 }{
   \typing{\Delta}{\Gamma}{\obj{C}{\pl{T}}{e_1\ldots e_n ~ \pl{e}}}{\gen{C}{\pl{T}}}
 }
@@ -595,7 +596,8 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
   F_i=G_i\Rightarrow T_i=G_i\\
   \kind{\Delta'}{\gen{C}{T_1\ldots T_n}}\\
   \Delta' = \{ \ext{X}{T} \mid \ext{X}{T}\in\Delta \land \exists i\ldotp F_i=\funnel{X} \}\\ % \Delta' = \Delta | dom(F1..Fn)
-  \forall i\ldotp F_i=\funnel{X_i} \Rightarrow \ext{X_i}{\_}\in\Delta ~~\textrm{\textcolor{red}{what about $\ext{X_i}{Y}$ where $Y$ isn't funnelled?}}\\
+  \forall i\ldotp F_i=\funnel{X_i} \Rightarrow \ext{X_i}{\_}\in\Delta\\
+  \forall \ext{X}{T}\in\Delta'\ldotp \ftv{T}\subseteq\mathrm{dom}(\Delta')\\
   \Gamma'=\Gamma\setminus\ftv{T_1\ldots T_n}\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
   \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{M_1}
   ~\ldots~
