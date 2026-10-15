@@ -349,6 +349,32 @@ So there remains a need to articulate a solution to this problem where generics 
 }{
   \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}}
 }
+\and
+\fbox{$\Delta\vdash\declared{K}$}
+\and
+\inferrule[scoped-top]{
+  \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}\in\decls
+}{
+  \Delta\vdash\declared{\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}}
+}
+\and
+\inferrule[scoped-in-class]{
+  \subclass{C}{\Delta'}{\_}{\_}{\pl{M}}{\_}\in\decls\\
+  \method{\Delta''}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\
+  \innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}\textrm{ occurs directly in }e\\
+  \Delta_0=\{\ext{X}{T}\mid\ext{X}{T}\in\Delta',\Delta''\land\funnel{X}\in\pl{F}\}
+}{
+  \Delta_0\vdash\declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}}
+}
+\and
+\inferrule[scoped-in-local]{
+  \Delta'\vdash\declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}}\\
+  \method{\Delta''}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\
+  \innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}\textrm{ occurs directly in }e\\
+  \Delta_0=\{\ext{X}{T}\mid\ext{X}{T}\in\Delta',\Delta''\land\funnel{X}\in\pl{F}\}
+}{
+  \Delta_0\vdash\declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}}
+}
 \end{mathpar}
 \caption{Syntax and Declaration Checking}
 \label{fig:syntax}
@@ -356,6 +382,8 @@ So there remains a need to articulate a solution to this problem where generics 
 
 Class names are unique across top-level and local classes, field names are unique across all classes, method names are unique in each class, and the main expression contains no local classes;
 thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
+In $\Delta\vdash\declared{K}$, the bounds $\Delta$ are the bounds of the type variables that the methods of $K$ see, without the type variables of the methods themselves.
+A literal $L$ occurs directly in $e$ when $L$ occurs in $e$ outside of the methods of every literal in $e$; thus every local class has exactly one derivation of $\Delta\vdash\declared{K}$.
 The class \Object is not declared in \decls: it has no fields and no methods.
 Inheritance among top-level classes is acyclic, so every chain of superclasses ends in \Object.
 
@@ -769,6 +797,18 @@ A method that a class declares again must keep the signature it has in every sup
   \kind{\Delta}{\gen{C_0}{T_1\ldots T_n}}
 }
 \and
+\inferrule[wf-class]{
+  \Delta_0\vdash\declared{K}\\
+  K\in\{\subclass{C}{\_}{\_}{\_}{\_}{\_},\innerobj{C}{\_}{\_}{\_}{\_}{\_}\}\\
+  \generic{C}=\gen{C}{\pl{U}}\\
+  \Delta_0=\ext{X_1}{T''_1},\ldots,\ext{X_k}{T''_k}\\
+  \tsubst{\gen{C}{\pl{U}}}{X_1\ldots X_k}{T'_1\ldots T'_k}=\gen{C}{T_1\ldots T_n}\\
+  \kind{\Delta}{T_1}\ldots\kind{\Delta}{T_n}\\
+  \subtype{\Delta}{T'_j}{\tsubst{T''_j}{X_1\ldots X_k}{T'_1\ldots T'_k}}
+}{
+  \kind{\Delta}{\gen{C}{T_1\ldots T_n}}
+}
+\and
 \fbox{\subtype{\Delta}{T}{T'}}
 \and
 \inferrule[sub-refl]{ }{\subtype{\Delta}{T}{T}}
@@ -797,6 +837,8 @@ A method that a class declares again must keep the signature it has in every sup
     \caption{Kinding and Subtyping}
     \label{fig:kinding}
 \end{figure}
+
+\todo[inline]{Rule \textsc{wf-class} subsumes \textsc{wf-outer} and \textsc{wf-inner}: for a top-level class, $\Delta_0$ is the bounds of the class and $\pl{U}$ are its type variables; for a local class, $\Delta_0$ is the bounds of the funnelled type variables in the scope where the local class is written. It also kinds a local class written inside a method of another local class, which \textsc{wf-inner} does not.}
 
 \begin{figure}[H]\small
     \centering
