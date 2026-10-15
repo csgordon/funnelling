@@ -454,7 +454,7 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 \inferrule[innerFound]{
     v_0 = \innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}\\
     \method{\Delta'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\ret{e_0}} \in \pl{M}\\
-    e = \tsubst{\tsubst{e_0}{\Delta'}{\pl{G}'}}{x_1\ldots x_n}{v_1\ldots v_n}
+    e = \tsubst{\tsubst{e_0}{\Delta'}{\pl{G}'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
 }{
     \step{\call{v_0}{\pl{G}'}{m}{v_1\ldots v_n}}{e}
 }
@@ -598,10 +598,10 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
   \Delta' = \{ \ext{X}{T} \mid \ext{X}{T}\in\Delta \land \exists i\ldotp F_i=\funnel{X} \}\\ % \Delta' = \Delta | dom(F1..Fn)
   \forall i\ldotp F_i=\funnel{X_i} \Rightarrow \ext{X_i}{\_}\in\Delta\\
   \forall \ext{X}{T}\in\Delta'\ldotp \ftv{T}\subseteq\mathrm{dom}(\Delta')\\
-  \Gamma'=\Gamma\setminus\ftv{T_1\ldots T_n}\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
-  \mok{\Delta'}{\Gamma'}{M_1}
+  \Gamma'=\{ T\;x \mid T\;x\in\Gamma \land x\neq\this \land \ftv{T}\subseteq\ftv{T_1\ldots T_n} \}\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
+  \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{M_1}
   ~\ldots~
-  \mok{\Delta'}{\Gamma'}{M_k}
+  \mok{\Delta'}{\Gamma',\gen{C}{T_1\ldots T_n}\;\this}{M_k}
 }{
   \typing{\Delta}{\Gamma}{
     \innerobj{C}{F_1\ldots F_n}{C'}{\pl{T}'}{\pl{e}}{M_1\ldots M_k}
@@ -631,9 +631,9 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
   \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}'}{\pl{e}}}{\_}\\
   \kind{\Delta}{\gen{C'}{\pl{T}'}}\\
   %\kind{\Delta}{C\langle\rangle}\\
-  \mok{\Delta}{\Gamma}{M_1}
+  \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\;\this}{M_1}
   \ldots
-  \mok{\Delta}{\Gamma}{M_k}
+  \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\;\this}{M_k}
 }{
   \typing{\Delta}{\Gamma}{
     \innerobj{C}{}{C'}{\pl{T}'}{\pl{e}}{M_1\ldots M_k}
@@ -822,26 +822,28 @@ the free type variables of the substituted types and from the bounds in scope, s
 \tsubst{x_i}{x_1\ldots x_n}{v_1\ldots v_n} & = & v_i\\
 \tsubst{\call{e}{\pl{T}}{m}{\pl{e}'}}{\pl{x}}{\pl{v}} & = &
   \call{\tsubst{e}{\pl{x}}{\pl{v}}}{\pl{T}}{m}{\tsubst{\pl{e}'}{\pl{x}}{\pl{v}}}\\
-\tsubst{\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}'}}{\pl{x}}{\pl{v}} & = &
-  \explicitcall{\tsubst{e}{\pl{x}}{\pl{v}}}{T}{\pl{T}}{m}{\tsubst{\pl{e}'}{\pl{x}}{\pl{v}}}\\
+\tsubst{\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}'}}{\pl{x}}{\pl{v}} & = & \\
+  \multicolumn{3}{l}{\quad\explicitcall{\tsubst{e}{\pl{x}}{\pl{v}}}{T}{\pl{T}}{m}{\tsubst{\pl{e}'}{\pl{x}}{\pl{v}}}}\\
 \tsubst{e\fstop f}{\pl{x}}{\pl{v}} & = & \tsubst{e}{\pl{x}}{\pl{v}}\fstop f\\
 \tsubst{\obj{C}{\pl{T}}{\pl{e}}}{\pl{x}}{\pl{v}} & = & \obj{C}{\pl{T}}{\tsubst{\pl{e}}{\pl{x}}{\pl{v}}}\\
-\tsubst{\ifthen{e_0}{T}{y}{e_1}{e_2}}{\pl{x}}{\pl{v}} & = &
-  \ifthen{\tsubst{e_0}{\pl{x}}{\pl{v}}}{T}{y}{\tsubst{e_1}{\pl{x}}{\pl{v}}}{\tsubst{e_2}{\pl{x}}{\pl{v}}}\\
-\tsubst{\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}{\pl{x}}{\pl{v}} & = &
-  \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\tsubst{\pl{e}}{\pl{x}}{\pl{v}}}{\tsubst{\pl{M}}{\pl{x}}{\pl{v}}}\\
+\tsubst{\ifthen{e_0}{T}{y}{e_1}{e_2}}{\pl{x}}{\pl{v}} & = & \\
+  \multicolumn{3}{l}{\quad\ifthen{\tsubst{e_0}{\pl{x}}{\pl{v}}}{T}{y}{\tsubst{e_1}{\pl{x}}{\pl{v}}}{\tsubst{e_2}{\pl{x}}{\pl{v}}}}\\
+\tsubst{\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}{\pl{x}}{\pl{v}} & = & \\
+  \multicolumn{3}{l}{\quad\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\tsubst{\pl{e}}{\pl{x}}{\pl{v}}}{\tsubst{\pl{M}}{\pl{x}}{\pl{v}}} \quad\textrm{if }\this\not\in\pl{x}}\\
+\tsubst{\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}{\this,\pl{x}}{v,\pl{v}} & = & \\
+  \multicolumn{3}{l}{\quad\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\tsubst{\pl{e}}{\this,\pl{x}}{v,\pl{v}}}{\tsubst{\pl{M}}{\pl{x}}{\pl{v}}}}\\
 \\
-\tsubst{\method{\Delta}{T_0}{m}{\pl{T}\;\pl{y}}{\ret{e}}}{\pl{x}}{\pl{v}} & = &
-  \method{\Delta}{T_0}{m}{\pl{T}\;\pl{y}}{\ret{\tsubst{e}{\pl{x}}{\pl{v}}}}
+\tsubst{\method{\Delta}{T_0}{m}{\pl{T}\;\pl{y}}{\ret{e}}}{\pl{x}}{\pl{v}} & = & \\
+  \multicolumn{3}{l}{\quad\method{\Delta}{T_0}{m}{\pl{T}\;\pl{y}}{\ret{\tsubst{e}{\pl{x}}{\pl{v}}}}}
 \end{array}
 \]
     \caption{Substitution of variables}
     \label{fig:termsubstitution}
 \end{figure}
 
-A method-local class does not bind \this: its methods see only the variables they capture.
-Thus substitution of variables enters the methods of a method-local class, and $y\not\in\pl{x}$ for the variable $y$ of an
-\kw{if} and for the parameters $\pl{y}$ of a method, so no renaming is ever needed.
+A method-local class binds \this, as in Java: inside the methods of a method-local class, \this is the local object, and the outer \this is hidden.
+Thus substitution of variables enters the methods of a method-local class for every variable except \this.
+The variable $y$ of an \kw{if} and the parameters $\pl{y}$ of a method are never in $\pl{x}$, so no renaming is ever needed.
 \mjnote{rule \textsc{if-instanceof} follows Java 16+: the target \texttt{T} is accepted only if it is a supertype of the static type, or a subtype whose arguments the static type determines (Figure~\ref{fig:cast}). Under Java typing a local class is declared \texttt{new MyFoo<> extends Foo<X>}, so \texttt{generic(MyFoo)} has no variables and \textsc{cast-down} accepts \texttt{instanceof MyFoo<>} from \texttt{Any}: this is the unsoundness. Under funnelling \texttt{generic(MyFoo)=MyFoo<X>}, accepted from \texttt{Foo<X>} but not from \texttt{Any}. The prose should explain this.}
 
 \ldots
