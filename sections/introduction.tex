@@ -1,20 +1,22 @@
 \section{Introduction}
-Java includes a useful feature called \emph{method-local inner classes}, which has surprisingly subtle conseguences.
+Java includes a useful feature called \emph{method-local inner classes}, which has surprisingly subtle consequences.
 Like anonymous inner classes, this is a way for a method in a Java program to declare a class whose details are defined
 locally, entirely within the method, when the identity of the class is not needed outside the method's scope.
 However, these local classes are named, which allows them to be used with other language features exploiting nominal types.
 For example, one can cast objects to the method-local class type.
 
 Unfortunately, as Servetto et al.~\cite{unsound_presentation} pointed out, there is an unsound interaction with generics.
-A non generic method-local inner class \lstinline|MyFoo| written in a generic method, or in a method of generic class can implicitly see the generic types in scope.
-Instance of \lstinline|MyFoo| can then escape the lifetime of their father method, where the generics had a certain runtime instantiation,
-and enter again in a second call of the same father method, but where the generics could have a different runtime instantiation.
-Servetto et al. probed the behaviour of JVM languages which supported the same feature (Scala and Kotlin) and found that these had the same unsoundness problem for some use cases, but did flag concerns in other cases. However this was not systematically investigated.
+A non-generic method-local inner class \Q@MyFoo@ written in a generic method, or in a method of a generic class, can implicitly see the generic types in scope.
+Instances of \Q@MyFoo@ can then escape the lifetime of their enclosing method, where the generics had a certain runtime instantiation,
+and re-enter a second call of the same enclosing method, where the generics could have a different runtime instantiation.
+Servetto et al.\ probed the behaviour of JVM languages that support the same feature (Scala and Kotlin) and found that these had the same unsoundness problem for some use cases, but did flag concerns in other cases. However, this was not systematically investigated.
 
 In this paper we clearly articulate the problem they observed, characterize the key properties that lead to the issue, and demonstrate
-both dynamic and static approaches to resolve the issue in future languages. 
+both dynamic and static approaches to resolve the issue in future languages.
 The dynamic approach is a specific interpretation of type tests with reified generics, providing guidance to language implementors on a subtle design choice available in that space.
+\todo[inline]{the sentence describing the static approach is missing}
 
+\begin{figure}
 \begin{lstlisting}[numbers=left]
 public class Broken {
   static <X> Foo<X> m(Object other, final X x){
@@ -31,65 +33,68 @@ public class Broken {
 }
 class Foo<X>{ public X x() {return x();} }
 \end{lstlisting}
+\caption{Subtly broken Java code}
+\label{fig:original_example}
+\end{figure}
 
-The code above demonstrates the issue. Line \ref{line:MyFoo} declares a method-local inner class
-\lstinline|MyFoo|, which depends on the generic parameter instantiation for \lstinline|X| when the method is invoked.
-The \lstinline|main| method invokes \lstinline|m| twice. Line \ref{line:intcall} invokes it for \lstinline|Integer|s.
-Since the \lstinline|other| argument for that call is not a \lstinline|MyFoo|, the first invocation returns
-a \lstinline|MyFoo| which is a \lstinline|Foo<Integer>|.
-This result is then passed back in to the second call to \lstinline|m| on Line \ref{line:strcall}.
-This time, the \lstinline|instanceof| check succeeds, because \lstinline|other| in this case \emph{is} a \lstinline|MyFoo|,
-so the method (successfully) casts the \lstinline|other| argument to \lstinline|MyFoo|.
-Since \lstinline|MyFoo| is declared as extending \lstinline|Foo<X>|, this is a valid result for the function.
-Thus the \lstinline|Foo<Integer>| that was passed as the second argument on Line \ref{line:strcall} is returned
-as a \lstinline|Foo<String>|.
+Figure~\ref{fig:original_example} demonstrates the issue. Line \ref{line:MyFoo} declares a method-local inner class
+\Q@MyFoo@, which depends on the generic parameter instantiation for \Q@X@ when the method is invoked.
+The \Q@main@ method invokes \Q@m@ twice. Line \ref{line:intcall} invokes it for \Q@Integer@s.
+Since the \Q@other@ argument for that call is not a \Q@MyFoo@, the first invocation returns
+a \Q@MyFoo@ which is a \Q@Foo<Integer>@.
+This result is then passed back into the second call to \Q@m@ on Line \ref{line:strcall}.
+This time, the \Q@instanceof@ check succeeds, because \Q@other@ in this case \emph{is} a \Q@MyFoo@,
+so the method (successfully) casts the \Q@other@ argument to \Q@MyFoo@.
+Since \Q@MyFoo@ is declared as extending \Q@Foo<X>@, this is a valid result for the function.
+Thus the \Q@Foo<Integer>@ that was passed as the second argument on Line \ref{line:strcall} is returned
+as a \Q@Foo<String>@.
 
-Clearly this is wrong, because there are now two aliased variables of incompatible types; consequently, the later code fails.
-Here some examples on how a different version of Java could solve this problem:
+Clearly, this is wrong, because there are now two aliased variables of incompatible types; consequently, the later code fails.
+Here are some ways in which a different version of Java could avoid this problem:
 \begin{itemize}
-\item The \lstinline|instanceof| check could have been statically flagged.
+\item The \Q@instanceof@ check could have been statically flagged.
 \item The cast could have been statically flagged.
-\item The \lstinline|instanceof| could have returned false in the second invocation, since it was used on a \lstinline|MyFoo| from a different generic parameter instantiation.
-\item The cast could have failed, again because it was used on a \lstinline|MyFoo| from a different generic parameter instantiation.
+\item The \Q@instanceof@ could have returned false in the second invocation, since it was used on a \Q@MyFoo@ from a different generic parameter instantiation.
+\item The cast could have failed, again because it was used on a \Q@MyFoo@ from a different generic parameter instantiation.
 \end{itemize}
 
-The source of this unsoundness is that the Java compiler does not treat \lstinline|MyFoo| as generic.
-The generic type is seen as `in scope' and it is `captured' exactly as the value of local variables are captured.
-In the scope of a single father method execution, this is safe because the type is constant.
-A \lstinline|MyFoo| instance, is conceptually instance of a class capturing the
-generic type that is in scope when the instace is created.
-But when such a \lstinline|MyFoo| instance escapes an execution of a father method and enters in a second execution of the same exact method,
+The source of this unsoundness is that the Java compiler does not treat \Q@MyFoo@ as generic.
+The generic type is seen as `in scope', and it is `captured' exactly as the values of local variables are captured.
+Within a single execution of the enclosing method, this is safe, because the type is constant.
+A \Q@MyFoo@ instance is conceptually an instance of a class that captures the
+generic type that is in scope when the instance is created.
+But when such a \Q@MyFoo@ instance escapes one execution of the enclosing method and enters a second execution of the same method,
 the instance is still logically connected to the same class type, with the original captured generic type.
-However, both the static type system and casts and instance of runtime checks treat it as it was connected with the new class type, with the new captured generic type.
+However, both the static type system and the run-time checks of casts and \Q@instanceof@ treat it as if it were connected to the new class type, with the new captured generic type.
 
-Generalizing closure-capture behaviour to generic types as we narrated above feels natural, but it is unsound in many situations.
-Closure-capture behaviour is intrinsically about keeping it private; it is all about not showing in your extenral type signature that something has been captured or not. Here it ends up being so private that the type system and the runtime have no access to it either.
-The static type systems has to work on the public visible type, and in Java that type is not generic.
-This makes the compiler assume that the simplest nominal type identity is sufficient for casts and instanceof checks.
+Generalizing closure-capture behaviour to generic types as described above feels natural, but it is unsound in many situations.
+Closure capture is intrinsically private: a closure does not show in its external type signature what it has captured. Here it ends up being so private that the type system and the runtime have no access to it either.
+The static type system has to work on the publicly visible type, and in Java that type is not generic.
+This makes the compiler assume that the simplest nominal type identity is sufficient for casts and \Q@instanceof@ checks.
 
-This does touch on Java generics by erasure, but not directly: Even languages with reifined generics, store reifined generics for the generic arugments exposed to the type system: a type like \Q@List<Foo>@ would get one reified generic, \Q@Foo@; together with some language mediated API to access it.
-A type like \Q@MyFoo@ would get zero reifined generics since the generic type would have been captured and not exposed by the type.
-Thus, we argue that generic erasure/generic refinement is only marginally connected to this problem. The conceptual hurdle is in the distinction between propagating the scope of generic types explicitly or implicitly.
-\footnote{ From JDK 16, with \Q@Object o@, \Q@o instanceof Foo<Integer>@ is a compile-time error (before every non-reifiable \Q@instanceof@ target is an error), while the cast \Q@(Foo<Integer>)o@ is an unchecked warning; \Q@instanceof@ never warns.
-Modern Java accepts \Q@ o instanceof C<Ts>@ only when the static type of \Q@o@ determines \Q@Ts@; in this way an erased and a reified runtime give the same answer on every well-typed program.}
-
-
-The example code we provided then fails at run time in a very contrived way.
-The two \lstinline|println| calls actually dispatch to different overloads:
-the first to a version accepting an \lstinline|Object|, and the second to the more specific overload expecting a \lstinline|String|.
-The second on denote the passage of a value from a generic API to the specific overload. This causes the Java compiler to insert
-the failing \lstinline|checkcast| in the generated bytecode.
+This problem touches on Java's erasure of generics, but only indirectly: even languages with reified generics store reified generics for the generic arguments exposed to the type system: a type like \Q@List<Foo>@ would get one reified generic, \Q@Foo@, together with some language-mediated API to access it.
+A type like \Q@MyFoo@ would get no reified generics, since the generic type would have been captured and not exposed by the type.
+Thus, we argue that erasure versus reification is only marginally connected to this problem. The conceptual hurdle is in the distinction between propagating the scope of generic types explicitly or implicitly.%
+\footnote{Since JDK 16, with \Q@Object o@, \Q@o instanceof Foo<Integer>@ is a compile-time error (before JDK 16, every non-reifiable \Q@instanceof@ target was an error), while the cast \Q@(Foo<Integer>)o@ is an unchecked warning; \Q@instanceof@ never warns.
+Modern Java accepts \Q@o instanceof C<Ts>@ only when the static type of \Q@o@ determines \Q@Ts@; in this way an erased and a reified runtime give the same answer on every well-typed program.}
 
 
-It is tempting to accept this as a quirk of Java, which is already known to have other unsoundness~\cite{amin2016java}.
-However this problem is broader in both scope and impact, as we show in the rest of the paper.
+The example then fails at run time in a contrived way.
+The two \Q@println@ calls actually dispatch to different overloads:
+the first to a version accepting an \Q@Object@, and the second to the more specific overload expecting a \Q@String@.
+The second call passes a value from a generic API to the specific overload, and this causes the Java compiler to insert
+the failing \Q@checkcast@ in the generated bytecode.
+
+
+It is tempting to accept this as a quirk of Java, which is already known to have other sources of unsoundness~\cite{amin2016java}.
+However, this problem is broader in both scope and impact, as we show in the rest of the paper.
 This issue affects all statically typed languages on the JVM, including Scala and Kotlin.
-It also propagates to other compilation targets for JVM languages, including Scala Native~\todo{cite}
+It also propagates to other compilation targets for JVM languages, including Scala Native~\tocite{Scala Native}
 and GraalVM's Native Image support.
 
 In the remainder of this paper:
 \begin{itemize}
-\item We detail the breadth of the problem (surveying forms that use class generics rather than methods generics, closures, and other manifestations), and how it is handled by various existing language implementations
+\item We detail the breadth of the problem (surveying forms that use class generics rather than method generics, closures, and other manifestations), and how it is handled by various existing language implementations.
 \item We develop a core language modelling Java's generics, method-local classes and type tests, and show that typing method-local classes as Java does is unsound.
 \item We develop a new type system mechanism for systematically tracking dependence of a
 method-local class on generic parameters, and show that it soundly prevents the problem.
