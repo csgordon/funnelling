@@ -417,7 +417,7 @@ For a class type $\gen{C}{\pl{T}}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\p
 It also gives the types $\pl{T}''$ that the arguments $\pl{T}$ assign to the type variables in $\Delta_0$.
 For a top-level class, $\Delta_0$ is the bounds of the class and $\pl{T}''=\pl{T}$.
 For a local class $C_0$ with funnels $\pl{F}$, the bounds $\Delta',\Delta''$ are the bounds of the type variables in scope where $C_0$ is written.
-For a type variable $X$, $\Delta(X)$ is the bound of $X$ in $\Delta$, and for a sequence of type variables $\pl{X}$, $\Delta(\pl{X})$ is the sequence of their bounds in $\Delta$.
+For a type variable $X$, $\Delta(X)$ is the bound of $X$ in $\Delta$, and $\mathrm{cod}(\Delta)$ is the sequence of the bounds in $\Delta$.
 The function $\mathsf{scope}(\Delta;\pl{F};\pl{T})$ goes through the funnels $\pl{F}$ and the arguments $\pl{T}$ together, one position at a time, where $\emptyset$ is the empty sequence.
 At the position of a funnel $\funnel{X}$, it adds $\ext{X}{\Delta(X)}$ to the bounds and the argument to the types.
 At the position of a ground funnel $G$, the argument must be $G$ itself, and nothing is added.
@@ -611,7 +611,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \and
 \inferrule[call-top]{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\
-  \declared{\subclass{C_0}{\Delta_0}{C'}{\pl{T}'}{\pl{M}}{\pl{S}}}\\
+  \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\pl{M}}{\_}}\\
   \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\
   T_i'=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\
   \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
@@ -622,7 +622,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \and
 \inferrule[call-local]{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\
-  \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}'}{\_}{\pl{M}}}\\
+  \declared{\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\pl{M}}}\\
   \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\
   T_i'=\tsubst{T_i}{\pl{F},\Delta_1}{\pl{T}_0,\pl{T}_1}\\
   \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
@@ -634,18 +634,18 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 }
 \and
 \inferrule[call-lb-runtime]{
-  \typing{\Delta}{\Gamma}{e_0}{T}\\
-  \mathsf{topLevelClass}(T)\\
-  \subtype{\Delta}{T}{\gen{C_0}{\pl{T}_0}}\\
-  \declared{\subclass{C_0}{\Delta_0}{C'}{\pl{T}'}{\pl{M}}{\pl{S}}}\\
+  \typing{\Delta}{\Gamma}{e_0}{\gen{C}{\pl{T}_2}}\\
+  \subclass{C}{\_}{\_}{\_}{\_}{\_}\in\decls\\
+  \subtype{\Delta}{\gen{C}{\pl{T}_2}}{\gen{C_0}{\pl{T}_0}}\\
+  \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\pl{M}}{\_}}\\
   \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\
   T_i'=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\
   \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
-  \kind{\Delta}{T}\\
+  \kind{\Delta}{\gen{C}{\pl{T}_2}}\\
   \kind{\Delta}{\pl{T}_1}
 }{
   \typing{\Delta}{\Gamma}{
-    \explicitcall{e_0}{T}{\pl{T}_1}{m}{e_1,\ldots,e_n}
+    \explicitcall{e_0}{\gen{C}{\pl{T}_2}}{\pl{T}_1}{m}{e_1,\ldots,e_n}
   }{T_0'}
 }
 \and
@@ -663,21 +663,19 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 }
 \and
 \inferrule[new-local]{
-  \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}'}{\pl{e}}}{\_}\\
-  \kind{\Delta'}{\gen{C'}{\pl{T}'}}\\
-  \pl{T}=|\pl{F}|\\
-  \kind{\Delta'}{\gen{C}{\pl{T}}}\\
-  \Delta' = \{ \ext{X}{T} \mid \ext{X}{T}\in\Delta \land \funnel{X}\in\pl{F} \}\\ % \Delta' = \Delta | dom(F1..Fn)
-  \ftv{\pl{T}}\subseteq\mathrm{dom}(\Delta)\\
-  \forall \ext{X}{T}\in\Delta'\ldotp \ftv{T}\subseteq\mathrm{dom}(\Delta')\\
-  \Gamma'=\{ T\;x \mid T\;x\in\Gamma \land x\neq\this \land \ftv{T}\subseteq\ftv{\pl{T}} \}\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
-  \mok{\Delta'}{\Gamma',\gen{C}{\pl{T}}\;\this}{\pl{M}}\\
-  \forall C'',\pl{T}''\ldotp\subtype{\Delta'}{\gen{C'}{\pl{T}'}}{\gen{C''}{\pl{T}''}}\Rightarrow
-    \mathsf{overrideOk}(\gen{C''}{\pl{T}''},\pl{M})
+  \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\
+  \kind{\Delta'}{\gen{C'}{\pl{T}}}\\
+  \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\
+  \mathsf{scope}(\Delta;\pl{F};|\pl{F}|)=\Delta';\_\\
+  \ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')\\
+  \Gamma'=\{ T\;x \mid T\;x\in\Gamma \land x\neq\this \land \ftv{T}\subseteq\ftv{|\pl{F}|} \}\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
+  \mok{\Delta'}{\Gamma',\gen{C}{|\pl{F}|}\;\this}{\pl{M}}\\
+  \forall C'',\pl{T}'\ldotp\subtype{\Delta'}{\gen{C'}{\pl{T}}}{\gen{C''}{\pl{T}'}}\Rightarrow
+    \mathsf{overrideOk}(\gen{C''}{\pl{T}'},\pl{M})
 }{
   \typing{\Delta}{\Gamma}{
-    \innerobj{C}{\pl{F}}{C'}{\pl{T}'}{\pl{e}}{\pl{M}}
-  }{\gen{C}{\pl{T}}}
+    \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}
+  }{\gen{C}{|\pl{F}|}}
 }
 %
 %  Bs;G |- new C'<Ts'>(es) : _//incredibly subtle: is Bs;G or Bs';G' // need Bs;G for es that internally use non-funneled types but reduce to terms with funneled types
@@ -700,13 +698,13 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 %
 \and
 \inferrule[new-local-java]{
-  \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}'}{\pl{e}}}{\_}\\
-  \kind{\Delta}{\gen{C'}{\pl{T}'}}\\
+  \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\
+  \kind{\Delta}{\gen{C'}{\pl{T}}}\\
   %\kind{\Delta}{C\langle\rangle}\\
   \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\;\this}{\pl{M}}
 }{
   \typing{\Delta}{\Gamma}{
-    \innerobj{C}{}{C'}{\pl{T}'}{\pl{e}}{\pl{M}}
+    \innerobj{C}{}{C'}{\pl{T}}{\pl{e}}{\pl{M}}
   }{\gen{C}{}}
 }
 \and
@@ -776,10 +774,8 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \inferrule[override-same]{
   \subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}\in\decls\\
   \method{\Delta''}{T''_0}{m}{T''_1\;x'_1,\ldots,T''_n\;x'_n}{\_}\in\pl{M}\\
-  \mathrm{dom}(\Delta')=\pl{X}\\
-  \mathrm{dom}(\Delta'')=\pl{X}'\\
-  \tsubst{\Delta''(\pl{X}')}{\Delta,\pl{X}'}{\pl{T},\pl{X}}=\Delta'(\pl{X})\\
-  \tsubst{T''_0\ldots T''_n}{\Delta,\pl{X}'}{\pl{T},\pl{X}}=T'_0\ldots T'_n
+  \tsubst{\mathrm{cod}(\Delta'')}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\
+  \tsubst{T''_0\ldots T''_n}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0\ldots T'_n
 }{
   \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\;x_1,\ldots,T'_n\;x_n}{\_})
 }
@@ -808,7 +804,7 @@ A method that a class declares again must keep the signature it has in every sup
 \inferrule[wf-class]{
   \mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}''\\
   \kind{\Delta}{\pl{T}}\\
-  \subtype{\Delta}{\pl{T}''}{\tsubst{\Delta_0(\mathrm{dom}(\Delta_0))}{\Delta_0}{\pl{T}''}}
+  \subtype{\Delta}{\pl{T}''}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}''}}
 }{
   \kind{\Delta}{\gen{C}{\pl{T}}}
 }
@@ -953,6 +949,7 @@ The variable $x'$ of an \kw{if} and the parameters $x'_1\ldots x'_k$ of a method
 The rule \textsc{new-local} is the heart of funneling, including subtle management of type environments.
 The management of type environments in \textsc{new-local} is subtle. The rule constructs a restricted set of type bounds and variable bindings reflecting only the explicitly-funnelled type variables:
 $\Delta'$ includes only the explicitly-funnelled type variables and $\Gamma'$ is restricted to just those variables free in the result type (which must be well-kinded under $\Delta'$).
+The bounds $\Delta'$ are computed by $\mathsf{scope}(\Delta;\pl{F};|\pl{F}|)$, which is undefined when a funnelled type variable is not in $\Delta$.
 However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., an explicit call), but will reduce to a value which no longer depends on such type variables.
 This is why the first antecedent checks the effective supertype instance under $\Delta;\Gamma$, but the second antecedent ensures the resulting type of that
 expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
