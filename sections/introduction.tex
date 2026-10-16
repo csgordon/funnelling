@@ -1,0 +1,92 @@
+\section{Introduction}
+Java includes a useful feature called \emph{method-local inner classes}, which is surprisingly subtle.
+Like anonymous inner classes, this is a way for a method in a Java program to declare a class whose details are defined
+locally, entirely within the method, when the identity of the class is not needed outside the method's scope.
+However, these local classes are named, which allows them to be used with other language features exploiting nominal types.
+For example, one can cast objects to the method-local class type.
+
+Unfortunately, as Servetto et al.~\cite{unsound_presentation} pointed out, these features interact unsoundly with Java generics.
+In generic methods (or methods of generic classes), a method-local inner class \lstinline|MyFoo| 
+which extends a type that depends on generic parameters is treated the same regardless of whether it was allocated with the same
+generic parameters, or different generic parameters. Servetto et al. probed the behaviour of JVM languages which
+supported the same feature (Scala and Kotlin) and found that these had the same unsoundness problem for some use cases,
+but did flag concerns in other cases. However this was not systematically investigated.
+
+In this paper we clearly articulate the problem they observed, characterize the key properties that lead to the issue, and demonstrate
+both dynamic and static approaches to resolve the issue in future languages. 
+The dynamic approach is a specific interpretation of type tests with reified generics, providing guidance to language implementors on a subtle design choice available in that space.
+\mjnote{modern Java accepts \texttt{instanceof C<Ts>} only when the static type determines \texttt{Ts}; with that rule an erased and a reified runtime give the same answer on every well-typed program. The dynamic approach then only concerns languages without that rule (C\#-like). Funnelling could be presented as the solution, with reification as a side remark.}
+The static approach is a general solution for tracking when a nominal object type \emph{declaration} effectively captures generic parameter instantiations from its dynamic context.
+
+\begin{figure}
+\begin{lstlisting}[numbers=left]
+public class Broken {
+  static <X> Foo<X> m(Object other, final X x){
+    class MyFoo extends Foo<X>{ public X x(){ return x; } } (*\label{line:MyFoo}*)
+    if(!(other instanceof MyFoo)){ return new MyFoo(); }
+    return ((MyFoo)other); // cast passes with no warnings
+  }
+  public static void main(String[] a) {
+    Foo<Integer> r1= Broken.<Integer>m("anything",5); (*\label{line:intcall}*)
+    Foo<String> r2= Broken.<String>m(r1,"Hi"); (*\label{line:strcall}*)
+    System.out.println(r1.x()); //5
+    System.out.println(r2.x()); //Throws ClassCastException: ..
+  }
+}
+class Foo<X>{ public X x() {return x();} }
+\end{lstlisting}
+\caption{Subtly broken Java code}
+\label{fig:original_example}
+\end{figure}
+
+Figure \ref{fig:original_example} demonstrates the issue. Line \ref{line:MyFoo} declares a method-local inner class
+\lstinline|MyFoo|, which depends on the generic parameter instantiation for \lstinline|X| when the method is invoked.
+The \lstinline|main| method invokes \lstinline|m| twice. Line \ref{line:intcall} invokes it for \lstinline|Integer|s.
+Since the \lstinline|other| argument for that call is not a \lstinline|MyFoo|, the first invocation returns
+a \lstinline|MyFoo| which is a \lstinline|Foo<Integer>|.
+This result is then passed back in to the second call to \lstinline|m| on Line \ref{line:strcall}.
+This time, the \lstinline|instanceof| check succeeds, because \lstinline|other| in this case \emph{is} a \lstinline|MyFoo|,
+so the method (successfully) casts the \lstinline|other| argument to \lstinline|MyFoo|.
+Since \lstinline|MyFoo| is declared as extending \lstinline|Foo<X>|, this is a valid result for the function.
+Thus the \lstinline|Foo<Integer>| that was passed as the second argument on Line \ref{line:strcall} is returned
+as a \lstinline|Foo<String>|.
+
+Clearly this is wrong, because there are now two aliased variables of incompatible types; consequently, the later code fails (we discuss the failure point later).
+The description of execution above employed some (here, intentionally) sloppy reasoning to parallel the checks in the Java compiler.
+\begin{itemize}
+\item The \lstinline|instanceof| check could have been statically flagged.
+\item The cast could have been statically flagged.
+\item The \lstinline|instanceof| could have returned false in the second invocation, since it was used on a \lstinline|MyFoo| from a different generic parameter instantiation
+\item The case could have failed, again because it was used on a \lstinline|MyFoo| from a different generic parameter instantiation
+\end{itemize}
+Unfortunately two key factors lead to Java accepting this code and only incidentally discovering the problem later:
+\begin{enumerate}
+    \item Java implements generics by erasure. So the runtime representation of \lstinline|MyFoo| doesn't differ across the two calls. No information is kept around to distinguish the two classes of \lstinline|MyFoo|. This rules out the dynamic solutions.
+    \item The Java compiler does not treat \lstinline|MyFoo| as generic. Attempts to cast to, or use \lstinline|instanceof| with \lstinline|Foo<Integer>| are statically flagged specifically because erasure means the generic parameters cannot be dynamically checked. But because \lstinline|MyFoo| \emph{syntactically} lacks generic parameters of its own, the compiler treats it as \emph{non-generic} and allows the \lstinline|instanceof| and cast without complaint.
+\end{enumerate}
+\mjnote{precise behaviour (JDK 26): from \texttt{Object}, \texttt{o instanceof Foo<Integer>} is a compile-time error (since Java 16; before that every non-reifiable \texttt{instanceof} target is an error), while the cast \texttt{(Foo<Integer>)o} is an unchecked warning; \texttt{instanceof} never warns. From a type that determines the argument (\texttt{Foo<Integer>} out of a \texttt{Bar<List<Integer>{}>} when \texttt{Foo<T> extends Bar<List<T>{}>}) both are accepted silently. The hole is that \texttt{MyFoo} is reifiable, so both forms are accepted with no warning. Item 2 and the list above can be restated in these terms.}
+
+Subtler still is the actual cause of the failure. The two \lstinline|println| calls actually dispatch to different overloads:
+the first to a version accepting an \lstinline|Object|, and the second to the more specific overload expecting a \lstinline|String|.
+It is in fact the passage of a value from a generic API to the specific overload which causes the Java compiler to insert
+a \lstinline|checkcast| in the generated bytecode.
+
+
+It is tempting to accept this as a quirk of Java, which is already known to have other unsoundness~\cite{amin2016java}.
+However this problem is broader in both scope and impact, as we show in the rest of the paper.
+This issue affects all statically typed languages on the JVM, including Scala and Kotlin.
+It also propagates to other compilation targets for JVM languages, including Scala Native~\todo{cite}
+and GraalVM's Native Image support.
+
+
+In the remainder of this paper:
+\begin{itemize}
+\item We detail the breadth of the problem (surveying forms that use class generics rather than methods generics, closures, and other manifestations), and how it is handled by various existing language implementations
+\item We develop a core language modelling Java's generics, method-local classes and type tests, and show that typing method-local classes as Java does is unsound.
+\item We develop a new type system mechanism for systematically tracking would-be implicit dependence of a
+method-local class on generic parameters, and show that it soundly prevents the problem.
+\end{itemize}
+
+% Tasks for Gordon:
+% Import the Unsound paper, make formatting so that this compile on a reasonable style
+% Try to put our notes into a decent introduction with ... when needed.

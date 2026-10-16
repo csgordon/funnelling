@@ -1,0 +1,73 @@
+\section{Related Work}
+It is not uncommon to have ``intentional unsoundness'' in industrial languages,
+such as Java's covariant array subtyping, or TypeScript's covariant method subtyping.
+However these are intentionally designed into the language to improve ease of use, and in most cases (like Java's array handling)
+problematic uses are detected at runtime (e.g., Java checks upon storing into an array that the new entry value
+is a subtype of the array's original content type).
+
+However, unintentional unsoundness in industrial type systems is rarer.
+The most notable example is Amin and Tate's discovery~\cite{amin2016java} that Java and Scala's handling of generic type constraints
+was rendered unsound by the fact that \lstinline|null| is treated as inhabiting all reference types, making all
+type constraints (even nonsensical ones) satisfiable.
+Servetto et al.~\cite{unsound_presentation} first pointed out the issue publicly, though in the 
+Q\&A session after the talk, multiple Java designers were unsurprised --- as Gilad Bracha put it, ``Once I saw the title of your talk, I understood what the problem was.''
+\todo[inline]{Colin says: As I listened to the Q\&A session again, James framed this as a question of whether 
+two instances allocated in different contexts should be considered the same or not. I think that might be useful framing to bring up early here.
+Gilad also pointed out that (paraphrasing) the BETA people knew an inner class was a property of the instance, not its own class.
+}
+
+\todo[inline]{discuss C\# casts with reified generics}
+
+The key issues at work in the interaction of method-local inner classes and generics arise from the interaction of (1) nominal dynamic downcasts, (2) design choices about what runtime information about generic parameters is both persisted \emph{and checked} by casts, and (3) (not) tracking all dependencies on type parameters in the type system.
+Essentially, Java and Scala both treat \lstinline|MyFoo| as a sort of existential type --- that there exists some \lstinline|X|  such that
+\lstinline|MyFoo| extends \lstinline|Foo<X>|. However, treating \lstinline|MyFoo| as a closed rather than generic type is equivalent
+to assuming that there is only one existential for all instances --- associated with the declaration site --- rather than potentially
+different existentials for different instances. This combined with the fact that the JVM is unable to dynamically check for different instantiations
+leads to the unsoundness.
+Our dynamic solution resolves this with a specific implementation of casts on reified generics.
+\mjnote{under modern Java there is no separate dynamic solution; see the note on the dynamic approach in the introduction.}
+Our static solution effectively prohibits the de facto existential capture of the enclosing type parameter.
+
+
+The decision to treat types like the \lstinline|MyFoo| variants in our examples as closed existential types that depend on other choices of types is not
+without parallels in other languages. Haskell and Rust, for example, include associated types~\cite{chakravarty2005associated}, where
+a typeclass has a type as a member.
+A yet closer analogue is Scala's path-dependent types~\tocite{dot}, where types may be \emph{members} of an individual object, rather than associated with an individual class. The code below adapts the troublesome example method using Scala's type members:
+\begin{lstlisting}[language=Scala]
+trait Foo { type X; def x() : X; }
+def m[Y](other: Any, newx: Y) : Foo2 = 
+    class MyFoo extends Foo { type X = Y; override def x() : X = newx; }
+    newx match { 
+        case f: MyFoo => f
+        case _ => MyFoo()
+    }
+\end{lstlisting}
+This code compiles without warnings --- and is not an issue. In this case the dependency of \lstinline|MyFoo| instances
+on the type parameter used to call \lstinline|m| is made explicit with a type member. But Scala now treats thes
+
+% Related work:
+%  Big obvious task where you know much more then me, C#, Kotling etc
+%
+%  More related works:
+%  Two other ways Java is unsound:
+%  - The famous first paper
+%
+% -the well known snewaky throws
+%
+% public interface CheckedFunction<T, R> { R apply(T t) throws Exception; }
+% @SuppressWarnings("unchecked")
+% public static <T, E extends Exception> T sneakyThrow(Exception e) throws E {
+%     throw (E) e;
+% }
+%
+% public static <T, R> Function<T, R> unchecked(CheckedFunction<T, R> checkedFunction) {
+%     return t -> {
+%         try {
+%             return checkedFunction.apply(t);
+%         } catch (Exception e) {
+%             return sneakyThrow(e);
+%         }
+%     };
+% }
+%
+%

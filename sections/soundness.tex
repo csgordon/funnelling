@@ -1,0 +1,27 @@
+\section{(Un)Soundness of Method Local Classes}
+With our language primitives in place, we now consider type safety of two variants of our language.
+The two variants differ only in the typing of local classes:
+\begin{enumerate}
+\item $\zeta(\mathsf{Java})$ types local classes with rule \textsc{new-local-java} of Figure~\ref{fig:java}, as Java does;
+\item $\zeta(\mathsf{funnelled})$ types local classes with rule \textsc{new-local} of Figure~\ref{fig:typing}.
+\end{enumerate}
+Both variants use the type test of Java:
+rule \textsc{if-instanceof} accepts only checked casts (Figure~\ref{fig:cast}), and at run time rules \textsc{ifThen} and \textsc{ifElse} compare class names only.
+As shown in Section~\ref{sec:core}, $\zeta(\mathsf{Java})$ is unsound.
+We now show that $\zeta(\mathsf{funnelled})$ is sound.
+In the statements below, \decls is a class table that satisfies well-formedness requirements A1-A8 and B1-B3, and $\mathsf{Dec}~\mathrm{Ok}$ holds for every $\mathsf{Dec}\in\decls$.
+The expression $e$ is reachable: $e_0\rightarrow^* e$ for a main expression $e_0$ with $\vdash\decls\;e_0~\mathrm{Ok}$, where $\rightarrow^*$ is the reflexive and transitive closure of $\rightarrow$.
+Reachability gives the property of the names bound inside $e$ that Section~\ref{sec:core} derives from $\mathsf{fresh}$.
+
+\begin{theorem}[Progress]
+If $\typing{\emptyset}{\emptyset}{e}{T}$, then either $e$ is a value $v$, or there is an $e'$ such that $\step{e}{e'}$.
+\end{theorem}
+
+\begin{theorem}[Preservation]
+If $\typing{\emptyset}{\emptyset}{e}{T}$ and $\step{e}{e'}$, then $\typing{\emptyset}{\emptyset}{e'}{T}$.
+\end{theorem}
+
+\begin{corollary}[Type Soundness]
+If $\vdash\decls\;e_0~\mathrm{Ok}$ with $\typing{\emptyset}{\emptyset}{e_0}{T}$, and $e_0\rightarrow^* e$ with no $e'$ such that $\step{e}{e'}$, then $e$ is a value $v$ and $\typing{\emptyset}{\emptyset}{v}{T}$.
+\end{corollary}
+% Reified type tests are left out of the formal model on purpose; see Section 2 and the comment after rule ifElse in Figure fig:opsem.
