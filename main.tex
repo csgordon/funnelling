@@ -366,16 +366,18 @@ So there remains a need to articulate a solution to this problem where generics 
 \end{mathpar}
 \[
 \begin{array}{rcl}
-\mathsf{scope}(\gen{C}{T_1\ldots T_n}) & = & \ext{X_1}{T'_1}\ldots\ext{X_n}{T'_n};T_1\ldots T_n\\
-\multicolumn{3}{l}{\quad\textrm{if }\subclass{C}{\ext{X_1}{T'_1}\ldots\ext{X_n}{T'_n}}{\_}{\_}{\_}{\_}\in\decls}\\
-\mathsf{scope}(\gen{C_0}{T_1\ldots T_n}) & = & (\ext{X_i}{T'_i})_{F_i=\funnel{X_i}};(T_i)_{F_i=\funnel{X_i}}\\
+\mathsf{scope}(\gen{C}{\pl{T}}) & = & \Delta;\pl{T} \quad\textrm{if }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls\\
+\mathsf{scope}(\gen{C_0}{\pl{T}}) & = & \mathsf{funnelled}(\Delta_C,\Delta';\pl{F};\pl{T})\\
 \multicolumn{3}{l}{\quad\textrm{if }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}}\\
 \multicolumn{3}{l}{\quad\phantom{\textrm{if }}\textrm{or }\declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}},}\\
 \multicolumn{3}{l}{\quad\phantom{\textrm{if }}\method{\Delta'}{\_}{m}{\_}{\ret{e}}\in\pl{M},}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\innerobj{C_0}{F_1\ldots F_n}{\_}{\_}{\_}{\_}\textrm{ occurs in }e,}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\mathsf{scope}(\generic{C})=\Delta_C;\_,}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\ext{X_i}{T'_i}\in\Delta_C,\Delta'\textrm{ for every }F_i=\funnel{X_i},}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{if }}T_i=G_i\textrm{ for every }F_i=G_i}
+\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e,}\\
+\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\mathsf{scope}(\generic{C})=\Delta_C;\_}\\
+\\
+\mathsf{funnelled}(\Delta;\emptyset;\emptyset) & = & \emptyset;\emptyset\\
+\mathsf{funnelled}(\Delta;\funnel{X}\;\pl{F};T\;\pl{T}) & = & \ext{X}{T'},\Delta_0;T\;\pl{T}''\\
+\multicolumn{3}{l}{\quad\textrm{if }\ext{X}{T'}\in\Delta,\ \mathsf{funnelled}(\Delta;\pl{F};\pl{T})=\Delta_0;\pl{T}''}\\
+\mathsf{funnelled}(\Delta;G\;\pl{F};G\;\pl{T}) & = & \mathsf{funnelled}(\Delta;\pl{F};\pl{T})
 \end{array}
 \]
 \[
@@ -395,9 +397,10 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 For a class type $\gen{C}{\pl{T}}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}''$ gives the bounds $\Delta_0$ of the type variables that the methods of $C$ see, without the type variables of the methods themselves.
 It also gives the types $\pl{T}''$ that the arguments $\pl{T}$ assign to the type variables in $\Delta_0$.
 For a top-level class, $\Delta_0$ is the bounds of the class and $\pl{T}''=\pl{T}$.
-For a local class, $\Delta_0$ is the bounds of the funnelled type variables in the scope where the local class is written, and $\pl{T}''$ is the arguments at the positions of the funnelled type variables.
-The argument at the position of a ground funnel $G$ must be $G$ itself.
-The notation $(a_i)_{P(i)}$ is the subsequence of $a_1\ldots a_n$ made of the elements whose index $i$ satisfies $P(i)$.
+For a local class $C_0$ with funnels $\pl{F}$, the bounds $\Delta_C,\Delta'$ are the bounds of the type variables in scope where $C_0$ is written.
+The function $\mathsf{funnelled}(\Delta;\pl{F};\pl{T})$ goes through the funnels $\pl{F}$ and the arguments $\pl{T}$ together, one position at a time, where $\emptyset$ is the empty sequence.
+At the position of a funnel $\funnel{X}$, it adds the bound of $X$ in $\Delta$ to $\Delta_0$, and the argument to $\pl{T}''$.
+At the position of a ground funnel $G$, the argument must be $G$ itself, and nothing is added.
 An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$.
 Contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
 The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every top-level class reaches \Object.
