@@ -344,8 +344,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \begin{figure}[H]
 \centering
 \begin{mathpar}
-\fbox{\declared{K}}
-\and
+\fbox{\declared{K}}\\
 \inferrule[decl-top]{
   \mathsf{Dec}\in\decls
 }{
@@ -367,7 +366,7 @@ So there remains a need to articulate a solution to this problem where generics 
 }{
   \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}}
 }
-\and
+\\
 \fbox{$\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}'$}
 \and
 \fbox{$\mathsf{scope}(\Delta;\pl{F};\pl{T})=\Delta';\pl{T}'$}
@@ -375,13 +374,12 @@ So there remains a need to articulate a solution to this problem where generics 
 \[
 \begin{array}{rcl}
 \mathsf{scope}(\gen{C}{\pl{T}}) & = & \Delta;\pl{T}\\
-  && \quad\textrm{where }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls\\
+\multicolumn{3}{l}{\quad\textrm{where }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls}\\
 \mathsf{scope}(\gen{C_0}{\pl{T}}) & = & \mathsf{scope}(\Delta',\Delta'';\pl{F};\pl{T})\\
-  && \quad\textrm{where }\mathsf{scope}(\generic{C})=\Delta';\_\\
-  && \quad\phantom{\textrm{where }}\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\
-  && \quad\phantom{\textrm{where }}\textrm{or }\declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}}\\
-  && \quad\phantom{\textrm{where }}\method{\Delta''}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\
-  && \quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e
+\multicolumn{3}{l}{\quad\textrm{where }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\textrm{ or }\declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}}}\\
+\multicolumn{3}{l}{\quad\phantom{\textrm{where }}\method{\Delta''}{\_}{m}{\_}{\ret{e}}\in\pl{M}}\\
+\multicolumn{3}{l}{\quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e}\\
+\multicolumn{3}{l}{\quad\phantom{\textrm{where }}\mathsf{scope}(\generic{C})=\Delta';\_}
 \end{array}
 \]
 \[
@@ -400,9 +398,9 @@ So there remains a need to articulate a solution to this problem where generics 
 \[
 \begin{array}{rcl}
 \generic{C} & = & \gen{C}{\mathrm{dom}(\Delta)}\\
-  && \quad\textrm{where }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls\\
+\multicolumn{3}{l}{\quad\textrm{where }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls}\\
 \generic{C} & = & \gen{C}{|\pl{F}|}\\
-  && \quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}\\[1ex]
+\multicolumn{3}{l}{\quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}}\\[1ex]
 |\funnel{X}| & = & X\\
 |G| & = & G
 \end{array}
@@ -429,9 +427,8 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \begin{figure}[H]\small
     \centering
 \begin{mathpar}
-\fbox{$\step{e}{e'}$}
-\and
-\inferrule*[left=simpleFieldFound]{
+\fbox{$\step{e}{e'}$}\\
+\inferrule[simpleFieldFound]{
     \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{T_1 f_1\ldots T_n f_n}\in\decls\\
     f_i\in f_1\ldots f_n
 }{
@@ -442,7 +439,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
     }
 }
 \and
-\inferrule*[left=simpleFieldSuper]{
+\inferrule[simpleFieldSuper]{
     \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{T_1 f_1\ldots T_n f_n}\in\decls\\
     f\not\in f_1\ldots f_n
 }{
@@ -454,7 +451,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 }
 \and
 %Note: ok because inner classes currently don't have their own fields
-\inferrule*[left=innerFieldFound]{
+\inferrule[innerFieldFound]{
 }{
     \step{
         \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v}}{\pl{M}}\fstop f
@@ -463,7 +460,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
     }
 }
 \and
-\inferrule*[left=ifThenErased]{
+\inferrule[ifThenErased]{
     v\in\{\obj{C}{\pl{G}}{\_}, \innerobj{C}{\pl{G}}{\_}{\_}{\_}{\_}\}\\
     \emptyset\vdash \gen{C}{\pl{G}} <: \gen{C'}{\_}
     %\match{v}{C\langle\_\rangle} = \mathsf{true}
@@ -472,7 +469,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
     {\tsubst{e_1}{x}{v}}
 }
 \and
-\inferrule*[left=ifElseErased]{
+\inferrule[ifElseErased]{
     %v\not\in\{\obj{C}{\_}{\_}, \innerobj{C}{\_}{\_}{\_}{\_}{\_}\}
     %\match{v}{C\langle\_\rangle} = \mathsf{false}
     v\in\{\obj{C}{\pl{G}}{\_}, \innerobj{C}{\pl{G}}{\_}{\_}{\_}{\_}\}\\
@@ -482,7 +479,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
     {e_2}
 }
 %\and
-%\inferrule*[left=ifThenReified]{
+%\inferrule[ifThenReified]{
 %    %v\in\{\obj{C}{Ts}{\_}, \innerobj{C}{Ts}{\_}{\_}{\_}{\_}\}
 %    %\match{v}{C\langle Ts\rangle} = \mathsf{true}
 %    v\in\{\obj{C}{Gs}{\_}, \innerobj{C}{Gs}{\_}{\_}{\_}{\_}\}\\
@@ -492,7 +489,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 %    {\tsubst{e_1}{x}{v}}
 %}
 %\and
-%\inferrule*[left=ifElseReified]{
+%\inferrule[ifElseReified]{
 %    %v\not\in\{\obj{C}{Ts}{\_}, \innerobj{C}{Ts}{\_}{\_}{\_}{\_}\}
 %    %\match{v}{C\langle Ts\rangle} = \mathsf{false}
 %    v\in\{\obj{C}{Gs}{\_}, \innerobj{C}{Gs}{\_}{\_}{\_}{\_}\}\\
@@ -588,8 +585,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \begin{figure}[H]\small
     \centering
     \begin{mathpar}
-\fbox{\typing{\Delta}{\Gamma}{e}{T}}
-\and
+\fbox{\typing{\Delta}{\Gamma}{e}{T}}\\
 \inferrule[subs]{
 	\typing{\Delta}{\Gamma}{e}{T_1}\\
 	\subtype{\Delta}{T_1}{T_2}\\
@@ -663,11 +659,11 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 }
 \and
 \inferrule[new-local]{
-  \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\
-  \kind{\Delta'}{\gen{C'}{\pl{T}}}\\
-  \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\\\
   \mathsf{scope}(\Delta;\pl{F};|\pl{F}|)=\Delta';\_\\
-  \ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')\\\\
+  \ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')\\
+  \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\\\
+  \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\
+  \kind{\Delta'}{\gen{C'}{\pl{T}}}\\\\
   \Gamma'=\{ T\;x \mid T\;x\in\Gamma \land x\neq\this \land \ftv{T}\subseteq\ftv{|\pl{F}|} \}\\\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
   \mok{\Delta'}{\Gamma',\gen{C}{|\pl{F}|}\;\this}{\pl{M}}\\\\
   \forall C'',\pl{T}'\ldotp\subtype{\Delta'}{\gen{C'}{\pl{T}}}{\gen{C''}{\pl{T}'}}\Rightarrow
@@ -717,20 +713,6 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 }{
   \typing{\Delta}{\Gamma}{\ifthen{e_0}{T}{x}{e_1}{e_2}}{T'}
 }
-\and
-\fbox{\mok{\Delta}{\Gamma}{M}}
-\and
-\inferrule[method-ok]{
-  \typing{\Delta,\Delta'}{\Gamma,T_1\;x_1,\ldots,T_n\;x_n}{e}{T_0}\\
-  \kind{\Delta,\Delta'}{T_0\ldots T_n}
-}{
-  \mok{\Delta}{\Gamma}{\method{\Delta'}{T_0}{m}{T_1~x_1,\ldots,T_n~x_n}{\ret{e}}}
-}
-%
-%  Bs,Bs';G,x1:T1,..xn:Tn |- e : T0
-%  Bs,Bs'|- T0 : Ok .. Bs|- Tn : Ok
-%------------------------------------------------------------------------
-%  Bs;G |- <Bs'> T0 m(T1 x1..Tn xn){return e;} : Ok
     \end{mathpar}
     \caption{Typing}
     \label{fig:typing}
@@ -739,17 +721,15 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \begin{figure}[H]\small
     \centering
     \begin{mathpar}
-\fbox{$\vdash\decls\;e~\mathrm{Ok}$}
-\and
+\fbox{$\vdash\decls\;e~\mathrm{Ok}$}\\
 \inferrule[prog-ok]{
   \forall\mathsf{Dec}\in\decls\ldotp\mathsf{Dec}~\mathrm{Ok}\\
   \typing{\emptyset}{\emptyset}{e}{\_}
 }{
   \vdash\decls\;e~\mathrm{Ok}
 }
-\and
-\fbox{$\mathsf{Dec}~\mathrm{Ok}$}
-\and
+\\
+\fbox{$\mathsf{Dec}~\mathrm{Ok}$}\\
 \inferrule[class-ok]{
   \kind{\Delta}{\mathrm{cod}(\Delta)}\\
   \forall T\;f\semi\in\pl{S}\ldotp\kind{\Delta}{T}\\\\
@@ -761,9 +741,21 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 }{
   \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}~\mathrm{Ok}
 }
-\and
-\fbox{$\mathsf{overrideOk}(T,M)$}
-\and
+\\
+\fbox{\mok{\Delta}{\Gamma}{M}}\\
+\inferrule[method-ok]{
+  \typing{\Delta,\Delta'}{\Gamma,T_1\;x_1,\ldots,T_n\;x_n}{e}{T_0}\\
+  \kind{\Delta,\Delta'}{T_0\ldots T_n}
+}{
+  \mok{\Delta}{\Gamma}{\method{\Delta'}{T_0}{m}{T_1~x_1,\ldots,T_n~x_n}{\ret{e}}}
+}
+%
+%  Bs,Bs';G,x1:T1,..xn:Tn |- e : T0
+%  Bs,Bs'|- T0 : Ok .. Bs|- Tn : Ok
+%------------------------------------------------------------------------
+%  Bs;G |- <Bs'> T0 m(T1 x1..Tn xn){return e;} : Ok
+\\
+\fbox{$\mathsf{overrideOk}(T,M)$}\\
 \inferrule[override-new]{
   \subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}\in\decls\\
   m\not\in\pl{M}
@@ -780,7 +772,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
   \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\;x_1,\ldots,T'_n\;x_n}{\_})
 }
     \end{mathpar}
-    \caption{Typing of classes and programs}
+    \caption{Typing of programs, classes and methods}
     \label{fig:classtyping}
 \end{figure}
 
@@ -791,8 +783,7 @@ A method that a class declares again must keep the signature it has in every sup
 \begin{figure}[H]\small
     \centering
     \begin{mathpar}
-\fbox{\kind{\Delta}{T}}
-\and
+\fbox{\kind{\Delta}{T}}\\
 \inferrule[wf-var]{
   \ext{X}{\_}\in\Delta
 }{
@@ -806,9 +797,8 @@ A method that a class declares again must keep the signature it has in every sup
 }{
   \kind{\Delta}{\gen{C}{\pl{T}}}
 }
-\and
-\fbox{\subtype{\Delta}{T}{T'}}
-\and
+\\
+\fbox{\subtype{\Delta}{T}{T'}}\\
 \inferrule[sub-refl]{ }{\subtype{\Delta}{T}{T}}
 \and
 \inferrule[sub-inherit]{
@@ -843,8 +833,7 @@ A funnelled type variable that is not in scope where its local class $C$ is writ
 \begin{figure}[H]\small
     \centering
     \begin{mathpar}
-\fbox{\cast{\Delta}{T}{T'}}
-\and
+\fbox{\cast{\Delta}{T}{T'}}\\
 \inferrule[cast-up]{
   \subtype{\Delta}{T}{T'}
 }{
