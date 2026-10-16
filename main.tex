@@ -245,6 +245,9 @@ So there remains a need to articulate a solution to this problem where generics 
 \todo[inline]{ah, we need to check Flix, where maybe we can cook up something roughly like this?}
 
 \section{A Core Language for Funnelling}
+% Metavariables are the letters of the grammar (X, T, C, e, Delta, Gamma, ...), decorated only with primes and digit subscripts:
+% X, X', X'', X0, X3.
+% The other subscripts are the indices of a sequence: X_i is the element at position i of X_1...X_n, and Xs is X_1...X_n.
 \newcommand{\QQ}[1]{\ensuremath{\text{\ttfamily #1}}}
 \newcommand{\kw}[1]{\ensuremath{\text{\ttfamily\bfseries\color{blue}#1}}}
 \newcommand{\OR}{\QQ{(}}
@@ -367,12 +370,12 @@ So there remains a need to articulate a solution to this problem where generics 
 \[
 \begin{array}{rcl}
 \mathsf{scope}(\gen{C}{\pl{T}}) & = & \Delta;\pl{T} \quad\textrm{if }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls\\
-\mathsf{scope}(\gen{C_0}{\pl{T}}) & = & \mathsf{funnelled}(\Delta_C,\Delta';\pl{F};\pl{T})\\
+\mathsf{scope}(\gen{C_0}{\pl{T}}) & = & \mathsf{funnelled}(\Delta',\Delta'';\pl{F};\pl{T})\\
 \multicolumn{3}{l}{\quad\textrm{if }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}}\\
 \multicolumn{3}{l}{\quad\phantom{\textrm{if }}\textrm{or }\declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}},}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\method{\Delta'}{\_}{m}{\_}{\ret{e}}\in\pl{M},}\\
+\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\method{\Delta''}{\_}{m}{\_}{\ret{e}}\in\pl{M},}\\
 \multicolumn{3}{l}{\quad\phantom{\textrm{if }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e,}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\mathsf{scope}(\generic{C})=\Delta_C;\_}\\
+\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\mathsf{scope}(\generic{C})=\Delta';\_}\\
 \\
 \mathsf{funnelled}(\Delta;\emptyset;\emptyset) & = & \emptyset;\emptyset\\
 \mathsf{funnelled}(\Delta;\funnel{X}\;\pl{F};T\;\pl{T}) & = & \ext{X}{T'},\Delta_0;T\;\pl{T}''\\
@@ -397,7 +400,7 @@ thus a class name $C$ identifies at most one $K$ with $\declared{K}$.
 For a class type $\gen{C}{\pl{T}}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}''$ gives the bounds $\Delta_0$ of the type variables that the methods of $C$ see, without the type variables of the methods themselves.
 It also gives the types $\pl{T}''$ that the arguments $\pl{T}$ assign to the type variables in $\Delta_0$.
 For a top-level class, $\Delta_0$ is the bounds of the class and $\pl{T}''=\pl{T}$.
-For a local class $C_0$ with funnels $\pl{F}$, the bounds $\Delta_C,\Delta'$ are the bounds of the type variables in scope where $C_0$ is written.
+For a local class $C_0$ with funnels $\pl{F}$, the bounds $\Delta',\Delta''$ are the bounds of the type variables in scope where $C_0$ is written.
 The function $\mathsf{funnelled}(\Delta;\pl{F};\pl{T})$ goes through the funnels $\pl{F}$ and the arguments $\pl{T}$ together, one position at a time, where $\emptyset$ is the empty sequence.
 At the position of a funnel $\funnel{X}$, it adds the bound of $X$ in $\Delta$ to $\Delta_0$, and the argument to $\pl{T}''$.
 At the position of a ground funnel $G$, the argument must be $G$ itself, and nothing is added.
