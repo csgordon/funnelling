@@ -1,16 +1,18 @@
 \section{Scope of the Problem}
-This problem arises in essentially all JVM languages, all of which must interact with Java and have therefore chosen to also support method-local classes.
+This problem arises in the statically typed JVM languages that support method-local classes, such as Scala and Kotlin.
 
 \begin{figure}
 \begin{lstlisting}[numbers=left,language=c++,escapeinside={(*}{*)}]
-class Object{};
+class Object{ public: virtual ~Object(){} };
 template<typename X> class Foo : public Object {
-    public: X x() { return x(); } };
+    public: virtual X x() { return x(); } };
 template<typename X>
 Foo<X>* m(Object* other, const X* x) {
-    class MyFoo : public Foo<X> { public: X x() { return x; } };
-    MyFoo* d = dynamic_cast<MyFoo*>(other);(*\label{line:cpp_err}*)
-    if(d == nullptr) { return new MyFoo(); }
+    class MyFoo : public Foo<X> {
+        const X* v;
+      public: MyFoo(const X* v):v(v){} X x() { return *v; } };
+    MyFoo* d = dynamic_cast<MyFoo*>(other);(*\label{line:cpp_cast}*)
+    if(d == nullptr) { return new MyFoo(x); }
     return d;
 }
 \end{lstlisting}
@@ -20,32 +22,32 @@ Foo<X>* m(Object* other, const X* x) {
 
 \subsection{Generic Reification} A natural suspicion is that this is ``simply'' a problem with generic erasure, that of course a language that cannot distinguish generic instantiations of a class at runtime will have difficulties of this sort.
 There is some truth to this: Java is permitting a cast that it cannot actually check due to type erasure.
-However there is more to it than that: Java will eagerly flag code such as \Q@(List<String>)(new LinkedList<Integer>())@.
+However there is more to it than that: for \Q@o@ of type \Q@Object@, Java flags the cast \Q@(List<String>)o@ with an unchecked warning, and rejects \Q@o instanceof List<String>@ with an error.
 So the language does intend to warn about uses of uncheckable casts.
-\mjnote{\texttt{(List<String>)(new LinkedList<Integer>())} is an incompatible-types error, not an unchecked one. The contrast that matters here: an unchecked cast is a warning, an unchecked \texttt{instanceof} is an error.}
 And while reified generics do provide enough information to check casts dynamically, only certain forms of reification
 make correct casts straightforward.
 
 In a language which implements parametric polymorphism by templating / heterogeneous compilation
-(C++, C\#, or early experiments with generic Java~\cite{agesen1997adding}), the check is straightforward:
+(C++, or early experiments with generic Java~\cite{agesen1997adding}), the check is straightforward:
 each instantiation of \Q@m@ with different generic parameters is compiled separately, resulting in separate
 class declarations for each instantiation.
 Consider reinterpreting Example~1 in C++ as in Figure \ref{fig:cpp}.
-\texttt{gcc} reports for Line \ref{line:cpp_err}:
-\begin{verbatim}
-<source>:7:16: error: cannot 'dynamic_cast' 'other' (of type 'class Object*')
-to type 'class m<Integer>(Object*, const Integer*)::MyFoo*' (source type is not polymorphic)
-    7 |     MyFoo* d = dynamic_cast<MyFoo*>(other);
-      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~
-\end{verbatim}
-\todo[inline]{not perfect, because this is C++ giving a static warning, not catching the error dynamically...}
-Notice that the error message uses the instantiation of the method signature as a scope for a declaration of \Q@MyFoo@.
+A C++ local class cannot use the parameters of its enclosing function, so \Q@MyFoo@ receives \Q@x@ through its constructor.
+\Q@Object@ has a virtual destructor, since \Q@dynamic_cast@ requires a polymorphic source type.
+The calls \Q@r1=m<int>(nullptr,&i)@ and then \Q@m<std::string>(r1,&s)@ mirror Example~1.
+In the second call, the \Q@dynamic_cast@ at Line \ref{line:cpp_cast} returns \Q@nullptr@:
+\Q@m<int>@ and \Q@m<std::string>@ declare two distinct classes \Q@MyFoo@, and \Q@r1@ is an instance of the first one.
+Thus the second call returns a new \Q@MyFoo@, as a sound type test should.
+In its diagnostics, \texttt{gcc} names the first class \Q@m<int>(Object*, const int*)::MyFoo@:
+the instantiation of the method signature is the scope of the declaration of \Q@MyFoo@.
 But heterogeneous compilation has subtle costs and wide-ranging consequences for language design, not just implementation,
 and complex performance consequences~\cite{odersky2001two,kennedy2001design}. Even if this does fix the problem,
 it is not universally appropriate.
 
 An alternative, common conception of generic reification is to simply save the type parameters along with the
-single implementations of classes, for it to be checked when needed. But note again that \Q@MyFoo@
+single implementations of classes, for it to be checked when needed.
+This is what .NET does for instantiations at reference types~\cite{kennedy2001design}; C\# itself has no local classes.
+But note again that \Q@MyFoo@
 has no generic parameters of its own. So a shallow check with this variant of reified generics is insufficient ---
 each \Q@MyFoo@ would need to contain a representation of, or reference to, its parent type's generic parameters.
 And because this phenomenon is not limited to a single step in the inheritance hierarchy, the cast must traverse and compare
@@ -220,7 +222,7 @@ class Broken {
     switch (other) {
         case MyFoo local: // implicit unchecked cast
             System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
-            System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException (on the return of f.apply)
+            System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException (on the argument of f.apply)
             break;
         default:
             break;
@@ -266,8 +268,11 @@ class Broken {
 }
 // Above seems to fail but without explicit checkcast, failing one of the virtual method calls
 \end{lstlisting}
-With investiagion in bytecode and trying both s->s.length() and String::length we think that in order to save on
-bytecode size, our JVM enviroment under test adds casts in all lambda calls so that meth refecences lambda calls do not need specialized bytecode (eg MyInterface a=String::length)
+The \Q@ClassCastException@ comes from the class that \Q@LambdaMetafactory@ generates at run time for the lambda.
+javac compiles \Q@s->s.length()@ into a synthetic method whose parameter has type \Q@String@,
+and the generated \Q@apply(Object)@ casts its argument to \Q@String@ before calling that method.
+For a method reference such as \Q@String::length@, the generated class performs the same cast on the receiver.
+The generated class is hidden, so its frame does not appear in the default stack trace, and the class file of \Q@Broken@ contains no \Q@checkcast@ for this cast.
 
 % interface Shape{ Square toSquare(); }
 % class Square extends Shape{Square toSquare(){ return this; } }

@@ -1,9 +1,9 @@
 \section{Related Work}
 It is not uncommon to have ``intentional unsoundness'' in industrial languages,
-such as Java's covariant array subtyping, or TypeScript's covariant method subtyping.
+such as Java's covariant array subtyping, or TypeScript's bivariant checking of method parameters.
 However these are intentionally designed into the language to improve ease of use, and in most cases (like Java's array handling)
 problematic uses are detected at runtime (e.g., Java checks upon storing into an array that the new entry value
-is a subtype of the array's original content type).
+is an instance of the run-time element type of the array).
 
 However, unintentional unsoundness in industrial type systems is rarer.
 The most notable example is Amin and Tate's discovery~\cite{amin2016java} that Java and Scala's handling of generic type constraints
@@ -31,13 +31,13 @@ Our static solution effectively prohibits the de facto existential capture of th
 
 The decision to treat types like the \Q@MyFoo@ variants in our examples as closed existential types that depend on other choices of types is not
 without parallels in other languages. Haskell and Rust, for example, include associated types~\cite{chakravarty2005associated}, where
-a typeclass has a type as a member.
+a type class (a trait, in Rust) has a type as a member.
 A yet closer analogue is Scala's path-dependent types~\tocite{dot}, where types may be \emph{members} of an individual object, rather than associated with an individual class. The code below adapts the troublesome example method using Scala's type members:
 \begin{lstlisting}[language=Scala]
 trait Foo { type X; def x() : X; }
-def m[Y](other: Any, newx: Y) : Foo2 = 
+def m[Y](other: Any, newx: Y) : Foo =
     class MyFoo extends Foo { type X = Y; override def x() : X = newx; }
-    newx match { 
+    other match {
         case f: MyFoo => f
         case _ => MyFoo()
     }
