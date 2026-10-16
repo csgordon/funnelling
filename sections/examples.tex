@@ -1,0 +1,297 @@
+\section{Scope of the Problem}
+This problem arises in essentially all JVM languages, all of which must interact with Java and have therefore chosen to also support method-local classes.
+
+\begin{figure}
+\begin{lstlisting}[numbers=left,language=c++,escapeinside={(*}{*)}]
+class Object{};
+template<typename X> class Foo : public Object {
+    public: X x() { return x(); } };
+template<typename X>
+Foo<X>* m(Object* other, const X* x) {
+    class MyFoo : public Foo<X> { public: X x() { return x; } };
+    MyFoo* d = dynamic_cast<MyFoo*>(other);(*\label{line:cpp_err}*)
+    if(d == nullptr) { return new MyFoo(); }
+    return d;
+}
+\end{lstlisting}
+\caption{C++ equivalent of Figure \ref{fig:original_example}.}
+\label{fig:cpp}
+\end{figure}
+
+\subsection{Generic Reification} A natural suspicion is that this is ``simply'' a problem with generic erasure, that of course a language that cannot distinguish generic instantiations of a class at runtime will have difficulties of this sort.
+There is some truth to this: Java is permitting a cast that it cannot actually check due to type erasure.
+However there is more to it than that: Java will eagerly flag code such as \lstinline|(List<String>)(new LinkedList<Integer>())|.
+So the language does intend to warn about uses of uncheckable casts.
+\mjnote{\texttt{(List<String>)(new LinkedList<Integer>())} is an incompatible-types error, not an unchecked one. The contrast that matters here: an unchecked cast is a warning, an unchecked \texttt{instanceof} is an error.}
+And while reified generics do provide enough information to check casts dynamically, only certain forms of reification
+make correct casts straightforward.
+
+In a language which implements parametric polymorphism by templating / heterogeneous compilation
+(C++, C\#, or early experiments with generic Java~\cite{agesen1997adding}), the check is straightforward:
+each instantiation of \lstinline|m| with different generic parameters is compiled separately, resulting in separate
+class declarations for each instantiation.
+Consider reinterpreting Figure \ref{fig:original_example} in C++ as in Figure \ref{fig:cpp}.
+\texttt{gcc} reports for Line \ref{line:cpp_err}:
+\begin{verbatim}
+<source>:7:16: error: cannot 'dynamic_cast' 'other' (of type 'class Object*')
+to type 'class m<Integer>(Object*, const Integer*)::MyFoo*' (source type is not polymorphic)
+    7 |     MyFoo* d = dynamic_cast<MyFoo*>(other);
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+\end{verbatim}
+\todo[inline]{not perfect, because this is C++ giving a static warning, not catching the error dynamically...}
+Notice that the error message uses the instantiation of the method signature as a scope for a declaration of \lstinline|MyFoo|.
+But heterogeneous compilation has subtle costs and wide-ranging consequences for language design, not just implementation,
+and complex performance consequences~\cite{odersky2001two,kennedy2001design}. Even if this does fix the problem,
+it is not universally appropriate.
+
+An alternative, common conception of generic reification is to simply save the type parameters along with the
+single implementations of classes, for it to be checked when needed. But note again that \lstinline|MyFoo|
+has no generic parameters of its own. So a shallow check with this variant of reified generics is insufficient ---
+each \lstinline|MyFoo| would need to contain a representation of, or reference to, its parent type's generic parameters.
+And because this phenomenon is not limited to a single step in the inheritance hierarchy, the cast must traverse and compare
+a substantial amount of data --- not a mere comparison of virtual table pointers. This again has multiple implementation
+approaches, neither ideal (chains of parent type instantiations hurt cache locality, inlining data can bloat small instances).
+
+So there remains a need to articulate a solution to this problem where generics are implemented via erasure.
+\mjnote{under erasure, Java's checked-cast rule is already enough once the dependency of \texttt{MyFoo} on \texttt{X} is visible in its type, and that is what funnelling provides. This paragraph can lead straight into Section~3.}
+
+
+
+\todo[inline]{ah, we need to check Flix, where maybe we can cook up something roughly like this?}
+
+//--------
+MARCO: (6th time)
+This is not about generic erasure
+In a language with reified generics, if the language still decides that MyFoo is not generic,
+no impact of those reified generics is going to be seen in the case (MyFoo)other
+MyFoo extends Foo<X> is 'as generic' as
+String extends Comparable<String>{}
+A cast to String, would not look in the generics of Comparable<String>
+A cast to MyFoo, would not look in the generics of Foo<X>
+If subtyping has (nominal-)'reflexitity' then String <: String (no need to look at the generics in Comparable<String>, available or not.
+A language with implicity 'type scope' that could conceptually add to the 'name' when types are identified in the type system could change this.
+Eg: scala foo.Bar is a type and foo.Bar != beer.Bar //existential types on constants/values
+Broken.<X>m.MyFoo  //existential types on generic-instantiated methods
+//----------
+COLIN: This is ambiguous: with reified generics, there are two implementation strategies, which yield different behaviours:
+1. MyFoo allocated as a Foo<String> gets a different class table from MyFoo allocated as a Foo<Integer>. In this case, the cast will fail
+2. All MyFoo will get the same inherited class table, but keep a separate field with the choice of X for Foo<X>, used for inherited methods. In this case, there are *two possible cast implementations*:
+    a. Cast checks only vtable, and cast succeeds. Arguably a compiler that "treats MyFoo as non-generic" could lean towards this
+    b. Cast checks both vtable and the runtime representation of the type parameter of Foo. Arguably a compiler that preserves this for inherited methods from Foo to work correctly would be likely to check this (since it would be checked in a cast to Foo<Integer>).
+
+//----------
+\mjnote{the shallow/deep question (2a/2b) only arises for a language that checks casts at run time instead of requiring the checked-cast premise; under modern Java it does not arise.}
+
+This is a problem in other languages (cite cite) as shown in greater details in Rel Work.
+
+Now, assume we have a readable small step reduction over a version of FJ rich enough to express the problem.
+We will assume: 
+- Simple generics
+- A syntax like anonymous inner classes, but where we give them names. We can call them
+named inner classes.
+This imports the concept of method local inner classes within an expression based calculus.
+//our model will also need casts + instanceof
+\begin{lstlisting}
+class A{ A onlyA()-> new A() }
+class B{ B onlyB()-> new B() }
+class Foo<X> extends Object{ X x() {return x();} }
+public class Broken {
+  <X> Foo<X> m(Object other, X x) ->
+    if(other instanceof MyFoo)
+      then ((MyFoo)other)
+      else new MyFoo() extends Foo<X>{ X x(){ return x; } }//Bad
+  }
+main:
+  new Broken().<B>m(new Broken().<A>m(new Object(),new A()),new B()).x().onlyB();
+\end{lstlisting}
+
+
+\begin{lstlisting}
+class Foo<X> extends Object{ X x() {return x();} }
+public class Broken {
+  <X> Foo<X> m(Object other, X x) ->
+    if(other instanceof MyFoo<X>) //unchecked instanceof (ill typed in our core)?
+      then ((MyFoo<X>)other)//unchecked cast (ill typed in our core)?
+      else new MyFoo<X>() extends Foo<X>{ public X x(){ return x; } }//good
+  }
+\end{lstlisting}
+\mjnote{answered by Figure~\ref{fig:cast}: with \texttt{other : Object}, \texttt{other instanceof MyFoo<X>} is ill typed, because \texttt{X} is not determined by \texttt{Object} (as javac: \texttt{Object cannot be safely cast to MyFoo<X>}). With \texttt{other : Foo<X>} it is well typed and sound under erasure.}
+
+Note how funnelling purpose is to insert the generics. Without funnelling, MyFoo is a non generic type, so the question about generic reification does not even arise.
+
+small step reduction
+\begin{verbatim}
+01:  new Broken().<B>m(new Broken().<A>m(new Object(),new A()),new B()).x().onlyB();
+02:  new Broken().<B>m(
+    if(new Object() instanceof MyFoo<X>)
+      then (MyFoo<A>) new Object()
+      else new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+      ,new B()).x().onlyB();
+03:  new Broken().<B>m(
+    if(false)
+      then (MyFoo<A>) new Object()
+      else new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+      ,new B()).x().onlyB();
+04:  new Broken().<B>m(
+       new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+      ,new B()).x().onlyB();
+05:   (if(new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } } instanceof MyFoo<B>)
+       then (MyFoo<A>) new MyFoo<A>() extends Foo<A>{ public A x()->new A() }
+       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
+06a:  (if(false)//reified gen
+       then (MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
+07a:  (new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
+08a:  new B().onlyB()
+09a:  new B()//success and different semantic
+06b:  (if(true)//Java
+       then (MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
+07b:  ((MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }).x().onlyB()
+08b:  (new MyFoo<A>() extends Foo<A>{ public A x()->new A() }).x().onlyB()
+     //assuming cast and instanceof behave consistently (unchecked)
+09b:  new A().x().onlyB()
+10b:  new A().onlyB() //stuck!!
+6c:  (if(err)//compile or at least run time
+       then ((MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
+\end{verbatim}
+
+// Maybe above we want MyFoo:Object<A> and MyFoo:Object<B>?
+
+\begin{lstlisting}
+public class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    if(!(other instanceof MyFoo)){ return new MyFoo(); }
+    MyFoo local= (MyFoo)other;//cast pass with no warnings
+    System.out.println("Pass with " + x);
+    System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException
+    return local;
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+public class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    if(!(other instanceof MyFoo)){ return new MyFoo(); }
+    MyFoo local= (MyFoo)other;//cast pass with no warnings
+    System.out.println("Pass with " + x);
+    System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException
+    return local;
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+public class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
+      System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
+     }
+  return new MyFoo();//snekly it is MyFoo<Integer>
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+
+// TODO: could talk about doing this with modern Java type-switch
+\begin{lstlisting}[language=Java]
+// Compiles without error, fails, on jdk 25.0.1
+import java.util.function.Function;
+class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    switch (other) {
+        case MyFoo local: // implicit unchecked cast
+            System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+            System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException (on the return of f.apply)
+            break;
+        default:
+            break;
+    }
+    if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
+      System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
+     }
+  return new MyFoo();//snekly it is MyFoo<Integer>
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->(s.length())+""); //Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+//Example that breaks in a NEW WAY in the bytecode
+// https://godbolt.org/z/sMnxPG1TE
+import java.util.function.Function;
+class Broken {
+  static <X> Object m(Object other, final X x, Function<X,Integer> f){
+    class MyFoo{ public X x(){ return x; } }
+    switch (other) {
+        case MyFoo local:
+            System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+            System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException 
+            break;
+        default:
+            break;
+    }
+    if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
+      System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
+     }
+  return new MyFoo();//snekly it is MyFoo<Integer>
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->i);
+    Broken.<String>m(r1,"Hi",s->s.length());
+  }
+}
+// Above seems to fail but without explicit checkcast, failing one of the virtual method calls
+\end{lstlisting}
+With investiagion in bytecode and trying both s->s.length() and String::length we think that in order to save on
+bytecode size, our JVM enviroment under test adds casts in all lambda calls so that meth refecences lambda calls do not need specialized bytecode (eg MyInterface a=String::length)
+
+% interface Shape{ Square toSquare(); }
+% class Square extends Shape{Square toSquare(){ return this; } }
+%
+%
+%
+% public class Broken {
+%   static <X> Foo<X,?> m(Top<?> other, final X x){
+%     class MyFoo extends Foo<X,MyFoo>{
+%       public X x(){ return x; }
+%       public MyFoo myFooOrElse(MyFoo myFoo){ return this; }
+%     }
+%     return other.selfOrElse(new MyFoo());
+%   }
+%   public static void main(String[] a) {
+%     Foo<Integer> r1= Broken.<Integer>m(new Top<String>(),5);
+%     Foo<String> r2= Broken.<String>m(r1,"Hi");
+%     System.out.println(r1.x());//5
+%     System.out.println(r2.x());//Throws ClassCastException: ..
+%   }
+% }
+% class Top<S>{
+%   public S selfOrElse(S s){ return s; }
+%   }
+% class Foo<X,S> extends Top<S>{ public X x() {return x();} }
+%
+%
