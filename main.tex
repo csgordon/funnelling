@@ -293,7 +293,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \centering
 \[
 \begin{array}{rrcl}
-\textsf{Expressions} & e & ::= & x \mid \call{e}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}
+\textrm{Expressions} & e & ::= & x \mid \call{e}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}
     \mid e\fstop f
     \mid \obj{C}{\pl{T}}{\pl{e}}\\
     &&&\mid \innerobj{C}{\pl{F}}{C'}{\pl{T}'}{\pl{e}}{\pl{M}}\\
@@ -302,25 +302,12 @@ So there remains a need to articulate a solution to this problem where generics 
 \textrm{Funnels} & F & ::= & G \mid \funnel{X}\\
 \textrm{Ground Types} & G & ::= & \gen{C}{\pl{G}}\\
 \\
-\textrm{Values} & v & ::= & \obj{C}{\pl{G}}{\pl{v}} \mid \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v}}{\pl{M}}\\
-\textrm{Eval. Ctx.} & \mathcal{E} & ::= & \square \mid \call{\mathcal{E}}{\pl{G}}{m}{\pl{e}} \mid \call{v}{\pl{G}}{m}{\pl{v}\;\mathcal{E}\;\pl{e}}\\
-    &&& \mid \explicitcall{\mathcal{E}}{G}{\pl{G}}{m}{\pl{e}} \mid \explicitcall{v}{G}{\pl{G}}{m}{\pl{v}\;\mathcal{E}\;\pl{e}}\\
-    &&& \mid \mathcal{E}\fstop f \mid \obj{C}{\pl{G}}{\pl{v}\;\mathcal{E}\;\pl{e}}\\
-    &&& \mid \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v}\;\mathcal{E}\;\pl{e}}{\pl{M}}\\
-    &&& \mid \ifthen{\mathcal{E}}{G}{x}{e_1}{e_2}\\
-\textrm{Contexts} & \mathcal{C} & ::= & \square \mid \call{\mathcal{C}}{\pl{T}}{m}{\pl{e}} \mid \call{e}{\pl{T}}{m}{\pl{e}\;\mathcal{C}\;\pl{e}'}\\
-    &&& \mid \explicitcall{\mathcal{C}}{T}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e}\;\mathcal{C}\;\pl{e}'}\\
-    &&& \mid \mathcal{C}\fstop f \mid \obj{C}{\pl{T}}{\pl{e}\;\mathcal{C}\;\pl{e}'}\\
-    &&& \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}\;\mathcal{C}\;\pl{e}'}{\pl{M}}\\
-    &&& \mid \ifthen{\mathcal{C}}{T}{x}{e_1}{e_2}\\
-    &&& \mid \ifthen{e_0}{T}{x}{\mathcal{C}}{e_2}\\
-    &&& \mid \ifthen{e_0}{T}{x}{e_1}{\mathcal{C}}\\
-\\
 \textrm{Type Env.} & \Gamma & ::= & T_1\;x_1,\ldots,T_n\;x_n\\
 \textrm{Bounds} & \Delta & ::= & \ext{X_1}{T_1},\ldots,\ext{X_n}{T_n}\\
 %// Need T, not F, to be able to do things like (Java) class Bar<X,Y extends X> {}
 \textrm{Declaration} & \mathsf{Dec} & ::= & \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}\\
 \textrm{(Field) Slots} & S & ::= & T\;f\semi\\
+\textrm{Methods} & M & ::= & \method{\Delta}{T_0}{m}{T_1\;x_1,\ldots,T_n\;x_n}{\ret{e}}\\
 \textrm{Class Decl.} & K & ::= & \mathsf{Dec} \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}
 %Dec::= class C<Bs> extends C'<Ts>{ Ms Ss} //assume standard constructor
 %S ::= T f; //field/slot
@@ -352,8 +339,8 @@ So there remains a need to articulate a solution to this problem where generics 
 }
 \and
 \inferrule[decl-in-class]{
-  \declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\\\
-  \method{\Delta'}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\\\
+  \declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\\\
+  \method{\_}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\\\
   \innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}\textrm{ occurs in }e
 }{
   \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}}
@@ -361,7 +348,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \and
 \inferrule[decl-in-local]{
   \declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}}\\\\
-  \method{\Delta'}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\\\
+  \method{\_}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\\\
   \innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}\textrm{ occurs in }e
 }{
   \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}}
@@ -420,16 +407,17 @@ The function $\mathsf{scope}(\Delta;\pl{F};\pl{T})$ goes through the funnels $\p
 At the position of a funnel $\funnel{X}$, it adds $\ext{X}{\Delta(X)}$ to the bounds and the argument to the types.
 At the position of a ground funnel $G$, the argument must be $G$ itself, and nothing is added.
 The operator $\cdot$ concatenates two results of $\mathsf{scope}$, component by component.
-An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$.
+An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for a context $\mathcal{C}$ of Figure~\ref{fig:contexts}.
 Contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
 The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every top-level class reaches \Object.
+The reduction of Figure~\ref{fig:opsem} uses the values $v$ and the evaluation contexts $\mathcal{E}$ of Figure~\ref{fig:contexts}.
 
 \begin{figure}[H]\small
     \centering
 \begin{mathpar}
 \fbox{$\step{e}{e'}$}\\
 \inferrule[simpleFieldFound]{
-    \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{T_1 f_1\ldots T_n f_n}\in\decls\\
+    \subclass{C}{\_}{\_}{\_}{\_}{T_1\;f_1\semi\ldots T_n\;f_n\semi}\in\decls\\
     f_i\in f_1\ldots f_n
 }{
     \step{
@@ -440,7 +428,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 }
 \and
 \inferrule[simpleFieldSuper]{
-    \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{T_1 f_1\ldots T_n f_n}\in\decls\\
+    \subclass{C}{\Delta}{C'}{\pl{T}}{\_}{T_1\;f_1\semi\ldots T_n\;f_n\semi}\in\decls\\
     f\not\in f_1\ldots f_n
 }{
     \step{
@@ -510,7 +498,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 }
 \and
 \inferrule[simpleFound]{
-    \subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\pl{S}}\in\decls\\
+    \subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}\in\decls\\
     \method{\Delta'}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\ret{e_0}} \in \pl{M}\\
     e = \tsubst{\tsubst{e_0}{\Delta,\Delta'}{\pl{G},\pl{G}'}}{\this,x_1\ldots x_n}{v_0\ldots v_n}
 }{
@@ -602,10 +590,11 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \and
 \inferrule[declField]{
   \typing{\Delta}{\Gamma}{e}{\classtype{C}{\pl{T}}}\\\\
-  \subclass{C}{\Delta'}{\_}{\_}{\_}{T_1 f_1\ldots T_n f_n}\in\decls
+  \subclass{C}{\Delta'}{\_}{\_}{\_}{\pl{S}}\in\decls\\\\
+  T\;f\semi\in\pl{S}
 }{
   % thanks to subsumption, no need of multiple rules (C<Ts> can simply be set to supertype of relevance, via subsumption)
-  \typing{\Delta}{\Gamma}{e\fstop f_i}{\tsubst{T_i}{\Delta'}{\pl{T}}}
+  \typing{\Delta}{\Gamma}{e\fstop f}{\tsubst{T}{\Delta'}{\pl{T}}}
   %\subclass{C_0}{\Delta_0}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}\in\decls
 }
 \and
@@ -614,6 +603,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
   \kind{\Delta}{\pl{T}_1}\\\\
   \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\pl{M}}{\_}}\\\\
   \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\\\
+  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}\\\\
   T'_0\ldots T'_n=\tsubst{T_0\ldots T_n}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\\\
   \typing{\Delta}{\Gamma}{e_1\ldots e_n}{T'_1\ldots T'_n}
 }{
@@ -625,6 +615,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
   \kind{\Delta}{\pl{T}_1}\\\\
   \declared{\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\pl{M}}}\\\\
   \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\\\
+  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\pl{F},\Delta_1}{\pl{T}_0,\pl{T}_1}}\\\\
   T'_0\ldots T'_n=\tsubst{T_0\ldots T_n}{\pl{F},\Delta_1}{\pl{T}_0,\pl{T}_1}\\\\
   \typing{\Delta}{\Gamma}{e_1\ldots e_n}{T'_1\ldots T'_n}
 }{
@@ -641,6 +632,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
   \subtype{\Delta}{\gen{C}{\pl{T}_2}}{\gen{C_0}{\pl{T}_0}}\\\\
   \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\pl{M}}{\_}}\\
   \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\\\
+  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}\\\\
   T'_0\ldots T'_n=\tsubst{T_0\ldots T_n}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\
   \typing{\Delta}{\Gamma}{e_1\ldots e_n}{T'_1\ldots T'_n}
 }{
@@ -650,7 +642,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 }
 \and
 \inferrule[new-top]{
-  \declared{\subclass{C}{\Delta'}{C'}{\pl{T}'}{\_}{T_1\;f_1\ldots T_n\;f_n}}\\\\
+  \declared{\subclass{C}{\Delta'}{C'}{\pl{T}'}{\_}{T_1\;f_1\semi\ldots T_n\;f_n\semi}}\\\\
   \typing{\Delta}{\Gamma}{\obj{C'}{\tsubst{\pl{T}'}{\Delta'}{\pl{T}}}{\pl{e}}}{\_}\\
   \typing{\Delta}{\Gamma}{e_1\ldots e_n}{\tsubst{T_1\ldots T_n}{\Delta'}{\pl{T}}}\\
   \kind{\Delta}{\gen{C}{\pl{T}}}
@@ -697,7 +689,9 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
   \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\
   \kind{\Delta}{\gen{C'}{\pl{T}}}\\\\
   %\kind{\Delta}{C\langle\rangle}\\
-  \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\;\this}{\pl{M}}
+  \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\;\this}{\pl{M}}\\\\
+  \forall C'',\pl{T}'\ldotp\subtype{\Delta}{\gen{C'}{\pl{T}}}{\gen{C''}{\pl{T}'}}\Rightarrow
+    \mathsf{overrideOk}(\gen{C''}{\pl{T}'},\pl{M})
 }{
   \typing{\Delta}{\Gamma}{
     \innerobj{C}{}{C'}{\pl{T}}{\pl{e}}{\pl{M}}
@@ -744,8 +738,9 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \\
 \fbox{\mok{\Delta}{\Gamma}{M}}\\
 \inferrule[method-ok]{
-  \typing{\Delta,\Delta'}{\Gamma,T_1\;x_1,\ldots,T_n\;x_n}{e}{T_0}\\
-  \kind{\Delta,\Delta'}{T_0\ldots T_n}
+  \kind{\Delta,\Delta'}{\mathrm{cod}(\Delta')}\\
+  \kind{\Delta,\Delta'}{T_0\ldots T_n}\\\\
+  \typing{\Delta,\Delta'}{\Gamma,T_1\;x_1,\ldots,T_n\;x_n}{e}{T_0}
 }{
   \mok{\Delta}{\Gamma}{\method{\Delta'}{T_0}{m}{T_1~x_1,\ldots,T_n~x_n}{\ret{e}}}
 }
@@ -850,7 +845,7 @@ A funnelled type variable that is not in scope where its local class $C$ is writ
 \inferrule[cast-down]{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C'}{\pl{T}_0}}\\
   \generic{C}=\gen{C}{\pl{T}''}\\\\
-  \subtype{\Delta}{\gen{C}{\pl{T}''}}{\gen{C'}{\pl{T}'}}\\
+  \subtype{\emptyset}{\gen{C}{\pl{T}''}}{\gen{C'}{\pl{T}'}}\\
   \ftv{\pl{T}''}\subseteq\ftv{\pl{T}'}
 }{
   \cast{\Delta}{\gen{C'}{\pl{T}_0}}{\gen{C}{\pl{T}}}
@@ -935,10 +930,10 @@ The variable $x'$ of an \kw{if} and the parameters $x'_1\ldots x'_k$ of a method
 
 The rule \textsc{new-local} is the heart of funneling, including subtle management of type environments.
 The management of type environments in \textsc{new-local} is subtle. The rule constructs a restricted set of type bounds and variable bindings reflecting only the explicitly-funnelled type variables:
-$\Delta'$ includes only the explicitly-funnelled type variables and $\Gamma'$ is restricted to just those variables free in the result type (which must be well-kinded under $\Delta'$).
+$\Delta'$ includes only the explicitly-funnelled type variables, and $\Gamma'$ keeps only the variables of $\Gamma$, other than \this, whose types mention only type variables of the result type $\gen{C}{|\pl{F}|}$ (which must be well-kinded under $\Delta'$).
 The bounds $\Delta'$ are computed by $\mathsf{scope}(\Delta;\pl{F};|\pl{F}|)$, which is undefined when a funnelled type variable is not in $\Delta$.
 However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., an explicit call), but will reduce to a value which no longer depends on such type variables.
-This is why the first antecedent checks the effective supertype instance under $\Delta;\Gamma$, but the second antecedent ensures the resulting type of that
+This is why the premise $\typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C'}{\pl{T}}}$ ensures the resulting type of that
 expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
 
 \ldots
@@ -951,6 +946,29 @@ expression satisfies the funnelling constraints by checking kinding under the mo
     It's not just about generic reification: just checking type parameters aren't enough, as our MyFoo cases have no generic params.
     You need to *deeply* check reified generics, you need to check not just the base type but also check the choice(s) of parent types from the context into the runtime check.
 }
+
+\begin{figure}[H]
+\centering
+\[
+\begin{array}{rrcl}
+\textrm{Values} & v & ::= & \obj{C}{\pl{G}}{\pl{v}} \mid \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v}}{\pl{M}}\\
+\textrm{Eval. Ctx.} & \mathcal{E} & ::= & \square \mid \call{\mathcal{E}}{\pl{G}}{m}{\pl{e}} \mid \call{v}{\pl{G}}{m}{\pl{v}\;\mathcal{E}\;\pl{e}}\\
+    &&& \mid \explicitcall{\mathcal{E}}{G}{\pl{G}}{m}{\pl{e}} \mid \explicitcall{v}{G}{\pl{G}}{m}{\pl{v}\;\mathcal{E}\;\pl{e}}\\
+    &&& \mid \mathcal{E}\fstop f \mid \obj{C}{\pl{G}}{\pl{v}\;\mathcal{E}\;\pl{e}}\\
+    &&& \mid \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v}\;\mathcal{E}\;\pl{e}}{\pl{M}}\\
+    &&& \mid \ifthen{\mathcal{E}}{G}{x}{e_1}{e_2}\\
+\textrm{Contexts} & \mathcal{C} & ::= & \square \mid \call{\mathcal{C}}{\pl{T}}{m}{\pl{e}} \mid \call{e}{\pl{T}}{m}{\pl{e}\;\mathcal{C}\;\pl{e}'}\\
+    &&& \mid \explicitcall{\mathcal{C}}{T}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e}\;\mathcal{C}\;\pl{e}'}\\
+    &&& \mid \mathcal{C}\fstop f \mid \obj{C}{\pl{T}}{\pl{e}\;\mathcal{C}\;\pl{e}'}\\
+    &&& \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}\;\mathcal{C}\;\pl{e}'}{\pl{M}}\\
+    &&& \mid \ifthen{\mathcal{C}}{T}{x}{e_1}{e_2}\\
+    &&& \mid \ifthen{e_0}{T}{x}{\mathcal{C}}{e_2}\\
+    &&& \mid \ifthen{e_0}{T}{x}{e_1}{\mathcal{C}}
+\end{array}
+\]
+\caption{Values and contexts}
+\label{fig:contexts}
+\end{figure}
 
 \section{(Un)Soundness of Method Local Classes}
 With our language primitives in place, we now consider type safety of 4 variants of our language, with varied typing rules and cast semantics.
