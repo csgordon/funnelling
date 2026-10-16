@@ -702,7 +702,7 @@ expression satisfies the funnelling constraints by checking kinding under the mo
 Rule \textsc{new-local-java} of Figure~\ref{fig:java} types local classes as Java does.
 A local class has no funnels, and its methods are typed under the full $\Delta$ and $\Gamma$ in scope, except for \this.
 Replacing rule \textsc{new-local} with rule \textsc{new-local-java} makes our system unsound for the same reason Java is unsound.
-Consider the method \QQ{mk} below, the method \QQ{m} of Figure~\ref{fig:original_example} in our syntax:
+Consider the method \QQ{mk} below, the method \QQ{m} of Example~1 in our syntax:
 \begin{lstlisting}
 <X> Foo<X> mk(Object<> other, X x){ return
   if (other instanceof MyFoo<> w){ w }

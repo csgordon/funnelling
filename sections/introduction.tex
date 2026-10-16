@@ -16,8 +16,11 @@ both dynamic and static approaches to resolve the issue in future languages.
 The dynamic approach is a specific interpretation of type tests with reified generics, providing guidance to language implementors on a subtle design choice available in that space.
 \todo[inline]{the sentence describing the static approach is missing}
 
-\begin{figure}
-\begin{lstlisting}[numbers=left]
+Example~1 below demonstrates the issue.
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=2em]
+// Example 1
 public class Broken {
   static <X> Foo<X> m(Object other, final X x){
     class MyFoo extends Foo<X>{ public X x(){ return x; } } (*\label{line:MyFoo}*)
@@ -33,11 +36,9 @@ public class Broken {
 }
 class Foo<X>{ public X x() {return x();} }
 \end{lstlisting}
-\caption{Subtly broken Java code}
-\label{fig:original_example}
-\end{figure}
+\end{minipage}
 
-Figure~\ref{fig:original_example} demonstrates the issue. Line \ref{line:MyFoo} declares a method-local inner class
+Line \ref{line:MyFoo} declares a method-local inner class
 \Q@MyFoo@, which depends on the generic parameter instantiation for \Q@X@ when the method is invoked.
 The \Q@main@ method invokes \Q@m@ twice. Line \ref{line:intcall} invokes it for \Q@Integer@s.
 Since the \Q@other@ argument for that call is not a \Q@MyFoo@, the first invocation returns
