@@ -335,17 +335,18 @@ We require the following well-formedness conditions:
     \item[(A1)] Class names are unique across top-level and local classes.
     \item[(A2)] Field names are unique across all classes.
     \item[(A3)] In a class, top-level or local, all method names are disjoint.
-    \item[(A4)] Every $X$ and every $x$ other than \this is bound at most once in the program.
-    \item[(A5)] No parameter and no variable of an \kw{if} is \this.
+    \item[(A4)] In a method, all the parameters $x_1\ldots x_n$ are disjoint.
+    \item[(A5)] In a $\Delta$, all the $X$ are disjoint.
     \item[(A6)] In a list of funnels $\pl{F}$, all the funnelled type variables are disjoint.
-    \item[(A7)] \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every other top-level class reaches \Object.
+    \item[(A7)] There is no shadowing of $X$ or $x$, except for \this. No parameter and no variable of an \kw{if} is \this.
+    \item[(A8)] \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every other top-level class reaches \Object.
 \end{enumerate}
-Well-formedness requirements A1-A7 are common requirements, such as uniqueness of names.
-To simplify scoping, requirement A4 asks for every name to be bound once in the whole program: there is no shadowing, and two methods never have a parameter with the same name.
+Well-formedness requirements A1-A8 are common requirements, such as uniqueness of names.
+To simplify scoping, no shadowing is allowed.
 A funnel $\funnel{X}$ does not bind $X$: it uses the type variable $X$ in scope.
 A method of a local class binds \this, as in Java; this is the only form of shadowing.
 Requirement A6 makes the substitutions of Figure~\ref{fig:substitution} well defined when their domain is a list of funnels.
-Requirement A7 makes inheritance acyclic, except for \Object, which is its own superclass.
+Requirement A8 makes inheritance acyclic, except for \Object, which is its own superclass.
 Thus rule \textsc{sub-inherit} can be applied to $\gen{\Object}{}$ forever, and rules \textsc{simpleFieldSuper} and \textsc{searchSuper} reduce a field access or a call on an \Object\ to itself.
 This is harmless: our rules are not meant to be read as algorithms, and a well-typed expression never accesses a field or calls a method of \Object.
 \\[1ex]
@@ -448,8 +449,10 @@ Renaming is needed because a value of a local class carries the code of its meth
 For example, consider a local class \QQ{L} whose method \QQ{m} has a parameter \QQ{x} and calls \QQ{m} on a captured value of class \QQ{L}.
 The body of a call of \QQ{m} then contains the captured value, and the captured value contains a copy of the method \QQ{m} binding \QQ{x} again.
 Without renaming, rule \textsc{innerFound} would replace \QQ{x} also in the method \QQ{m} of the captured value.
-With renaming, the domain of every substitution during reduction contains only fresh names or names bound in the main expression.
-By requirements A4 and B1, no value binds a name bound in the main expression.
+With renaming, every name bound inside a value is fresh:
+only values of local classes carry code, by requirement B1 local classes occur only in method bodies,
+and a method body enters the reduced expression only through rules \textsc{simpleFound} and \textsc{innerFound}, renamed by $\mathsf{fresh}$.
+Outside of values, the names bound inside the reduced expression are not shadowed, by requirement A7.
 Thus a substitution never reaches a type variable or a variable bound inside the substituted expression.
 
 \begin{figure}[H]\small
@@ -899,7 +902,7 @@ A funnelled type variable that is not in scope where its local class $C$ is writ
 
 Substitution replaces every occurrence of a type variable, \emph{including} the ones in the method signatures of a method-local class.
 Substitution does not rename the type variables it meets.
-No renaming is needed: the substituted types are ground, and the domain of the substitution never contains a type variable bound inside the substituted term, by requirement A4 in the program and by $\mathsf{fresh}$ during reduction.
+No renaming is needed: the substituted types are ground, and the domain of the substitution never contains a type variable bound inside the substituted term, by requirement A7 in the program and by $\mathsf{fresh}$ during reduction.
 In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables:
 $\tsubst{T}{F_1\ldots F_n}{T_1\ldots T_n}$ replaces $X_i$ with $T_i$ for every $F_i=\funnel{X_i}$, and ignores every $F_i=G_i$.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
@@ -934,7 +937,7 @@ Thus $\tsubst{\funnel{X_i}}{X_1\ldots X_n}{T_1\ldots T_n}=T_i$ is a ground type 
 
 A method-local class binds \this, as in Java: inside the methods of a method-local class, \this is the local object, and the outer \this is hidden.
 Thus substitution of variables enters the methods of a method-local class for every variable except \this.
-The variable $x'$ of an \kw{if} and the parameters $x'_1\ldots x'_k$ of a method are never in $\pl{x}$, by requirement A4 in the program and by $\mathsf{fresh}$ during reduction; so no renaming is needed.
+The variable $x'$ of an \kw{if} and the parameters $x'_1\ldots x'_k$ of a method are never in $\pl{x}$, by requirement A7 in the program and by $\mathsf{fresh}$ during reduction; so no renaming is needed.
 
 \ldots
 
@@ -995,7 +998,7 @@ The type of this value is \QQ{MyFoo<>}, a subtype of \QQ{Foo<X>} but not of \QQ{
 Java has no typing of values during reduction, so in Java this failure is invisible.
 \item Typing depends on the names of type variables.
 Our system lets the name of a local class be written anywhere.
-Requirement A4 forbids the same type variable name in two methods; without requirement A4, consider the methods
+Consider the methods
 \begin{lstlisting}
 <Y> MyFoo2<> mk2(Y y){
   return new MyFoo2<> extends Foo<Y>(){ Y x(){ return y; } }; }
@@ -1008,7 +1011,6 @@ The call
 a.<String>leak(a.<Integer>mk2(i))
 \end{lstlisting}
 has type \QQ{Foo<String>}, but it returns a \QQ{Foo<Integer>}, without type tests.
-Under rule \textsc{new-local-java}, this is one more reason for requirement A4.
 \end{itemize}
 Funnelling solves the problem in all three forms.
 Under rule \textsc{new-local}, the object created by \QQ{mk} has type \QQ{MyFoo<X>}, written \QQ{new MyFoo<X funnel> extends Foo<X>()\{..\}}.
