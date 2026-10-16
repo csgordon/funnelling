@@ -353,16 +353,16 @@ So there remains a need to articulate a solution to this problem where generics 
 }
 \and
 \inferrule[decl-in-class]{
-  \declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\
-  \method{\Delta'}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\
+  \declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\\\
+  \method{\Delta'}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\\\
   \innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}\textrm{ occurs in }e
 }{
   \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}}
 }
 \and
 \inferrule[decl-in-local]{
-  \declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}}\\
-  \method{\Delta'}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\
+  \declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}}\\\\
+  \method{\Delta'}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\\\
   \innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}\textrm{ occurs in }e
 }{
   \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}}
@@ -600,9 +600,13 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \and
 \inferrule[var]{ }{\typing{\Delta}{\Gamma}{x}{\Gamma(x)}}
 \and
+\inferrule[new-object]{ }{
+  \typing{\Delta}{\Gamma}{\obj{\Object}{}{}}{\gen{\Object}{}}
+}
+\and
 \inferrule[declField]{
-  \typing{\Delta}{\Gamma}{e}{\classtype{C}{\pl{T}}}\\
-  \subclass{C}{\Delta'}{C'}{\pl{T}'}{\pl{M}}{T_1 f_1\ldots T_n f_n}\in\decls
+  \typing{\Delta}{\Gamma}{e}{\classtype{C}{\pl{T}}}\\\\
+  \subclass{C}{\Delta'}{\_}{\_}{\_}{T_1 f_1\ldots T_n f_n}\in\decls
 }{
   % thanks to subsumption, no need of multiple rules (C<Ts> can simply be set to supertype of relevance, via subsumption)
   \typing{\Delta}{\Gamma}{e\fstop f_i}{\tsubst{T_i}{\Delta'}{\pl{T}}}
@@ -611,52 +615,48 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \and
 \inferrule[call-top]{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\
-  \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\pl{M}}{\_}}\\
-  \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\
-  T_i'=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\
-  \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
-  \kind{\Delta}{\pl{T}_1}
+  \kind{\Delta}{\pl{T}_1}\\\\
+  \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\pl{M}}{\_}}\\\\
+  \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\\\
+  T'_0\ldots T'_n=\tsubst{T_0\ldots T_n}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\\\
+  \typing{\Delta}{\Gamma}{e_1\ldots e_n}{T'_1\ldots T'_n}
 }{
-  \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}}{T_0'}
+  \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}}{T'_0}
 }
 \and
 \inferrule[call-local]{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\
-  \declared{\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\pl{M}}}\\
-  \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\
-  T_i'=\tsubst{T_i}{\pl{F},\Delta_1}{\pl{T}_0,\pl{T}_1}\\
-  \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
-  \kind{\Delta}{\pl{T}_1}
+  \kind{\Delta}{\pl{T}_1}\\\\
+  \declared{\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\pl{M}}}\\\\
+  \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\\\
+  T'_0\ldots T'_n=\tsubst{T_0\ldots T_n}{\pl{F},\Delta_1}{\pl{T}_0,\pl{T}_1}\\\\
+  \typing{\Delta}{\Gamma}{e_1\ldots e_n}{T'_1\ldots T'_n}
 }{
   \typing{\Delta}{\Gamma}{
     \call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}
-  }{T_0'}
+  }{T'_0}
 }
 \and
 \inferrule[call-lb-runtime]{
   \typing{\Delta}{\Gamma}{e_0}{\gen{C}{\pl{T}_2}}\\
-  \subclass{C}{\_}{\_}{\_}{\_}{\_}\in\decls\\
-  \subtype{\Delta}{\gen{C}{\pl{T}_2}}{\gen{C_0}{\pl{T}_0}}\\
-  \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\pl{M}}{\_}}\\
-  \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\
-  T_i'=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\
-  \typing{\Delta}{\Gamma}{e_1}{T_1'}\ldots\typing{\Delta}{\Gamma}{e_n}{T_n'}\\
   \kind{\Delta}{\gen{C}{\pl{T}_2}}\\
-  \kind{\Delta}{\pl{T}_1}
+  \kind{\Delta}{\pl{T}_1}\\\\
+  \subclass{C}{\_}{\_}{\_}{\_}{\_}\in\decls\\
+  \subtype{\Delta}{\gen{C}{\pl{T}_2}}{\gen{C_0}{\pl{T}_0}}\\\\
+  \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\pl{M}}{\_}}\\
+  \method{\Delta_1}{T_0}{m}{T_1\;x_1,\ldots T_n\;x_n}{\_} \in \pl{M}\\\\
+  T'_0\ldots T'_n=\tsubst{T_0\ldots T_n}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\
+  \typing{\Delta}{\Gamma}{e_1\ldots e_n}{T'_1\ldots T'_n}
 }{
   \typing{\Delta}{\Gamma}{
     \explicitcall{e_0}{\gen{C}{\pl{T}_2}}{\pl{T}_1}{m}{e_1,\ldots,e_n}
-  }{T_0'}
-}
-\and
-\inferrule[new-object]{ }{
-  \typing{\Delta}{\Gamma}{\obj{\Object}{}{}}{\gen{\Object}{}}
+  }{T'_0}
 }
 \and
 \inferrule[new-top]{
-  \declared{\subclass{C}{\Delta'}{C'}{\pl{T}'}{\pl{M}}{T_1\;f_1\ldots T_n\;f_n}}\\
+  \declared{\subclass{C}{\Delta'}{C'}{\pl{T}'}{\_}{T_1\;f_1\ldots T_n\;f_n}}\\\\
   \typing{\Delta}{\Gamma}{\obj{C'}{\tsubst{\pl{T}'}{\Delta'}{\pl{T}}}{\pl{e}}}{\_}\\
-  \typing{\Delta}{\Gamma}{e_1}{\tsubst{T_1}{\Delta'}{\pl{T}}}\ldots\typing{\Delta}{\Gamma}{e_n}{\tsubst{T_n}{\Delta'}{\pl{T}}}\\
+  \typing{\Delta}{\Gamma}{e_1\ldots e_n}{\tsubst{T_1\ldots T_n}{\Delta'}{\pl{T}}}\\
   \kind{\Delta}{\gen{C}{\pl{T}}}
 }{
   \typing{\Delta}{\Gamma}{\obj{C}{\pl{T}}{e_1\ldots e_n ~ \pl{e}}}{\gen{C}{\pl{T}}}
@@ -665,11 +665,11 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \inferrule[new-local]{
   \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\
   \kind{\Delta'}{\gen{C'}{\pl{T}}}\\
-  \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\
+  \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\\\
   \mathsf{scope}(\Delta;\pl{F};|\pl{F}|)=\Delta';\_\\
-  \ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')\\
-  \Gamma'=\{ T\;x \mid T\;x\in\Gamma \land x\neq\this \land \ftv{T}\subseteq\ftv{|\pl{F}|} \}\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
-  \mok{\Delta'}{\Gamma',\gen{C}{|\pl{F}|}\;\this}{\pl{M}}\\
+  \ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')\\\\
+  \Gamma'=\{ T\;x \mid T\;x\in\Gamma \land x\neq\this \land \ftv{T}\subseteq\ftv{|\pl{F}|} \}\\\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
+  \mok{\Delta'}{\Gamma',\gen{C}{|\pl{F}|}\;\this}{\pl{M}}\\\\
   \forall C'',\pl{T}'\ldotp\subtype{\Delta'}{\gen{C'}{\pl{T}}}{\gen{C''}{\pl{T}'}}\Rightarrow
     \mathsf{overrideOk}(\gen{C''}{\pl{T}'},\pl{M})
 }{
@@ -699,7 +699,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \and
 \inferrule[new-local-java]{
   \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\
-  \kind{\Delta}{\gen{C'}{\pl{T}}}\\
+  \kind{\Delta}{\gen{C'}{\pl{T}}}\\\\
   %\kind{\Delta}{C\langle\rangle}\\
   \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\;\this}{\pl{M}}
 }{
@@ -711,7 +711,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \inferrule[if-instanceof]{
   \typing{\Delta}{\Gamma}{e_0}{T_0}\\
   \kind{\Delta}{T}\\
-  \cast{\Delta}{T_0}{T}\\
+  \cast{\Delta}{T_0}{T}\\\\
   \typing{\Delta}{\Gamma,T\;x}{e_1}{T'}\\
   \typing{\Delta}{\Gamma}{e_2}{T'}
 }{
@@ -722,7 +722,7 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \and
 \inferrule[method-ok]{
   \typing{\Delta,\Delta'}{\Gamma,T_1\;x_1,\ldots,T_n\;x_n}{e}{T_0}\\
-  \kind{\Delta,\Delta'}{T_0}\ldots\kind{\Delta,\Delta'}{T_n}
+  \kind{\Delta,\Delta'}{T_0\ldots T_n}
 }{
   \mok{\Delta}{\Gamma}{\method{\Delta'}{T_0}{m}{T_1~x_1,\ldots,T_n~x_n}{\ret{e}}}
 }
@@ -751,15 +751,15 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 \fbox{$\mathsf{Dec}~\mathrm{Ok}$}
 \and
 \inferrule[class-ok]{
-  \forall\ext{X}{T}\in\Delta\ldotp\kind{\Delta}{T}\\
+  \kind{\Delta}{\mathrm{cod}(\Delta)}\\
+  \forall T\;f\semi\in\pl{S}\ldotp\kind{\Delta}{T}\\\\
   \subclass{C'}{\_}{\_}{\_}{\_}{\_}\in\decls\\
-  \kind{\Delta}{\gen{C'}{\pl{T}'}}\\
-  \forall T\;f\semi\in\pl{S}\ldotp\kind{\Delta}{T}\\
-  \mok{\Delta}{\gen{C}{\mathrm{dom}(\Delta)}\;\this}{\pl{M}}\\
-  \forall C'',\pl{T}''\ldotp\subtype{\Delta}{\gen{C'}{\pl{T}'}}{\gen{C''}{\pl{T}''}}\Rightarrow
-    \mathsf{overrideOk}(\gen{C''}{\pl{T}''},\pl{M})
+  \kind{\Delta}{\gen{C'}{\pl{T}}}\\\\
+  \mok{\Delta}{\gen{C}{\mathrm{dom}(\Delta)}\;\this}{\pl{M}}\\\\
+  \forall C'',\pl{T}'\ldotp\subtype{\Delta}{\gen{C'}{\pl{T}}}{\gen{C''}{\pl{T}'}}\Rightarrow
+    \mathsf{overrideOk}(\gen{C''}{\pl{T}'},\pl{M})
 }{
-  \subclass{C}{\Delta}{C'}{\pl{T}'}{\pl{M}}{\pl{S}}~\mathrm{Ok}
+  \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}~\mathrm{Ok}
 }
 \and
 \fbox{$\mathsf{overrideOk}(T,M)$}
@@ -772,9 +772,9 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 }
 \and
 \inferrule[override-same]{
-  \subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}\in\decls\\
-  \method{\Delta''}{T''_0}{m}{T''_1\;x'_1,\ldots,T''_n\;x'_n}{\_}\in\pl{M}\\
-  \tsubst{\mathrm{cod}(\Delta'')}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\
+  \subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}\in\decls\\\\
+  \method{\Delta''}{T''_0}{m}{T''_1\;x'_1,\ldots,T''_n\;x'_n}{\_}\in\pl{M}\\\\
+  \tsubst{\mathrm{cod}(\Delta'')}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\\\
   \tsubst{T''_0\ldots T''_n}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0\ldots T'_n
 }{
   \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\;x_1,\ldots,T'_n\;x_n}{\_})
@@ -784,8 +784,6 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
     \label{fig:classtyping}
 \end{figure}
 
-A judgement or predicate on a sequence holds when it holds on every element of the sequence: for example $\mok{\Delta}{\Gamma}{\pl{M}}$, $\kind{\Delta}{\pl{T}}$ and $\mathsf{overrideOk}(T,\pl{M})$.
-A judgement on two sequences of the same length holds when it holds on every pair of elements at the same position: for example $\subtype{\Delta}{\pl{T}}{\pl{T}'}$.
 Rule \textsc{class-ok} types the methods of a top-level class with \this of type $\gen{C}{\mathrm{dom}(\Delta)}$.
 A method that a class declares again must keep the signature it has in every superclass, up to the names of its own type variables:
 \textsc{call-top} reads the signature from the class chosen by subsumption, while the reduction runs the method of the class of the receiver.
@@ -803,7 +801,7 @@ A method that a class declares again must keep the signature it has in every sup
 \and
 \inferrule[wf-class]{
   \mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}''\\
-  \kind{\Delta}{\pl{T}}\\
+  \kind{\Delta}{\pl{T}}\\\\
   \subtype{\Delta}{\pl{T}''}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}''}}
 }{
   \kind{\Delta}{\gen{C}{\pl{T}}}
@@ -814,14 +812,14 @@ A method that a class declares again must keep the signature it has in every sup
 \inferrule[sub-refl]{ }{\subtype{\Delta}{T}{T}}
 \and
 \inferrule[sub-inherit]{
-  \subclass{C}{\Delta_0}{C'}{\pl{T}'}{\_}{\_}\in\decls\\
+  \subclass{C}{\Delta_0}{C'}{\pl{T}'}{\_}{\_}\in\decls\\\\
   \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}'}}{\Delta_0}{\pl{T}}}{T''}
 }{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{T''}
 }
 \and
 \inferrule[sub-inherit-local]{
-  \declared{\innerobj{C}{\pl{F}}{C'}{\pl{T}'}{\_}{\_}}\\
+  \declared{\innerobj{C}{\pl{F}}{C'}{\pl{T}'}{\_}{\_}}\\\\
   \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}'}}{\pl{F}}{\pl{T}}}{T''}
 }{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{T''}
@@ -862,7 +860,7 @@ A funnelled type variable that is not in scope where its local class $C$ is writ
 \and
 \inferrule[cast-down]{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C'}{\pl{T}_0}}\\
-  \generic{C}=\gen{C}{\pl{T}''}\\
+  \generic{C}=\gen{C}{\pl{T}''}\\\\
   \subtype{\Delta}{\gen{C}{\pl{T}''}}{\gen{C'}{\pl{T}'}}\\
   \ftv{\pl{T}''}\subseteq\ftv{\pl{T}'}
 }{
