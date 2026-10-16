@@ -282,6 +282,7 @@ So there remains a need to articulate a solution to this problem where generics 
 \newcommand{\Object}{\QQ{Object}}
 
 \newcommand{\tsubst}[3]{\ensuremath{#1[#2=#3]}\xspace}
+\newcommand{\twolines}[2]{\begin{array}[c]{@{}l@{}}#1\\#2\end{array}}
 \newcommand{\match}[2]{\ensuremath{\mathsf{match}(#1,#2)}\xspace}
 
 \newcommand{\declared}[1]{\ensuremath{#1~\mathsf{declared}}}
@@ -366,27 +367,42 @@ So there remains a need to articulate a solution to this problem where generics 
 }{
   \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}}
 }
+\and
+\fbox{$\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}'$}
+\and
+\fbox{$\mathsf{scope}(\Delta;\pl{F};\pl{T})=\Delta';\pl{T}'$}
 \end{mathpar}
 \[
 \begin{array}{rcl}
-\mathsf{scope}(\gen{C}{\pl{T}}) & = & \Delta;\pl{T} \quad\textrm{if }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls\\
-\mathsf{scope}(\gen{C_0}{\pl{T}}) & = & \mathsf{funnelled}(\Delta',\Delta'';\pl{F};\pl{T})\\
-\multicolumn{3}{l}{\quad\textrm{if }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\textrm{or }\declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}},}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\method{\Delta''}{\_}{m}{\_}{\ret{e}}\in\pl{M},}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e,}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{if }}\mathsf{scope}(\generic{C})=\Delta';\_}\\
-\\
-\mathsf{funnelled}(\Delta;\emptyset;\emptyset) & = & \emptyset;\emptyset\\
-\mathsf{funnelled}(\Delta;\funnel{X}\;\pl{F};T\;\pl{T}) & = & \ext{X}{T'},\Delta_0;T\;\pl{T}''\\
-\multicolumn{3}{l}{\quad\textrm{if }\ext{X}{T'}\in\Delta,\ \mathsf{funnelled}(\Delta;\pl{F};\pl{T})=\Delta_0;\pl{T}''}\\
-\mathsf{funnelled}(\Delta;G\;\pl{F};G\;\pl{T}) & = & \mathsf{funnelled}(\Delta;\pl{F};\pl{T})
+\mathsf{scope}(\gen{C}{\pl{T}}) & = & \Delta;\pl{T}\\
+  && \quad\textrm{where }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls\\
+\mathsf{scope}(\gen{C_0}{\pl{T}}) & = & \mathsf{scope}(\Delta',\Delta'';\pl{F};\pl{T})\\
+  && \quad\textrm{where }\mathsf{scope}(\generic{C})=\Delta';\_\\
+  && \quad\phantom{\textrm{where }}\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\
+  && \quad\phantom{\textrm{where }}\textrm{or }\declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}}\\
+  && \quad\phantom{\textrm{where }}\method{\Delta''}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\
+  && \quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e
 \end{array}
 \]
 \[
 \begin{array}{rcl}
-\generic{C} & = & \gen{C}{\mathrm{dom}(\Delta)} \quad\textrm{if }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls\\
-\generic{C} & = & \gen{C}{|\pl{F}|} \quad\textrm{if }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}\\
+\mathsf{scope}(\Delta;\emptyset;\emptyset) & = & \emptyset;\emptyset\\
+\mathsf{scope}(\Delta;\funnel{X}\;\pl{F};T\;\pl{T}) & = & (\ext{X}{\Delta(X)};T)\cdot\mathsf{scope}(\Delta;\pl{F};\pl{T})\\
+\mathsf{scope}(\Delta;G\;\pl{F};G\;\pl{T}) & = & \mathsf{scope}(\Delta;\pl{F};\pl{T})\\[1ex]
+(\Delta;\pl{T})\cdot(\Delta';\pl{T}') & = & \Delta,\Delta';\pl{T}\;\pl{T}'
+\end{array}
+\]
+\begin{mathpar}
+\fbox{$\generic{C}=T$}
+\and
+\fbox{$|F|=T$}
+\end{mathpar}
+\[
+\begin{array}{rcl}
+\generic{C} & = & \gen{C}{\mathrm{dom}(\Delta)}\\
+  && \quad\textrm{where }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls\\
+\generic{C} & = & \gen{C}{|\pl{F}|}\\
+  && \quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}\\[1ex]
 |\funnel{X}| & = & X\\
 |G| & = & G
 \end{array}
@@ -401,9 +417,11 @@ For a class type $\gen{C}{\pl{T}}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\p
 It also gives the types $\pl{T}''$ that the arguments $\pl{T}$ assign to the type variables in $\Delta_0$.
 For a top-level class, $\Delta_0$ is the bounds of the class and $\pl{T}''=\pl{T}$.
 For a local class $C_0$ with funnels $\pl{F}$, the bounds $\Delta',\Delta''$ are the bounds of the type variables in scope where $C_0$ is written.
-The function $\mathsf{funnelled}(\Delta;\pl{F};\pl{T})$ goes through the funnels $\pl{F}$ and the arguments $\pl{T}$ together, one position at a time, where $\emptyset$ is the empty sequence.
-At the position of a funnel $\funnel{X}$, it adds the bound of $X$ in $\Delta$ to $\Delta_0$, and the argument to $\pl{T}''$.
+For a type variable $X$, $\Delta(X)$ is the bound of $X$ in $\Delta$, and for a sequence of type variables $\pl{X}$, $\Delta(\pl{X})$ is the sequence of their bounds in $\Delta$.
+The function $\mathsf{scope}(\Delta;\pl{F};\pl{T})$ goes through the funnels $\pl{F}$ and the arguments $\pl{T}$ together, one position at a time, where $\emptyset$ is the empty sequence.
+At the position of a funnel $\funnel{X}$, it adds $\ext{X}{\Delta(X)}$ to the bounds and the argument to the types.
 At the position of a ground funnel $G$, the argument must be $G$ itself, and nothing is added.
+The operator $\cdot$ concatenates two results of $\mathsf{scope}$, component by component.
 An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$.
 Contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
 The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every top-level class reaches \Object.
@@ -772,7 +790,6 @@ The class table \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the c
 
 A judgement or predicate on a sequence holds when it holds on every element of the sequence: for example $\mok{\Delta}{\Gamma}{\pl{M}}$, $\kind{\Delta}{\pl{T}}$ and $\mathsf{overrideOk}(T,\pl{M})$.
 A judgement on two sequences of the same length holds when it holds on every pair of elements at the same position: for example $\subtype{\Delta}{\pl{T}}{\pl{T}'}$.
-For a sequence of type variables $\pl{X}$, $\Delta(\pl{X})$ is the sequence of their bounds in $\Delta$.
 Rule \textsc{class-ok} types the methods of a top-level class with \this of type $\gen{C}{\mathrm{dom}(\Delta)}$.
 A method that a class declares again must keep the signature it has in every superclass, up to the names of its own type variables:
 \textsc{call-top} reads the signature from the class chosen by subsumption, while the reduction runs the method of the class of the receiver.
@@ -864,30 +881,26 @@ A funnelled type variable that is not in scope where its local class $C$ is writ
     \centering
     \setlength{\arraycolsep}{3pt}
 \[
+\newcommand{\s}[1]{\tsubst{#1}{\pl{X}}{\pl{T}}}
 \begin{array}{rcl}
-\tsubst{x}{\pl{X}}{\pl{T}} & = & x\\
-\tsubst{\call{e}{\pl{T}'}{m}{\pl{e}'}}{\pl{X}}{\pl{T}} & = &
-  \call{\tsubst{e}{\pl{X}}{\pl{T}}}{\tsubst{\pl{T}'}{\pl{X}}{\pl{T}}}{m}{\tsubst{\pl{e}'}{\pl{X}}{\pl{T}}}\\
-\tsubst{\explicitcall{e}{T'}{\pl{T}''}{m}{\pl{e}'}}{\pl{X}}{\pl{T}} & = & \\
-  \multicolumn{3}{l}{\quad\explicitcall{\tsubst{e}{\pl{X}}{\pl{T}}}{\tsubst{T'}{\pl{X}}{\pl{T}}}{\tsubst{\pl{T}''}{\pl{X}}{\pl{T}}}{m}{\tsubst{\pl{e}'}{\pl{X}}{\pl{T}}}}\\
-\tsubst{e\fstop f}{\pl{X}}{\pl{T}} & = & \tsubst{e}{\pl{X}}{\pl{T}}\fstop f\\
-\tsubst{\obj{C}{\pl{T}'}{\pl{e}}}{\pl{X}}{\pl{T}} & = &
-  \obj{C}{\tsubst{\pl{T}'}{\pl{X}}{\pl{T}}}{\tsubst{\pl{e}}{\pl{X}}{\pl{T}}}\\
-\tsubst{\ifthen{e_0}{T'}{x}{e_1}{e_2}}{\pl{X}}{\pl{T}} & = & \\
-  \multicolumn{3}{l}{\quad\ifthen{\tsubst{e_0}{\pl{X}}{\pl{T}}}{\tsubst{T'}{\pl{X}}{\pl{T}}}{x}{\tsubst{e_1}{\pl{X}}{\pl{T}}}{\tsubst{e_2}{\pl{X}}{\pl{T}}}}\\
-\tsubst{\innerobj{C}{\pl{F}}{C'}{\pl{T}'}{\pl{e}}{\pl{M}}}{\pl{X}}{\pl{T}} & = & \\
-  \multicolumn{3}{l}{\quad\innerobj{C}{\tsubst{\pl{F}}{\pl{X}}{\pl{T}}}{C'}{\tsubst{\pl{T}'}{\pl{X}}{\pl{T}}}{\tsubst{\pl{e}}{\pl{X}}{\pl{T}}}{\tsubst{\pl{M}}{\pl{X}}{\pl{T}}}}\\
-\\
-\tsubst{\funnel{X'}}{\pl{X}}{\pl{T}} & = & \funnel{X'} \quad\textrm{if }X'\not\in\pl{X}\\
+\s{x} & = & x\\[1ex]
+\s{\call{e}{\pl{T}'}{m}{\pl{e}'}} & = & \call{\s{e}}{\s{\pl{T}'}}{m}{\s{\pl{e}'}}\\[1ex]
+\s{\explicitcall{e}{T'}{\pl{T}''}{m}{\pl{e}'}} & = &
+  \twolines{\s{e}\fstop\OS\s{T'}\CS\OA\s{\pl{T}''}\CA}{m\OR\s{\pl{e}'}\CR}\\[3ex]
+\s{e\fstop f} & = & \s{e}\fstop f\\[1ex]
+\s{\obj{C}{\pl{T}'}{\pl{e}}} & = & \obj{C}{\s{\pl{T}'}}{\s{\pl{e}}}\\[1ex]
+\twolines{\kw{if}\;\OR e_0\;\kw{instanceof}\;T'\;x\CR}{\OC\;e_1\;\CC\;\kw{else}\;\OC\;e_2\;\CC\;\s{}} & = &
+  \twolines{\kw{if}\;\OR\s{e_0}\;\kw{instanceof}\;\s{T'}\;x\CR}{\OC\;\s{e_1}\;\CC\;\kw{else}\;\OC\;\s{e_2}\;\CC}\\[3ex]
+\twolines{\kw{new}\;\gen{C}{\pl{F}}\;\kw{extends}\;\gen{C'}{\pl{T}'}}{\OR\pl{e}\CR\OC\pl{M}\CC\;\s{}} & = &
+  \twolines{\kw{new}\;\gen{C}{\s{\pl{F}}}\;\kw{extends}\;\gen{C'}{\s{\pl{T}'}}}{\OR\s{\pl{e}}\CR\OC\s{\pl{M}}\CC}\\[3ex]
+\s{\funnel{X'}} & = & \funnel{X'} \quad\textrm{if }X'\not\in\pl{X}\\
 \tsubst{\funnel{X_i}}{X_1\ldots X_n}{T_1\ldots T_n} & = & T_i\\
-\tsubst{G}{\pl{X}}{\pl{T}} & = & G\\
-\\
-\tsubst{\method{\Delta}{T'_0}{m}{T'_1\;x_1,\ldots,T'_k\;x_k}{\ret{e}}}{\pl{X}}{\pl{T}} & = & \\
-  \multicolumn{3}{l}{\quad\method{\tsubst{\Delta}{\pl{X}}{\pl{T}}}{\tsubst{T'_0}{\pl{X}}{\pl{T}}}{m}{\tsubst{T'_1}{\pl{X}}{\pl{T}}\;x_1,\ldots,\tsubst{T'_k}{\pl{X}}{\pl{T}}\;x_k}{\ret{\tsubst{e}{\pl{X}}{\pl{T}}}}}\\
-\tsubst{(\ext{X'}{T'})}{\pl{X}}{\pl{T}} & = & \ext{X'}{\tsubst{T'}{\pl{X}}{\pl{T}}}\\
-\\
-\tsubst{\gen{C}{\pl{T}'}}{\pl{X}}{\pl{T}} & = & \gen{C}{\tsubst{\pl{T}'}{\pl{X}}{\pl{T}}}\\
-\tsubst{X'}{\pl{X}}{\pl{T}} & = & X' \quad\textrm{if }X'\not\in\pl{X}\\
+\s{G} & = & G\\[1ex]
+\twolines{\methodsig{\Delta}{T'_0}{m}{T'_1\;x_1,\ldots,T'_k\;x_k}}{\OC\;\ret{e}\;\CC\;\s{}} & = &
+  \twolines{\methodsig{\s{\Delta}}{\s{T'_0}}{m}{\s{T'_1}\;x_1,\ldots,\s{T'_k}\;x_k}}{\OC\;\ret{\s{e}}\;\CC}\\[3ex]
+\s{(\ext{X'}{T'})} & = & \ext{X'}{\s{T'}}\\[1ex]
+\s{\gen{C}{\pl{T}'}} & = & \gen{C}{\s{\pl{T}'}}\\
+\s{X'} & = & X' \quad\textrm{if }X'\not\in\pl{X}\\
 \tsubst{X_i}{X_1\ldots X_n}{T_1\ldots T_n} & = & T_i
 \end{array}
 \]
@@ -907,24 +920,23 @@ Thus $\tsubst{\funnel{X_i}}{X_1\ldots X_n}{T_1\ldots T_n}=T_i$ is a ground type 
     \centering
     \setlength{\arraycolsep}{3pt}
 \[
+\newcommand{\s}[1]{\tsubst{#1}{\pl{x}}{\pl{v}}}
 \begin{array}{rcl}
-\tsubst{x}{\pl{x}}{\pl{v}} & = & x \quad\textrm{if }x\not\in\pl{x}\\
-\tsubst{x_i}{x_1\ldots x_n}{v_1\ldots v_n} & = & v_i\\
-\tsubst{\call{e}{\pl{T}}{m}{\pl{e}'}}{\pl{x}}{\pl{v}} & = &
-  \call{\tsubst{e}{\pl{x}}{\pl{v}}}{\pl{T}}{m}{\tsubst{\pl{e}'}{\pl{x}}{\pl{v}}}\\
-\tsubst{\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}'}}{\pl{x}}{\pl{v}} & = & \\
-  \multicolumn{3}{l}{\quad\explicitcall{\tsubst{e}{\pl{x}}{\pl{v}}}{T}{\pl{T}}{m}{\tsubst{\pl{e}'}{\pl{x}}{\pl{v}}}}\\
-\tsubst{e\fstop f}{\pl{x}}{\pl{v}} & = & \tsubst{e}{\pl{x}}{\pl{v}}\fstop f\\
-\tsubst{\obj{C}{\pl{T}}{\pl{e}}}{\pl{x}}{\pl{v}} & = & \obj{C}{\pl{T}}{\tsubst{\pl{e}}{\pl{x}}{\pl{v}}}\\
-\tsubst{\ifthen{e_0}{T}{x'}{e_1}{e_2}}{\pl{x}}{\pl{v}} & = & \\
-  \multicolumn{3}{l}{\quad\ifthen{\tsubst{e_0}{\pl{x}}{\pl{v}}}{T}{x'}{\tsubst{e_1}{\pl{x}}{\pl{v}}}{\tsubst{e_2}{\pl{x}}{\pl{v}}}}\\
-\tsubst{\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}{\pl{x}}{\pl{v}} & = & \\
-  \multicolumn{3}{l}{\quad\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\tsubst{\pl{e}}{\pl{x}}{\pl{v}}}{\tsubst{\pl{M}}{\pl{x}}{\pl{v}}} \quad\textrm{if }\this\not\in\pl{x}}\\
-\tsubst{\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'} & = & \\
-  \multicolumn{3}{l}{\quad\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\tsubst{\pl{e}}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'}}{\tsubst{\pl{M}}{\pl{x},\pl{x}'}{\pl{v},\pl{v}'}}}\\
-\\
-\tsubst{\method{\Delta}{T_0}{m}{T_1\;x'_1,\ldots,T_k\;x'_k}{\ret{e}}}{\pl{x}}{\pl{v}} & = & \\
-  \multicolumn{3}{l}{\quad\method{\Delta}{T_0}{m}{T_1\;x'_1,\ldots,T_k\;x'_k}{\ret{\tsubst{e}{\pl{x}}{\pl{v}}}}}
+\s{x} & = & x \quad\textrm{if }x\not\in\pl{x}\\
+\tsubst{x_i}{x_1\ldots x_n}{v_1\ldots v_n} & = & v_i\\[1ex]
+\s{\call{e}{\pl{T}}{m}{\pl{e}'}} & = & \call{\s{e}}{\pl{T}}{m}{\s{\pl{e}'}}\\[1ex]
+\s{\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}'}} & = & \explicitcall{\s{e}}{T}{\pl{T}}{m}{\s{\pl{e}'}}\\[1ex]
+\s{e\fstop f} & = & \s{e}\fstop f\\[1ex]
+\s{\obj{C}{\pl{T}}{\pl{e}}} & = & \obj{C}{\pl{T}}{\s{\pl{e}}}\\[1ex]
+\twolines{\kw{if}\;\OR e_0\;\kw{instanceof}\;T\;x'\CR}{\OC\;e_1\;\CC\;\kw{else}\;\OC\;e_2\;\CC\;\s{}} & = &
+  \twolines{\kw{if}\;\OR\s{e_0}\;\kw{instanceof}\;T\;x'\CR}{\OC\;\s{e_1}\;\CC\;\kw{else}\;\OC\;\s{e_2}\;\CC}\\[3ex]
+\twolines{\kw{new}\;\gen{C}{\pl{F}}\;\kw{extends}\;\gen{C'}{\pl{T}}}{\OR\pl{e}\CR\OC\pl{M}\CC\;\s{}} & = &
+  \twolines{\kw{new}\;\gen{C}{\pl{F}}\;\kw{extends}\;\gen{C'}{\pl{T}}}{\OR\s{\pl{e}}\CR\OC\s{\pl{M}}\CC}\\
+  && \quad\textrm{if }\this\not\in\pl{x}\\[1ex]
+\twolines{\kw{new}\;\gen{C}{\pl{F}}\;\kw{extends}\;\gen{C'}{\pl{T}}}{\OR\pl{e}\CR\OC\pl{M}\CC\;\tsubst{}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'}} & = &
+  \twolines{\kw{new}\;\gen{C}{\pl{F}}\;\kw{extends}\;\gen{C'}{\pl{T}}}{\OR\tsubst{\pl{e}}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'}\CR\OC\tsubst{\pl{M}}{\pl{x},\pl{x}'}{\pl{v},\pl{v}'}\CC}\\[3ex]
+\twolines{\methodsig{\Delta}{T_0}{m}{T_1\;x'_1,\ldots,T_k\;x'_k}}{\OC\;\ret{e}\;\CC\;\s{}} & = &
+  \twolines{\methodsig{\Delta}{T_0}{m}{T_1\;x'_1,\ldots,T_k\;x'_k}}{\OC\;\ret{\s{e}}\;\CC}
 \end{array}
 \]
     \caption{Substitution of variables}
