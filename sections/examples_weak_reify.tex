@@ -86,6 +86,43 @@ public class Broken {
 \end{lstlisting}
 \end{minipage}
 
+The following listing is already covered by Examples~2 to~4.
+The listing combines the \Q@switch@ pattern of Example~4 and the \Q@instanceof@ pattern of Example~3 in one method, and the \Q@switch@ fails first.
+The listing uses \Q@Function<X,Integer>@ and the lambda \Q@s->s.length()@ instead of \Q@Function<X,String>@ and \Q@s->s@.
+The failure is the failure of Examples~2 to~4: the class generated for the lambda casts its argument, the \Q@Integer@ \Q@5@, to \Q@String@ before calling the synthetic method \Q@lambda$main$1(String)@.
+The class file of \Q@Broken@ has no \Q@checkcast@ to \Q@String@: the result of \Q@f.apply@ is used only in a string concatenation, and javac adds no \Q@checkcast@ to it.
+In Examples~2 to~4, the class file of \Q@Broken@ does have a \Q@checkcast@ to \Q@String@, on the result of \Q@f.apply@, but that \Q@checkcast@ is never reached.
+So in all four programs the failing cast is in the generated class, not in a \Q@checkcast@ of \Q@Broken@ and not in a virtual call.
+
+\begin{lstlisting}
+//Example that breaks in a NEW WAY in the bytecode
+// https://godbolt.org/z/sMnxPG1TE
+import java.util.function.Function;
+class Broken {
+  static <X> Object m(Object other, final X x, Function<X,Integer> f){
+    class MyFoo{ public X x(){ return x; } }
+    switch (other) {
+        case MyFoo local:
+            System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+            System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException 
+            break;
+        default:
+            break;
+    }
+    if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
+      System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
+     }
+  return new MyFoo();//snekly it is MyFoo<Integer>
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->i);
+    Broken.<String>m(r1,"Hi",s->s.length());
+  }
+}
+// Above seems to fail but without explicit checkcast, failing one of the virtual method calls
+\end{lstlisting}
+
 \todo[inline]{The introduction promises forms that use class generics instead of method generics, and closures.}
 
 \subsection{Generic Reification}
