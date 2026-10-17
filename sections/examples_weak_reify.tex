@@ -1,8 +1,10 @@
 \section{Scope of the Problem}
 Example~1 is one of a family of programs that Java accepts with no warning and that fail at run time.
-This section first shows more programs of this family.
+This section shows more programs of this family.
 
 \subsection{More Failing Examples}
+
+\subsubsection{Example 2: No Generic Supertype}
 In Example~1, the local class \Q@MyFoo@ mentions \Q@X@ in its supertype \Q@Foo<X>@.
 Example~2 exercises the same fault without needing a generic supertype.
 Here \Q@MyFoo@ extends \Q@Object@, and \Q@X@ occurs only in the return type of the method \Q@x()@ of \Q@MyFoo@.
@@ -15,8 +17,8 @@ public class Broken {
   static <X> Object m(Object other, final X x, Function<X,String> f){
     class MyFoo{ public X x(){ return x; } }
     if(!(other instanceof MyFoo)){ return new MyFoo(); }
-    MyFoo local= (MyFoo)other; // cast passes with no warnings
-    System.out.println("old one was "+f.apply(local.x())); // throws ClassCastException
+    MyFoo local= (MyFoo)other; // cast passes with no warnings (*\label{line:ex2cast}*)
+    System.out.println("old one was "+f.apply(local.x())); // throws ClassCastException (*\label{line:ex2apply}*)
     return local;
   }
   public static void main(String[] a) {
@@ -29,25 +31,23 @@ public class Broken {
 
 The first call of \Q@m@ instantiates \Q@X@ with \Q@Integer@, and returns a \Q@MyFoo@ whose method \Q@x()@ returns \Q@5@.
 The second call of \Q@m@ instantiates \Q@X@ with \Q@String@.
-In the second call, \Q@other instanceof MyFoo@ is true, and the cast \Q@(MyFoo)other@ succeeds with no warning.
-Then \Q@local.x()@ has static type \Q@String@, but returns the \Q@Integer@ \Q@5@, and \Q@f.apply(local.x())@ throws a \Q@ClassCastException@.
-The \Q@ClassCastException@ comes from the class that \Q@LambdaMetafactory@ generates at run time for the lambda \Q@s->s@.
-javac compiles \Q@s->s@ into a synthetic method whose parameter has type \Q@String@,
-and the generated \Q@apply(Object)@ casts its argument to \Q@String@ before calling that method.
-The generated class is hidden,
-%what is the generated class, make it more clear.
-so its frame
-%frames are for methods not classes.
-does not appear in the default stack trace,
-%is there a non default stack trace??
-and the class file of \Q@Broken@ contains no \Q@checkcast@ for this cast.
-%what do you mean? are you saying that a specific bytecode instruction is not present? if so we need to say it in this way and explain why it is relevant.
+In the second call, \Q@other instanceof MyFoo@ is true, and the cast \Q@(MyFoo)other@ at Line~\ref{line:ex2cast} succeeds with no warning.
+Then \Q@local.x()@ has static type \Q@String@, but returns the \Q@Integer@ \Q@5@, and \Q@f.apply(local.x())@ at Line~\ref{line:ex2apply} throws a \Q@ClassCastException@.
 
-The program does not need to write the cast.
-%the program does not write a cast, a programmer does.
+No instruction of \Q@m@ performs the failing cast.
+javac compiles the body of the lambda \Q@s->s@ into a private static method \Q@lambda$main$1(String)@ of the class \Q@Broken@.
+At run time, the first evaluation of the lambda \Q@s->s@ calls \Q@LambdaMetafactory@, which generates a class implementing \Q@Function@; we call this class the \emph{lambda class}.
+The method \Q@apply(Object)@ of the lambda class casts its argument to \Q@String@, and then calls \Q@lambda$main$1@ with the result of that cast.
+Thus \Q@f.apply(local.x())@ passes the \Q@Integer@ \Q@5@ to the method \Q@apply@ of the lambda class, and the cast to \Q@String@ in that method throws the \Q@ClassCastException@.
 
+The stack trace of the \Q@ClassCastException@ hides this.
+\Q@LambdaMetafactory@ defines the lambda class as a hidden class, and the JVM omits the frames of the methods of hidden classes from stack traces, unless the JVM runs with the diagnostic option \Q@-XX:+ShowHiddenFrames@.
+So the topmost frame of the stack trace is the frame of \Q@m@, at Line~\ref{line:ex2apply}.
+The bytecode of \Q@m@ at Line~\ref{line:ex2apply} does contain a \Q@checkcast@ instruction to \Q@String@, on the result of \Q@f.apply@, but that instruction is never reached.
+The fault is the cast at Line~\ref{line:ex2cast}, which succeeds.
+The failure is detected later, in the lambda class: in code that the programmer did not write, at a point that depends on how javac and the JVM implement lambdas.
 
-%make a subsection for each example, or some other kind of divisor.
+\subsubsection{Example 3: No Explicit Cast}
 Example~3 exercises the same fault without needing an explicit cast.
 Java accepts Example~3 with no warning.
 Here we rely on the \Q@other instanceof MyFoo local@ test to bind
@@ -72,8 +72,11 @@ public class Broken {
 \end{lstlisting}
 \end{minipage}
 
-Pattern matching in \Q@switch@ behaves in the same way.
-In Example~4, the case \Q@case MyFoo local@ performs the same type test as the pattern of Example~3.
+As in Example~2, the method \Q@apply@ of the lambda class throws the \Q@ClassCastException@.
+
+\subsubsection{Example 4: Pattern Matching in \texttt{switch}}
+Example~4 exercises the same fault with a \Q@switch@ instead of an \Q@instanceof@.
+Here the case \Q@case MyFoo local@ performs the same type test as the pattern \Q@other instanceof MyFoo local@ of Example~3.
 
 \noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
@@ -98,13 +101,17 @@ public class Broken {
 \end{lstlisting}
 \end{minipage}
 
-The following listing is already covered by Examples~2 to~4.
-The listing combines the \Q@switch@ pattern of Example~4 and the \Q@instanceof@ pattern of Example~3 in one method, and the \Q@switch@ fails first.
-The listing uses \Q@Function<X,Integer>@ and the lambda \Q@s->s.length()@ instead of \Q@Function<X,String>@ and \Q@s->s@.
-The failure is the failure of Examples~2 to~4: the class generated for the lambda casts its argument, the \Q@Integer@ \Q@5@, to \Q@String@ before calling the synthetic method \Q@lambda$main$1(String)@.
-The class file of \Q@Broken@ has no \Q@checkcast@ to \Q@String@: the result of \Q@f.apply@ is used only in a string concatenation, and javac adds no \Q@checkcast@ to it.
-In Examples~2 to~4, the class file of \Q@Broken@ does have a \Q@checkcast@ to \Q@String@, on the result of \Q@f.apply@, but that \Q@checkcast@ is never reached.
-So in all four programs the failing cast is in the generated class, not in a \Q@checkcast@ of \Q@Broken@ and not in a virtual call.
+\subsubsection{Examples 3 and 4 Combined}
+The following listing exercises no new fault.
+The listing combines the \Q@switch@ of Example~4 and the \Q@instanceof@ of Example~3 in one method, and the \Q@switch@ fails first.
+The listing uses \Q@Function<X,Integer>@ and the lambda \Q@s->s.length()@ instead of \Q@Function<X,String>@ and the lambda \Q@s->s@.
+The comments in the listing say that the listing fails in a new way: with no \Q@checkcast@ instruction, in a virtual call.
+The failure is the failure of Example~2: the method \Q@apply@ of the lambda class casts its argument, the \Q@Integer@ \Q@5@, to \Q@String@ before calling \Q@lambda$main$1(String)@.
+The difference is only in the bytecode of \Q@m@.
+Here the result of \Q@f.apply@ has static type \Q@Integer@, and javac passes that result to the string concatenation without casting it to \Q@Integer@, since any object can be converted to a \Q@String@.
+So the bytecode of \Q@m@ contains no \Q@checkcast@ instruction on the result of \Q@f.apply@.
+In Examples~2 to~4, the bytecode of \Q@m@ contains a \Q@checkcast@ instruction to \Q@String@ on the result of \Q@f.apply@, but that instruction is never reached.
+So the \Q@checkcast@ instructions of \Q@m@ do not change where the failure is detected.
 
 \begin{lstlisting}
 //Example that breaks in a NEW WAY in the bytecode
@@ -141,10 +148,10 @@ class Broken {
 \todo[inline]{Not yet verified: the claims on Roslyn lifted classes, Rust (E0401, closure and opaque type identity, precise capturing), Swift, D, OCaml and SML local exceptions, and Scala outer tests.}
 A natural suspicion is that this problem is ``simply'' a consequence of generic erasure:
 a language that cannot distinguish the generic instantiations of a class at run time must have difficulties of this sort.
-There is some truth to this suspicion: Java permits a cast that it cannot check, because of erasure.
-However, Java does intend to flag uncheckable type tests:
-for \Q@o@ of type \Q@Object@, Java flags the cast \Q@(List<String>)o@ with an unchecked warning, and rejects \Q@o instanceof List<String>@ with an error.
-Java flags nothing in Examples~1 to~4 because \Q@MyFoo@ is not generic:
+There is some truth to this suspicion: javac accepts a cast that the JVM cannot check, because of erasure.
+However, javac does flag uncheckable type tests:
+for \Q@o@ of type \Q@Object@, javac reports an unchecked warning for the cast \Q@(List<String>)o@, and an error for \Q@o instanceof List<String>@.
+javac reports nothing for Examples~1 to~4 because \Q@MyFoo@ is not generic:
 the type test of \Q@other@ against \Q@MyFoo@ has no generic argument to leave unchecked.
 
 Reification does not change this by itself.
@@ -160,7 +167,7 @@ The implementations of method-local classes, and of the similar features of othe
 There are three granularities: one identity per declared class, one identity per instantiation of the enclosing scope, and one identity per evaluation of the declaration.
 Some languages avoid the choice by forbidding the capture of generic types.
 
-\paragraph*{One identity per declared class.}
+\subsubsection{One Identity per Declared Class}
 Java has this granularity, and so would a version of Java with reified generics that keeps \Q@MyFoo@ non-generic.
 In Example~1, such a reified Java needs the argument of \Q@Foo<X>@ in each instance of \Q@MyFoo@, since a reified runtime knows the generic arguments of every instance of \Q@Foo@.
 All instances of \Q@MyFoo@ share one class table, so each instance keeps a field with the argument of \Q@Foo@.
@@ -175,7 +182,7 @@ That is, the second implementation funnels only those captured generic types, an
 Moreover, in Examples~2 to~4 the signature of \Q@x()@ mentions \Q@X@, but \Q@MyFoo@ has no generic parameter to bind \Q@X@ in a reified runtime.
 A reified Java must either erase \Q@X@ inside \Q@MyFoo@, or make \Q@MyFoo@ generic: that is, funnel \Q@X@.
 
-\paragraph*{One identity per instantiation of the enclosing scope.}
+\subsubsection{One Identity per Instantiation of the Enclosing Scope}
 In a language which implements parametric polymorphism by templating / heterogeneous compilation
 (C++, or early experiments with generic Java~\cite{agesen1997adding}),
 each instantiation of \Q@m@ with different generic parameters is compiled separately, resulting in separate
@@ -216,7 +223,7 @@ a local struct \Q@S@ returned from the template function \Q@f@ has the type \Q@f
 C\# has no local classes, but its compiler lifts closures, local functions, iterators and async methods into generated classes.
 Inside a generic method \Q@M<T>@, the generated classes are themselves generic in the captured \Q@T@, as in \Q@<>c__DisplayClass0_0<T>@~\tocite{Roslyn lowering}.
 Since .NET reifies generics, the generated classes for \Q@M<int>@ and \Q@M<string>@ have distinct run-time identities.
-These generated classes can not be named in C\# source, so no cast to them can be written.
+A programmer can not name these generated classes in C\# source, so a programmer can not write a cast to them.
 
 Rust closures and \Q@impl Trait@ opaque types capture the generic parameters of the enclosing function,
 and the type of the closure, or the opaque type, includes those generic parameters in its identity:
@@ -231,9 +238,9 @@ However, these costs are not intrinsic to this granularity:
 Each of these sound designs makes the captured generic types part of the identity of the local class.
 That is, each design exposes the captured generic types:
 to the static type system and to the runtime (C++, D, Rust), or only to the runtime (C\# generated classes).
-Each design is a form of funnelling, done by the compiler or by the runtime instead of in the source.
+Each design is a form of funnelling, done by the compiler or by the runtime instead of by the programmer.
 
-\paragraph*{One identity per evaluation of the declaration.}
+\subsubsection{One Identity per Evaluation of the Declaration}
 In OCaml, \Q@let exception E of a in ...@ creates a fresh exception constructor each time the declaration is evaluated;
 local exception declarations in Standard ML are generative in the same way~\tocite{OCaml local exceptions, SML generative exceptions}.
 A handler for \Q@E@ does not catch an \Q@E@ raised by another evaluation of the declaration, whatever the instantiation of \Q@a@.
@@ -245,12 +252,12 @@ This granularity is sound, but it is stricter than needed:
 a \Q@MyFoo@ created by an earlier call of \Q@m@ with the same instantiation of \Q@X@ would also be rejected.
 This changes the behaviour of programs that are correct with one identity per instantiation of the enclosing scope.
 
-\paragraph*{Forbidden capture.}
+\subsubsection{Forbidden Capture}
 In Rust, a struct, function or impl declared inside a generic function can not use the generic parameters of the enclosing function (error E0401).
 The programmer must declare those generic parameters again on the inner item, which is funnelling done by hand.
 Swift rejects a type declared inside a generic function~\tocite{Swift: type cannot be nested in generic function}.
 
-\paragraph*{Capturing is exposing.}
+\subsubsection{Capturing Is Exposing}
 We know of no language that keeps a captured generic type private to a local class (absent from the source, from the static type system and from the run-time identity of the class) and still checks the captured generic type at run time.
 As soon as an implementation checks the captured generic type, the captured generic type is part of the identity of the local class: the local class is funnelled.
 
