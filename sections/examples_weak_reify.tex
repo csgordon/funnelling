@@ -1,8 +1,178 @@
 \section{Scope of the Problem}
-This problem arises in the statically typed JVM languages that support method-local classes, such as Scala and Kotlin.
+Example~1 is one of a family of programs that Java accepts with no warning and that fail at run time.
+This section first shows more programs of this family, and then discusses whether reified generics would prevent them.
 
-\begin{figure}
-\begin{lstlisting}[numbers=left,language=c++,escapeinside={(*}{*)}]
+\subsection{More Failing Examples}
+In Example~1, the local class \Q@MyFoo@ mentions \Q@X@ in its supertype \Q@Foo<X>@.
+The local class does not need a generic supertype.
+In Example~2, \Q@MyFoo@ extends \Q@Object@, and \Q@X@ occurs only in the return type of the method \Q@x()@ of \Q@MyFoo@.
+The method \Q@m@ returns \Q@Object@, so no type outside \Q@m@ mentions \Q@X@.
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=2em]
+// Example 2
+public class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    if(!(other instanceof MyFoo)){ return new MyFoo(); }
+    MyFoo local= (MyFoo)other; // cast passes with no warnings
+    System.out.println("old one was "+f.apply(local.x())); // throws ClassCastException
+    return local;
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+\end{minipage}
+
+The first call of \Q@m@ instantiates \Q@X@ with \Q@Integer@, and returns a \Q@MyFoo@ whose method \Q@x()@ returns \Q@5@.
+The second call of \Q@m@ instantiates \Q@X@ with \Q@String@.
+In the second call, \Q@other instanceof MyFoo@ is true, and the cast \Q@(MyFoo)other@ succeeds with no warning.
+Then \Q@local.x()@ has static type \Q@String@, but returns the \Q@Integer@ \Q@5@, and \Q@f.apply(local.x())@ throws a \Q@ClassCastException@.
+The \Q@ClassCastException@ comes from the class that \Q@LambdaMetafactory@ generates at run time for the lambda \Q@s->s@.
+javac compiles \Q@s->s@ into a synthetic method whose parameter has type \Q@String@,
+and the generated \Q@apply(Object)@ casts its argument to \Q@String@ before calling that method.
+For a method reference such as \Q@String::length@, the generated class performs the same cast on the receiver.
+The generated class is hidden, so its frame does not appear in the default stack trace, and the class file of \Q@Broken@ contains no \Q@checkcast@ for this cast.
+
+The program does not need to write the cast.
+The pattern \Q@other instanceof MyFoo local@ tests the type of \Q@other@ and binds \Q@local@ in one step.
+Example~3 has no cast, and Java accepts Example~3 with no warning.
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=2em]
+// Example 3
+public class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    if(other instanceof MyFoo local){ // no cast, no warnings
+      System.out.println("old one was "+f.apply(local.x())); // throws ClassCastException
+    }
+    return new MyFoo();
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+\end{minipage}
+
+Pattern matching in \Q@switch@ behaves in the same way.
+In Example~4, the case \Q@case MyFoo local@ performs the same type test as the pattern of Example~3.
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=2em]
+// Example 4
+public class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    switch(other){
+      case MyFoo local: // no cast, no warnings
+        System.out.println("old one was "+f.apply(local.x())); // throws ClassCastException
+        break;
+      default:
+        break;
+    }
+    return new MyFoo();
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+\end{minipage}
+
+The following listing is already covered by Examples~2 to~4.
+The listing combines the \Q@switch@ pattern of Example~4 and the \Q@instanceof@ pattern of Example~3 in one method, and the \Q@switch@ fails first.
+The listing uses \Q@Function<X,Integer>@ and the lambda \Q@s->s.length()@ instead of \Q@Function<X,String>@ and \Q@s->s@.
+The failure is the failure of Examples~2 to~4: the class generated for the lambda casts its argument, the \Q@Integer@ \Q@5@, to \Q@String@ before calling the synthetic method \Q@lambda$main$1(String)@.
+The class file of \Q@Broken@ has no \Q@checkcast@ to \Q@String@: the result of \Q@f.apply@ is used only in a string concatenation, and javac adds no \Q@checkcast@ to it.
+In Examples~2 to~4, the class file of \Q@Broken@ does have a \Q@checkcast@ to \Q@String@, on the result of \Q@f.apply@, but that \Q@checkcast@ is never reached.
+So in all four programs the failing cast is in the generated class, not in a \Q@checkcast@ of \Q@Broken@ and not in a virtual call.
+
+\begin{lstlisting}
+//Example that breaks in a NEW WAY in the bytecode
+// https://godbolt.org/z/sMnxPG1TE
+import java.util.function.Function;
+class Broken {
+  static <X> Object m(Object other, final X x, Function<X,Integer> f){
+    class MyFoo{ public X x(){ return x; } }
+    switch (other) {
+        case MyFoo local:
+            System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+            System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException 
+            break;
+        default:
+            break;
+    }
+    if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
+      System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
+     }
+  return new MyFoo();//snekly it is MyFoo<Integer>
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->i);
+    Broken.<String>m(r1,"Hi",s->s.length());
+  }
+}
+// Above seems to fail but without explicit checkcast, failing one of the virtual method calls
+\end{lstlisting}
+
+\todo[inline]{The introduction promises forms that use class generics instead of method generics, and closures.}
+
+\subsection{Generic Reification}
+\todo[inline]{Not yet verified: the claims on Roslyn lifted classes, Rust (E0401, closure and opaque type identity, precise capturing), Swift, D, OCaml and SML local exceptions, and Scala outer tests.}
+A natural suspicion is that this problem is ``simply'' a consequence of generic erasure:
+a language that cannot distinguish the generic instantiations of a class at run time must have difficulties of this sort.
+There is some truth to this suspicion: Java permits a cast that it cannot check, because of erasure.
+However, Java does intend to flag uncheckable type tests:
+for \Q@o@ of type \Q@Object@, Java flags the cast \Q@(List<String>)o@ with an unchecked warning, and rejects \Q@o instanceof List<String>@ with an error.
+Java flags nothing in Examples~1 to~4 because \Q@MyFoo@ is not generic:
+the type test of \Q@other@ against \Q@MyFoo@ has no generic argument to leave unchecked.
+
+Reification does not change this by itself.
+A reified runtime can only check what the run-time identity of a class contains.
+If the run-time identity of \Q@MyFoo@ is just the declared class \Q@MyFoo@, reification adds nothing to the cast \Q@(MyFoo)other@.
+Java treats the class \Q@MyFoo extends Foo<X>@ as it treats the class \Q@String extends Comparable<String>@: a cast inspects only the declared class.
+A cast to \Q@String@ does not inspect the generic argument of \Q@Comparable<String>@,
+and a cast to \Q@MyFoo@ does not inspect the generic argument of \Q@Foo<X>@.
+But the argument \Q@String@ of \Q@Comparable<String>@ is a constant of the class \Q@String@: a reified runtime records it once, in the class table of \Q@String@.
+The argument \Q@X@ of \Q@Foo<X>@ is not a constant of the class \Q@MyFoo@: \Q@X@ is free in the declaration of \Q@MyFoo@, and \Q@X@ changes between calls of \Q@m@.
+
+The implementations of method-local classes, and of the similar features of other languages, differ in the granularity of the run-time identity of the local class.
+There are three granularities: one identity per declared class, one identity per instantiation of the enclosing scope, and one identity per evaluation of the declaration.
+Some languages avoid the choice by forbidding the capture of generic types.
+
+\paragraph*{One identity per declared class.}
+Java has this granularity, and so would a version of Java with reified generics that keeps \Q@MyFoo@ non-generic.
+In Example~1, such a reified Java needs the argument of \Q@Foo<X>@ in each instance of \Q@MyFoo@, since a reified runtime knows the generic arguments of every instance of \Q@Foo@.
+All instances of \Q@MyFoo@ share one class table, so each instance keeps a field with the argument of \Q@Foo@.
+This leaves two possible implementations of the cast \Q@(MyFoo)other@:
+\begin{enumerate}
+\item The cast checks only the class table, and the cast succeeds. This is the unsoundness of Java, on a reified runtime.
+\item The cast checks the class table and also the stored argument of \Q@Foo@, as a cast to \Q@Foo<Integer>@ would. This rejects Example~1, but only because \Q@X@ occurs in the supertype \Q@Foo<X>@.
+\end{enumerate}
+In Examples~2 to~4, \Q@MyFoo@ extends \Q@Object@: there is no stored argument to check, and the second implementation of the cast succeeds too.
+The second implementation checks exactly the captured generic types that occur in the supertypes of the local class.
+That is, the second implementation funnels only those captured generic types, and leaves the other captured generic types unchecked.
+Moreover, in Examples~2 to~4 the signature of \Q@x()@ mentions \Q@X@, but \Q@MyFoo@ has no generic parameter to bind \Q@X@ in a reified runtime.
+A reified Java must either erase \Q@X@ inside \Q@MyFoo@, or make \Q@MyFoo@ generic: that is, funnel \Q@X@.
+
+\paragraph*{One identity per instantiation of the enclosing scope.}
+In a language which implements parametric polymorphism by templating / heterogeneous compilation
+(C++, or early experiments with generic Java~\cite{agesen1997adding}),
+each instantiation of \Q@m@ with different generic parameters is compiled separately, resulting in separate
+class declarations for each instantiation.
+Consider reinterpreting Example~1 in C++.
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=2em,language=c++]
+// Example 1 in C++
 class Object{ public: virtual ~Object(){} };
 template<typename X> class Foo : public Object {
     public: virtual X x() { return x(); } };
@@ -16,52 +186,8 @@ Foo<X>* m(Object* other, const X* x) {
     return d;
 }
 \end{lstlisting}
-\caption{C++ equivalent of Example~1.}
-\label{fig:cpp}
-\end{figure}
+\end{minipage}
 
-
-\subsection{Generic Reification}
-\todo[inline]{Not yet verified: the claims on Roslyn lifted classes, Rust (E0401, closure and opaque type identity, precise capturing), Swift, D, OCaml and SML local exceptions, and Scala outer tests.}
-A natural suspicion is that this problem is ``simply'' a consequence of generic erasure:
-a language that cannot distinguish the generic instantiations of a class at run time must have difficulties of this sort.
-There is some truth to this suspicion: Java permits a cast that it cannot check, because of erasure.
-However, Java does intend to flag uncheckable type tests:
-for \Q@o@ of type \Q@Object@, Java flags the cast \Q@(List<String>)o@ with an unchecked warning, and rejects \Q@o instanceof List<String>@ with an error.
-Java flags nothing in Example~1 because \Q@MyFoo@ is not generic:
-the type test \Q@other instanceof MyFoo@ has no generic argument to leave unchecked.
-
-Reification does not change this by itself.
-A reified runtime can only check what the run-time identity of a class contains.
-If the run-time identity of \Q@MyFoo@ is just the declared class \Q@MyFoo@, reification adds nothing to the cast \Q@(MyFoo)other@.
-The class \Q@MyFoo extends Foo<X>@ is exactly as generic as the class \Q@String extends Comparable<String>@.
-A cast to \Q@String@ does not inspect the generic argument of \Q@Comparable<String>@.
-In the same way, a cast to \Q@MyFoo@ does not inspect the generic argument of \Q@Foo<X>@:
-by nominal reflexivity, \Q@MyFoo <: MyFoo@ holds whatever \Q@X@ was when each instance of \Q@MyFoo@ was created.
-
-The implementations of method-local classes, and of the similar features of other languages, differ in the granularity of the run-time identity of the local class.
-There are three granularities: one identity per declared class, one identity per instantiation of the enclosing scope, and one identity per evaluation of the declaration.
-Some languages avoid the choice by forbidding the capture of generic types.
-
-\paragraph*{One identity per declared class.}
-Java has this granularity, and so would a version of Java with reified generics that keeps \Q@MyFoo@ non-generic.
-Such a reified Java still needs the instantiation of \Q@X@ in each instance of \Q@MyFoo@, for the inherited methods of \Q@Foo<X>@ to work.
-All instances of \Q@MyFoo@ share one class table, and each instance keeps a field with the instantiation of \Q@X@.
-This leaves two possible implementations of the cast \Q@(MyFoo)other@:
-\begin{enumerate}
-\item The cast checks only the class table, and the cast succeeds. This is the unsoundness of Java, on a reified runtime.
-\item The cast checks the class table and also the stored instantiation of \Q@X@, as a cast to \Q@Foo<Integer>@ would. The cast fails, and the cast is sound.
-\end{enumerate}
-The second implementation does not have one identity per declared class:
-the stored instantiation of \Q@X@ is part of the identity that the cast checks.
-That is, the second implementation is an instance of the next granularity.
-
-\paragraph*{One identity per instantiation of the enclosing scope.}
-In a language which implements parametric polymorphism by templating / heterogeneous compilation
-(C++, or early experiments with generic Java~\cite{agesen1997adding}),
-each instantiation of \Q@m@ with different generic parameters is compiled separately, resulting in separate
-class declarations for each instantiation.
-Consider reinterpreting Example~1 in C++ as in Figure \ref{fig:cpp}.
 A C++ local class cannot use the parameters of its enclosing function, so \Q@MyFoo@ receives \Q@x@ through its constructor.
 \Q@Object@ has a virtual destructor, since \Q@dynamic_cast@ requires a polymorphic source type.
 The calls \Q@r1=m<int>(nullptr,&i)@ and then \Q@m<std::string>(r1,&s)@ mirror Example~1.
@@ -85,10 +211,6 @@ and the type of the closure, or the opaque type, includes those generic paramete
 the \Q@TypeId@ of a closure created in \Q@m::<i32>@ differs from the \Q@TypeId@ of the same closure created in \Q@m::<String>@~\cite{rustClosures}.
 The precise capturing syntax of Rust 2024, \Q@impl Trait + use<T>@, lists explicitly the generic parameters that an opaque type captures~\tocite{Rust precise capturing RFC 3617}.
 
-The second implementation of the cast for a reified Java belongs here too.
-Each instance of \Q@MyFoo@ stores the instantiation of \Q@X@, and the cast compares the stored instantiation with the current one.
-In this implementation, the runtime treats \Q@MyFoo@ as \Q@MyFoo<X>@ although the source and the static type system do not.
-
 Heterogeneous compilation has subtle costs and wide-ranging consequences for language design, not just implementation,
 and complex performance consequences~\cite{odersky2001two,kennedy2001design}.
 However, these costs are not intrinsic to this granularity:
@@ -96,7 +218,7 @@ However, these costs are not intrinsic to this granularity:
 
 Each of these sound designs makes the captured generic types part of the identity of the local class.
 That is, each design exposes the captured generic types:
-to the static type system and to the runtime (C++, D, Rust), or only to the runtime (C\# generated classes, the second implementation of the cast for a reified Java).
+to the static type system and to the runtime (C++, D, Rust), or only to the runtime (C\# generated classes).
 Each design is a form of funnelling, done by the compiler or by the runtime instead of in the source.
 
 \paragraph*{One identity per evaluation of the declaration.}
@@ -207,119 +329,6 @@ small step reduction
 \end{verbatim}
 
 // Maybe above we want MyFoo:Object<A> and MyFoo:Object<B>?
-
-\begin{lstlisting}
-public class Broken {
-  static <X> Object m(Object other, final X x, Function<X,String> f){
-    class MyFoo{ public X x(){ return x; } }
-    if(!(other instanceof MyFoo)){ return new MyFoo(); }
-    MyFoo local= (MyFoo)other;//cast pass with no warnings
-    System.out.println("Pass with " + x);
-    System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException
-    return local;
-  }
-  public static void main(String[] a) {
-    Object r1= Broken.<Integer>m("anything",5,i->""+i);
-    Broken.<String>m(r1,"Hi",s->s);
-  }
-}
-\end{lstlisting}
-
-\begin{lstlisting}
-public class Broken {
-  static <X> Object m(Object other, final X x, Function<X,String> f){
-    class MyFoo{ public X x(){ return x; } }
-    if(!(other instanceof MyFoo)){ return new MyFoo(); }
-    MyFoo local= (MyFoo)other;//cast pass with no warnings
-    System.out.println("Pass with " + x);
-    System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException
-    return local;
-  }
-  public static void main(String[] a) {
-    Object r1= Broken.<Integer>m("anything",5,i->""+i);
-    Broken.<String>m(r1,"Hi",s->s);
-  }
-}
-\end{lstlisting}
-
-\begin{lstlisting}
-public class Broken {
-  static <X> Object m(Object other, final X x, Function<X,String> f){
-    class MyFoo{ public X x(){ return x; } }
-    if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
-      System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
-      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
-     }
-  return new MyFoo();//snekly it is MyFoo<Integer>
-  }
-  public static void main(String[] a) {
-    Object r1= Broken.<Integer>m("anything",5,i->""+i);
-    Broken.<String>m(r1,"Hi",s->s);
-  }
-}
-\end{lstlisting}
-
-// TODO: could talk about doing this with modern Java type-switch
-\begin{lstlisting}[language=Java]
-// Compiles without error, fails, on jdk 25.0.1
-import java.util.function.Function;
-class Broken {
-  static <X> Object m(Object other, final X x, Function<X,String> f){
-    class MyFoo{ public X x(){ return x; } }
-    switch (other) {
-        case MyFoo local: // implicit unchecked cast
-            System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
-            System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException (on the argument of f.apply)
-            break;
-        default:
-            break;
-    }
-    if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
-      System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
-      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
-     }
-  return new MyFoo();//snekly it is MyFoo<Integer>
-  }
-  public static void main(String[] a) {
-    Object r1= Broken.<Integer>m("anything",5,i->""+i);
-    Broken.<String>m(r1,"Hi",s->(s.length())+""); //Broken.<String>m(r1,"Hi",s->s);
-  }
-}
-\end{lstlisting}
-
-\begin{lstlisting}
-//Example that breaks in a NEW WAY in the bytecode
-// https://godbolt.org/z/sMnxPG1TE
-import java.util.function.Function;
-class Broken {
-  static <X> Object m(Object other, final X x, Function<X,Integer> f){
-    class MyFoo{ public X x(){ return x; } }
-    switch (other) {
-        case MyFoo local:
-            System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
-            System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException 
-            break;
-        default:
-            break;
-    }
-    if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
-      System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
-      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
-     }
-  return new MyFoo();//snekly it is MyFoo<Integer>
-  }
-  public static void main(String[] a) {
-    Object r1= Broken.<Integer>m("anything",5,i->i);
-    Broken.<String>m(r1,"Hi",s->s.length());
-  }
-}
-// Above seems to fail but without explicit checkcast, failing one of the virtual method calls
-\end{lstlisting}
-The \Q@ClassCastException@ comes from the class that \Q@LambdaMetafactory@ generates at run time for the lambda.
-javac compiles \Q@s->s.length()@ into a synthetic method whose parameter has type \Q@String@,
-and the generated \Q@apply(Object)@ casts its argument to \Q@String@ before calling that method.
-For a method reference such as \Q@String::length@, the generated class performs the same cast on the receiver.
-The generated class is hidden, so its frame does not appear in the default stack trace, and the class file of \Q@Broken@ contains no \Q@checkcast@ for this cast.
 
 % interface Shape{ Square toSquare(); }
 % class Square extends Shape{Square toSquare(){ return this; } }
