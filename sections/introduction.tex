@@ -94,7 +94,7 @@ and to ahead-of-time compilation of JVM bytecode, such as GraalVM's Native Image
 
 In the remainder of this paper:
 \begin{itemize}
-\item We detail the breadth of the problem (surveying forms that use class generics rather than method generics, closures, and other manifestations), and how it is handled by various existing language implementations.
+\item We detail the breadth of the problem, and how it is handled by various existing language implementations.
 \item We develop a core language modelling Java's generics, method-local classes and type tests, and show that typing method-local classes as Java does is unsound.
 \item We develop a new type system mechanism for systematically tracking dependence of a
 method-local class on generic parameters, and show that it soundly prevents the problem.
