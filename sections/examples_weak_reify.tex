@@ -167,16 +167,37 @@ public class Broken {
 \end{lstlisting}
 \end{minipage}
 
+Example~6 marks the boundary of the family: with class generics, javac does flag the fault.
 javac rejects Example~6 at Line~\ref{line:ex6test}, with the error \Q@Object cannot be safely cast to MyFoo@.
 The method \Q@m@ is an instance method of \Q@Box<X>@, so \Q@MyFoo@ is an inner class of \Q@Box<X>@, with an enclosing instance of type \Q@Box<X>@.
 javac types \Q@MyFoo@ as \Q@Box<X>.MyFoo@, as javac types a member class \Q@MyFoo@ of \Q@Box@.
 So \Q@MyFoo@ is generic in \Q@X@, and \Q@other instanceof MyFoo@ is the uncheckable type test \Q@other instanceof Box<X>.MyFoo@.
-A cast \Q@(MyFoo)other@ with no type test against \Q@MyFoo@ compiles with an unchecked warning, and the program then fails as Example~2 fails.
+
+The cast is flagged too.
+The following method \Q@m@ replaces the method \Q@m@ of Example~6.
+The type test against \Q@String@ replaces the type test against \Q@MyFoo@, which javac rejects, and the cast of Example~2 follows it.
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=2em]
+// Example 6 with a cast: the method m of Box
+  Object m(Object other, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    if(other instanceof String){ return new MyFoo(); }
+    MyFoo local= (MyFoo)other; // warning: [unchecked] unchecked cast (*\label{line:ex6cast}*)
+    System.out.println("old one was "+f.apply(local.x())); // throws ClassCastException
+    return local;
+  }
+\end{lstlisting}
+\end{minipage}
+
+javac accepts this program, but reports an unchecked warning for the cast at Line~\ref{line:ex6cast}.
+At run time the cast succeeds, and the program fails as Example~2 fails.
+So with class generics the program fails only after an unchecked warning, as a program with the cast \Q@(List<String>)o@ may fail.
+In Examples~1 to~5 instead, javac reports nothing.
+
 Thus for the generic parameters of the enclosing class, Java already exposes the captured generic types in the type of the local class:
 the local class is funnelled, through the type of its enclosing instance.
 Java does not do the same for the generic parameters of the enclosing method: no type of the local class carries the instantiation of the generic parameters of a method.
-
-\todo[inline]{The introduction says that this section surveys failing forms with class generics; Example~6 shows that javac flags the form with class generics.}
 
 \section{Generic Reification}
 \todo[inline]{Not yet verified: the claims on Roslyn lifted classes, Rust (E0401, closure and opaque type identity, precise capturing), Swift, D, OCaml and SML local exceptions, and Scala outer tests.}
