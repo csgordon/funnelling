@@ -1,0 +1,349 @@
+\section{Scope of the Problem}
+This problem arises in the statically typed JVM languages that support method-local classes, such as Scala and Kotlin.
+
+\begin{figure}
+\begin{lstlisting}[numbers=left,language=c++,escapeinside={(*}{*)}]
+class Object{ public: virtual ~Object(){} };
+template<typename X> class Foo : public Object {
+    public: virtual X x() { return x(); } };
+template<typename X>
+Foo<X>* m(Object* other, const X* x) {
+    class MyFoo : public Foo<X> {
+        const X* v;
+      public: MyFoo(const X* v):v(v){} X x() { return *v; } };
+    MyFoo* d = dynamic_cast<MyFoo*>(other);(*\label{line:cpp_cast}*)
+    if(d == nullptr) { return new MyFoo(x); }
+    return d;
+}
+\end{lstlisting}
+\caption{C++ equivalent of Example~1.}
+\label{fig:cpp}
+\end{figure}
+
+
+\subsection{Generic Reification}
+\todo[inline]{Not yet verified: the claims on Roslyn lifted classes, Rust (E0401, closure and opaque type identity, precise capturing), Swift, D, OCaml and SML local exceptions, and Scala outer tests.}
+A natural suspicion is that this problem is ``simply'' a consequence of generic erasure:
+a language that cannot distinguish the generic instantiations of a class at run time must have difficulties of this sort.
+There is some truth to this suspicion: Java permits a cast that it cannot check, because of erasure.
+However, Java does intend to flag uncheckable type tests:
+for \Q@o@ of type \Q@Object@, Java flags the cast \Q@(List<String>)o@ with an unchecked warning, and rejects \Q@o instanceof List<String>@ with an error.
+Java flags nothing in Example~1 because \Q@MyFoo@ is not generic:
+the type test \Q@other instanceof MyFoo@ has no generic argument to leave unchecked.
+
+Reification does not change this by itself.
+A reified runtime can only check what the run-time identity of a class contains.
+If the run-time identity of \Q@MyFoo@ is just the declared class \Q@MyFoo@, reification adds nothing to the cast \Q@(MyFoo)other@.
+The class \Q@MyFoo extends Foo<X>@ is exactly as generic as the class \Q@String extends Comparable<String>@.
+A cast to \Q@String@ does not inspect the generic argument of \Q@Comparable<String>@.
+In the same way, a cast to \Q@MyFoo@ does not inspect the generic argument of \Q@Foo<X>@:
+by nominal reflexivity, \Q@MyFoo <: MyFoo@ holds whatever \Q@X@ was when each instance of \Q@MyFoo@ was created.
+
+The implementations of method-local classes, and of the similar features of other languages, differ in the granularity of the run-time identity of the local class.
+There are three granularities: one identity per declared class, one identity per instantiation of the enclosing scope, and one identity per evaluation of the declaration.
+Some languages avoid the choice by forbidding the capture of generic types.
+
+\paragraph*{One identity per declared class.}
+Java has this granularity, and so would a version of Java with reified generics that keeps \Q@MyFoo@ non-generic.
+Such a reified Java still needs the instantiation of \Q@X@ in each instance of \Q@MyFoo@, for the inherited methods of \Q@Foo<X>@ to work.
+All instances of \Q@MyFoo@ share one class table, and each instance keeps a field with the instantiation of \Q@X@.
+This leaves two possible implementations of the cast \Q@(MyFoo)other@:
+\begin{enumerate}
+\item The cast checks only the class table, and the cast succeeds. This is the unsoundness of Java, on a reified runtime.
+\item The cast checks the class table and also the stored instantiation of \Q@X@, as a cast to \Q@Foo<Integer>@ would. The cast fails, and the cast is sound.
+\end{enumerate}
+The second implementation does not have one identity per declared class:
+the stored instantiation of \Q@X@ is part of the identity that the cast checks.
+That is, the second implementation is an instance of the next granularity.
+
+\paragraph*{One identity per instantiation of the enclosing scope.}
+In a language which implements parametric polymorphism by templating / heterogeneous compilation
+(C++, or early experiments with generic Java~\cite{agesen1997adding}),
+each instantiation of \Q@m@ with different generic parameters is compiled separately, resulting in separate
+class declarations for each instantiation.
+Consider reinterpreting Example~1 in C++ as in Figure \ref{fig:cpp}.
+A C++ local class cannot use the parameters of its enclosing function, so \Q@MyFoo@ receives \Q@x@ through its constructor.
+\Q@Object@ has a virtual destructor, since \Q@dynamic_cast@ requires a polymorphic source type.
+The calls \Q@r1=m<int>(nullptr,&i)@ and then \Q@m<std::string>(r1,&s)@ mirror Example~1.
+In the second call, the \Q@dynamic_cast@ at Line \ref{line:cpp_cast} returns \Q@nullptr@:
+\Q@m<int>@ and \Q@m<std::string>@ declare two distinct classes \Q@MyFoo@, and \Q@r1@ is an instance of the first one.
+Thus the second call returns a new \Q@MyFoo@, as a sound type test should.
+In its diagnostics, \texttt{gcc} names the first class \Q@m<int>(Object*, const int*)::MyFoo@:
+the instantiation of the method signature is the scope of the declaration of \Q@MyFoo@.
+Inside the template \Q@m<X>@, the C++ type system sees \Q@MyFoo@ as the dependent type \Q@m<X>::MyFoo@.
+So C++ does expose \Q@X@ in the type of \Q@MyFoo@: through the name of the enclosing scope instead of through a generic parameter of \Q@MyFoo@.
+D works in the same way, and its ``Voldemort types'' make the scope visible:
+a local struct \Q@S@ returned from the template function \Q@f@ has the type \Q@f!int.S@ when \Q@f@ is instantiated with \Q@int@~\tocite{D Voldemort types}.
+
+C\# has no local classes, but its compiler lifts closures, local functions, iterators and async methods into generated classes.
+Inside a generic method \Q@M<T>@, the generated classes are themselves generic in the captured \Q@T@, as in \Q@<>c__DisplayClass0_0<T>@~\tocite{Roslyn lowering}.
+Since .NET reifies generics, the generated classes for \Q@M<int>@ and \Q@M<string>@ have distinct run-time identities.
+These generated classes can not be named in C\# source, so no cast to them can be written.
+
+Rust closures and \Q@impl Trait@ opaque types capture the generic parameters of the enclosing function,
+and the type of the closure, or the opaque type, includes those generic parameters in its identity:
+the \Q@TypeId@ of a closure created in \Q@m::<i32>@ differs from the \Q@TypeId@ of the same closure created in \Q@m::<String>@~\cite{rustClosures}.
+The precise capturing syntax of Rust 2024, \Q@impl Trait + use<T>@, lists explicitly the generic parameters that an opaque type captures~\tocite{Rust precise capturing RFC 3617}.
+
+The second implementation of the cast for a reified Java belongs here too.
+Each instance of \Q@MyFoo@ stores the instantiation of \Q@X@, and the cast compares the stored instantiation with the current one.
+In this implementation, the runtime treats \Q@MyFoo@ as \Q@MyFoo<X>@ although the source and the static type system do not.
+
+Heterogeneous compilation has subtle costs and wide-ranging consequences for language design, not just implementation,
+and complex performance consequences~\cite{odersky2001two,kennedy2001design}.
+However, these costs are not intrinsic to this granularity:
+.NET keeps a single implementation for the instantiations at reference types and still gives each instantiation its own run-time identity~\cite{kennedy2001design}.
+
+Each of these sound designs makes the captured generic types part of the identity of the local class.
+That is, each design exposes the captured generic types:
+to the static type system and to the runtime (C++, D, Rust), or only to the runtime (C\# generated classes, the second implementation of the cast for a reified Java).
+Each design is a form of funnelling, done by the compiler or by the runtime instead of in the source.
+
+\paragraph*{One identity per evaluation of the declaration.}
+In OCaml, \Q@let exception E of a in ...@ creates a fresh exception constructor each time the declaration is evaluated;
+local exception declarations in Standard ML are generative in the same way~\tocite{OCaml local exceptions, SML generative exceptions}.
+A handler for \Q@E@ does not catch an \Q@E@ raised by another evaluation of the declaration, whatever the instantiation of \Q@a@.
+Scala has the same granularity for captured values instead of captured types.
+An instance of an inner class \Q@Inner@ captures its enclosing instance \Q@$outer@, and its type is the path-dependent type \Q@a.Inner@.
+For the pattern \Q@case i: a.Inner@, the Scala compiler emits an ``outer test'' that compares the captured \Q@$outer@ with \Q@a@~\tocite{Scala outer tests}.
+Even here the type system exposes what is captured: inside the class of \Q@a@, \Q@Inner@ means \Q@this.Inner@.
+This granularity is sound, but it is stricter than needed:
+a \Q@MyFoo@ created by an earlier call of \Q@m@ with the same instantiation of \Q@X@ would also be rejected.
+This changes the behaviour of programs that are correct with one identity per instantiation of the enclosing scope.
+
+\paragraph*{Forbidden capture.}
+In Rust, a struct, function or impl declared inside a generic function can not use the generic parameters of the enclosing function (error E0401).
+The programmer must declare those generic parameters again on the inner item, which is funnelling done by hand.
+Swift rejects a type declared inside a generic function~\tocite{Swift: type cannot be nested in generic function}.
+
+\paragraph*{Capturing is exposing.}
+We know of no language that keeps a captured generic type private to a local class (absent from the source, from the static type system and from the run-time identity of the class) and still checks the captured generic type at run time.
+As soon as an implementation checks the captured generic type, the captured generic type is part of the identity of the local class: the local class is funnelled.
+
+Funnelling is the static form of one identity per instantiation of the enclosing scope:
+in Example~1, \Q@MyFoo@ funnels \Q@X@ and becomes \Q@MyFoo<X>@.
+With erasure, the existing rule of Java then rejects \Q@other instanceof MyFoo<X>@ for \Q@other@ of type \Q@Object@, because \Q@Object@ does not determine \Q@X@.
+These are the two compile-time points of the introduction.
+With reification, the same type test returns false in the second call of \Q@m@.
+These are the two run-time points of the introduction.
+The same exposure of \Q@X@ enables all four points.
+Thus funnelling is independent of how generics are implemented, and Section~\ref{sec:core} develops funnelling in a core language without reification.
+
+\todo[inline]{ah, we need to check Flix, where maybe we can cook up something roughly like this?}
+
+This is a problem in other languages (cite cite) as shown in greater details in Rel Work.
+
+Now, assume we have a readable small step reduction over a version of FJ rich enough to express the problem.
+We will assume: 
+- Simple generics
+- A syntax like anonymous inner classes, but where we give them names. We can call them
+named inner classes.
+This imports the concept of method local inner classes within an expression based calculus.
+//our model will also need casts + instanceof
+\begin{lstlisting}
+class A{ A onlyA()-> new A() }
+class B{ B onlyB()-> new B() }
+class Foo<X> extends Object{ X x() {return x();} }
+public class Broken {
+  <X> Foo<X> m(Object other, X x) ->
+    if(other instanceof MyFoo)
+      then ((MyFoo)other)
+      else new MyFoo() extends Foo<X>{ X x(){ return x; } }//Bad
+  }
+main:
+  new Broken().<B>m(new Broken().<A>m(new Object(),new A()),new B()).x().onlyB();
+\end{lstlisting}
+
+
+\begin{lstlisting}
+class Foo<X> extends Object{ X x() {return x();} }
+public class Broken {
+  <X> Foo<X> m(Object other, X x) ->
+    if(other instanceof MyFoo<X>) //unchecked instanceof (ill typed in our core)?
+      then ((MyFoo<X>)other)//unchecked cast (ill typed in our core)?
+      else new MyFoo<X>() extends Foo<X>{ public X x(){ return x; } }//good
+  }
+\end{lstlisting}
+\mjnote{answered by Figure~\ref{fig:cast}: with \texttt{other : Object}, \texttt{other instanceof MyFoo<X>} is ill typed, because \texttt{X} is not determined by \texttt{Object} (as javac: \texttt{Object cannot be safely cast to MyFoo<X>}). With \texttt{other : Foo<X>} it is well typed and sound under erasure.}
+
+Note how funnelling purpose is to insert the generics. Without funnelling, MyFoo is a non generic type, so the question about generic reification does not even arise.
+
+small step reduction
+\begin{verbatim}
+01:  new Broken().<B>m(new Broken().<A>m(new Object(),new A()),new B()).x().onlyB();
+02:  new Broken().<B>m(
+    if(new Object() instanceof MyFoo<X>)
+      then (MyFoo<A>) new Object()
+      else new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+      ,new B()).x().onlyB();
+03:  new Broken().<B>m(
+    if(false)
+      then (MyFoo<A>) new Object()
+      else new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+      ,new B()).x().onlyB();
+04:  new Broken().<B>m(
+       new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+      ,new B()).x().onlyB();
+05:   (if(new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } } instanceof MyFoo<B>)
+       then (MyFoo<A>) new MyFoo<A>() extends Foo<A>{ public A x()->new A() }
+       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
+06a:  (if(false)//reified gen
+       then (MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
+07a:  (new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
+08a:  new B().onlyB()
+09a:  new B()//success and different semantic
+06b:  (if(true)//Java
+       then (MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
+07b:  ((MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }).x().onlyB()
+08b:  (new MyFoo<A>() extends Foo<A>{ public A x()->new A() }).x().onlyB()
+     //assuming cast and instanceof behave consistently (unchecked)
+09b:  new A().x().onlyB()
+10b:  new A().onlyB() //stuck!!
+6c:  (if(err)//compile or at least run time
+       then ((MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
+       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
+\end{verbatim}
+
+// Maybe above we want MyFoo:Object<A> and MyFoo:Object<B>?
+
+\begin{lstlisting}
+public class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    if(!(other instanceof MyFoo)){ return new MyFoo(); }
+    MyFoo local= (MyFoo)other;//cast pass with no warnings
+    System.out.println("Pass with " + x);
+    System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException
+    return local;
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+public class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    if(!(other instanceof MyFoo)){ return new MyFoo(); }
+    MyFoo local= (MyFoo)other;//cast pass with no warnings
+    System.out.println("Pass with " + x);
+    System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException
+    return local;
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+public class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
+      System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
+     }
+  return new MyFoo();//snekly it is MyFoo<Integer>
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+
+// TODO: could talk about doing this with modern Java type-switch
+\begin{lstlisting}[language=Java]
+// Compiles without error, fails, on jdk 25.0.1
+import java.util.function.Function;
+class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    switch (other) {
+        case MyFoo local: // implicit unchecked cast
+            System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+            System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException (on the argument of f.apply)
+            break;
+        default:
+            break;
+    }
+    if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
+      System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
+     }
+  return new MyFoo();//snekly it is MyFoo<Integer>
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->(s.length())+""); //Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+//Example that breaks in a NEW WAY in the bytecode
+// https://godbolt.org/z/sMnxPG1TE
+import java.util.function.Function;
+class Broken {
+  static <X> Object m(Object other, final X x, Function<X,Integer> f){
+    class MyFoo{ public X x(){ return x; } }
+    switch (other) {
+        case MyFoo local:
+            System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+            System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException 
+            break;
+        default:
+            break;
+    }
+    if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
+      System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
+      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
+     }
+  return new MyFoo();//snekly it is MyFoo<Integer>
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->i);
+    Broken.<String>m(r1,"Hi",s->s.length());
+  }
+}
+// Above seems to fail but without explicit checkcast, failing one of the virtual method calls
+\end{lstlisting}
+The \Q@ClassCastException@ comes from the class that \Q@LambdaMetafactory@ generates at run time for the lambda.
+javac compiles \Q@s->s.length()@ into a synthetic method whose parameter has type \Q@String@,
+and the generated \Q@apply(Object)@ casts its argument to \Q@String@ before calling that method.
+For a method reference such as \Q@String::length@, the generated class performs the same cast on the receiver.
+The generated class is hidden, so its frame does not appear in the default stack trace, and the class file of \Q@Broken@ contains no \Q@checkcast@ for this cast.
+
+% interface Shape{ Square toSquare(); }
+% class Square extends Shape{Square toSquare(){ return this; } }
+%
+%
+%
+% public class Broken {
+%   static <X> Foo<X,?> m(Top<?> other, final X x){
+%     class MyFoo extends Foo<X,MyFoo>{
+%       public X x(){ return x; }
+%       public MyFoo myFooOrElse(MyFoo myFoo){ return this; }
+%     }
+%     return other.selfOrElse(new MyFoo());
+%   }
+%   public static void main(String[] a) {
+%     Foo<Integer> r1= Broken.<Integer>m(new Top<String>(),5);
+%     Foo<String> r2= Broken.<String>m(r1,"Hi");
+%     System.out.println(r1.x());//5
+%     System.out.println(r2.x());//Throws ClassCastException: ..
+%   }
+% }
+% class Top<S>{
+%   public S selfOrElse(S s){ return s; }
+%   }
+% class Foo<X,S> extends Top<S>{ public X x() {return x();} }
+%
+%
