@@ -1,11 +1,11 @@
 \section{Scope of the Problem}
 Example~1 is one of a family of programs that Java accepts with no warning and that fail at run time.
-This section first shows more programs of this family, and then discusses whether reified generics would prevent them.
+This section first shows more programs of this family.
 
 \subsection{More Failing Examples}
 In Example~1, the local class \Q@MyFoo@ mentions \Q@X@ in its supertype \Q@Foo<X>@.
-The local class does not need a generic supertype.
-In Example~2, \Q@MyFoo@ extends \Q@Object@, and \Q@X@ occurs only in the return type of the method \Q@x()@ of \Q@MyFoo@.
+Example~2 exercises the same fault without needing a generic supertype.
+Here \Q@MyFoo@ extends \Q@Object@, and \Q@X@ occurs only in the return type of the method \Q@x()@ of \Q@MyFoo@.
 The method \Q@m@ returns \Q@Object@, so no type outside \Q@m@ mentions \Q@X@.
 
 \noindent\begin{minipage}{\linewidth}
@@ -34,12 +34,24 @@ Then \Q@local.x()@ has static type \Q@String@, but returns the \Q@Integer@ \Q@5@
 The \Q@ClassCastException@ comes from the class that \Q@LambdaMetafactory@ generates at run time for the lambda \Q@s->s@.
 javac compiles \Q@s->s@ into a synthetic method whose parameter has type \Q@String@,
 and the generated \Q@apply(Object)@ casts its argument to \Q@String@ before calling that method.
-For a method reference such as \Q@String::length@, the generated class performs the same cast on the receiver.
-The generated class is hidden, so its frame does not appear in the default stack trace, and the class file of \Q@Broken@ contains no \Q@checkcast@ for this cast.
+The generated class is hidden,
+%what is the generated class, make it more clear.
+so its frame
+%frames are for methods not classes.
+does not appear in the default stack trace,
+%is there a non default stack trace??
+and the class file of \Q@Broken@ contains no \Q@checkcast@ for this cast.
+%what do you mean? are you saying that a specific bytecode instruction is not present? if so we need to say it in this way and explain why it is relevant.
 
 The program does not need to write the cast.
-The pattern \Q@other instanceof MyFoo local@ tests the type of \Q@other@ and binds \Q@local@ in one step.
-Example~3 has no cast, and Java accepts Example~3 with no warning.
+%the program does not write a cast, a programmer does.
+
+
+%make a subsection for each example, or some other kind of divisor.
+Example~3 exercises the same fault without needing an explicit cast.
+Java accepts Example~3 with no warning.
+Here we rely on the \Q@other instanceof MyFoo local@ test to bind
+\Q@local@ in one step.
 
 \noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
