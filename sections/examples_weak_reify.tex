@@ -1,10 +1,8 @@
-\section{Scope of the Problem}
+\section{More Failing Examples}
 Example~1 is one of a family of programs that Java accepts with no warning and that fail at run time.
 This section shows more programs of this family.
 
-\subsection{More Failing Examples}
-
-\subsubsection{Example 2: No Generic Supertype}
+\subsection{Example 2: No Generic Supertype}
 In Example~1, the local class \Q@MyFoo@ mentions \Q@X@ in its supertype \Q@Foo<X>@.
 Example~2 exercises the same fault without needing a generic supertype.
 Here \Q@MyFoo@ extends \Q@Object@, and \Q@X@ occurs only in the return type of the method \Q@x()@ of \Q@MyFoo@.
@@ -44,10 +42,9 @@ The stack trace of the \Q@ClassCastException@ hides this.
 \Q@LambdaMetafactory@ defines the lambda class as a hidden class, and the JVM omits the frames of the methods of hidden classes from stack traces, unless the JVM runs with the diagnostic option \Q@-XX:+ShowHiddenFrames@.
 So the topmost frame of the stack trace is the frame of \Q@m@, at Line~\ref{line:ex2apply}.
 The bytecode of \Q@m@ at Line~\ref{line:ex2apply} does contain a \Q@checkcast@ instruction to \Q@String@, on the result of \Q@f.apply@, but that instruction is never reached.
-The fault is the cast at Line~\ref{line:ex2cast}, which succeeds.
-The failure is detected later, in the lambda class: in code that the programmer did not write, at a point that depends on how javac and the JVM implement lambdas.
+The failure is detected in the lambda class: in code that the programmer did not write, at a point that depends on how javac and the JVM implement lambdas.
 
-\subsubsection{Example 3: No Explicit Cast}
+\subsection{Example 3: No Explicit Cast}
 Example~3 exercises the same fault without needing an explicit cast.
 Java accepts Example~3 with no warning.
 Here we rely on the \Q@other instanceof MyFoo local@ test to bind
@@ -74,7 +71,7 @@ public class Broken {
 
 As in Example~2, the method \Q@apply@ of the lambda class throws the \Q@ClassCastException@.
 
-\subsubsection{Example 4: Pattern Matching in \texttt{switch}}
+\subsection{Example 4: Pattern Matching in \texttt{switch}}
 Example~4 exercises the same fault with a \Q@switch@ instead of an \Q@instanceof@.
 Here the case \Q@case MyFoo local@ performs the same type test as the pattern \Q@other instanceof MyFoo local@ of Example~3.
 
@@ -101,21 +98,19 @@ public class Broken {
 \end{lstlisting}
 \end{minipage}
 
-\subsubsection{Examples 3 and 4 Combined}
-The following listing exercises no new fault.
-The listing combines the \Q@switch@ of Example~4 and the \Q@instanceof@ of Example~3 in one method, and the \Q@switch@ fails first.
+\subsection{Examples 5}
+Example~5 could be expressed with either the \Q@switch@ of Example~4 or the \Q@instanceof@ of Example~3; here we chose the switch, but the other way would make the same point.
 The listing uses \Q@Function<X,Integer>@ and the lambda \Q@s->s.length()@ instead of \Q@Function<X,String>@ and the lambda \Q@s->s@.
-The comments in the listing say that the listing fails in a new way: with no \Q@checkcast@ instruction, in a virtual call.
 The failure is the failure of Example~2: the method \Q@apply@ of the lambda class casts its argument, the \Q@Integer@ \Q@5@, to \Q@String@ before calling \Q@lambda$main$1(String)@.
 The difference is only in the bytecode of \Q@m@.
 Here the result of \Q@f.apply@ has static type \Q@Integer@, and javac passes that result to the string concatenation without casting it to \Q@Integer@, since any object can be converted to a \Q@String@.
 So the bytecode of \Q@m@ contains no \Q@checkcast@ instruction on the result of \Q@f.apply@.
 In Examples~2 to~4, the bytecode of \Q@m@ contains a \Q@checkcast@ instruction to \Q@String@ on the result of \Q@f.apply@, but that instruction is never reached.
 So the \Q@checkcast@ instructions of \Q@m@ do not change where the failure is detected.
+%explain/expand on the sentence above.
 
 \begin{lstlisting}
-//Example that breaks in a NEW WAY in the bytecode
-// https://godbolt.org/z/sMnxPG1TE
+//Example 5
 import java.util.function.Function;
 class Broken {
   static <X> Object m(Object other, final X x, Function<X,Integer> f){
@@ -128,10 +123,6 @@ class Broken {
         default:
             break;
     }
-    if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
-      System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
-      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
-     }
   return new MyFoo();//snekly it is MyFoo<Integer>
   }
   public static void main(String[] a) {
@@ -139,10 +130,10 @@ class Broken {
     Broken.<String>m(r1,"Hi",s->s.length());
   }
 }
-// Above seems to fail but without explicit checkcast, failing one of the virtual method calls
 \end{lstlisting}
 
 \todo[inline]{The introduction promises forms that use class generics instead of method generics, and closures.}
+%closures/lambdas are used in those. We should indeed show an example with class generics too.
 
 \subsection{Generic Reification}
 \todo[inline]{Not yet verified: the claims on Roslyn lifted classes, Rust (E0401, closure and opaque type identity, precise capturing), Swift, D, OCaml and SML local exceptions, and Scala outer tests.}
