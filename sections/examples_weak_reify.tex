@@ -199,7 +199,7 @@ Thus for the generic parameters of the enclosing class, Java already exposes the
 the local class is funnelled, through the type of its enclosing instance.
 Java does not do the same for the generic parameters of the enclosing method: no type of the local class carries the instantiation of the generic parameters of a method.
 
-\section{Generic Reification}
+\section{The impact of Generic Reification}
 \todo[inline]{Not yet verified: the claims on Roslyn lifted classes, Rust (E0401, closure and opaque type identity, precise capturing), Swift, D, OCaml and SML local exceptions, and Scala outer tests.}
 A natural suspicion is that this problem is ``simply'' a consequence of generic erasure:
 a language that cannot distinguish the generic instantiations of a class at run time must have difficulties of this sort.
@@ -219,26 +219,28 @@ But the argument \Q@String@ of \Q@Comparable<String>@ is a constant of the class
 The argument \Q@X@ of \Q@Foo<X>@ is not a constant of the class \Q@MyFoo@: \Q@X@ is free in the declaration of \Q@MyFoo@, and \Q@X@ changes between calls of \Q@m@.
 
 The implementations of method-local classes, and of the similar features of other languages, differ in the granularity of the run-time identity of the local class.
-There are three granularities: one identity per declared class, one identity per instantiation of the enclosing scope, and one identity per evaluation of the declaration.
+There are three granularities: (1)one identity per declared class, (2)one identity per instantiation of the enclosing scope, and (3)one identity per evaluation of the declaration.
 Some languages avoid the choice by forbidding the capture of generic types.
 
-\subsection{One Identity per Declared Class}
+\subsection{(1) One Identity per Declared Class}
 Java has this granularity, and so would a version of Java with reified generics that keeps \Q@MyFoo@ non-generic.
+%explain more what (1) means: talk about the difference of a class declaration point in source code vs the vision that a generic class/method really is a function instantiationg infinite classes/methods.
 In Example~1, such a reified Java needs the argument of \Q@Foo<X>@ in each instance of \Q@MyFoo@, since a reified runtime knows the generic arguments of every instance of \Q@Foo@.
 All instances of \Q@MyFoo@ share one class table, so each instance keeps a field with the argument of \Q@Foo@.
-This leaves two possible implementations of the cast \Q@(MyFoo)other@:
+This leaves two intuitive options for the cast \Q@(MyFoo)other@:
 \begin{enumerate}
 \item The cast checks only the class table, and the cast succeeds. This is the unsoundness of Java, on a reified runtime.
 \item The cast checks the class table and also the stored argument of \Q@Foo@, as a cast to \Q@Foo<Integer>@ would. This rejects Example~1, but only because \Q@X@ occurs in the supertype \Q@Foo<X>@.
 \end{enumerate}
 In Examples~2 to~5, \Q@MyFoo@ extends \Q@Object@: there is no stored argument to check, and the second implementation of the cast succeeds too.
-The second implementation checks exactly the captured generic types that occur in the supertypes of the local class.
-That is, the second implementation funnels only those captured generic types, and leaves the other captured generic types unchecked.
+The second option checks exactly the captured generic types that occur in the supertypes of the local class.
+That is, the second option still leaves the other captured generic types unchecked.
+% this would be much stronger under an example where X is not exposed at all in the signature of MyFoo but only used internally in the method bodies. Do we have one? can we forge one?
 Moreover, in Examples~2 to~5 the signature of \Q@x()@ mentions \Q@X@, but \Q@MyFoo@ has no generic parameter to bind \Q@X@ in a reified runtime.
-A reified Java must either erase \Q@X@ inside \Q@MyFoo@, or make \Q@MyFoo@ generic: that is, funnel \Q@X@.
 
-\subsection{One Identity per Instantiation of the Enclosing Scope}
-In a language which implements parametric polymorphism by templating / heterogeneous compilation
+\subsection{(2)One Identity per Instantiation of the Enclosing Scope}
+In a language which implements parametric polymorphism by generative programming instead of generic programming[cite]
+\footnote{also called templating or heterogeneous compilation}
 (C++, or early experiments with generic Java~\cite{agesen1997adding}),
 each instantiation of \Q@m@ with different generic parameters is compiled separately, resulting in separate
 class declarations for each instantiation.
