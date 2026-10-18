@@ -140,19 +140,53 @@ In Examples~2 to~5, the value with the wrong type is the argument of \Q@f.apply@
 The method \Q@apply@ of the lambda class casts that argument to \Q@String@ before \Q@m@ receives any result from \Q@f.apply@.
 Thus the failure is detected at the same point in Examples~2 to~5, whether or not the bytecode of \Q@m@ contains a \Q@checkcast@ instruction on the result of \Q@f.apply@.
 
-\subsection{Example 6: Class Generics}
-Example~6 moves Example~3 into a generic class:
-\Q@X@ is a generic parameter of the class \Q@Box@ instead of a generic parameter of the method \Q@m@.
+\subsection{Example 6: \texttt{X} Only in Private Members}
+Example~6 exercises the same fault without \Q@X@ in the public signature of \Q@MyFoo@.
+Here \Q@MyFoo@ extends \Q@Object@, and its only public method \Q@show@ takes a \Q@MyFoo@ and returns a \Q@String@.
+\Q@X@ occurs only in the type of the private field \Q@v@, and in the body of \Q@show@, through the captured \Q@f@.
 
 \noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
 // Example 6
+public class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{
+      private final X v= x;
+      public String show(MyFoo o){ return f.apply(o.v); }
+    }
+    MyFoo mine= new MyFoo();
+    if(other instanceof MyFoo local){ // no cast, no warnings
+      System.out.println("old one was "+mine.show(local)); // throws ClassCastException (*\label{line:ex6show}*)
+    }
+    return mine;
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+\end{minipage}
+
+The first call of \Q@m@ returns a \Q@MyFoo@ whose field \Q@v@ holds the \Q@Integer@ \Q@5@.
+In the second call of \Q@m@, \Q@mine@ is a new \Q@MyFoo@ of the second call, and \Q@local@ is the \Q@MyFoo@ of the first call.
+At Line~\ref{line:ex6show}, \Q@mine.show(local)@ applies the \Q@f@ of the second call, the lambda \Q@s->s@, to the field \Q@v@ of \Q@local@, the \Q@Integer@ \Q@5@.
+As in Example~2, the method \Q@apply@ of the lambda class throws the \Q@ClassCastException@.
+No type that a client of \Q@MyFoo@ can see mentions \Q@X@, and still the two instances of \Q@MyFoo@ disagree on \Q@X@.
+
+\subsection{Example 7: Class Generics}
+Example~7 moves Example~3 into a generic class:
+\Q@X@ is a generic parameter of the class \Q@Box@ instead of a generic parameter of the method \Q@m@.
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=2em]
+// Example 7
 class Box<X> {
   final X x;
   Box(X x){ this.x= x; }
   Object m(Object other, Function<X,String> f){
     class MyFoo{ public X x(){ return x; } }
-    if(other instanceof MyFoo local){ // error: Object cannot be safely cast to MyFoo (*\label{line:ex6test}*)
+    if(other instanceof MyFoo local){ // error: Object cannot be safely cast to MyFoo (*\label{line:ex7test}*)
       System.out.println("old one was "+f.apply(local.x()));
     }
     return new MyFoo();
@@ -167,46 +201,46 @@ public class Broken {
 \end{lstlisting}
 \end{minipage}
 
-Example~6 marks the boundary of the family: with class generics, javac does flag the fault.
-javac rejects Example~6 at Line~\ref{line:ex6test}, with the error \Q@Object cannot be safely cast to MyFoo@.
+Example~7 marks the boundary of the family: with class generics, javac does flag the fault.
+javac rejects Example~7 at Line~\ref{line:ex7test}, with the error \Q@Object cannot be safely cast to MyFoo@.
 The method \Q@m@ is an instance method of \Q@Box<X>@, so \Q@MyFoo@ is an inner class of \Q@Box<X>@, with an enclosing instance of type \Q@Box<X>@.
 javac types \Q@MyFoo@ as \Q@Box<X>.MyFoo@, as javac types a member class \Q@MyFoo@ of \Q@Box@.
 So \Q@MyFoo@ is generic in \Q@X@, and \Q@other instanceof MyFoo@ is the uncheckable type test \Q@other instanceof Box<X>.MyFoo@.
 
 The cast is flagged too.
-The following method \Q@m@ replaces the method \Q@m@ of Example~6.
+The following method \Q@m@ replaces the method \Q@m@ of Example~7.
 The type test against \Q@String@ replaces the type test against \Q@MyFoo@, which javac rejects, and the cast of Example~2 follows it.
 
 \noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
-// Example 6 with a cast: the method m of Box
+// Example 7 with a cast: the method m of Box
   Object m(Object other, Function<X,String> f){
     class MyFoo{ public X x(){ return x; } }
     if(other instanceof String){ return new MyFoo(); }
-    MyFoo local= (MyFoo)other; // warning: [unchecked] unchecked cast (*\label{line:ex6cast}*)
+    MyFoo local= (MyFoo)other; // warning: [unchecked] unchecked cast (*\label{line:ex7cast}*)
     System.out.println("old one was "+f.apply(local.x())); // throws ClassCastException
     return local;
   }
 \end{lstlisting}
 \end{minipage}
 
-javac accepts this program, but reports an unchecked warning for the cast at Line~\ref{line:ex6cast}.
+javac accepts this program, but reports an unchecked warning for the cast at Line~\ref{line:ex7cast}.
 At run time the cast succeeds, and the program fails as Example~2 fails.
 So with class generics the program fails only after an unchecked warning, as a program with the cast \Q@(List<String>)o@ may fail.
-In Examples~1 to~5 instead, javac reports nothing.
+In Examples~1 to~6 instead, javac reports nothing.
 
 Thus for the generic parameters of the enclosing class, Java already exposes the captured generic types in the type of the local class:
 the local class is funnelled, through the type of its enclosing instance.
 Java does not do the same for the generic parameters of the enclosing method: no type of the local class carries the instantiation of the generic parameters of a method.
 
-\section{The impact of Generic Reification}
+\section{The Impact of Generic Reification}
 \todo[inline]{Not yet verified: the claims on Roslyn lifted classes, Rust (E0401, closure and opaque type identity, precise capturing), Swift, D, OCaml and SML local exceptions, and Scala outer tests.}
 A natural suspicion is that this problem is ``simply'' a consequence of generic erasure:
 a language that cannot distinguish the generic instantiations of a class at run time must have difficulties of this sort.
 There is some truth to this suspicion: javac accepts a cast that the JVM cannot check, because of erasure.
 However, javac does flag uncheckable type tests:
 for \Q@o@ of type \Q@Object@, javac reports an unchecked warning for the cast \Q@(List<String>)o@, and an error for \Q@o instanceof List<String>@.
-javac reports nothing for Examples~1 to~5 because \Q@MyFoo@ is not generic:
+javac reports nothing for Examples~1 to~6 because \Q@MyFoo@ is not generic:
 the type test of \Q@other@ against \Q@MyFoo@ has no generic argument to leave unchecked.
 
 Reification does not change this by itself.
@@ -219,12 +253,22 @@ But the argument \Q@String@ of \Q@Comparable<String>@ is a constant of the class
 The argument \Q@X@ of \Q@Foo<X>@ is not a constant of the class \Q@MyFoo@: \Q@X@ is free in the declaration of \Q@MyFoo@, and \Q@X@ changes between calls of \Q@m@.
 
 The implementations of method-local classes, and of the similar features of other languages, differ in the granularity of the run-time identity of the local class.
-There are three granularities: (1)one identity per declared class, (2)one identity per instantiation of the enclosing scope, and (3)one identity per evaluation of the declaration.
+There are three granularities: (1) one identity per declared class, (2) one identity per instantiation of the enclosing scope, and (3) one identity per evaluation of the declaration.
 Some languages avoid the choice by forbidding the capture of generic types.
 
 \subsection{(1) One Identity per Declared Class}
-Java has this granularity, and so would a version of Java with reified generics that keeps \Q@MyFoo@ non-generic.
-%explain more what (1) means: talk about the difference of a class declaration point in source code vs the vision that a generic class/method really is a function instantiationg infinite classes/methods.
+\label{sec:identity_per_class}
+A generic method declaration can be seen in two ways.
+In the first view, the declaration is a single point in the source code.
+In the second view, the declaration is a function from generic arguments to methods:
+\Q@static <X> Object m(..)@ declares infinitely many methods \Q@m<Integer>@, \Q@m<String>@, and so on, one for each instantiation of \Q@X@.
+In the same way, the generic class declaration \Q@class Foo<X>@ declares infinitely many classes \Q@Foo<Integer>@, \Q@Foo<String>@, and so on.
+In the first view, the local class \Q@MyFoo@ is one class, since the declaration of \Q@MyFoo@ is one point in the source code.
+In the second view, each method \Q@m<T>@ declares its own local class \Q@MyFoo@, since the body of each \Q@m<T>@ is the body of a different method.
+Granularity (1) follows the first view: the run-time identity of \Q@MyFoo@ is the declaration point of \Q@MyFoo@, the same for every instantiation of \Q@m@.
+Granularity (2) follows the second view.
+
+Java has granularity (1), and so would a version of Java with reified generics that keeps \Q@MyFoo@ non-generic.
 In Example~1, such a reified Java needs the argument of \Q@Foo<X>@ in each instance of \Q@MyFoo@, since a reified runtime knows the generic arguments of every instance of \Q@Foo@.
 All instances of \Q@MyFoo@ share one class table, so each instance keeps a field with the argument of \Q@Foo@.
 This leaves two intuitive options for the cast \Q@(MyFoo)other@:
@@ -232,18 +276,20 @@ This leaves two intuitive options for the cast \Q@(MyFoo)other@:
 \item The cast checks only the class table, and the cast succeeds. This is the unsoundness of Java, on a reified runtime.
 \item The cast checks the class table and also the stored argument of \Q@Foo@, as a cast to \Q@Foo<Integer>@ would. This rejects Example~1, but only because \Q@X@ occurs in the supertype \Q@Foo<X>@.
 \end{enumerate}
-In Examples~2 to~5, \Q@MyFoo@ extends \Q@Object@: there is no stored argument to check, and the second implementation of the cast succeeds too.
+In Examples~2 to~6, \Q@MyFoo@ extends \Q@Object@: there is no stored argument to check, and the cast succeeds under the second option too.
 The second option checks exactly the captured generic types that occur in the supertypes of the local class.
 That is, the second option still leaves the other captured generic types unchecked.
-% this would be much stronger under an example where X is not exposed at all in the signature of MyFoo but only used internally in the method bodies. Do we have one? can we forge one?
 Moreover, in Examples~2 to~5 the signature of \Q@x()@ mentions \Q@X@, but \Q@MyFoo@ has no generic parameter to bind \Q@X@ in a reified runtime.
+Example~6 removes even this: \Q@X@ occurs in no public signature of \Q@MyFoo@, only in the private field \Q@v@ and in the body of \Q@show@.
+No type that a client of \Q@MyFoo@ can see mentions \Q@X@, and Example~6 still fails under both options.
 
-\subsection{(2)One Identity per Instantiation of the Enclosing Scope}
-In a language which implements parametric polymorphism by generative programming instead of generic programming[cite]
-\footnote{also called templating or heterogeneous compilation}
+\subsection{(2) One Identity per Instantiation of the Enclosing Scope}
+In a language which implements parametric polymorphism by generative programming instead of generic programming~\tocite{generative programming}%
+\footnote{Also called templating or heterogeneous compilation.}
 (C++, or early experiments with generic Java~\cite{agesen1997adding}),
 each instantiation of \Q@m@ with different generic parameters is compiled separately, resulting in separate
 class declarations for each instantiation.
+Generative programming makes the second view of Section~\ref{sec:identity_per_class} literal: each instantiation of \Q@m@ is a separate method of the compiled program, with its own local class \Q@MyFoo@.
 Consider reinterpreting Example~1 in C++.
 
 \noindent\begin{minipage}{\linewidth}
@@ -287,9 +333,9 @@ and the type of the closure, or the opaque type, includes those generic paramete
 the \Q@TypeId@ of a closure created in \Q@m::<i32>@ differs from the \Q@TypeId@ of the same closure created in \Q@m::<String>@~\cite{rustClosures}.
 The precise capturing syntax of Rust 2024, \Q@impl Trait + use<T>@, lists explicitly the generic parameters that an opaque type captures~\tocite{Rust precise capturing RFC 3617}.
 
-Heterogeneous compilation has subtle costs and wide-ranging consequences for language design, not just implementation,
+Generative programming has subtle costs and wide-ranging consequences for language design, not just implementation,
 and complex performance consequences~\cite{odersky2001two,kennedy2001design}.
-However, these costs are not intrinsic to this granularity:
+However, these costs are not intrinsic to granularity (2):
 .NET keeps a single implementation for the instantiations at reference types and still gives each instantiation its own run-time identity~\cite{kennedy2001design}.
 
 Each of these sound designs makes the captured generic types part of the identity of the local class.
@@ -297,17 +343,18 @@ That is, each design exposes the captured generic types:
 to the static type system and to the runtime (C++, D, Rust), or only to the runtime (C\# generated classes).
 Each design is a form of funnelling, done by the compiler or by the runtime instead of by the programmer.
 
-\subsection{One Identity per Evaluation of the Declaration}
+\subsection{(3) One Identity per Evaluation of the Declaration}
+Granularity (3) goes one step beyond the second view of Section~\ref{sec:identity_per_class}: each evaluation of a declaration creates a new class, even for the same instantiation of the generic parameters.
 In OCaml, \Q@let exception E of a in ...@ creates a fresh exception constructor each time the declaration is evaluated;
 local exception declarations in Standard ML are generative in the same way~\tocite{OCaml local exceptions, SML generative exceptions}.
 A handler for \Q@E@ does not catch an \Q@E@ raised by another evaluation of the declaration, whatever the instantiation of \Q@a@.
-Scala has the same granularity for captured values instead of captured types.
+Scala has granularity (3) for captured values instead of captured types.
 An instance of an inner class \Q@Inner@ captures its enclosing instance \Q@$outer@, and its type is the path-dependent type \Q@a.Inner@.
 For the pattern \Q@case i: a.Inner@, the Scala compiler emits an ``outer test'' that compares the captured \Q@$outer@ with \Q@a@~\tocite{Scala outer tests}.
 Even here the type system exposes what is captured: inside the class of \Q@a@, \Q@Inner@ means \Q@this.Inner@.
-This granularity is sound, but it is stricter than needed:
+Granularity (3) is sound, but it is stricter than needed:
 a \Q@MyFoo@ created by an earlier call of \Q@m@ with the same instantiation of \Q@X@ would also be rejected.
-This changes the behaviour of programs that are correct with one identity per instantiation of the enclosing scope.
+This changes the behaviour of programs that are correct with granularity (2).
 
 \subsection{Forbidden Capture}
 In Rust, a struct, function or impl declared inside a generic function can not use the generic parameters of the enclosing function (error E0401).
@@ -318,7 +365,7 @@ Swift rejects a type declared inside a generic function~\tocite{Swift: type cann
 We know of no language that keeps a captured generic type private to a local class (absent from the source, from the static type system and from the run-time identity of the class) and still checks the captured generic type at run time.
 As soon as an implementation checks the captured generic type, the captured generic type is part of the identity of the local class: the local class is funnelled.
 
-Funnelling is the static form of one identity per instantiation of the enclosing scope:
+Funnelling is the static form of granularity (2), one identity per instantiation of the enclosing scope:
 in Example~1, \Q@MyFoo@ funnels \Q@X@ and becomes \Q@MyFoo<X>@.
 With erasure, the existing rule of Java then rejects \Q@other instanceof MyFoo<X>@ for \Q@other@ of type \Q@Object@, because \Q@Object@ does not determine \Q@X@.
 These are the two compile-time points of the introduction.
