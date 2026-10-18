@@ -397,20 +397,31 @@ class Broken<> extends Object<>{
 \end{lstlisting}
 
 As in Java, the type of the local class is \Q@MyFoo<>@, with no generic parameters.
-The main expression is the first line of the reduction below.
-In section ... we present type rules and small step reduction.
-The type rules of section ... encode Funnelling.
-With those rules, the example above is ill typed.
-By adding the rule \textsc{new-local-java} we enable the unsound Java typing.
-The example above is well typed using the type rules of section ... and rule \textsc{new-local-java}.
-The main expression has type \Q@B<>@:
-%add HERE the rule \textsc{new-local-java} in the text, with no figure.
-
+Section~\ref{sec:core} presents the type rules and the small step reduction of the core language.
+The type rules of Section~\ref{sec:core} encode funnelling.
+With those type rules, the example above is ill typed: the supertype \Q@Foo<X>@ of \Q@MyFoo@ mentions \Q@X@, but \Q@MyFoo@ does not funnel \Q@X@.
+Rule \textsc{new-local-java} enables the unsound Java typing:
+\begin{mathpar}
+\inferrule[new-local-java]{
+  \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\
+  \kind{\Delta}{\gen{C'}{\pl{T}}}\\\\
+  \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\;\this}{\pl{M}}\\\\
+  \forall C'',\pl{T}'\ldotp\subtype{\Delta}{\gen{C'}{\pl{T}}}{\gen{C''}{\pl{T}'}}\Rightarrow
+    \mathsf{overrideOk}(\gen{C''}{\pl{T}'},\pl{M})
+}{
+  \typing{\Delta}{\Gamma}{
+    \innerobj{C}{}{C'}{\pl{T}}{\pl{e}}{\pl{M}}
+  }{\gen{C}{}}
+}
+\end{mathpar}
+Rule \textsc{new-local-java} types the methods $\pl{M}$ of the local class $C$ under all the bounds $\Delta$ and all the variables $\Gamma$ in scope, except \this, which has type $\gen{C}{}$.
+The example above is well typed using the type rules of Section~\ref{sec:core} and rule \textsc{new-local-java}.
+The main expression is the first line of the reduction below, and it has type \Q@B<>@.
 We now show the small step reduction using the abbreviations \Q@eA@, \Q@vA@ and \Q@vB@, and omitting the renaming of bound variables:
 
 \noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}
-eA = new Broken<>().<A<>>m(new Foo<X>(), new A<>())
+eA = new Broken<>().<A<>>m(new Foo<A<>>(), new A<>())
 vA = new MyFoo<> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }
 vB = new MyFoo<> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }
 
@@ -426,32 +437,29 @@ The first call of \Q@m@ reduces \Q@eA@ to \Q@vA@ with rules \textsc{simpleAddSup
 The type of \Q@vA@ is \Q@MyFoo<>@: the instantiation \Q@A<>@ of \Q@X@ shows only in the supertype \Q@Foo<A<>>@ and in the method \Q@x@.
 In the second call of \Q@m@, rule \textsc{ifThen} checks only that the class of \Q@vA@ is a subclass of \Q@MyFoo@.
 Thus the second call returns \Q@vA@, a \Q@Foo<A<>>@, as a \Q@Foo<B<>>@.
-The last expression calls \Q@onlyB@ on an \Q@A<>@; and \Q@A<>@ does not have a method called \Q@onlyB@; thus the execution goes stuck here.
+The last expression calls \Q@onlyB@ on an \Q@A<>@, and \Q@A<>@ does not have a method called \Q@onlyB@.
+Rule \textsc{searchSuper} looks for \Q@onlyB@ up to \Q@Object<>@, where no rule applies: the reduction is stuck.
 
-
-With funnelling, \Q@MyFoo@ must funnels \Q@X@, and instances of the local class are of type \Q@MyFoo<X>@.
+With funnelling, \Q@MyFoo@ must funnel \Q@X@, written \Q@new MyFoo<X funnel>@,
+and instances of the local class are of type \Q@MyFoo<X>@.
 Rule \textsc{cast-down} (Figure~\ref{fig:cast}) accepts a type test only when the static type determines \Q@X@, as Java does.
-\Q@other instanceof MyFoo<X> w@ is ill typed for \Q@Object<> other@, thus the method \Q@m@ is well typed.
-Note how this is rejected exactly in the same way \Q@myObject instanceof LIst<String>@ is rejected.
+Thus \Q@other instanceof MyFoo<X> w@ is ill typed for \Q@Object<> other@, and the method \Q@m@ is ill typed.
+This is the rule by which Java rejects \Q@o instanceof List<String>@ for \Q@Object o@.
+If we change the signature of \Q@m@ as follows, the method \Q@m@ is well typed:
 
-If we change the signature of \Q@Broken.m@ as follows
+\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}
   <X> Foo<X> m(Foo<X> other, X x){ return
     if (other instanceof MyFoo<X> w){ w }
     else { new MyFoo<X funnel> extends Foo<X>(){ X x(){ return x; } } }; }
 \end{lstlisting}
+\end{minipage}
 
-now \Q@eA@ is \Q@new Broken<>().<A<>>m(new Foo<A<>>(), new A<>())@, a well typed expression of type \Q@Foo<A<>>@,
-but the second call of \Q@m@ would not typecheck:
+Now \Q@eA@ is a well typed expression of type \Q@Foo<A<>>@, but the main expression is ill typed:
+the second call of \Q@m@ expects a \Q@Foo<B<>>@ as the first argument, but \Q@eA@ is a \Q@Foo<A<>>@.
 
-\Q@new Broken<>().<B<>>m(new Broken<>().<A<>>m(new Foo<>(), new A<>()), new B<>()).x().onlyB()@
-
-It expects a \Q@Foo<B<>>@ as the first argument, but we provide a \Q@Foo<A>@ so the main expression is ill typed: 
-
-With reification, method \Q@Broken<>.m(Object<> other, X x)@ 
-would compile but the reduction would change:
-In the second call of \Q@m@, the type test of the \Q@MyFoo<A<>>@ created by the first call against \Q@MyFoo<B<>>@ is false. 
+With reification, the funnelled method \Q@m@ with \Q@Object<> other@ would be well typed, but the reduction would change.
+In the second call of \Q@m@, the type test of the \Q@MyFoo<A<>>@ created by the first call against \Q@MyFoo<B<>>@ is false.
 The second call returns a new \Q@MyFoo<B<>>@, and the main expression reduces to \Q@new B<>()@.
 Reification without funnelling does not help:
-If we allow the value \Q@vA@ to have type \Q@MyFoo<>@, even a reified type test of \Q@vA@ against \Q@MyFoo<>@ would be true.
-
+if we allow the value \Q@vA@ to have type \Q@MyFoo<>@, even a reified type test of \Q@vA@ against \Q@MyFoo<>@ is true.
