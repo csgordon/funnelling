@@ -374,8 +374,6 @@ For \Q@other@ of type \Q@Object@, the existing rules of Java then flag \Q@other 
 These are the two compile-time points of the introduction.
 With reification, the same type test would be accepted by the compiler, and it would return false in the second call of \Q@m@.
 
-%\todo[inline]{ah, we need to check Flix, where maybe we can cook up something roughly like this?}
-
 We now show funnelling on the core language of Section~\ref{sec:core}, a version of Featherweight Java~\cite{fj} rich enough to express the problem.
 The core language has generics, type tests and local classes.
 A local class is written as an expression, like an anonymous class in Java, but with a name:
