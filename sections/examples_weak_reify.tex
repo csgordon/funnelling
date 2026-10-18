@@ -353,7 +353,7 @@ Each of these sound designs follows granularity (2), and makes the captured gene
 in the type system and at run time (C++, D, Rust), or only at run time (C\# generated classes).
 
 Overall, reification simply changes when a cast can be accepted by the type system.
-With reification we can make more expressive run time checks, so a more relaxed type system can still be sound.
+With reification we can have more expressive run time checks, so a more relaxed type system can still be sound.
 
 Granularity (3) is a more extreme version of granularity (2): each evaluation of a declaration creates a new class, even for the same instantiation of the generic parameters.
 In OCaml, \Q@let exception E of a in ...@ creates a fresh exception constructor each time the declaration is evaluated;
@@ -363,37 +363,26 @@ Scala has granularity (3) for captured values instead of captured types.
 An instance of an inner class \Q@Inner@ captures its enclosing instance \Q@$outer@, and its type is the path-dependent type \Q@a.Inner@.
 For the pattern \Q@case i: a.Inner@, the Scala compiler emits an ``outer test'' that compares the captured \Q@$outer@ with \Q@a@~\tocite{Scala outer tests}.
 Even here the type system exposes what is captured: inside the class of \Q@a@, \Q@Inner@ means \Q@this.Inner@.
-Granularity (3) is sound, but it is stricter than needed:
-a \Q@MyFoo@ created by an earlier call of \Q@m@ with the same instantiation of \Q@X@ would also be rejected.
-This changes the behaviour of programs that are correct with granularity (2).
+Granularity (3) is sound, but it is stricter than needed to avoid the problem at hand.
 
-Granularities (1), (2) and (3) are points in a space of design options, from the coarsest identity to the finest one.
-Other points lie between them.
-For example, an identity per instantiation of only some of the generic parameters in scope, skipping the generic parameters that the local class does not use, lies between (1) and (2).
-
-We know of no language that keeps a captured generic type private to a local class (absent from the source, from the static type system and from the run-time identity of the class) and still checks the captured generic type at run time.
-As soon as an implementation checks the captured generic type, the captured generic type is part of the identity of the local class.
-
-Funnelling, our solution, lies between (1) and (2):
+\section{Funnelling}
+Granularities (1), (2) and (3) are points in a space of design options,
+but other points lie between them.
+Funnelling, the approac we present in this paper, lies between (1) and (2):
 in Example~1, \Q@MyFoo@ funnels \Q@X@ and becomes \Q@MyFoo<X>@.
-With erasure, the existing rule of Java then rejects \Q@other instanceof MyFoo<X>@ for \Q@other@ of type \Q@Object@, because \Q@Object@ does not determine \Q@X@.
+The existing rule of Java then rejects \Q@other instanceof MyFoo<X>@ for \Q@other@ of type \Q@Object@, because \Q@Object@ does not determine \Q@X@.
 These are the two compile-time points of the introduction.
-With reification, the same type test returns false in the second call of \Q@m@.
-These are the two run-time points of the introduction.
-The same exposure of \Q@X@ enables all four points.
-Thus funnelling is independent of how generics are implemented, and Section~\ref{sec:core} develops funnelling in a core language without reification.
+With reification, the same type test would be accepted by the compiler, and it would returns false in the second call of \Q@m@.
 
-\todo[inline]{ah, we need to check Flix, where maybe we can cook up something roughly like this?}
+%Can you check what this Flix likely refers to?
+%\todo[inline]{ah, we need to check Flix, where maybe we can cook up something roughly like this?}
 
-This is a problem in other languages (cite cite) as shown in greater details in Rel Work.
-
-Now, assume we have a readable small step reduction over a version of FJ rich enough to express the problem.
-We will assume: 
-- Simple generics
-- A syntax like anonymous inner classes, but where we give them names. We can call them
+We now show Funnelling on a small step reduction over a version of FJ rich enough to express the problem.
+This version of FJ is formally modelled in the next section and supports
+simple generics and a syntax like anonymous inner classes, but where we give them names. We can call them
 named inner classes.
-This imports the concept of method local inner classes within an expression based calculus.
-//our model will also need casts + instanceof
+This imports the concept of method local inner classes within an expression based calculus, allowing us to avoid modelling statements.
+%TODO: write those examples using exactly the syntax of our formalism.
 \begin{lstlisting}
 class A{ A onlyA()-> new A() }
 class B{ B onlyB()-> new B() }
@@ -420,9 +409,8 @@ public class Broken {
 \end{lstlisting}
 \mjnote{answered by Figure~\ref{fig:cast}: with \texttt{other : Object}, \texttt{other instanceof MyFoo<X>} is ill typed, because \texttt{X} is not determined by \texttt{Object} (as javac: \texttt{Object cannot be safely cast to MyFoo<X>}). With \texttt{other : Foo<X>} it is well typed and sound under erasure.}
 
-Note how funnelling purpose is to insert the generics. Without funnelling, MyFoo is a non generic type, so the question about generic reification does not even arise.
-
-small step reduction
+Small step reduction
+% make sure it follows our formalism
 \begin{verbatim}
 01:  new Broken().<B>m(new Broken().<A>m(new Object(),new A()),new B()).x().onlyB();
 02:  new Broken().<B>m(
@@ -460,7 +448,8 @@ small step reduction
        else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
 \end{verbatim}
 
-// Maybe above we want MyFoo:Object<A> and MyFoo:Object<B>?
+%can you understand the meaning of this note?
+%// Maybe above we want MyFoo:Object<A> and MyFoo:Object<B>?
 
 % interface Shape{ Square toSquare(); }
 % class Square extends Shape{Square toSquare(){ return this; } }
