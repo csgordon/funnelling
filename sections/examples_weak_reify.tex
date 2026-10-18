@@ -438,7 +438,7 @@ The type of \Q@vA@ is \Q@MyFoo<>@: the instantiation \Q@A<>@ of \Q@X@ shows only
 In the second call of \Q@m@, rule \textsc{ifThen} checks only that the class of \Q@vA@ is a subclass of \Q@MyFoo@.
 Thus the second call returns \Q@vA@, a \Q@Foo<A<>>@, as a \Q@Foo<B<>>@.
 The last expression calls \Q@onlyB@ on an \Q@A<>@, and \Q@A<>@ does not have a method called \Q@onlyB@.
-Rule \textsc{searchSuper} looks for \Q@onlyB@ up to \Q@Object<>@, and then reduces the call on \Q@Object<>@ to itself forever.
+Rule \textsc{searchSuper} looks for \Q@onlyB@ up to \Q@Object<>@, where no rule applies: the reduction is stuck.
 
 With funnelling, \Q@MyFoo@ must funnel \Q@X@, written \Q@new MyFoo<X funnel>@,
 and instances of the local class are of type \Q@MyFoo<X>@.

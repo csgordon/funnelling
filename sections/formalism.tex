@@ -63,8 +63,10 @@ A funnel $\funnel{X}$ does not bind $X$: it uses the type variable $X$ in scope.
 A method of a local class binds \this, as in Java; this is the only form of shadowing.
 Requirement A6 makes the substitutions of Figure~\ref{fig:substitution} well defined when their domain is a list of funnels.
 Requirement A8 makes inheritance acyclic, except for \Object, which is its own superclass.
-Thus rule \textsc{sub-inherit} can be applied to $\gen{\Object}{}$ forever, and rules \textsc{simpleFieldSuper} and \textsc{searchSuper} reduce a field access or a call on an \Object\ to itself.
-This is harmless: our rules are not meant to be read as algorithms, and a well-typed expression never accesses a field or calls a method of \Object.
+Thus rule \textsc{sub-inherit} can be applied to $\gen{\Object}{}$ forever.
+This is harmless: our rules are not meant to be read as algorithms.
+Rules \textsc{simpleFieldSuper} and \textsc{searchSuper} do not apply to \Object: a field access or a call that reaches \Object\ is stuck.
+A well-typed expression never accesses a field or calls a method of \Object.
 \\[1ex]
 Well-formedness requirements B1-B3 below are about local classes:
 \begin{enumerate}
@@ -210,7 +212,8 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 \and
 \inferrule[simpleFieldSuper]{
     \subclass{C}{\Delta}{C'}{\pl{T}}{\_}{T_1\;f_1\semi\ldots T_n\;f_n\semi}\in\decls\\
-    f\not\in f_1,\ldots,f_n
+    f\not\in f_1,\ldots,f_n\\
+    C\neq\Object
 }{
     \step{
         \obj{C}{\pl{G}}{v_1,\ldots,v_n,\pl{v}}\fstop f
@@ -293,7 +296,8 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 \and
 \inferrule[searchSuper]{
     \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\_}\in\decls\\
-    m\not\in \pl{M}
+    m\not\in \pl{M}\\
+    C\neq\Object
 }{
     \step{
         \explicitcall{v}{\gen{C}{\pl{G}}}{\pl{G}'}{m}{\pl{v}}
