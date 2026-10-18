@@ -366,6 +366,7 @@ Even here the type system exposes what is captured: inside the class of \Q@a@, \
 Granularity (3) is sound, but it is stricter than needed to avoid the problem at hand.
 
 \section{Funnelling}
+\label{sec:funnelling}
 Granularities (1), (2) and (3) are points in a space of design options,
 but other points lie between them.
 Funnelling, the approach we present in this paper, lies between (1) and (2):
@@ -433,7 +434,7 @@ vB = new MyFoo<> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }
 \end{lstlisting}
 \end{minipage}
 
-The first call of \Q@m@ reduces \Q@eA@ to \Q@vA@ with rules \textsc{simpleAddSuper}, \textsc{simpleFound} and \textsc{ifElse} (Figure~\ref{fig:opsem}).
+The first call of \Q@m@ reduces \Q@eA@ to \Q@vA@ with rules \textsc{simpleAddSuper}, \textsc{simpleFound} and \textsc{ifElse} (Section~\ref{sec:opsem}).
 The type of \Q@vA@ is \Q@MyFoo<>@: the instantiation \Q@A<>@ of \Q@X@ shows only in the supertype \Q@Foo<A<>>@ and in the method \Q@x@.
 In the second call of \Q@m@, rule \textsc{ifThen} checks only that the class of \Q@vA@ is a subclass of \Q@MyFoo@.
 Thus the second call returns \Q@vA@, a \Q@Foo<A<>>@, as a \Q@Foo<B<>>@.
@@ -442,7 +443,7 @@ Rule \textsc{searchSuper} looks for \Q@onlyB@ up to \Q@Object<>@, where no rule 
 
 With funnelling, \Q@MyFoo@ must funnel \Q@X@, written \Q@new MyFoo<X funnel>@,
 and instances of the local class are of type \Q@MyFoo<X>@.
-Rule \textsc{cast-down} (Figure~\ref{fig:cast}) accepts a type test only when the static type determines \Q@X@, as Java does.
+Rule \textsc{cast-down} (Section~\ref{sec:cast}) accepts a type test only when the static type determines \Q@X@, as Java does.
 Thus \Q@other instanceof MyFoo<X> w@ is ill typed for \Q@Object<> other@, and the method \Q@m@ is ill typed.
 This is the rule by which Java rejects \Q@o instanceof List<String>@ for \Q@Object o@.
 If we change the signature of \Q@m@ as follows, the method \Q@m@ is well typed:
