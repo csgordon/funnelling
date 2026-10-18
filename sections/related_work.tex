@@ -18,6 +18,13 @@ Gilad also pointed out that (paraphrasing) the BETA people knew an inner class w
 
 \todo[inline]{discuss C\# casts with reified generics}
 
+Flix~\tocite{Flix FAQ, for monomorphization and no subtyping} is a functional language for the JVM.
+The Flix compiler monomorphizes polymorphic functions, as Rust and MLton do.
+Flix has no subtyping.
+The Flix construct closest to a local class is the \Q@new@ expression, which creates an object of an unnamed class that extends a Java class or implements a Java interface~\tocite{Flix anonymous classes}.
+A Flix program can not name such a class, so a Flix program can not write a type test against it, as with the generated classes of C\#.
+Thus the type test of Example~1 can not be written in Flix.
+
 The key issues at work in the interaction of method-local inner classes and generics arise from the interaction of (1) nominal dynamic downcasts, (2) design choices about what runtime information about generic parameters is both persisted \emph{and checked} by casts, and (3) (not) tracking all dependencies on type parameters in the type system.
 Essentially, Java and Scala both treat \Q@MyFoo@ as a sort of existential type --- that there exists some \Q@X@  such that
 \Q@MyFoo@ extends \Q@Foo<X>@. However, treating \Q@MyFoo@ as a closed rather than generic type is equivalent

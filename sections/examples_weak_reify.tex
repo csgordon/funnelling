@@ -368,88 +368,87 @@ Granularity (3) is sound, but it is stricter than needed to avoid the problem at
 \section{Funnelling}
 Granularities (1), (2) and (3) are points in a space of design options,
 but other points lie between them.
-Funnelling, the approac we present in this paper, lies between (1) and (2):
+Funnelling, the approach we present in this paper, lies between (1) and (2):
 in Example~1, \Q@MyFoo@ funnels \Q@X@ and becomes \Q@MyFoo<X>@.
-The existing rule of Java then rejects \Q@other instanceof MyFoo<X>@ for \Q@other@ of type \Q@Object@, because \Q@Object@ does not determine \Q@X@.
+For \Q@other@ of type \Q@Object@, the existing rules of Java then flag \Q@other instanceof MyFoo<X>@ with an error and \Q@(MyFoo<X>)other@ with an unchecked warning, because \Q@Object@ does not determine \Q@X@.
 These are the two compile-time points of the introduction.
-With reification, the same type test would be accepted by the compiler, and it would returns false in the second call of \Q@m@.
+With reification, the same type test would be accepted by the compiler, and it would return false in the second call of \Q@m@.
 
-%Can you check what this Flix likely refers to?
-%\todo[inline]{ah, we need to check Flix, where maybe we can cook up something roughly like this?}
+We now show funnelling on the core language of Section~\ref{sec:core}, a version of Featherweight Java~\cite{fj} rich enough to express the problem.
+The core language has generics, type tests and local classes.
+A local class is written as an expression, like an anonymous class in Java, but with a name:
+\Q@new MyFoo<Fs> extends Foo<Ts>(es){Ms}@ declares the local class \Q@MyFoo@ and creates an instance of it.
+This brings method-local classes into an expression-based calculus, without modelling statements.
+The funnels \Q@Fs@ are the generic parameters of \Q@MyFoo@: a funnel \Q@X funnel@ funnels the type variable \Q@X@ in scope.
+During reduction, \Q@X funnel@ becomes the ground type that instantiates \Q@X@.
+The type test \Q@if (e instanceof T x){ e1 } else { e2 }@ binds \Q@x@ in \Q@e1@; the core language has no casts.
+In the listings, we omit the empty \Q@<>@ of methods and calls, and we write \Q@<X>@ for \Q@<X extends Object<>>@.
+This is Example~1 in the core language, without funnels:
 
-We now show Funnelling on a small step reduction over a version of FJ rich enough to express the problem.
-This version of FJ is formally modelled in the next section and supports
-simple generics and a syntax like anonymous inner classes, but where we give them names. We can call them
-named inner classes.
-This imports the concept of method local inner classes within an expression based calculus, allowing us to avoid modelling statements.
-%TODO: write those examples using exactly the syntax of our formalism.
+\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}
-class A{ A onlyA()-> new A() }
-class B{ B onlyB()-> new B() }
-class Foo<X> extends Object{ X x() {return x();} }
-public class Broken {
-  <X> Foo<X> m(Object other, X x) ->
-    if(other instanceof MyFoo)
-      then ((MyFoo)other)
-      else new MyFoo() extends Foo<X>{ X x(){ return x; } }//Bad
-  }
-main:
-  new Broken().<B>m(new Broken().<A>m(new Object(),new A()),new B()).x().onlyB();
+class A<> extends Object<>{}
+class B<> extends Object<>{ B<> onlyB(){ return new B<>(); } }
+class Foo<X> extends Object<>{ X x(){ return this.x(); } }
+class Broken<> extends Object<>{
+  <X> Foo<X> m(Object<> other, X x){ return
+    if (other instanceof MyFoo<> w){ w }
+    else { new MyFoo<> extends Foo<X>(){ X x(){ return x; } } }; }
+}
 \end{lstlisting}
+\end{minipage}
 
+As in Java, the type of the local class is \Q@MyFoo<>@, with no generic parameters.
+The main expression is the first line of the reduction below.
+Typed as Java does (rule \textsc{new-local-java} of Figure~\ref{fig:java}), the main expression has type \Q@B<>@.
+The reduction uses the abbreviations \Q@eA@, \Q@vA@ and \Q@vB@, and omits the renaming of bound variables:
 
+\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}
-class Foo<X> extends Object{ X x() {return x();} }
-public class Broken {
-  <X> Foo<X> m(Object other, X x) ->
-    if(other instanceof MyFoo<X>) //unchecked instanceof (ill typed in our core)?
-      then ((MyFoo<X>)other)//unchecked cast (ill typed in our core)?
-      else new MyFoo<X>() extends Foo<X>{ public X x(){ return x; } }//good
-  }
+eA = new Broken<>().<A<>>m(new Object<>(), new A<>())
+vA = new MyFoo<> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }
+vB = new MyFoo<> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }
+
+    new Broken<>().<B<>>m(eA, new B<>()).x().onlyB()
+(*$\rightarrow^{\ast}$*) new Broken<>().<B<>>m(vA, new B<>()).x().onlyB()
+(*$\rightarrow^{\ast}$*) (if (vA instanceof MyFoo<> w){ w } else { vB }).x().onlyB()
+(*$\rightarrow$*)  vA.x().onlyB()
+(*$\rightarrow$*)  new A<>().onlyB()
 \end{lstlisting}
-\mjnote{answered by Figure~\ref{fig:cast}: with \texttt{other : Object}, \texttt{other instanceof MyFoo<X>} is ill typed, because \texttt{X} is not determined by \texttt{Object} (as javac: \texttt{Object cannot be safely cast to MyFoo<X>}). With \texttt{other : Foo<X>} it is well typed and sound under erasure.}
+\end{minipage}
 
-Small step reduction
-% make sure it follows our formalism
-\begin{verbatim}
-01:  new Broken().<B>m(new Broken().<A>m(new Object(),new A()),new B()).x().onlyB();
-02:  new Broken().<B>m(
-    if(new Object() instanceof MyFoo<X>)
-      then (MyFoo<A>) new Object()
-      else new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
-      ,new B()).x().onlyB();
-03:  new Broken().<B>m(
-    if(false)
-      then (MyFoo<A>) new Object()
-      else new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
-      ,new B()).x().onlyB();
-04:  new Broken().<B>m(
-       new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
-      ,new B()).x().onlyB();
-05:   (if(new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } } instanceof MyFoo<B>)
-       then (MyFoo<A>) new MyFoo<A>() extends Foo<A>{ public A x()->new A() }
-       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
-06a:  (if(false)//reified gen
-       then (MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
-       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
-07a:  (new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
-08a:  new B().onlyB()
-09a:  new B()//success and different semantic
-06b:  (if(true)//Java
-       then (MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
-       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
-07b:  ((MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }).x().onlyB()
-08b:  (new MyFoo<A>() extends Foo<A>{ public A x()->new A() }).x().onlyB()
-     //assuming cast and instanceof behave consistently (unchecked)
-09b:  new A().x().onlyB()
-10b:  new A().onlyB() //stuck!!
-6c:  (if(err)//compile or at least run time
-       then ((MyFoo<B>) new MyFoo<A>() extends Foo<A>{ public A x(){ return new A(); } }
-       else new MyFoo<B>() extends Foo<B>{ public B x(){ return new B(); } }).x().onlyB()
-\end{verbatim}
+The first call of \Q@m@ reduces \Q@eA@ to \Q@vA@ with rules \textsc{simpleAddSuper}, \textsc{simpleFound} and \textsc{ifElse} (Figure~\ref{fig:opsem}).
+The type of \Q@vA@ is \Q@MyFoo<>@: the instantiation \Q@A<>@ of \Q@X@ shows only in the supertype \Q@Foo<A<>>@ and in the method \Q@x@.
+In the second call of \Q@m@, rule \textsc{ifThen} checks only that the class of \Q@vA@ is a subclass of \Q@MyFoo@.
+Thus the second call returns \Q@vA@, a \Q@Foo<A<>>@, as a \Q@Foo<B<>>@.
+The last expression calls \Q@onlyB@ on an \Q@A<>@: it is ill typed, so reduction does not preserve the type \Q@B<>@ of the main expression.
+In Java, this point is the \Q@checkcast@ that throws the \Q@ClassCastException@.
 
-%can you understand the meaning of this note?
-%// Maybe above we want MyFoo:Object<A> and MyFoo:Object<B>?
+With funnelling, \Q@MyFoo@ funnels \Q@X@, and the type of the local class is \Q@MyFoo<X>@.
+Rule \textsc{cast-down} (Figure~\ref{fig:cast}) accepts a type test only when the static type determines \Q@X@, as Java does.
+Thus \Q@other instanceof MyFoo<X> w@ is ill typed for \Q@Object<> other@, and the funnelled \Q@m@ takes \Q@Foo<X> other@:
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}
+  <X> Foo<X> m(Foo<X> other, X x){ return
+    if (other instanceof MyFoo<X> w){ w }
+    else { new MyFoo<X funnel> extends Foo<X>(){ X x(){ return x; } } }; }
+\end{lstlisting}
+\end{minipage}
+
+Now \Q@eA@ is \Q@new Broken<>().<A<>>m(new Foo<A<>>(), new A<>())@, of type \Q@Foo<A<>>@.
+The second call of \Q@m@ expects a \Q@Foo<B<>>@ for \Q@other@, so the main expression is ill typed: funnelling stops Example~1 at compile time.
+The call \Q@eA@ reduces to \Q@vA@ with \Q@new MyFoo<A<>>@ in place of \Q@new MyFoo<>@: the funnel \Q@X funnel@ became \Q@A<>@.
+The type of this value is \Q@MyFoo<A<>>@, a subtype of \Q@Foo<A<>>@, so reduction preserves the type of \Q@eA@.
+
+With reification, \Q@m@ keeps \Q@Object<> other@ and \Q@eA@ keeps \Q@new Object<>()@; the compiler accepts the type test, and the reduction changes instead.
+A reified type test replaces $\_$ with $\pl{T}$ in the premises $\subtype{\emptyset}{\gen{C}{\pl{G}}}{\gen{C'}{\_}}$ of rules \textsc{ifThen} and \textsc{ifElse}, where $\gen{C'}{\pl{T}}$ is the type in the type test.
+In the second call of \Q@m@, the type test of the \Q@MyFoo<A<>>@ created by the first call against \Q@MyFoo<B<>>@ is false.
+The second call returns a new \Q@MyFoo<B<>>@, and the main expression reduces to \Q@new B<>()@.
+With the erased premise of rule \textsc{ifThen}, the same type test is true, and the second call returns the \Q@MyFoo<A<>>@ as a \Q@Foo<B<>>@:
+this is why rule \textsc{cast-down} rejects the type test.
+Reification without funnelling does not help:
+the value \Q@vA@ has type \Q@MyFoo<>@, and a reified type test of \Q@vA@ against \Q@MyFoo<>@ is true.
 
 % interface Shape{ Square toSquare(); }
 % class Square extends Shape{Square toSquare(){ return this; } }
