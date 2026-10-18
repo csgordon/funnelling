@@ -254,13 +254,14 @@ The argument \Q@X@ of \Q@Foo<X>@ is not a constant of the class \Q@MyFoo@: \Q@X@
 
 The implementations of method-local classes, and of the similar features of other languages, differ in the granularity of the run-time identity of the local class.
 There are three granularities: (1) one identity per declared class, (2) one identity per instantiation of the enclosing scope, and (3) one identity per evaluation of the declaration.
-Some languages avoid the choice by forbidding the capture of generic types.
+\footnote{Some languages avoid the choice by forbidding the capture of generic types. 
+%list examples of those languages.
+}
 
-\subsection{(1) One Identity per Declared Class}
-\label{sec:identity_per_class}
-A generic method declaration can be seen in two ways.
-In the first view, the declaration is a single point in the source code.
-In the second view, the declaration is a function from generic arguments to methods:
+%\subsection{(1) One Identity per Declared Class}
+%\label{sec:identity_per_class}
+In (1), the declaration is a single point in the source code.
+In (2), the declaration is in a 'concrete' class/method, where generic classes and generic methods are seen as functions from generic arguments to concrete classes/methods:
 \Q@static <X> Object m(..)@ declares infinitely many methods \Q@m<Integer>@, \Q@m<String>@, and so on, one for each instantiation of \Q@X@.
 In the same way, the generic class declaration \Q@class Foo<X>@ declares infinitely many classes \Q@Foo<Integer>@, \Q@Foo<String>@, and so on.
 In the first view, the local class \Q@MyFoo@ is one class, since the declaration of \Q@MyFoo@ is one point in the source code.
@@ -268,28 +269,26 @@ In the second view, each method \Q@m<T>@ declares its own local class \Q@MyFoo@,
 Granularity (1) follows the first view: the run-time identity of \Q@MyFoo@ is the declaration point of \Q@MyFoo@, the same for every instantiation of \Q@m@.
 Granularity (2) follows the second view.
 
-Java has granularity (1), and so would a version of Java with reified generics that keeps \Q@MyFoo@ non-generic.
-In Example~1, such a reified Java needs the argument of \Q@Foo<X>@ in each instance of \Q@MyFoo@, since a reified runtime knows the generic arguments of every instance of \Q@Foo@.
-All instances of \Q@MyFoo@ share one class table, so each instance keeps a field with the argument of \Q@Foo@.
-This leaves two intuitive options for the cast \Q@(MyFoo)other@:
-\begin{enumerate}
-\item The cast checks only the class table, and the cast succeeds. This is the unsoundness of Java, on a reified runtime.
-\item The cast checks the class table and also the stored argument of \Q@Foo@, as a cast to \Q@Foo<Integer>@ would. This rejects Example~1, but only because \Q@X@ occurs in the supertype \Q@Foo<X>@.
-\end{enumerate}
-In Examples~2 to~6, \Q@MyFoo@ extends \Q@Object@: there is no stored argument to check, and the cast succeeds under the second option too.
-The second option checks exactly the captured generic types that occur in the supertypes of the local class.
-That is, the second option still leaves the other captured generic types unchecked.
-Moreover, in Examples~2 to~5 the signature of \Q@x()@ mentions \Q@X@, but \Q@MyFoo@ has no generic parameter to bind \Q@X@ in a reified runtime.
-Example~6 removes even this: \Q@X@ occurs in no public signature of \Q@MyFoo@, only in the private field \Q@v@ and in the body of \Q@show@.
-No type that a client of \Q@MyFoo@ can see mentions \Q@X@, and Example~6 still fails under both options.
+Java implements dynamic casts via granularity (1): each class has a declaration point and for each of those there is a \Q@Class<?>@ object whose identity defines the behaviour of java checked casts.
+The Java type system instead, as shown in Example~7, assumes granularity (2): 
+\Q@Box<String>.MyFoo@ and 
+\Q@Box<Integer>.MyFoo@ are different types % check!
+However, generic methods are not threated in the same way, the type is
+\Q@Box<String>.MyFoo@
+not
+\Q@Box<String>.m.MyFoo@.
+If the representation of the type at the type level did contain the method name and the method genric instantiation,
+then the compiler would be able to flag the problem also for generic methods, instead of just for generic types.
 
-\subsection{(2) One Identity per Instantiation of the Enclosing Scope}
-In a language which implements parametric polymorphism by generative programming instead of generic programming~\tocite{generative programming}%
+A version of Java with reified generics, could solve the mismatch between (1) and (2), but that would not change the issue at hand if  it does not starts to represent the types in the form \Q@A<T1>.m<T2>.MyFoo@.
+Example~6 shows that without some explict way to push the needed generics in the public API of the type, they can stay fully private and giving a type error because of a fully private detail would mean a non modular type checking, while giving a dynamic cast error because of a fully private detail would make such a private detail observable and the language overlall (more) unpredictable.
+
+(2) is the default view for languages implementing parametric polymorphism by generative programming instead of generic programming,~\tocite{generative programming}%
 \footnote{Also called templating or heterogeneous compilation.}
-(C++, or early experiments with generic Java~\cite{agesen1997adding}),
-each instantiation of \Q@m@ with different generic parameters is compiled separately, resulting in separate
-class declarations for each instantiation.
-Generative programming makes the second view of Section~\ref{sec:identity_per_class} literal: each instantiation of \Q@m@ is a separate method of the compiled program, with its own local class \Q@MyFoo@.
+like C++ or early experiments with generic Java~\cite{agesen1997adding}.
+There each instantiation of \Q@m@ with different generic parameters is compiled separately, resulting in separate
+class declarations for each instantiation; basically forcing (2) as the interpretation both at compile time and at run time.
+Wach instantiation of \Q@m@ is a separate method of the compiled program, with its own local class \Q@MyFoo@.
 Consider reinterpreting Example~1 in C++.
 
 \noindent\begin{minipage}{\linewidth}
@@ -325,7 +324,7 @@ a local struct \Q@S@ returned from the template function \Q@f@ has the type \Q@f
 
 C\# has no local classes, but its compiler lifts closures, local functions, iterators and async methods into generated classes.
 Inside a generic method \Q@M<T>@, the generated classes are themselves generic in the captured \Q@T@, as in \Q@<>c__DisplayClass0_0<T>@~\tocite{Roslyn lowering}.
-Since .NET reifies generics, the generated classes for \Q@M<int>@ and \Q@M<string>@ have distinct run-time identities.
+Since .NET reifies generics, the generated classes for \Q@M<int>@ and \Q@M<string>@ can be observed as distinct at run-time.
 A programmer can not name these generated classes in C\# source, so a programmer can not write a cast to them.
 
 Rust closures and \Q@impl Trait@ opaque types capture the generic parameters of the enclosing function,
@@ -343,6 +342,8 @@ That is, each design exposes the captured generic types:
 to the static type system and to the runtime (C++, D, Rust), or only to the runtime (C\# generated classes).
 Each design is a form of funnelling, done by the compiler or by the runtime instead of by the programmer.
 
+Overall, reification simply changes when a cast can be accepted by the type system. With reification we can make more expressive run time checks, so a more relaxed type system can still be sound.
+%reviewed up to here
 \subsection{(3) One Identity per Evaluation of the Declaration}
 Granularity (3) goes one step beyond the second view of Section~\ref{sec:identity_per_class}: each evaluation of a declaration creates a new class, even for the same instantiation of the generic parameters.
 In OCaml, \Q@let exception E of a in ...@ creates a fresh exception constructor each time the declaration is evaluated;
