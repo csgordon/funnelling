@@ -16,7 +16,7 @@ public class Broken {
     class MyFoo{ public X x(){ return x; } }
     if(!(other instanceof MyFoo)){ return new MyFoo(); }
     MyFoo local= (MyFoo)other; // cast passes with no warnings (*\label{line:ex2cast}*)
-    System.out.println("old one was "+f.apply(local.x())); // throws ClassCastException (*\label{line:ex2apply}*)
+    System.out.println("old one was "+f.apply(local.x())); //ClassCastException (*\label{line:ex2apply}*)
     return local;
   }
   public static void main(String[] a) {
@@ -57,7 +57,7 @@ public class Broken {
   static <X> Object m(Object other, final X x, Function<X,String> f){
     class MyFoo{ public X x(){ return x; } }
     if(other instanceof MyFoo local){ // no cast, no warnings
-      System.out.println("old one was "+f.apply(local.x())); // throws ClassCastException
+      System.out.println("old one was "+f.apply(local.x())); //ClassCastException
     }
     return new MyFoo();
   }
@@ -83,7 +83,7 @@ public class Broken {
     class MyFoo{ public X x(){ return x; } }
     switch(other){
       case MyFoo local: // no cast, no warnings
-        System.out.println("old one was "+f.apply(local.x())); // throws ClassCastException
+        System.out.println("old one was "+f.apply(local.x())); //ClassCastException
         break;
       default:
         break;
@@ -111,7 +111,7 @@ public class Broken {
     class MyFoo{ public X x(){ return x; } }
     switch(other){
       case MyFoo local: // no cast, no warnings
-        System.out.println("old one was "+f.apply(local.x())); // throws ClassCastException
+        System.out.println("old one was "+f.apply(local.x())); //ClassCastException
         break;
       default:
         break;
@@ -156,7 +156,7 @@ public class Broken {
     }
     MyFoo mine= new MyFoo();
     if(other instanceof MyFoo local){ // no cast, no warnings
-      System.out.println("old one was "+mine.show(local)); // throws ClassCastException (*\label{line:ex6show}*)
+      System.out.println("old one was "+mine.show(local)); //ClassCastException (*\label{line:ex6show}*)
     }
     return mine;
   }
@@ -218,7 +218,7 @@ The type test against \Q@String@ replaces the type test against \Q@MyFoo@, which
     class MyFoo{ public X x(){ return x; } }
     if(other instanceof String){ return new MyFoo(); }
     MyFoo local= (MyFoo)other; // warning: [unchecked] unchecked cast (*\label{line:ex7cast}*)
-    System.out.println("old one was "+f.apply(local.x())); // throws ClassCastException
+    System.out.println("old one was "+f.apply(local.x())); //ClassCastException
     return local;
   }
 \end{lstlisting}
@@ -385,7 +385,6 @@ The type test \Q@if (e instanceof T x){ e1 } else { e2 }@ binds \Q@x@ in \Q@e1@;
 In the listings, we omit the empty \Q@<>@ of methods and calls, and we write \Q@<X>@ for \Q@<X extends Object<>>@.
 This is Example~1 in the core language, without funnels:
 
-\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}
 class A<> extends Object<>{}
 class B<> extends Object<>{ B<> onlyB(){ return new B<>(); } }
@@ -396,16 +395,22 @@ class Broken<> extends Object<>{
     else { new MyFoo<> extends Foo<X>(){ X x(){ return x; } } }; }
 }
 \end{lstlisting}
-\end{minipage}
 
 As in Java, the type of the local class is \Q@MyFoo<>@, with no generic parameters.
 The main expression is the first line of the reduction below.
-Typed as Java does (rule \textsc{new-local-java} of Figure~\ref{fig:java}), the main expression has type \Q@B<>@.
-The reduction uses the abbreviations \Q@eA@, \Q@vA@ and \Q@vB@, and omits the renaming of bound variables:
+In section ... we present type rules and small step reduction.
+The type rules of section ... encode Funnelling.
+With those rules, the example above is ill typed.
+By adding the rule \textsc{new-local-java} we enable the unsound Java typing.
+The example above is well typed using the type rules of section ... and rule \textsc{new-local-java}.
+The main expression has type \Q@B<>@:
+%add HERE the rule \textsc{new-local-java} in the text, with no figure.
+
+We now show the small step reduction using the abbreviations \Q@eA@, \Q@vA@ and \Q@vB@, and omitting the renaming of bound variables:
 
 \noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}
-eA = new Broken<>().<A<>>m(new Object<>(), new A<>())
+eA = new Broken<>().<A<>>m(new Foo<X>(), new A<>())
 vA = new MyFoo<> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }
 vB = new MyFoo<> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }
 
@@ -421,58 +426,32 @@ The first call of \Q@m@ reduces \Q@eA@ to \Q@vA@ with rules \textsc{simpleAddSup
 The type of \Q@vA@ is \Q@MyFoo<>@: the instantiation \Q@A<>@ of \Q@X@ shows only in the supertype \Q@Foo<A<>>@ and in the method \Q@x@.
 In the second call of \Q@m@, rule \textsc{ifThen} checks only that the class of \Q@vA@ is a subclass of \Q@MyFoo@.
 Thus the second call returns \Q@vA@, a \Q@Foo<A<>>@, as a \Q@Foo<B<>>@.
-The last expression calls \Q@onlyB@ on an \Q@A<>@: it is ill typed, so reduction does not preserve the type \Q@B<>@ of the main expression.
-In Java, this point is the \Q@checkcast@ that throws the \Q@ClassCastException@.
+The last expression calls \Q@onlyB@ on an \Q@A<>@; and \Q@A<>@ does not have a method called \Q@onlyB@; thus the execution goes stuck here.
 
-With funnelling, \Q@MyFoo@ funnels \Q@X@, and the type of the local class is \Q@MyFoo<X>@.
+
+With funnelling, \Q@MyFoo@ must funnels \Q@X@, and instances of the local class are of type \Q@MyFoo<X>@.
 Rule \textsc{cast-down} (Figure~\ref{fig:cast}) accepts a type test only when the static type determines \Q@X@, as Java does.
-Thus \Q@other instanceof MyFoo<X> w@ is ill typed for \Q@Object<> other@, and the funnelled \Q@m@ takes \Q@Foo<X> other@:
+\Q@other instanceof MyFoo<X> w@ is ill typed for \Q@Object<> other@, thus the method \Q@m@ is well typed.
+Note how this is rejected exactly in the same way \Q@myObject instanceof LIst<String>@ is rejected.
 
-\noindent\begin{minipage}{\linewidth}
+If we change the signature of \Q@Broken.m@ as follows
 \begin{lstlisting}
   <X> Foo<X> m(Foo<X> other, X x){ return
     if (other instanceof MyFoo<X> w){ w }
     else { new MyFoo<X funnel> extends Foo<X>(){ X x(){ return x; } } }; }
 \end{lstlisting}
-\end{minipage}
 
-Now \Q@eA@ is \Q@new Broken<>().<A<>>m(new Foo<A<>>(), new A<>())@, of type \Q@Foo<A<>>@.
-The second call of \Q@m@ expects a \Q@Foo<B<>>@ for \Q@other@, so the main expression is ill typed: funnelling stops Example~1 at compile time.
-The call \Q@eA@ reduces to \Q@vA@ with \Q@new MyFoo<A<>>@ in place of \Q@new MyFoo<>@: the funnel \Q@X funnel@ became \Q@A<>@.
-The type of this value is \Q@MyFoo<A<>>@, a subtype of \Q@Foo<A<>>@, so reduction preserves the type of \Q@eA@.
+now \Q@eA@ is \Q@new Broken<>().<A<>>m(new Foo<A<>>(), new A<>())@, a well typed expression of type \Q@Foo<A<>>@,
+but the second call of \Q@m@ would not typecheck:
 
-With reification, \Q@m@ keeps \Q@Object<> other@ and \Q@eA@ keeps \Q@new Object<>()@; the compiler accepts the type test, and the reduction changes instead.
-A reified type test replaces $\_$ with $\pl{T}$ in the premises $\subtype{\emptyset}{\gen{C}{\pl{G}}}{\gen{C'}{\_}}$ of rules \textsc{ifThen} and \textsc{ifElse}, where $\gen{C'}{\pl{T}}$ is the type in the type test.
-In the second call of \Q@m@, the type test of the \Q@MyFoo<A<>>@ created by the first call against \Q@MyFoo<B<>>@ is false.
+\Q@new Broken<>().<B<>>m(new Broken<>().<A<>>m(new Foo<>(), new A<>()), new B<>()).x().onlyB()@
+
+It expects a \Q@Foo<B<>>@ as the first argument, but we provide a \Q@Foo<A>@ so the main expression is ill typed: 
+
+With reification, method \Q@Broken<>.m(Object<> other, X x)@ 
+would compile but the reduction would change:
+In the second call of \Q@m@, the type test of the \Q@MyFoo<A<>>@ created by the first call against \Q@MyFoo<B<>>@ is false. 
 The second call returns a new \Q@MyFoo<B<>>@, and the main expression reduces to \Q@new B<>()@.
-With the erased premise of rule \textsc{ifThen}, the same type test is true, and the second call returns the \Q@MyFoo<A<>>@ as a \Q@Foo<B<>>@:
-this is why rule \textsc{cast-down} rejects the type test.
 Reification without funnelling does not help:
-the value \Q@vA@ has type \Q@MyFoo<>@, and a reified type test of \Q@vA@ against \Q@MyFoo<>@ is true.
+If we allow the value \Q@vA@ to have type \Q@MyFoo<>@, even a reified type test of \Q@vA@ against \Q@MyFoo<>@ would be true.
 
-% interface Shape{ Square toSquare(); }
-% class Square extends Shape{Square toSquare(){ return this; } }
-%
-%
-%
-% public class Broken {
-%   static <X> Foo<X,?> m(Top<?> other, final X x){
-%     class MyFoo extends Foo<X,MyFoo>{
-%       public X x(){ return x; }
-%       public MyFoo myFooOrElse(MyFoo myFoo){ return this; }
-%     }
-%     return other.selfOrElse(new MyFoo());
-%   }
-%   public static void main(String[] a) {
-%     Foo<Integer> r1= Broken.<Integer>m(new Top<String>(),5);
-%     Foo<String> r2= Broken.<String>m(r1,"Hi");
-%     System.out.println(r1.x());//5
-%     System.out.println(r2.x());//Throws ClassCastException: ..
-%   }
-% }
-% class Top<S>{
-%   public S selfOrElse(S s){ return s; }
-%   }
-% class Foo<X,S> extends Top<S>{ public X x() {return x();} }
-%
-%
