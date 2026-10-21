@@ -9,7 +9,7 @@ Both variants use the type test of Java:
 rule \textsc{if-instanceof} accepts only checked casts (Section~\ref{sec:cast}), and at run time rules \textsc{ifThen} and \textsc{ifElse} compare class names only.
 As shown in Section~\ref{sec:core}, $\zeta(\mathsf{Java})$ is unsound.
 We now show that $\zeta(\mathsf{funnelled})$ is sound.
-In the statements below, \decls is a class table that satisfies well-formedness requirements A1-A8 and B1-B3, and $\mathsf{Dec}~\mathrm{Ok}$ holds for every $\mathsf{Dec}\in\decls$.
+In the statements below, \decls is a class table that satisfies well-formedness requirements A1-A9, and $\mathsf{Dec}~\mathrm{Ok}$ holds for every $\mathsf{Dec}\in\decls$.
 The expression $e$ is reachable: $e_0\rightarrow^* e$ for a main expression $e_0$ with $\vdash\decls\;e_0~\mathrm{Ok}$, where $\rightarrow^*$ is the reflexive and transitive closure of $\rightarrow$.
 Reachability gives the property of the names bound inside $e$ that Section~\ref{sec:core} derives from $\mathsf{fresh}$.
 

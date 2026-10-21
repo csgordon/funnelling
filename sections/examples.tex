@@ -166,7 +166,7 @@ public class Broken {
     if(!(other instanceof MyFoo)){ return new MyFoo(); }
     MyFoo local= (MyFoo)other;//cast pass with no warnings
     System.out.println("Pass with " + x);
-    System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException
+    System.out.println("old was "+f.apply(local.x()));//throws ClassCastException
     return local;
   }
   public static void main(String[] a) {
@@ -183,7 +183,7 @@ public class Broken {
     if(!(other instanceof MyFoo)){ return new MyFoo(); }
     MyFoo local= (MyFoo)other;//cast pass with no warnings
     System.out.println("Pass with " + x);
-    System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException
+    System.out.println("old was "+f.apply(local.x()));//throws ClassCastException
     return local;
   }
   public static void main(String[] a) {
@@ -199,7 +199,7 @@ public class Broken {
     class MyFoo{ public X x(){ return x; } }
     if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
       System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
-      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
+      System.out.println("old was "+f.apply(local.x()));//throws ClassCastException    
      }
   return new MyFoo();//snekly it is MyFoo<Integer>
   }
@@ -220,14 +220,14 @@ class Broken {
     switch (other) {
         case MyFoo local: // implicit unchecked cast
             System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
-            System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException (on the return of f.apply)
+            System.out.println("old was "+f.apply(local.x()));//throws ClassCastException (on the return of f.apply)
             break;
         default:
             break;
     }
     if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
       System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
-      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
+      System.out.println("old was "+f.apply(local.x()));//throws ClassCastException    
      }
   return new MyFoo();//snekly it is MyFoo<Integer>
   }
@@ -248,14 +248,14 @@ class Broken {
     switch (other) {
         case MyFoo local:
             System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
-            System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException 
+            System.out.println("old was "+f.apply(local.x()));//throws ClassCastException 
             break;
         default:
             break;
     }
     if(other instanceof MyFoo local){ //new instanceof+introduce var (pass with no warnings)
       System.out.println("Pass with " + x); //snekly `local` is MyFoo<Integer> even when this is Brokem.<String>m(..)
-      System.out.println("old one was "+f.apply(local.x()));//throws ClassCastException    
+      System.out.println("old was "+f.apply(local.x()));//throws ClassCastException    
      }
   return new MyFoo();//snekly it is MyFoo<Integer>
   }

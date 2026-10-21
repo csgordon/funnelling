@@ -45,39 +45,47 @@ Replacing rule \textsc{new-local} with rule \textsc{new-local-java} of Section~\
 \]
 
 \noindent
+An expression is a variable $x$, a method call, an explicit call, a field access $e\fstop f$, an object creation, a local class or a type test.
+The variable \this is a variable $x$.
+A method call $\call{e}{\pl{T}}{m}{\pl{e}}$ calls the method $m$ on the receiver $e$, with type arguments $\pl{T}$ and arguments $\pl{e}$.
+An explicit call $\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}$ searches the method $m$ starting from the class of the type $T$, instead of from the class of the receiver $e$.
+The reduction uses explicit calls to search a method along the chain of superclasses.
+An object creation $\obj{C}{\pl{T}}{\pl{e}}$ creates an instance of the top-level class $\gen{C}{\pl{T}}$.
+The arguments $\pl{e}$ are the values of the fields of $C$, followed by the arguments of the object creation of the superclass of $C$.
+A local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ declares the local class $C$ and creates an instance of $C$.
+The funnels $\pl{F}$ are the generic parameters of $C$.
+A funnel is either a ground type $G$ or a funnelled type variable $\funnel{X}$.
+A funnel $\funnel{X}$ does not bind $X$: the funnel $\funnel{X}$ uses the type variable $X$ in scope.
+A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $\gen{C'}{\pl{T}}$.
+The methods $\pl{M}$ of a local class can use the variables and the type variables in scope.
+The type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ reduces to $e_1$, with $x$ bound to the value of $e_0$, when the value of $e_0$ is an instance of $T$; otherwise the type test reduces to $e_2$.
+\\[1ex]
+A type is a class type $\gen{C}{\pl{T}}$ or a type variable $X$.
+A ground type $G$ is a type with no type variables.
+A type environment $\Gamma$ gives a type to each variable in scope.
+Bounds $\Delta$ give an upper bound to each type variable in scope.
+A declaration $\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}$ declares the top-level class $C$ with the type variables bounded by $\Delta$, the superclass $\gen{C'}{\pl{T}}$, the methods $\pl{M}$ and the fields $\pl{S}$.
+A method $\method{\Delta}{T_0}{m}{T_1\;x_1,\ldots,T_n\;x_n}{\ret{e}}$ has the type variables bounded by $\Delta$, the return type $T_0$, the parameters $x_1,\ldots,x_n$ and the body $e$.
+Every method has a body: there are no abstract methods.
+A class declaration $K$ is either a top-level declaration $\mathsf{Dec}$ or a local class.
+The superclass of every class, top-level or local, is a top-level class: local classes cannot be extended.
+\\[1ex]
 A program is a class table \decls and a main expression $e$.
 We require the following well-formedness conditions:
 \begin{enumerate}
     \item[(A1)] Class names are unique across top-level and local classes.
-    \item[(A2)] Field names are unique across all classes.
-    \item[(A3)] In a class, top-level or local, all method names are disjoint.
-    \item[(A4)] In a method, all the parameters $x_1,\ldots,x_n$ are disjoint.
+    \item[(A2)] In a class, all the field names, including the field names of the superclasses, are disjoint.
+    \item[(A3)] In a class, top-level or local, all the method names are disjoint.
+    \item[(A4)] In a method, all the parameter names $x_1,\ldots,x_n$ are disjoint.
     \item[(A5)] In a $\Delta$, all the $X$ are disjoint.
     \item[(A6)] In a list of funnels $\pl{F}$, all the funnelled type variables are disjoint.
-    \item[(A7)] There is no shadowing of $X$ or $x$, except for \this. No parameter and no variable of an \kw{if} is \this.
-    \item[(A8)] \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every other top-level class reaches \Object.
+    \item[(A7)] There is no shadowing of $X$ or $x$, except for \this.
+    \item[(A8)] No parameter and no variable of an \kw{if} is \this.
+    \item[(A9)] \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every other top-level class reaches \Object.
 \end{enumerate}
-Well-formedness requirements A1-A8 are common requirements, such as uniqueness of names.
+Well-formedness requirements A1-A9 are common requirements, such as uniqueness of names.
 To simplify scoping, no shadowing is allowed.
-A funnel $\funnel{X}$ does not bind $X$: it uses the type variable $X$ in scope.
-A method of a local class binds \this, as in Java; this is the only form of shadowing.
-Requirement A6 makes the substitutions of Section~\ref{sec:substitution} well defined when their domain is a list of funnels.
-Requirement A8 makes inheritance acyclic, except for \Object, which is its own superclass.
-Thus rule \textsc{sub-inherit} can be applied to $\gen{\Object}{}$ forever.
-This is harmless: our rules are not meant to be read as algorithms.
-Rules \textsc{simpleFieldSuper} and \textsc{searchSuper} do not apply to \Object: a field access or a call that reaches \Object\ is stuck.
-A well-typed expression never accesses a field or calls a method of \Object.
-\\[1ex]
-Well-formedness requirements B1-B3 below are about local classes:
-\begin{enumerate}
-    \item[(B1)] The main expression contains no local classes.
-    \item[(B2)] Local classes cannot be extended: the superclass of every class, top-level or local, is a top-level class.
-    \item[(B3)] In a local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$, every funnelled type variable is in scope.
-\end{enumerate}
-Requirement B1 makes every local class occur in a method body: the judgement $\declared{K}$ and the function $\mathsf{scope}$ of Section~\ref{sec:declarations} only search method bodies.
-Requirements B2 and B3 are enforced by the type system, but we call them out because they are explicit design choices.
-Requirement B1 is also enforced by rule \textsc{new-local}: a local class $C$ in the main expression is not declared, so no type $\gen{C}{\pl{T}}$ is well kinded.
-Rule \textsc{new-local-java} of Section~\ref{sec:funnelling} does not check the kinding of the type of the local class; under rule \textsc{new-local-java}, requirement B1 is needed.
+A method body of a local class also binds \this, thus shadowing the \this of the enclosing method; this is the only form of shadowing.
 
 \subsection{Values and Contexts}
 \label{sec:contexts}
@@ -206,7 +214,7 @@ For example, consider a local class \QQ{L} whose method \QQ{m} has a parameter \
 The body of a call of \QQ{m} then contains the captured value, and the captured value contains a copy of the method \QQ{m} binding \QQ{x} again.
 Without renaming, rule \textsc{innerFound} would replace \QQ{x} also in the method \QQ{m} of the captured value.
 With renaming, the domain of every substitution is disjoint from the names bound inside the substituted expression.
-Only values of local classes carry code, by requirement B1 local classes occur only in method bodies,
+Only values of local classes carry code, local classes occur only in method bodies since rule \textsc{new-local} gives no type to a local class in the main expression,
 and a method body enters the reduced expression only through rules \textsc{simpleFound} and \textsc{innerFound}, renamed by $\mathsf{fresh}$.
 A substitution can copy a value, so several copies of a value can bind the same names.
 Those names are never in the domain of a later substitution.

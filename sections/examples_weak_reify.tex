@@ -16,7 +16,7 @@ public class Broken {
     class MyFoo{ public X x(){ return x; } }
     if(!(other instanceof MyFoo)){ return new MyFoo(); }
     MyFoo local= (MyFoo)other; // cast passes with no warnings (*\label{line:ex2cast}*)
-    System.out.println("old one was "+f.apply(local.x())); //ClassCastException (*\label{line:ex2apply}*)
+    System.out.println("old was "+f.apply(local.x())); //ClassCastException (*\label{line:ex2apply}*)
     return local;
   }
   public static void main(String[] a) {
@@ -57,7 +57,7 @@ public class Broken {
   static <X> Object m(Object other, final X x, Function<X,String> f){
     class MyFoo{ public X x(){ return x; } }
     if(other instanceof MyFoo local){ // no cast, no warnings
-      System.out.println("old one was "+f.apply(local.x())); //ClassCastException
+      System.out.println("old was "+f.apply(local.x())); //ClassCastException
     }
     return new MyFoo();
   }
@@ -83,7 +83,7 @@ public class Broken {
     class MyFoo{ public X x(){ return x; } }
     switch(other){
       case MyFoo local: // no cast, no warnings
-        System.out.println("old one was "+f.apply(local.x())); //ClassCastException
+        System.out.println("old was "+f.apply(local.x())); //ClassCastException
         break;
       default:
         break;
@@ -111,7 +111,7 @@ public class Broken {
     class MyFoo{ public X x(){ return x; } }
     switch(other){
       case MyFoo local: // no cast, no warnings
-        System.out.println("old one was "+f.apply(local.x())); //ClassCastException
+        System.out.println("old was "+f.apply(local.x())); //ClassCastException
         break;
       default:
         break;
@@ -156,7 +156,7 @@ public class Broken {
     }
     MyFoo mine= new MyFoo();
     if(other instanceof MyFoo local){ // no cast, no warnings
-      System.out.println("old one was "+mine.show(local)); //ClassCastException (*\label{line:ex6show}*)
+      System.out.println("old was "+mine.show(local)); //ClassCastException (*\label{line:ex6show}*)
     }
     return mine;
   }
@@ -187,7 +187,7 @@ class Box<X> {
   Object m(Object other, Function<X,String> f){
     class MyFoo{ public X x(){ return x; } }
     if(other instanceof MyFoo local){ // error: Object cannot be safely cast to MyFoo (*\label{line:ex7test}*)
-      System.out.println("old one was "+f.apply(local.x()));
+      System.out.println("old was "+f.apply(local.x()));
     }
     return new MyFoo();
   }
@@ -218,7 +218,7 @@ The type test against \Q@String@ replaces the type test against \Q@MyFoo@, which
     class MyFoo{ public X x(){ return x; } }
     if(other instanceof String){ return new MyFoo(); }
     MyFoo local= (MyFoo)other; // warning: [unchecked] unchecked cast (*\label{line:ex7cast}*)
-    System.out.println("old one was "+f.apply(local.x())); //ClassCastException
+    System.out.println("old was "+f.apply(local.x())); //ClassCastException
     return local;
   }
 \end{lstlisting}
@@ -363,7 +363,7 @@ Scala has granularity (3) for captured values instead of captured types.
 An instance of an inner class \Q@Inner@ captures its enclosing instance \Q@$outer@, and its type is the path-dependent type \Q@a.Inner@.
 For the pattern \Q@case i: a.Inner@, the Scala compiler emits an ``outer test'' that compares the captured \Q@$outer@ with \Q@a@~\tocite{Scala outer tests}.
 Even here the type system exposes what is captured: inside the class of \Q@a@, \Q@Inner@ means \Q@this.Inner@.
-Granularity (3) is sound, but it is stricter than needed to avoid the problem at hand.
+Granularity (3) is sound\footnote{Granularity (3) also has many other useful applications, but those applications are unconnected with the problem at hand.}, but it is stricter than needed to avoid the problem at hand.
 
 \section{Funnelling}
 \label{sec:funnelling}
@@ -415,6 +415,14 @@ Rule \textsc{new-local-java} enables the unsound Java typing:
   }{\gen{C}{}}
 }
 \end{mathpar}
+Rule \textsc{new-local-java} uses the syntax \Q@new C<> extends C'<Ts>(es){Ms}@.
+This syntax is an intermediate form between method-local classes and anonymous classes of Java.
+A method-local class \Q@class C<> extends C'<Ts>{ C(){ super(es); } Ms }@ is declared first, and then instantiated with \Q@new C<>()@.
+An anonymous class \Q@new C'<Ts>(es){Ms}@ is declared and instantiated by a single expression.
+The syntax \Q@new C<> extends C'<Ts>(es){Ms}@ forms a (named) local class.
+A local class creates an instance as an anonymous class does, thus a local class is easy to use in an expression-based language.
+A local class also declares its own name, thus \Q@instanceof@ can test for a local class.
+\\[1ex]
 Rule \textsc{new-local-java} types the methods $\pl{M}$ of the local class $C$ under all the bounds $\Delta$ and all the variables $\Gamma$ in scope, except \this, which has type $\gen{C}{}$.
 The example above is well typed using the type rules of Section~\ref{sec:core} and rule \textsc{new-local-java}.
 The main expression is the first line of the reduction below, and it has type \Q@B<>@.
