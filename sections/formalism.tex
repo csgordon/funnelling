@@ -44,7 +44,7 @@ Replacing rule \textsc{new-local} with rule \textsc{new-local-java} of Section~\
 \end{array}
 \]
 
-\noindent
+\noindent\begin{sloppypar}
 An expression is a variable $x$, a method call $\call{e}{\pl{T}}{m}{\pl{e}}$, a super call $\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}$, a field access $e\fstop f$, an object creation $\obj{C}{\pl{T}}{\pl{e}}$ for a top-level type, a local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ or a type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$.\footnote{The syntax \Q@if (a instanceof B c)@ is valid Java since Java 16.}
 As in FJ, \this is just a special case of a variable $x$.
 A method call $\call{e}{\pl{T}}{m}{\pl{e}}$ calls the method $m$ on the receiver $e$, with type arguments $\pl{T}$ and arguments $\pl{e}$.
@@ -53,23 +53,29 @@ That is, a super call works as a flexible kind of super call, attempting to call
 An object creation $\obj{C}{\pl{T}}{\pl{e}}$ creates an instance of the top-level class $\gen{C}{\pl{T}}$.
 The arguments $\pl{e}$ are the values of the fields of $C$, followed by the arguments of the object creation of the superclass of $C$.
 A local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ declares the local class $C$ and creates an instance of $C$.
+\end{sloppypar}
 
 The funnels $\pl{F}$ serve a double role.
 From the perspective of the inside of the local class (the methods $\pl{M}$), the funnels $\pl{F}$ declare the generics visible in the local class.
 From the perspective of the \kw{new} expression itself, the funnels $\pl{F}$ instantiate those generic parameters, forming the actual type of the created instance.
 
 To allow a local class instance to exist in the main expression, a funnel is either a ground type $G$ or a funnelled type variable $\funnel{X}$.
+In a method body, we expect all the funnels to be of the form $\funnel{X}$.
+Directly in the main expression, we expect all the funnels to be of the form $G$.
+When a local class is deeply nested in a local class in the main expression, a mixture of funnels $\funnel{X}$ and $G$ can be present.
+
 A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $\gen{C'}{\pl{T}}$.
 The methods $\pl{M}$ of a local class can use the variables and the type variables in scope.
 The type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ reduces to $e_1$, with $x$ bound to the value of $e_0$, when the value of $e_0$ is an instance of $T$; otherwise the type test reduces to $e_2$.
 \\[1ex]
 A type is a class type $\gen{C}{\pl{T}}$ or a type variable $X$.
 A ground type $G$ is a type with no type variables.
-A type environment $\Gamma$ gives a type to each variable in scope.
+A ground type is the equivalent of a value, but at the type level.
+The conventional type environment $\Gamma$ gives a type to each variable in scope.
 Bounds $\Delta$ give an upper bound to each type variable in scope.
 A declaration $\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}$ declares the top-level class $C$ with the type variables bounded by $\Delta$, the superclass $\gen{C'}{\pl{T}}$, the methods $\pl{M}$ and the fields $\pl{S}$.
 A method $\method{\Delta}{T_0}{m}{T_1\;x_1,\ldots,T_n\;x_n}{\ret{e}}$ has the type variables bounded by $\Delta$, the return type $T_0$, the parameters $x_1,\ldots,x_n$ and the body $e$.
-Every method has a body: there are no abstract methods.
+Every method has a body; for simplicity, as in FJ, there are no abstract methods.
 A class declaration $K$ is either a top-level declaration $\mathsf{Dec}$ or a local class.
 The superclass of every class, top-level or local, is a top-level class: local classes cannot be extended.
 \\[1ex]
@@ -217,7 +223,8 @@ For example, consider a local class \QQ{L} whose method \QQ{m} has a parameter \
 The body of a call of \QQ{m} then contains the captured value, and the captured value contains a copy of the method \QQ{m} binding \QQ{x} again.
 Without renaming, rule \textsc{innerFound} would replace \QQ{x} also in the method \QQ{m} of the captured value.
 With renaming, the domain of every substitution is disjoint from the names bound inside the substituted expression.
-Only values of local classes carry code, local classes occur only in method bodies since rule \textsc{new-local} gives no type to a local class in the main expression,
+Only values of local classes carry code.
+A local class in the reduced expression is either written in the main expression or comes from a method body,
 and a method body enters the reduced expression only through rules \textsc{simpleFound} and \textsc{innerFound}, renamed by $\mathsf{fresh}$.
 A substitution can copy a value, so several copies of a value can bind the same names.
 Those names are never in the domain of a later substitution.
