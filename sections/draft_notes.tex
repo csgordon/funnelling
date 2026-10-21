@@ -1,0 +1,76 @@
+\section{Draft Notes}
+
+Marco had this idea that casts may be avoided by using dynamic dispatch returning this.
+Can not work, since Meth local class is private, there is no way an external interface can mention it to provide the cast method.
+Of course, the method local is private to the body (this means also the method signature can not use it)
+This means no self:Foo method, nor self:T method of a generic class eventually instantiating T=Foo.
+
+This means the core language DO NEED if(e instanceof T x){} else {}
+
+//nested funnelling:
+  new A<X>(){ B<X> f()-> new B<X>(){} }
+  new A<X>(){ <K>B<X,K> f()-> new B<X,K>(){} }
+
+using 'extends' for declarations in top level classes and generic methods
+using 'funnel' for named inner classes
+  new A<X funnel Object>(){ B<X> f()-> new B<X funnel Object>(){} }
+  new A<X funnel Object>(){ <K extends Object> B<X,K> f()-> new B<X funnel Object,K funnel Object>(){} }
+  or, if the bounds are not repeated
+  new A<X funnel>(){ <K extends Object> B<X,K> f()-> new B<X funnel,K funnel>(){} }
+Very funky syntax:
+we get new B<X funnel Object,K funnel Object>(){}
+but, during reduction, this can become 
+we get new B<Person,K funnel Object>(){}
+where we have a mixture of concrete types and generic funnelling
+
+Global class definition uses class C<X extends Bar>{..}
+named method local class uses new C<X funnel>(){..}
+normal new: new C<Ts>()
+
+\begin{verbatim}
+e ::= x | e.m(es) | e.f | new C<Ts>(es) | new C<Fs>(){Ms} | if (e0 instanceof T x){ e1 }else{ e2 }
+T ::= C<Ts> | X
+F ::= C<CCs> | X funnel// Important, can not be T | X funnel, otherwise we could have an X not 'funnelled'
+CC::= C<CCs> //types with zero free type variables
+B::=  X extends T // Need T, not F, to be able to do things like (Java) class Bar<X,Y extends X> {}
+Dec::= class C<Bs>{ Ms Ss} //assume standard constructor
+S ::= T x; //field/slot
+M ::= Sig; | Sig{ return e; }
+Sig::= <Bs> T m(x1:T1,..xn:Tn)
+G ::= x1:T1..xn:Tn
+\end{verbatim}
+//we do not need Object to be able to write 'extends Object'
+//this is exactly as the distinction of checked and unchecked exceptions: formally it evaporates in syntacitc sugar where all is checked
+//and all methods 'throws Error, RTE'
+// Can assume the user provides their own Object type
+Note: an use of X is just X, a declaration of X is X extends T; a funnelling of X is X funnel
+Program is just many Dec plus an e typable in empty
+MARCO TODO: 
+  typechecking
+    Decs;Bs;G|-e:T
+    Decs|-Dec:ok
+    Decs;T|-M:ok
+    e --> e'
+Note, there are multiple semantics/ts:
+  e instanceof CC //always clear
+  e instanceof T with T not of form CC would not typecheck
+
+  e --> e' for 
+  Java with warn->err: just have CC in instanceof
+  Java with magic reifined cast: just have T in instanceof (since reduction will replace(thus remember) generics
+  Java with warn->off:
+        AT RUN TIME instanceof only checks base class, ignores generic parameters
+        AT COMPLILE TIME, instanceof can be err if the full type (including generics) is not potentially correlated)?? unobvious consider interfaces
+        In prose, should explain that we won't flag cast of some type Foo to some type Bar, even though Java sometimes flags unrelated casts
+\mjnote{these three semantics are replaced by the single one of Java 16+: erased run-time check, plus the checked-cast premise of rule \textsc{if-instanceof} (Section~\ref{sec:cast}). Unrelated types are rejected by it, as in Java.}
+
+<X extends List<Y funnel>>
+
+class Foo<X> {
+    class Getter<X funnel> {
+        <Y extends List<X>> X getFirst(Y y) { y.getOrElse(0,null) }
+    }
+}
+
+<Y> .. return foo<Y,MyX>();
+<Y,X extends List<Y>> foo(){ return Foo<X funnel>(){... X }; }
