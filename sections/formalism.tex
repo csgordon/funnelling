@@ -61,8 +61,8 @@ From the perspective of the \kw{new} expression itself, the funnels $\pl{F}$ ins
 
 To allow a local class instance to exist in the main expression, a funnel is either a ground type $G$ or a funnelled type variable $\funnel{X}$.
 In a method body, we expect all the funnels to be of the form $\funnel{X}$.
-Directly in the main expression, we expect all the funnels to be of the form $G$.
-When a local class is deeply nested in a local class in the main expression, a mixture of funnels $\funnel{X}$ and $G$ can be present.
+In the main expression, outside of the methods of local classes, we expect all the funnels to be of the form $G$.
+When a local class is nested in a method of a local class in the main expression, a mixture of funnels $\funnel{X}$ and $G$ can be present.
 
 A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $\gen{C'}{\pl{T}}$.
 The methods $\pl{M}$ of a local class can use the variables and the type variables in scope.
@@ -82,7 +82,7 @@ The superclass of every class, top-level or local, is a top-level class: local c
 A program is a class table \decls and a main expression $e$.
 We require the following well-formedness conditions:
 \begin{enumerate}
-    \item[(A1)] Class names are unique across top-level and local classes.
+    \item[(A1)] In \decls, class names are unique across top-level and local classes.
     \item[(A2)] In a class, all the field names, including the field names of the superclasses, are disjoint.
     \item[(A3)] In a class, top-level or local, all the method names are disjoint.
     \item[(A4)] In a method, all the parameter names $x_1,\ldots,x_n$ are disjoint.
@@ -214,23 +214,21 @@ An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for a context $\mathc
 Contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
 The reduction of Section~\ref{sec:opsem} uses the values $v$ and the evaluation contexts $\mathcal{E}$ of Section~\ref{sec:contexts}.
 \\[1ex]
-Rules \textsc{simpleFound} and \textsc{innerFound} use the method $\mathsf{fresh}(M)$:
-the method $M$ where every type variable and every variable bound in $M$ is renamed into a fresh name, that is a name occurring nowhere in the program and in the reduced expression; distinct binders get distinct fresh names.
-The type variables and variables bound in $M$ are the type variables of its signature, its parameters, and, inside its body, the variable of every \kw{if} and the type variables and parameters of every method of a local class.
+Rules \textsc{simpleFound}, \textsc{innerFound} and \textsc{ifThen} use the relation $\mathsf{fresh}$.
+The names bound in an expression $e$ are the variable of every \kw{if} in $e$ and the type variables and parameters of every method of a local class in $e$.
+The names bound in a method $M$ are the type variables of its signature, its parameters, and the names bound in its body.
+An expression $\mathsf{fresh}(e)$ is $e$ where every name bound in $e$ is renamed into a fresh name, that is a name occurring nowhere in the program; distinct binders get distinct fresh names.
+A method $\mathsf{fresh}(M)$ is $M$ renamed in the same way.
+Thus $\mathsf{fresh}$ is not a function: a rule using $\mathsf{fresh}$ can choose any fresh names.
 The variable \this is never renamed.
 Renaming is needed because a value of a local class carries the code of its methods.
 For example, consider a local class \QQ{L} whose method \QQ{m} has a parameter \QQ{x} and calls \QQ{m} on a captured value of class \QQ{L}.
 The body of a call of \QQ{m} then contains the captured value, and the captured value contains a copy of the method \QQ{m} binding \QQ{x} again.
 Without renaming, rule \textsc{innerFound} would replace \QQ{x} also in the method \QQ{m} of the captured value.
-With renaming, the domain of every substitution is disjoint from the names bound inside the substituted expression.
-Only values of local classes carry code.
-A local class in the reduced expression is either written in the main expression or comes from a method body,
-and a method body enters the reduced expression only through rules \textsc{simpleFound} and \textsc{innerFound}, renamed by $\mathsf{fresh}$.
-A substitution can copy a value, so several copies of a value can bind the same names.
-Those names are never in the domain of a later substitution.
-Rules \textsc{simpleFound} and \textsc{innerFound} substitute only names that $\mathsf{fresh}$ has just created.
-Rule \textsc{ifThen} substitutes the variable of an \kw{if}; this variable is either renamed by $\mathsf{fresh}$ or written in the main expression, and no value binds it.
-Outside of values, the names bound inside the reduced expression are not shadowed, by requirement A7.
+With renaming, requirement A7 holds for the main expression at every step of the reduction.
+Rules \textsc{simpleFound}, \textsc{innerFound} and \textsc{ifThen} place values under the binders of the expression they substitute into.
+Those binders are fresh, so the values do not bind the same names.
+A substitution can copy a value, so several copies of a value can bind the same names; those copies are never nested, so they do not shadow each other.
 Thus a substitution never reaches a type variable or a variable bound inside the substituted expression.
 
 \subsection{Operational Semantics}
@@ -274,11 +272,12 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 \begin{mathpar}
 \inferrule[ifThen]{
     v\in\{\obj{C}{\pl{G}}{\_}, \innerobj{C}{\pl{G}}{\_}{\_}{\_}{\_}\}\\
-    \emptyset\vdash \gen{C}{\pl{G}} <: \gen{C'}{\_}
+    \emptyset\vdash \gen{C}{\pl{G}} <: \gen{C'}{\_}\\
+    \mathsf{fresh}(e_1)=e'_1
     %\match{v}{C\langle\_\rangle} = \mathsf{true}
 }{
     \step{\ifthen{v}{\gen{C'}{\pl{T}}}{x}{e_1}{e_2}}
-    {\tsubst{e_1}{x}{v}}
+    {\tsubst{e'_1}{x}{v}}
 }
 \and
 \inferrule[ifElse]{
@@ -462,7 +461,11 @@ Thus a substitution never reaches a type variable or a variable bound inside the
   \Gamma'=\{ T\;x \mid T\;x\in\Gamma \land x\neq\this \land \ftv{T}\subseteq\ftv{|\pl{F}|} \}\\\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
   \mok{\Delta'}{\Gamma',\gen{C}{|\pl{F}|}\;\this}{\pl{M}}\\\\
   \forall C'',\pl{T}'\ldotp\subtype{\Delta'}{\gen{C'}{\pl{T}}}{\gen{C''}{\pl{T}'}}\Rightarrow
-    \mathsf{overrideOk}(\gen{C''}{\pl{T}'},\pl{M})
+    \mathsf{overrideOk}(\gen{C''}{\pl{T}'},\pl{M})\\\\
+  \declared{\innerobj{C}{\pl{F}_0}{C'}{\pl{T}_0}{\_}{\pl{M}_0}}\\
+  \pl{T}=\tsubst{\pl{T}_0}{\pl{F}_0}{|\pl{F}|}\\\\
+  \mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})\\
+  \forall m\ldotp m\not\in\pl{M}\Rightarrow m\not\in\pl{M}_0
 }{
   \typing{\Delta}{\Gamma}{
     \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}
@@ -507,6 +510,13 @@ The bounds $\Delta'$ are computed by $\mathsf{scope}(\Delta;\pl{F};|\pl{F}|)$, w
 However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., an explicit call), but will reduce to a value which no longer depends on such type variables.
 This is why the premise $\typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C'}{\pl{T}}}$ ensures the resulting type of that
 expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
+\\[1ex]
+The last premises of rule \textsc{new-local} make the local class agree with its declaration $\innerobj{C}{\pl{F}_0}{C'}{\pl{T}_0}{\_}{\pl{M}_0}$.
+The supertype and the method signatures of the local class are those of the declaration, with the funnelled type variables of $\pl{F}_0$ replaced by $|\pl{F}|$.
+The local class and the declaration have the same method names.
+For a local class in \decls, the declaration is the local class itself.
+In the main expression, a local class is a copy of its declaration where reduction has replaced type variables with types and variables with values.
+Rules \textsc{call-local} and \textsc{sub-inherit-local} read the declaration, while the reduction runs the methods of the local class itself.
 
 \subsection{Typing of Programs, Classes and Methods}
 \label{sec:classtyping}
@@ -563,12 +573,22 @@ expression satisfies the funnelling constraints by checking kinding under the mo
 }{
   \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\;x_1,\ldots,T'_n\;x_n}{\_})
 }
+\and
+\inferrule[override-local-same]{
+  \declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\pl{M}}}\\\\
+  \method{\Delta''}{T''_0}{m}{T''_1\;x'_1,\ldots,T''_n\;x'_n}{\_}\in\pl{M}\\\\
+  \tsubst{\mathrm{cod}(\Delta'')}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\\\
+  \tsubst{T''_0,\ldots,T''_n}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n
+}{
+  \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\;x_1,\ldots,T'_n\;x_n}{\_})
+}
     \end{mathpar}
 \par}
 
 Rule \textsc{class-ok} types the methods of a top-level class with \this of type $\gen{C}{\mathrm{dom}(\Delta)}$.
 A method that a class declares again must keep the signature it has in every superclass, up to the names of its own type variables:
 \textsc{call-top} reads the signature from the class chosen by subsumption, while the reduction runs the method of the class of the receiver.
+Rule \textsc{override-local-same} compares a method of a local class with the method of the same name in the declaration of the local class, in the same way.
 
 \subsection{Kinding and Subtyping}
 \label{sec:kinding}
@@ -680,7 +700,7 @@ A funnelled type variable that is not in scope where its local class $C$ is writ
 
 Substitution replaces every occurrence of a type variable, \emph{including} the ones in the method signatures of a method-local class.
 Substitution does not rename the type variables it meets.
-No renaming is needed: the substituted types are ground, and the domain of the substitution never contains a type variable bound inside the substituted term, by requirement A7 in the program and by $\mathsf{fresh}$ during reduction.
+No renaming is needed: the substituted types are ground, and the domain of the substitution never contains a type variable bound inside the substituted term, by requirement A7 on the main expression.
 In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables:
 $\tsubst{T}{F_1,\ldots,F_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $F_i=\funnel{X_i}$, and ignores every $F_i=G_i$.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
@@ -714,7 +734,7 @@ Thus $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground typ
 
 A method-local class binds \this, as in Java: inside the methods of a method-local class, \this is the local object, and the outer \this is hidden.
 Thus substitution of variables enters the methods of a method-local class for every variable except \this.
-The variable $x'$ of an \kw{if} and the parameters $x'_1,\ldots,x'_k$ of a method are never in $\pl{x}$, by requirement A7 in the program and by $\mathsf{fresh}$ during reduction; so no renaming is needed.
+The variable $x'$ of an \kw{if} and the parameters $x'_1,\ldots,x'_k$ of a method are never in $\pl{x}$, by requirement A7 on the main expression; so no renaming is needed.
 
 \ldots
 
