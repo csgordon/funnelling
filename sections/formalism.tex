@@ -45,17 +45,20 @@ Replacing rule \textsc{new-local} with rule \textsc{new-local-java} of Section~\
 \]
 
 \noindent
-An expression is a variable $x$, a method call, an explicit call, a field access $e\fstop f$, an object creation, a local class or a type test.
-The variable \this is a variable $x$.
+An expression is a variable $x$, a method call $\call{e}{\pl{T}}{m}{\pl{e}}$, a super call $\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}$, a field access $e\fstop f$, an object creation $\obj{C}{\pl{T}}{\pl{e}}$ for a top-level type, a local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ or a type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$.\footnote{The syntax \Q@if (a instanceof B c)@ is valid Java since Java 16.}
+As in FJ, \this is just a special case of a variable $x$.
 A method call $\call{e}{\pl{T}}{m}{\pl{e}}$ calls the method $m$ on the receiver $e$, with type arguments $\pl{T}$ and arguments $\pl{e}$.
-An explicit call $\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}$ searches the method $m$ starting from the class of the type $T$, instead of from the class of the receiver $e$.
-The reduction uses explicit calls to search a method along the chain of superclasses.
+A super call $\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}$ searches the method $m$ starting from the class of the type $T$, instead of from the class of the receiver $e$.
+That is, a super call works as a flexible kind of super call, attempting to call the method $m$ as if the receiver were of the supertype $T$.
 An object creation $\obj{C}{\pl{T}}{\pl{e}}$ creates an instance of the top-level class $\gen{C}{\pl{T}}$.
 The arguments $\pl{e}$ are the values of the fields of $C$, followed by the arguments of the object creation of the superclass of $C$.
 A local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ declares the local class $C$ and creates an instance of $C$.
-The funnels $\pl{F}$ are the generic parameters of $C$.
-A funnel is either a ground type $G$ or a funnelled type variable $\funnel{X}$.
-A funnel $\funnel{X}$ does not bind $X$: the funnel $\funnel{X}$ uses the type variable $X$ in scope.
+
+The funnels $\pl{F}$ serve a double role.
+From the perspective of the inside of the local class (the methods $\pl{M}$), the funnels $\pl{F}$ declare the generics visible in the local class.
+From the perspective of the \kw{new} expression itself, the funnels $\pl{F}$ instantiate those generic parameters, forming the actual type of the created instance.
+
+To allow a local class instance to exist in the main expression, a funnel is either a ground type $G$ or a funnelled type variable $\funnel{X}$.
 A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $\gen{C'}{\pl{T}}$.
 The methods $\pl{M}$ of a local class can use the variables and the type variables in scope.
 The type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ reduces to $e_1$, with $x$ bound to the value of $e_0$, when the value of $e_0$ is an instance of $T$; otherwise the type test reduces to $e_2$.
