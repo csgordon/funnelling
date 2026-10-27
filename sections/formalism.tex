@@ -6,7 +6,7 @@
 
 We now present the core language of Section~\ref{sec:funnelling}: its syntax, its small step reduction and its type rules.
 The type rules encode funnelling.
-Replacing rule \textsc{new-local} with rule \textsc{new-local-java} of Section~\ref{sec:funnelling} gives the Java typing of local classes.
+Replacing rule \textsc{new-local} with rule \textsc{new-local-java} gives the Java typing of local classes.
 
 \subsection{Syntax}
 \label{sec:syntax}
@@ -106,7 +106,7 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
     &&& \mid \mathcal{E}\fstop f \mid \obj{C}{\pl{G}}{\pl{v},\mathcal{E},\pl{e}}\\
     &&& \mid \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v},\mathcal{E},\pl{e}}{\pl{M}}\\
     &&& \mid \ifthen{\mathcal{E}}{G}{x}{e_1}{e_2}\\
-\textrm{Contexts} & \mathcal{C} & ::= & \square \mid \call{\mathcal{C}}{\pl{T}}{m}{\pl{e}} \mid \call{e}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
+\textrm{Expr. Ctx.} & \mathcal{C} & ::= & \square \mid \call{\mathcal{C}}{\pl{T}}{m}{\pl{e}} \mid \call{e}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
     &&& \mid \explicitcall{\mathcal{C}}{T}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
     &&& \mid \mathcal{C}\fstop f \mid \obj{C}{\pl{T}}{\pl{e},\mathcal{C},\pl{e}'}\\
     &&& \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e},\mathcal{C},\pl{e}'}{\pl{M}}\\
@@ -127,43 +127,33 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
   \declared{\mathsf{Dec}}
 }
 \and
-\inferrule[decl-in-class]{
-  \declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\\\
-  \method{\_}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\\\
-  \innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}\textrm{ occurs in }e
+\inferrule[decl-local]{
+  \declared{K}\\
+  \method{\_}{\_}{m}{\_}{\ret{e}}\in K\\\\
+  \innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\textrm{ occurs in }e
 }{
-  \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}}
-}
-\and
-\inferrule[decl-in-local]{
-  \declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}}\\\\
-  \method{\_}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\\\
-  \innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}\textrm{ occurs in }e
-}{
-  \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}}
+  \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}
 }
 \\
 \fbox{$\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}'$}
 \and
-\fbox{$\mathsf{scope}(\Delta;\pl{F};\pl{T})=\Delta';\pl{T}'$}
+\fbox{$\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'$}
 \end{mathpar}
 \[
 \begin{array}{rcl}
 \mathsf{scope}(\gen{C}{\pl{T}}) & = & \Delta;\pl{T}\\
 \multicolumn{3}{l}{\quad\textrm{where }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls}\\
-\mathsf{scope}(\gen{C_0}{\pl{T}}) & = & \mathsf{scope}(\Delta',\Delta'';\pl{F};\pl{T})\\
-\multicolumn{3}{l}{\quad\textrm{where }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\textrm{ or}}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{where }}\declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}}}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{where }}\method{\Delta''}{\_}{m}{\_}{\ret{e}}\in\pl{M}}\\
+\mathsf{scope}(\gen{C_0}{\pl{T}}) & = & \pairing{\Delta,\Delta'}{\pl{F}}{\pl{T}}\\
+\multicolumn{3}{l}{\quad\textrm{where }\method{\Delta'}{\_}{m}{\_}{\ret{e}}\in C}\\
 \multicolumn{3}{l}{\quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{where }}\mathsf{scope}(\generic{C})=\Delta';\_}
+\multicolumn{3}{l}{\quad\phantom{\textrm{where }}\mathsf{scope}(\generic{C})=\Delta;\_}
 \end{array}
 \]
 \[
 \begin{array}{rcl}
-\mathsf{scope}(\Delta;\emptyset;\emptyset) & = & \emptyset;\emptyset\\
-\mathsf{scope}(\Delta;\funnel{X},\pl{F};T,\pl{T}) & = & (\ext{X}{\Delta(X)};T)\cdot\mathsf{scope}(\Delta;\pl{F};\pl{T})\\
-\mathsf{scope}(\Delta;G,\pl{F};G,\pl{T}) & = & \mathsf{scope}(\Delta;\pl{F};\pl{T})\\[1ex]
+\pairing{\Delta}{\emptyset}{\emptyset} & = & \emptyset;\emptyset\\
+\pairing{\Delta}{\funnel{X},\pl{F}}{T,\pl{T}} & = & (\ext{X}{\Delta(X)};T)\cdot(\pairing{\Delta}{\pl{F}}{\pl{T}})\\
+\pairing{\Delta}{G,\pl{F}}{G,\pl{T}} & = & \pairing{\Delta}{\pl{F}}{\pl{T}}\\[1ex]
 (\Delta;\pl{T})\cdot(\Delta';\pl{T}') & = & \Delta,\Delta';\pl{T},\pl{T}'
 \end{array}
 \]
@@ -171,11 +161,19 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \fbox{$\generic{C}=T$}
 \and
 \fbox{$|F|=T$}
+\and
+\fbox{$M\in K$}
+\and
+\fbox{$M\in C$}
 \end{mathpar}
 \[
 \begin{array}{rcl}
+M\in K & \textrm{iff} & M\in\pl{M}\\
+\multicolumn{3}{l}{\quad\textrm{where }K\in\{\subclass{\_}{\_}{\_}{\_}{\pl{M}}{\_},\innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}\}}\\
+M\in C & \textrm{iff} & M\in K\\
+\multicolumn{3}{l}{\quad\textrm{where }\declared{K}\textrm{ and }K\in\{\subclass{C}{\_}{\_}{\_}{\_}{\_},\innerobj{C}{\_}{\_}{\_}{\_}{\_}\}}\\[1ex]
 \generic{C} & = & \gen{C}{\mathrm{dom}(\Delta)}\\
-\multicolumn{3}{l}{\quad\textrm{where }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls}\\
+\multicolumn{3}{l}{\quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}}\\
 \generic{C} & = & \gen{C}{|\pl{F}|}\\
 \multicolumn{3}{l}{\quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}}\\[1ex]
 |\funnel{X}| & = & X\\
@@ -185,13 +183,13 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \par}
 
 By well-formedness requirement A1, a class name $C$ identifies at most one $K$ with $\declared{K}$.
-For a class type $\gen{C}{\pl{T}}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}''$ gives the bounds $\Delta_0$ of the type variables that the methods of $C$ see, without the type variables of the methods themselves.
+$M\in K$ holds when $M$ is a method of the class declaration $K$, top-level or local.
+$M\in C$ holds when $M$ is a method of the declared class $C$, top-level or local.
+For a class type $\gen{C}{\pl{T}}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}''$ gives the bounds $\Delta_0$ of the type variables that are in scope for all the methods of $C$.\footnote{Note that the type variables declared by each individual generic method are not accounted for here.}
 It also gives the types $\pl{T}''$ that the arguments $\pl{T}$ assign to the type variables in $\Delta_0$.
 For a top-level class, $\Delta_0$ is the bounds of the class and $\pl{T}''=\pl{T}$.
-For a top-level class, $\mathsf{scope}(\gen{C}{\pl{T}})$ does not check that $\pl{T}$ has as many types as $\Delta_0$ has type variables.
-Rule \textsc{wf-class} checks it: its premise $\subtype{\Delta}{\pl{T}''}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}''}}$ is a judgement on sequences, which requires sequences of the same length.
-For a local class $C_0$ with funnels $\pl{F}$, the bounds $\Delta',\Delta''$ are the bounds of the type variables in scope where $C_0$ is written.
-For a local class, $\mathsf{scope}(\Delta;\pl{F};\pl{T})$ is undefined when $\pl{F}$ and $\pl{T}$ have different lengths.
+$\mathsf{scope}(\_)=\Delta;\pl{T}$ is expected to always return a $\Delta$ and a $\pl{T}$ of the same length.
+This is enforced at the usage points, where we use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length.
 \\[1ex]
 For a type variable $X$, $\Delta(X)$ is the bound of $X$ in $\Delta$.
 $\mathrm{dom}(\Delta)$ is the sequence of the type variables in $\Delta$, and $\mathrm{cod}(\Delta)$ is the sequence of the bounds in $\Delta$.
@@ -199,40 +197,24 @@ $\ftv{T}$ is the set of the type variables occurring in $T$; for a sequence, $\m
 The figures leave the following conventions implicit.
 A sequence $e_1,\ldots,e_n$, or $\pl{e}$, separates its elements with commas; a comma also concatenates two sequences, and either sequence may be empty.
 A function or a judgement applied to sequences stands for one application at every position, and requires the sequences to have the same length:
-$|\pl{F}|$ is $|F_1|,\ldots,|F_n|$;
-$\kind{\Delta}{\pl{T}}$ is $\kind{\Delta}{T_i}$ for every $i$;
-$\subtype{\Delta}{T_1,\ldots,T_n}{T'_1,\ldots,T'_n}$ is $\subtype{\Delta}{T_i}{T'_i}$ for every $i$;
-$\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T_1,\ldots,T_n}$ is $\typing{\Delta}{\Gamma}{e_i}{T_i}$ for every $i$;
+$|F_1,\ldots,F_n|$ is $|F_1|,\ldots,|F_n|$;
+$\kind{\Delta}{T_1,\ldots,T_n}$ is $\kind{\Delta}{T_1}\quad\ldots\quad\kind{\Delta}{T_n}$;
+$\subtype{\Delta}{T_1,\ldots,T_n}{T'_1,\ldots,T'_n}$ is $\subtype{\Delta}{T_1}{T'_1}\quad\ldots\quad\subtype{\Delta}{T_n}{T'_n}$;
+$\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T_1,\ldots,T_n}$ is $\typing{\Delta}{\Gamma}{e_1}{T_1}\quad\ldots\quad\typing{\Delta}{\Gamma}{e_n}{T_n}$;
 $\mathsf{overrideOk}(T,\pl{M})$ is $\mathsf{overrideOk}(T,M)$ for every $M$ in $\pl{M}$.
 Finally, $m\not\in\pl{M}$ holds when no method in $\pl{M}$ has name $m$.
 \\[1ex]
-The function $\mathsf{scope}(\Delta;\pl{F};\pl{T})$ goes through the funnels $\pl{F}$ and the arguments $\pl{T}$ together, one position at a time, where $\emptyset$ is the empty sequence.
+The pairing $\pairing{\Delta}{\pl{F}}{\pl{T}}$ goes through the funnels $\pl{F}$ and the arguments $\pl{T}$ together, one position at a time, where $\emptyset$ is the empty sequence.
 At the position of a funnel $\funnel{X}$, it adds $\ext{X}{\Delta(X)}$ to the bounds and the argument to the types.
 At the position of a ground funnel $G$, the argument must be $G$ itself, and nothing is added.
-The operator $\cdot$ concatenates two results of $\mathsf{scope}$, component by component.
-An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for a context $\mathcal{C}$ of Section~\ref{sec:contexts}.
-Contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
-The reduction of Section~\ref{sec:opsem} uses the values $v$ and the evaluation contexts $\mathcal{E}$ of Section~\ref{sec:contexts}.
-\\[1ex]
-Rules \textsc{simpleFound}, \textsc{innerFound} and \textsc{ifThen} use the relation $\mathsf{fresh}$.
-The names bound in an expression $e$ are the variable of every \Q@if@ in $e$ and the type variables and parameters of every method of a local class in $e$.
-The names bound in a method $M$ are the type variables of its signature, its parameters, and the names bound in its body.
-An expression $\mathsf{fresh}(e)$ is $e$ where every name bound in $e$ is renamed into a fresh name, that is a name occurring nowhere in the program; distinct binders get distinct fresh names.
-A method $\mathsf{fresh}(M)$ is $M$ renamed in the same way.
-Thus $\mathsf{fresh}$ is not a function: a rule using $\mathsf{fresh}$ can choose any fresh names.
-The variable \Q@this@ is never renamed.
-Renaming is needed because a value of a local class carries the code of its methods.
-For example, consider a local class \Q@L@ whose method \Q@m@ has a parameter \Q@x@ and calls \Q@m@ on a captured value of class \Q@L@.
-The body of a call of \Q@m@ then contains the captured value, and the captured value contains a copy of the method \Q@m@ binding \Q@x@ again.
-Without renaming, rule \textsc{innerFound} would replace \Q@x@ also in the method \Q@m@ of the captured value.
-With renaming, requirement A7 holds for the main expression at every step of the reduction.
-Rules \textsc{simpleFound}, \textsc{innerFound} and \textsc{ifThen} place values under the binders of the expression they substitute into.
-Those binders are fresh, so the values do not bind the same names.
-A substitution can copy a value, so several copies of a value can bind the same names; those copies are never nested, so they do not shadow each other.
-Thus a substitution never reaches a type variable or a variable bound inside the substituted expression.
+The operator $(\Delta;\pl{T})\cdot(\Delta';\pl{T}')$ concatenates two results of a pairing, component by component.
+An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for an expression context $\mathcal{C}$.
+Expression contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
 
 \subsection{Operational Semantics}
 \label{sec:opsem}
+We now present the reduction $\step{e}{e'}$ of the main expression.
+The reduction is small step, and uses the values $v$ and the evaluation contexts $\mathcal{E}$.
 {\small
 \begin{mathpar}
 \fbox{$\step{e}{e'}$}\\
@@ -354,6 +336,44 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 \end{mathpar}
 \par}
 
+Most of the rules are standard.
+Rules \textsc{simpleFieldFound}, \textsc{simpleFieldSuper} and \textsc{innerFieldSuper} read a field.
+Rule \textsc{simpleFieldFound} reads a field declared by the class of the object.
+Rule \textsc{simpleFieldSuper} reads a field not declared by the class $C$ of the object from the object of the superclass of $C$, made of the remaining values.
+A local class declares no fields, so rule \textsc{innerFieldSuper} reads every field from the object of the superclass.
+
+Rules \textsc{ifThen} and \textsc{ifElse} test the class of the value $v$ against the class $C'$ of the type test, ignoring the type arguments of $C'$.
+Rule \textsc{ifThen} reduces to $e_1$ with $x$ replaced by $v$; rule \textsc{ifElse} reduces to $e_2$.
+
+Rules \textsc{simpleAddSuper}, \textsc{simpleFound}, \textsc{innerFound}, \textsc{innerSuper} and \textsc{searchSuper} call a method.
+Rule \textsc{simpleAddSuper} turns a call on an object of a top-level class into a super call starting from the class of the object.
+Rule \textsc{simpleFound} runs the method $m$ found in the class of a super call, replacing the type variables of the class and of the method, \Q@this@ and the parameters.
+Rule \textsc{innerFound} runs the method $m$ found in a value of a local class; the funnelled type variables are already replaced in that value, so only the type variables of the method are replaced.
+Rule \textsc{innerSuper} turns a call on a value of a local class without the method $m$ into a super call starting from its superclass.
+Rule \textsc{searchSuper} moves a super call to the superclass when the class does not declare $m$.
+Rule \textsc{ctx} reduces inside an evaluation context.
+
+Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} also use the relation $\mathsf{fresh}$.
+The names bound in an expression $e$ are the variable of every \Q@if@ in $e$ and the type variables and parameters of every method of a local class in $e$.
+The names bound in a method $M$ are the type variables of its signature, its parameters, and the names bound in its body.
+An expression $\mathsf{fresh}(e)$ is $e$ where every name bound in $e$ is renamed into a fresh name, that is a name occurring nowhere in the program; distinct binders get distinct fresh names.
+A method $\mathsf{fresh}(M)$ is $M$ renamed in the same way.
+Thus $\mathsf{fresh}$ is not a function: a rule using $\mathsf{fresh}$ can choose any fresh names.
+The variable \Q@this@ is never renamed.
+Renaming is needed because a value of a local class carries the code of its methods.
+For example, consider a local class \Q@L@ whose method \Q@m@ has a parameter \Q@x@ and calls \Q@m@ on a captured value \Q@y@ of class \Q@L@:
+\begin{lstlisting}
+Object<> k(L<> y){ return
+  new L<> extends Object<>(){ Object<> m(Object<> x){ return y.m(x); } }; }
+\end{lstlisting}
+In a call of \Q@k@ with a value \Q@v@ of class \Q@L@, the body of \Q@m@ becomes \Q@v.m(x)@, and \Q@v@ contains a copy of the method \Q@m@ binding \Q@x@ again.
+Without renaming, rule \textsc{innerFound} would replace \Q@x@ also in the method \Q@m@ of \Q@v@.
+With renaming, requirement A7 holds for the main expression at every step of the reduction.
+Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} place values under the binders of the expression they substitute into.
+Those binders are fresh, so the values do not bind the same names.
+A substitution can copy a value, so several copies of a value can bind the same names; those copies are never nested, so they do not shadow each other.
+Thus a substitution never reaches a type variable or a variable bound inside the substituted expression.
+
 %Not totally sure about Ts vs Gs vs Fs in LHS of match
 %\[
 %    \begin{array}{rcl}
@@ -453,7 +473,7 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 }
 \and
 \inferrule[new-local]{
-  \mathsf{scope}(\Delta;\pl{F};|\pl{F}|)=\Delta';\_\\
+  \pairing{\Delta}{\pl{F}}{|\pl{F}|}=\Delta';\_\\
   \ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')\\
   \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\\\
   \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\
@@ -506,7 +526,7 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 The rule \textsc{new-local} is the heart of funnelling, including subtle management of type environments.
 The rule constructs a restricted set of type bounds and variable bindings reflecting only the explicitly-funnelled type variables:
 $\Delta'$ includes only the explicitly-funnelled type variables, and $\Gamma'$ keeps only the variables of $\Gamma$, other than \Q@this@, whose types mention only type variables of the result type $\gen{C}{|\pl{F}|}$ (which must be well-kinded under $\Delta'$).
-The bounds $\Delta'$ are computed by $\mathsf{scope}(\Delta;\pl{F};|\pl{F}|)$, which is undefined when a funnelled type variable is not in $\Delta$.
+The bounds $\Delta'$ are computed by $\pairing{\Delta}{\pl{F}}{|\pl{F}|}$, which is undefined when a funnelled type variable is not in $\Delta$.
 However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., an explicit call), but will reduce to a value which no longer depends on such type variables.
 This is why the premise $\typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C'}{\pl{T}}}$ ensures the resulting type of that
 expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
@@ -702,7 +722,7 @@ Substitution replaces every occurrence of a type variable, \emph{including} the 
 Substitution does not rename the type variables it meets.
 No renaming is needed: the substituted types are ground, and the domain of the substitution never contains a type variable bound inside the substituted term, by requirement A7 on the main expression.
 In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables:
-$\tsubst{T}{F_1,\ldots,F_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $F_i=\funnel{X_i}$, and ignores every $F_i=G_i$.
+$\tsubst{T}{F_1,\ldots,F_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $i\in 1..n$ such that $F_i=\funnel{X_i}$; the ground funnels are ignored.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
 Thus $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground type $G$, and the result is again a funnel.
 
@@ -740,7 +760,7 @@ The variable $x'$ of an \Q@if@ and the parameters $x'_1,\ldots,x'_k$ of a method
 
 \subsection{Java Typing of Local Classes}
 \label{sec:java}
-Rule \textsc{new-local-java} of Section~\ref{sec:funnelling} types local classes as Java does.
+Rule \textsc{new-local-java} types local classes as Java does.
 A local class has no funnels, and its methods are typed under the full $\Delta$ and $\Gamma$ in scope, except for \Q@this@.
 Replacing rule \textsc{new-local} with rule \textsc{new-local-java} makes our system unsound for the same reason Java is unsound.
 Consider the method \Q@mk@ below, the method \Q@m@ of Example~1 in our syntax:
