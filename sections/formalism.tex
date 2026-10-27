@@ -127,20 +127,11 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
   \declared{\mathsf{Dec}}
 }
 \and
-\inferrule[decl-in-class]{
-  \declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\\\
-  \method{\_}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\\\
-  \innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}\textrm{ occurs in }e
+\inferrule[decl-local]{
+  \method{\_}{\_}{m}{\_}{\ret{e}}\in C\\\\
+  \innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\textrm{ occurs in }e
 }{
-  \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}}
-}
-\and
-\inferrule[decl-in-local]{
-  \declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}}\\\\
-  \method{\_}{\_}{m}{\_}{\ret{e}}\in\pl{M}\\\\
-  \innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}\textrm{ occurs in }e
-}{
-  \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}'}}
+  \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}
 }
 \\
 \fbox{$\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}'$}
@@ -152,9 +143,7 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \mathsf{scope}(\gen{C}{\pl{T}}) & = & \Delta;\pl{T}\\
 \multicolumn{3}{l}{\quad\textrm{where }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls}\\
 \mathsf{scope}(\gen{C_0}{\pl{T}}) & = & \mathsf{scope}(\Delta',\Delta'';\pl{F};\pl{T})\\
-\multicolumn{3}{l}{\quad\textrm{where }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\textrm{ or}}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{where }}\declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}}}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{where }}\method{\Delta''}{\_}{m}{\_}{\ret{e}}\in\pl{M}}\\
+\multicolumn{3}{l}{\quad\textrm{where }\method{\Delta''}{\_}{m}{\_}{\ret{e}}\in C}\\
 \multicolumn{3}{l}{\quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e}\\
 \multicolumn{3}{l}{\quad\phantom{\textrm{where }}\mathsf{scope}(\generic{C})=\Delta';\_}
 \end{array}
@@ -171,9 +160,14 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \fbox{$\generic{C}=T$}
 \and
 \fbox{$|F|=T$}
+\and
+\fbox{$M\in C$}
 \end{mathpar}
 \[
 \begin{array}{rcl}
+M\in C & \textrm{iff} & M\in\pl{M}\\
+\multicolumn{3}{l}{\quad\textrm{where }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\textrm{ or}}\\
+\multicolumn{3}{l}{\quad\phantom{\textrm{where }}\declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}}}\\[1ex]
 \generic{C} & = & \gen{C}{\mathrm{dom}(\Delta)}\\
 \multicolumn{3}{l}{\quad\textrm{where }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls}\\
 \generic{C} & = & \gen{C}{|\pl{F}|}\\
@@ -185,6 +179,7 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \par}
 
 By well-formedness requirement A1, a class name $C$ identifies at most one $K$ with $\declared{K}$.
+$M\in C$ holds when $M$ is a method of the class $C$, top-level or local.
 For a class type $\gen{C}{\pl{T}}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}''$ gives the bounds $\Delta_0$ of the type variables that the methods of $C$ see, without the type variables of the methods themselves.
 It also gives the types $\pl{T}''$ that the arguments $\pl{T}$ assign to the type variables in $\Delta_0$.
 For a top-level class, $\Delta_0$ is the bounds of the class and $\pl{T}''=\pl{T}$.
