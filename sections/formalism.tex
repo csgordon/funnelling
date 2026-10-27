@@ -197,8 +197,8 @@ $\ftv{T}$ is the set of the type variables occurring in $T$; for a sequence, $\m
 The figures leave the following conventions implicit.
 A sequence $e_1,\ldots,e_n$, or $\pl{e}$, separates its elements with commas; a comma also concatenates two sequences, and either sequence may be empty.
 A function or a judgement applied to sequences stands for one application at every position, and requires the sequences to have the same length:
-$|\pl{F}|$ is $|F_1|,\ldots,|F_n|$;
-$\kind{\Delta}{\pl{T}}$ is $\kind{\Delta}{T_i}$ for every $i$;
+$|F_1,\ldots,F_n|$ is $|F_1|,\ldots,|F_n|$;
+$\kind{\Delta}{T_1,\ldots,T_n}$ is $\kind{\Delta}{T_1}\quad\ldots\quad\kind{\Delta}{T_n}$;
 $\subtype{\Delta}{T_1,\ldots,T_n}{T'_1,\ldots,T'_n}$ is $\subtype{\Delta}{T_i}{T'_i}$ for every $i$;
 $\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T_1,\ldots,T_n}$ is $\typing{\Delta}{\Gamma}{e_i}{T_i}$ for every $i$;
 $\mathsf{overrideOk}(T,\pl{M})$ is $\mathsf{overrideOk}(T,M)$ for every $M$ in $\pl{M}$.
