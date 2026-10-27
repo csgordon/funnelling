@@ -137,13 +137,13 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \\
 \fbox{$\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}'$}
 \and
-\fbox{$\mathsf{scope}(\Delta;\pl{F};\pl{T})=\Delta';\pl{T}'$}
+\fbox{$\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'$}
 \end{mathpar}
 \[
 \begin{array}{rcl}
 \mathsf{scope}(\gen{C}{\pl{T}}) & = & \Delta;\pl{T}\\
 \multicolumn{3}{l}{\quad\textrm{where }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls}\\
-\mathsf{scope}(\gen{C_0}{\pl{T}}) & = & \mathsf{scope}(\Delta',\Delta'';\pl{F};\pl{T})\\
+\mathsf{scope}(\gen{C_0}{\pl{T}}) & = & \pairing{\Delta',\Delta''}{\pl{F}}{\pl{T}}\\
 \multicolumn{3}{l}{\quad\textrm{where }\method{\Delta''}{\_}{m}{\_}{\ret{e}}\in C}\\
 \multicolumn{3}{l}{\quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e}\\
 \multicolumn{3}{l}{\quad\phantom{\textrm{where }}\mathsf{scope}(\generic{C})=\Delta';\_}
@@ -151,9 +151,9 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \]
 \[
 \begin{array}{rcl}
-\mathsf{scope}(\Delta;\emptyset;\emptyset) & = & \emptyset;\emptyset\\
-\mathsf{scope}(\Delta;\funnel{X},\pl{F};T,\pl{T}) & = & (\ext{X}{\Delta(X)};T)\cdot\mathsf{scope}(\Delta;\pl{F};\pl{T})\\
-\mathsf{scope}(\Delta;G,\pl{F};G,\pl{T}) & = & \mathsf{scope}(\Delta;\pl{F};\pl{T})\\[1ex]
+\pairing{\Delta}{\emptyset}{\emptyset} & = & \emptyset;\emptyset\\
+\pairing{\Delta}{\funnel{X},\pl{F}}{T,\pl{T}} & = & (\ext{X}{\Delta(X)};T)\cdot(\pairing{\Delta}{\pl{F}}{\pl{T}})\\
+\pairing{\Delta}{G,\pl{F}}{G,\pl{T}} & = & \pairing{\Delta}{\pl{F}}{\pl{T}}\\[1ex]
 (\Delta;\pl{T})\cdot(\Delta';\pl{T}') & = & \Delta,\Delta';\pl{T},\pl{T}'
 \end{array}
 \]
@@ -170,9 +170,8 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \begin{array}{rcl}
 M\in K & \textrm{iff} & M\in\pl{M}\\
 \multicolumn{3}{l}{\quad\textrm{where }K=\subclass{\_}{\_}{\_}{\_}{\pl{M}}{\_}\textrm{ or }K=\innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}}\\
-M\in C & \textrm{iff} & M\in\pl{M}\\
-\multicolumn{3}{l}{\quad\textrm{where }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\textrm{ or}}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{where }}\declared{\innerobj{C}{\_}{\_}{\_}{\_}{\pl{M}}}}\\[1ex]
+M\in C & \textrm{iff} & M\in K\\
+\multicolumn{3}{l}{\quad\textrm{where }\declared{K}\textrm{ and }K\textrm{ declares }C}\\[1ex]
 \generic{C} & = & \gen{C}{\mathrm{dom}(\Delta)}\\
 \multicolumn{3}{l}{\quad\textrm{where }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls}\\
 \generic{C} & = & \gen{C}{|\pl{F}|}\\
@@ -185,6 +184,7 @@ M\in C & \textrm{iff} & M\in\pl{M}\\
 
 By well-formedness requirement A1, a class name $C$ identifies at most one $K$ with $\declared{K}$.
 $M\in K$ holds when $M$ is a method of the class declaration $K$, top-level or local.
+A class declaration $K$ declares the class $C$ written after \Q@class@ or \Q@new@ in $K$.
 $M\in C$ holds when $M$ is a method of the declared class $C$, top-level or local.
 For a class type $\gen{C}{\pl{T}}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}''$ gives the bounds $\Delta_0$ of the type variables that the methods of $C$ see, without the type variables of the methods themselves.
 It also gives the types $\pl{T}''$ that the arguments $\pl{T}$ assign to the type variables in $\Delta_0$.
@@ -192,7 +192,7 @@ For a top-level class, $\Delta_0$ is the bounds of the class and $\pl{T}''=\pl{T
 For a top-level class, $\mathsf{scope}(\gen{C}{\pl{T}})$ does not check that $\pl{T}$ has as many types as $\Delta_0$ has type variables.
 Rule \textsc{wf-class} checks it: its premise $\subtype{\Delta}{\pl{T}''}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}''}}$ is a judgement on sequences, which requires sequences of the same length.
 For a local class $C_0$ with funnels $\pl{F}$, the bounds $\Delta',\Delta''$ are the bounds of the type variables in scope where $C_0$ is written.
-For a local class, $\mathsf{scope}(\Delta;\pl{F};\pl{T})$ is undefined when $\pl{F}$ and $\pl{T}$ have different lengths.
+For a local class, $\pairing{\Delta}{\pl{F}}{\pl{T}}$ is undefined when $\pl{F}$ and $\pl{T}$ have different lengths.
 \\[1ex]
 For a type variable $X$, $\Delta(X)$ is the bound of $X$ in $\Delta$.
 $\mathrm{dom}(\Delta)$ is the sequence of the type variables in $\Delta$, and $\mathrm{cod}(\Delta)$ is the sequence of the bounds in $\Delta$.
@@ -207,10 +207,10 @@ $\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T_1,\ldots,T_n}$ is $\typing{\Delta}{\G
 $\mathsf{overrideOk}(T,\pl{M})$ is $\mathsf{overrideOk}(T,M)$ for every $M$ in $\pl{M}$.
 Finally, $m\not\in\pl{M}$ holds when no method in $\pl{M}$ has name $m$.
 \\[1ex]
-The function $\mathsf{scope}(\Delta;\pl{F};\pl{T})$ goes through the funnels $\pl{F}$ and the arguments $\pl{T}$ together, one position at a time, where $\emptyset$ is the empty sequence.
+The pairing $\pairing{\Delta}{\pl{F}}{\pl{T}}$ goes through the funnels $\pl{F}$ and the arguments $\pl{T}$ together, one position at a time, where $\emptyset$ is the empty sequence.
 At the position of a funnel $\funnel{X}$, it adds $\ext{X}{\Delta(X)}$ to the bounds and the argument to the types.
 At the position of a ground funnel $G$, the argument must be $G$ itself, and nothing is added.
-The operator $\cdot$ concatenates two results of $\mathsf{scope}$, component by component.
+The operator $\cdot$ concatenates two results of a pairing, component by component.
 An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for an expression context $\mathcal{C}$ of Section~\ref{sec:contexts}.
 Expression contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
 The reduction of Section~\ref{sec:opsem} uses the values $v$ and the evaluation contexts $\mathcal{E}$ of Section~\ref{sec:contexts}.
@@ -454,7 +454,7 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 }
 \and
 \inferrule[new-local]{
-  \mathsf{scope}(\Delta;\pl{F};|\pl{F}|)=\Delta';\_\\
+  \pairing{\Delta}{\pl{F}}{|\pl{F}|}=\Delta';\_\\
   \ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')\\
   \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\\\
   \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\
@@ -507,7 +507,7 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 The rule \textsc{new-local} is the heart of funnelling, including subtle management of type environments.
 The rule constructs a restricted set of type bounds and variable bindings reflecting only the explicitly-funnelled type variables:
 $\Delta'$ includes only the explicitly-funnelled type variables, and $\Gamma'$ keeps only the variables of $\Gamma$, other than \Q@this@, whose types mention only type variables of the result type $\gen{C}{|\pl{F}|}$ (which must be well-kinded under $\Delta'$).
-The bounds $\Delta'$ are computed by $\mathsf{scope}(\Delta;\pl{F};|\pl{F}|)$, which is undefined when a funnelled type variable is not in $\Delta$.
+The bounds $\Delta'$ are computed by $\pairing{\Delta}{\pl{F}}{|\pl{F}|}$, which is undefined when a funnelled type variable is not in $\Delta$.
 However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., an explicit call), but will reduce to a value which no longer depends on such type variables.
 This is why the premise $\typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C'}{\pl{T}}}$ ensures the resulting type of that
 expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
