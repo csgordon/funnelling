@@ -9,10 +9,10 @@ Both variants use the type test of Java:
 rule \textsc{if-instanceof} accepts only checked casts (Section~\ref{sec:cast}), and at run time rules \textsc{ifThen} and \textsc{ifElse} compare class names only.
 As shown in Section~\ref{sec:core}, $\zeta(\mathsf{Java})$ is unsound.
 We now show that $\zeta(\mathsf{funnelled})$ is sound.
-In the statements below, the program $\decls\;e$ satisfies well-formedness requirements A1-A9, and $\mathsf{Dec}~\mathrm{Ok}$ holds for every $\mathsf{Dec}\in\decls$.
+In the statements below, the program $\decls\gap e$ satisfies well-formedness requirements A1-A9, and $\mathsf{Dec}\gap\mathrm{Ok}$ holds for every $\mathsf{Dec}\in\decls$.
 
 \begin{lemma}[Well-Formedness]
-If $\step{e}{e'}$, then the program $\decls\;e'$ satisfies well-formedness requirements A1-A9.
+If $\step{e}{e'}$, then the program $\decls\gap e'$ satisfies well-formedness requirements A1-A9.
 \end{lemma}
 
 \begin{theorem}[Progress]
@@ -24,6 +24,6 @@ If $\typing{\emptyset}{\emptyset}{e}{T}$ and $\step{e}{e'}$, then $\typing{\empt
 \end{theorem}
 
 \begin{corollary}[Type Soundness]
-If $\vdash\decls\;e_0~\mathrm{Ok}$ with $\typing{\emptyset}{\emptyset}{e_0}{T}$, and $e_0\rightarrow^* e$ with no $e'$ such that $\step{e}{e'}$, then $e$ is a value $v$ and $\typing{\emptyset}{\emptyset}{v}{T}$.
+If $\vdash\decls\gap e_0\gap\mathrm{Ok}$ with $\typing{\emptyset}{\emptyset}{e_0}{T}$, and $e_0\rightarrow^* e$ with no $e'$ such that $\step{e}{e'}$, then $e$ is a value $v$ and $\typing{\emptyset}{\emptyset}{v}{T}$.
 \end{corollary}
 % Reified type tests are left out of the formal model on purpose; see Section 2 and the comment after rule ifElse in Figure fig:opsem.

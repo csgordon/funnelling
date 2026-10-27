@@ -1,3 +1,4 @@
+\newcommand{\gap}{\mskip5mu}
 \newcommand{\QQ}[1]{\ensuremath{\text{\ttfamily #1}}}
 \newcommand{\kw}[1]{\ensuremath{\text{\ttfamily\bfseries\color{blue}#1}}}
 \newcommand{\OR}{\QQ{(}}
@@ -11,23 +12,23 @@
 \newcommand{\fstop}{\QQ{.}}
 \newcommand{\semi}{\QQ{;}}
 \newcommand{\gen}[2]{\ensuremath{#1\OA#2\CA}}
-\newcommand{\funnel}[1]{\ensuremath{#1~\kw{funnel}}}
-\newcommand{\ext}[2]{\ensuremath{#1~\kw{extends}~#2}}
-\newcommand{\ret}[1]{\ensuremath{\kw{return}\;#1\semi}}
+\newcommand{\funnel}[1]{\ensuremath{#1\gap\kw{funnel}}}
+\newcommand{\ext}[2]{\ensuremath{#1\gap\kw{extends}\gap#2}}
+\newcommand{\ret}[1]{\ensuremath{\kw{return}\gap #1\semi}}
 \newcommand{\pl}[1]{\ensuremath{#1\mkern-2mu s}}
 \newcommand{\decls}{\ensuremath{\mathsf{Decls}}\xspace}
-\newcommand{\subclass}[6]{\ensuremath{\kw{class}\;\gen{#1}{#2}\;\kw{extends}\;\gen{#3}{#4}\;\OC\;#5\;#6\;\CC}}
-\newcommand{\obj}[3]{\ensuremath{\kw{new}\;\gen{#1}{#2}\OR#3\CR}\xspace}
-\newcommand{\innerobj}[6]{\ensuremath{\kw{new}\;\gen{#1}{#2}\;\kw{extends}\;\gen{#3}{#4}\OR#5\CR\OC#6\CC}\xspace}
+\newcommand{\subclass}[6]{\ensuremath{\kw{class}\gap\gen{#1}{#2}\gap\kw{extends}\gap\gen{#3}{#4}\gap\OC\gap #5\gap #6\gap\CC}}
+\newcommand{\obj}[3]{\ensuremath{\kw{new}\gap\gen{#1}{#2}\OR#3\CR}\xspace}
+\newcommand{\innerobj}[6]{\ensuremath{\kw{new}\gap\gen{#1}{#2}\gap\kw{extends}\gap\gen{#3}{#4}\OR#5\CR\OC#6\CC}\xspace}
 \newcommand{\step}[2]{\ensuremath{#1\rightarrow#2}\xspace}
 \newcommand{\ctx}[1]{\ensuremath{\mathcal{E}[#1]}\xspace}
-\newcommand{\ifthen}[5]{\ensuremath{\kw{if}\;\OR#1\;\kw{instanceof}\;#2\;#3\CR\;\OC\;#4\;\CC\;\kw{else}\;\OC\;#5\;\CC}}
+\newcommand{\ifthen}[5]{\ensuremath{\kw{if}\gap\OR#1\gap\kw{instanceof}\gap #2\gap #3\CR\gap\OC\gap #4\gap\CC\gap\kw{else}\gap\OC\gap #5\gap\CC}}
 
 
 \newcommand{\call}[4]{\ensuremath{#1\fstop\OA#2\CA#3\OR#4\CR}\xspace}
 \newcommand{\explicitcall}[5]{\ensuremath{#1\fstop\OS#2\CS\OA#3\CA#4\OR#5\CR}\xspace}
-\newcommand{\methodsig}[4]{\ensuremath{\OA#1\CA#2\;#3\OR#4\CR}\xspace}
-\newcommand{\method}[5]{\ensuremath{\methodsig{#1}{#2}{#3}{#4}\;\OC\;#5\;\CC}\xspace}
+\newcommand{\methodsig}[4]{\ensuremath{\OA#1\CA#2\gap #3\OR#4\CR}\xspace}
+\newcommand{\method}[5]{\ensuremath{\methodsig{#1}{#2}{#3}{#4}\gap\OC\gap #5\gap\CC}\xspace}
 \newcommand{\this}[0]{\kw{this}\xspace}
 \newcommand{\Object}{\QQ{Object}}
 
@@ -35,13 +36,13 @@
 \newcommand{\twolines}[2]{\begin{array}[c]{@{}l@{}}#1\\#2\end{array}}
 \newcommand{\match}[2]{\ensuremath{\mathsf{match}(#1,#2)}\xspace}
 
-\newcommand{\declared}[1]{\ensuremath{#1~\mathsf{declared}}}
+\newcommand{\declared}[1]{\ensuremath{#1\gap\mathsf{declared}}}
 \newcommand{\generic}[1]{\ensuremath{\mathrm{generic}(#1)}\xspace}
 
 \newcommand{\typing}[4]{\ensuremath{#1;#2\vdash #3 : #4}\xspace}
 \newcommand{\subtype}[3]{\ensuremath{#1\vdash #2 <: #3}\xspace}
-\newcommand{\kind}[2]{\ensuremath{#1 \vdash #2 ~\mathrm{Ok}}\xspace}
-\newcommand{\mok}[3]{\ensuremath{#1;#2\vdash #3~\mathrm{Ok}}\xspace}
+\newcommand{\kind}[2]{\ensuremath{#1 \vdash #2\gap\mathrm{Ok}}\xspace}
+\newcommand{\mok}[3]{\ensuremath{#1;#2\vdash #3\gap\mathrm{Ok}}\xspace}
 \newcommand{\cast}[3]{\ensuremath{#1\vdash #2 \rightsquigarrow #3}\xspace}
 \newcommand{\ftv}[1]{\ensuremath{\mathsf{FTV}(#1)}\xspace}
 \newcommand{\classtype}[2]{\gen{#1}{#2}\xspace}
