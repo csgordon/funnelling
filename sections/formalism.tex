@@ -210,31 +210,11 @@ At the position of a ground funnel $G$, the argument must be $G$ itself, and not
 The operator $(\Delta;\pl{T})\cdot(\Delta';\pl{T}')$ concatenates two results of a pairing, component by component.
 An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for an expression context $\mathcal{C}$.
 Expression contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
-The reduction uses the values $v$ and the evaluation contexts $\mathcal{E}$.
-\\[1ex]
-Rules \textsc{simpleFound}, \textsc{innerFound} and \textsc{ifThen} use the relation $\mathsf{fresh}$.
-The names bound in an expression $e$ are the variable of every \Q@if@ in $e$ and the type variables and parameters of every method of a local class in $e$.
-The names bound in a method $M$ are the type variables of its signature, its parameters, and the names bound in its body.
-An expression $\mathsf{fresh}(e)$ is $e$ where every name bound in $e$ is renamed into a fresh name, that is a name occurring nowhere in the program; distinct binders get distinct fresh names.
-A method $\mathsf{fresh}(M)$ is $M$ renamed in the same way.
-Thus $\mathsf{fresh}$ is not a function: a rule using $\mathsf{fresh}$ can choose any fresh names.
-The variable \Q@this@ is never renamed.
-Renaming is needed because a value of a local class carries the code of its methods.
-For example, consider a local class \Q@L@ whose method \Q@m@ has a parameter \Q@x@ and calls \Q@m@ on a captured value \Q@y@ of class \Q@L@:
-\begin{lstlisting}
-Object<> k(L<> y){ return
-  new L<> extends Object<>(){ Object<> m(Object<> x){ return y.m(x); } }; }
-\end{lstlisting}
-In a call of \Q@k@ with a value \Q@v@ of class \Q@L@, the body of \Q@m@ becomes \Q@v.m(x)@, and \Q@v@ contains a copy of the method \Q@m@ binding \Q@x@ again.
-Without renaming, rule \textsc{innerFound} would replace \Q@x@ also in the method \Q@m@ of \Q@v@.
-With renaming, requirement A7 holds for the main expression at every step of the reduction.
-Rules \textsc{simpleFound}, \textsc{innerFound} and \textsc{ifThen} place values under the binders of the expression they substitute into.
-Those binders are fresh, so the values do not bind the same names.
-A substitution can copy a value, so several copies of a value can bind the same names; those copies are never nested, so they do not shadow each other.
-Thus a substitution never reaches a type variable or a variable bound inside the substituted expression.
 
 \subsection{Operational Semantics}
 \label{sec:opsem}
+We now present the reduction $\step{e}{e'}$ of the main expression.
+The reduction is small step, and uses the values $v$ and the evaluation contexts $\mathcal{E}$.
 {\small
 \begin{mathpar}
 \fbox{$\step{e}{e'}$}\\
@@ -355,6 +335,44 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 }
 \end{mathpar}
 \par}
+
+Most of the rules are standard.
+Rules \textsc{simpleFieldFound}, \textsc{simpleFieldSuper} and \textsc{innerFieldSuper} read a field.
+Rule \textsc{simpleFieldFound} reads a field declared by the class of the object.
+Rule \textsc{simpleFieldSuper} reads a field not declared by the class $C$ of the object from the object of the superclass of $C$, made of the remaining values.
+A local class declares no fields, so rule \textsc{innerFieldSuper} reads every field from the object of the superclass.
+
+Rules \textsc{ifThen} and \textsc{ifElse} test the class of the value $v$ against the class $C'$ of the type test, ignoring the type arguments of $C'$.
+Rule \textsc{ifThen} reduces to $e_1$ with $x$ replaced by $v$; rule \textsc{ifElse} reduces to $e_2$.
+
+Rules \textsc{simpleAddSuper}, \textsc{simpleFound}, \textsc{innerFound}, \textsc{innerSuper} and \textsc{searchSuper} call a method.
+Rule \textsc{simpleAddSuper} turns a call on an object of a top-level class into a super call starting from the class of the object.
+Rule \textsc{simpleFound} runs the method $m$ found in the class of a super call, replacing the type variables of the class and of the method, \Q@this@ and the parameters.
+Rule \textsc{innerFound} runs the method $m$ found in a value of a local class; the funnelled type variables are already replaced in that value, so only the type variables of the method are replaced.
+Rule \textsc{innerSuper} turns a call on a value of a local class without the method $m$ into a super call starting from its superclass.
+Rule \textsc{searchSuper} moves a super call to the superclass when the class does not declare $m$.
+Rule \textsc{ctx} reduces inside an evaluation context.
+
+Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} also use the relation $\mathsf{fresh}$.
+The names bound in an expression $e$ are the variable of every \Q@if@ in $e$ and the type variables and parameters of every method of a local class in $e$.
+The names bound in a method $M$ are the type variables of its signature, its parameters, and the names bound in its body.
+An expression $\mathsf{fresh}(e)$ is $e$ where every name bound in $e$ is renamed into a fresh name, that is a name occurring nowhere in the program; distinct binders get distinct fresh names.
+A method $\mathsf{fresh}(M)$ is $M$ renamed in the same way.
+Thus $\mathsf{fresh}$ is not a function: a rule using $\mathsf{fresh}$ can choose any fresh names.
+The variable \Q@this@ is never renamed.
+Renaming is needed because a value of a local class carries the code of its methods.
+For example, consider a local class \Q@L@ whose method \Q@m@ has a parameter \Q@x@ and calls \Q@m@ on a captured value \Q@y@ of class \Q@L@:
+\begin{lstlisting}
+Object<> k(L<> y){ return
+  new L<> extends Object<>(){ Object<> m(Object<> x){ return y.m(x); } }; }
+\end{lstlisting}
+In a call of \Q@k@ with a value \Q@v@ of class \Q@L@, the body of \Q@m@ becomes \Q@v.m(x)@, and \Q@v@ contains a copy of the method \Q@m@ binding \Q@x@ again.
+Without renaming, rule \textsc{innerFound} would replace \Q@x@ also in the method \Q@m@ of \Q@v@.
+With renaming, requirement A7 holds for the main expression at every step of the reduction.
+Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} place values under the binders of the expression they substitute into.
+Those binders are fresh, so the values do not bind the same names.
+A substitution can copy a value, so several copies of a value can bind the same names; those copies are never nested, so they do not shadow each other.
+Thus a substitution never reaches a type variable or a variable bound inside the substituted expression.
 
 %Not totally sure about Ts vs Gs vs Fs in LHS of match
 %\[
