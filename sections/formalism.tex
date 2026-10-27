@@ -169,9 +169,9 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \[
 \begin{array}{rcl}
 M\in K & \textrm{iff} & M\in\pl{M}\\
-\multicolumn{3}{l}{\quad\textrm{where }K=\subclass{\_}{\_}{\_}{\_}{\pl{M}}{\_}\textrm{ or }K=\innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}}\\
+\multicolumn{3}{l}{\quad\textrm{where }K\in\{\subclass{\_}{\_}{\_}{\_}{\pl{M}}{\_},\innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}\}}\\
 M\in C & \textrm{iff} & M\in K\\
-\multicolumn{3}{l}{\quad\textrm{where }\declared{K}\textrm{ and }K\textrm{ declares }C}\\[1ex]
+\multicolumn{3}{l}{\quad\textrm{where }\declared{K}\textrm{ and }K\in\{\subclass{C}{\_}{\_}{\_}{\_}{\_},\innerobj{C}{\_}{\_}{\_}{\_}{\_}\}}\\[1ex]
 \generic{C} & = & \gen{C}{\mathrm{dom}(\Delta)}\\
 \multicolumn{3}{l}{\quad\textrm{where }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls}\\
 \generic{C} & = & \gen{C}{|\pl{F}|}\\
@@ -184,7 +184,6 @@ M\in C & \textrm{iff} & M\in K\\
 
 By well-formedness requirement A1, a class name $C$ identifies at most one $K$ with $\declared{K}$.
 $M\in K$ holds when $M$ is a method of the class declaration $K$, top-level or local.
-A class declaration $K$ declares the class $C$ written after \Q@class@ or \Q@new@ in $K$.
 $M\in C$ holds when $M$ is a method of the declared class $C$, top-level or local.
 For a class type $\gen{C}{\pl{T}}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}''$ gives the bounds $\Delta_0$ of the type variables that the methods of $C$ see, without the type variables of the methods themselves.
 It also gives the types $\pl{T}''$ that the arguments $\pl{T}$ assign to the type variables in $\Delta_0$.
