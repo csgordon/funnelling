@@ -106,7 +106,7 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
     &&& \mid \mathcal{E}\fstop f \mid \obj{C}{\pl{G}}{\pl{v},\mathcal{E},\pl{e}}\\
     &&& \mid \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v},\mathcal{E},\pl{e}}{\pl{M}}\\
     &&& \mid \ifthen{\mathcal{E}}{G}{x}{e_1}{e_2}\\
-\textrm{Contexts} & \mathcal{C} & ::= & \square \mid \call{\mathcal{C}}{\pl{T}}{m}{\pl{e}} \mid \call{e}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
+\textrm{Expr. Ctx.} & \mathcal{C} & ::= & \square \mid \call{\mathcal{C}}{\pl{T}}{m}{\pl{e}} \mid \call{e}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
     &&& \mid \explicitcall{\mathcal{C}}{T}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
     &&& \mid \mathcal{C}\fstop f \mid \obj{C}{\pl{T}}{\pl{e},\mathcal{C},\pl{e}'}\\
     &&& \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e},\mathcal{C},\pl{e}'}{\pl{M}}\\
@@ -210,8 +210,8 @@ The function $\mathsf{scope}(\Delta;\pl{F};\pl{T})$ goes through the funnels $\p
 At the position of a funnel $\funnel{X}$, it adds $\ext{X}{\Delta(X)}$ to the bounds and the argument to the types.
 At the position of a ground funnel $G$, the argument must be $G$ itself, and nothing is added.
 The operator $\cdot$ concatenates two results of $\mathsf{scope}$, component by component.
-An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for a context $\mathcal{C}$ of Section~\ref{sec:contexts}.
-Contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
+An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for an expression context $\mathcal{C}$ of Section~\ref{sec:contexts}.
+Expression contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
 The reduction of Section~\ref{sec:opsem} uses the values $v$ and the evaluation contexts $\mathcal{E}$ of Section~\ref{sec:contexts}.
 \\[1ex]
 Rules \textsc{simpleFound}, \textsc{innerFound} and \textsc{ifThen} use the relation $\mathsf{fresh}$.
