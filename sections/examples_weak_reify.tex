@@ -71,7 +71,7 @@ public class Broken {
 
 As in Example~2, the method \Q@apply@ of the lambda class throws the \Q@ClassCastException@.
 
-\subsection{Example 4: Pattern Matching in \texttt{switch}}
+\subsection{Example 4: Pattern Matching in \Q@switch@}
 Example~4 exercises the same fault with a \Q@switch@ instead of an \Q@instanceof@.
 Here the case \Q@case MyFoo local@ performs the same type test as the pattern \Q@other instanceof MyFoo local@ of Example~3.
 
@@ -98,7 +98,7 @@ public class Broken {
 \end{lstlisting}
 \end{minipage}
 
-\subsection{Example 5: No \texttt{checkcast} on the Result}
+\subsection{Example 5: No \Q@checkcast@ on the Result}
 Example~5 exercises the same fault without a \Q@checkcast@ instruction on the result of \Q@f.apply@ in the bytecode of \Q@m@.
 Example~5 could be expressed with either the \Q@switch@ of Example~4 or the \Q@instanceof@ of Example~3; here we chose the switch, but the other way would make the same point.
 Example~5 uses \Q@Function<X,Integer>@ and the lambda \Q@s->s.length()@ instead of \Q@Function<X,String>@ and the lambda \Q@s->s@.
@@ -140,7 +140,7 @@ In Examples~2 to~5, the value with the wrong type is the argument of \Q@f.apply@
 The method \Q@apply@ of the lambda class casts that argument to \Q@String@ before \Q@m@ receives any result from \Q@f.apply@.
 Thus the failure is detected at the same point in Examples~2 to~5, whether or not the bytecode of \Q@m@ contains a \Q@checkcast@ instruction on the result of \Q@f.apply@.
 
-\subsection{Example 6: \texttt{X} Only in Private Members}
+\subsection{Example 6: \Q@X@ Only in Private Members}
 Example~6 exercises the same fault without \Q@X@ in the public signature of \Q@MyFoo@.
 Here \Q@MyFoo@ extends \Q@Object@, and its only public method \Q@show@ takes a \Q@MyFoo@ and returns a \Q@String@.
 \Q@X@ occurs only in the type of the private field \Q@v@, and in the body of \Q@show@, through the captured \Q@f@.
@@ -326,7 +326,7 @@ The calls \Q@r1=m<int>(nullptr,&i)@ and then \Q@m<std::string>(r1,&s)@ mirror Ex
 In the second call, the \Q@dynamic_cast@ at Line \ref{line:cpp_cast} returns \Q@nullptr@:
 \Q@m<int>@ and \Q@m<std::string>@ declare two distinct classes \Q@MyFoo@, and \Q@r1@ is an instance of the first one.
 Thus the second call returns a new \Q@MyFoo@, as a sound type test should.
-In its diagnostics, \texttt{gcc} names the first class \Q@m<int>(Object*, const int*)::MyFoo@:
+In its diagnostics, \Q@gcc@ names the first class \Q@m<int>(Object*, const int*)::MyFoo@:
 the instantiation of the method signature is the scope of the declaration of \Q@MyFoo@.
 Inside the template \Q@m<X>@, the C++ type system sees \Q@MyFoo@ as the dependent type \Q@m<X>::MyFoo@.
 So C++ does expose \Q@X@ in the type of \Q@MyFoo@: through the name of the enclosing scope instead of through a generic parameter of \Q@MyFoo@.
@@ -406,7 +406,7 @@ Rule \textsc{new-local-java} enables the unsound Java typing:
 \inferrule[new-local-java]{
   \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\
   \kind{\Delta}{\gen{C'}{\pl{T}}}\\\\
-  \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\;\this}{\pl{M}}\\\\
+  \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\gap\this}{\pl{M}}\\\\
   \forall C'',\pl{T}'\ldotp\subtype{\Delta}{\gen{C'}{\pl{T}}}{\gen{C''}{\pl{T}'}}\Rightarrow
     \mathsf{overrideOk}(\gen{C''}{\pl{T}'},\pl{M})
 }{
@@ -423,7 +423,7 @@ The syntax \Q@new C<> extends C'<Ts>(es){Ms}@ forms a (named) local class.
 A local class creates an instance as an anonymous class does, thus a local class is easy to use in an expression-based language.
 A local class also declares its own name, thus \Q@instanceof@ can test for a local class.
 \\[1ex]
-Rule \textsc{new-local-java} types the methods $\pl{M}$ of the local class $C$ under all the bounds $\Delta$ and all the variables $\Gamma$ in scope, except \this, which has type $\gen{C}{}$.
+Rule \textsc{new-local-java} types the methods $\pl{M}$ of the local class $C$ under all the bounds $\Delta$ and all the variables $\Gamma$ in scope, except \Q@this@, which has type $\gen{C}{}$.
 The example above is well typed using the type rules of Section~\ref{sec:core} and rule \textsc{new-local-java}.
 The main expression is the first line of the reduction below, and it has type \Q@B<>@.
 We now show the small step reduction using the abbreviations \Q@eA@, \Q@vA@ and \Q@vB@, and omitting the renaming of bound variables:
