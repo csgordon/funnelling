@@ -2,11 +2,11 @@
 With our language primitives in place, we now consider type safety of two variants of our language.
 The two variants differ only in the typing of local classes:
 \begin{enumerate}
-\item $\zeta(\mathsf{Java})$ types local classes with rule \textsc{new-local-java} of Section~\ref{sec:funnelling}, as Java does;
-\item $\zeta(\mathsf{funnelled})$ types local classes with rule \textsc{new-local} of Section~\ref{sec:typing}.
+\item $\zeta(\mathsf{Java})$ types local classes with rule \textsc{new-local-java}, as Java does;
+\item $\zeta(\mathsf{funnelled})$ types local classes with rule \textsc{new-local}.
 \end{enumerate}
 Both variants use the type test of Java:
-rule \textsc{if-instanceof} accepts only checked casts (Section~\ref{sec:cast}), and at run time rules \textsc{ifThen} and \textsc{ifElse} compare class names only.
+rule \textsc{if-instanceof} accepts only checked casts, and at run time rules \textsc{ifThen} and \textsc{ifElse} compare class names only.
 As shown in Section~\ref{sec:core}, $\zeta(\mathsf{Java})$ is unsound.
 We now show that $\zeta(\mathsf{funnelled})$ is sound.
 In the statements below, the program $\decls\gap e$ satisfies well-formedness requirements A1-A9, and $\mathsf{Dec}\gap\mathrm{Ok}$ holds for every $\mathsf{Dec}\in\decls$.

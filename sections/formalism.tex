@@ -6,7 +6,7 @@
 
 We now present the core language of Section~\ref{sec:funnelling}: its syntax, its small step reduction and its type rules.
 The type rules encode funnelling.
-Replacing rule \textsc{new-local} with rule \textsc{new-local-java} of Section~\ref{sec:funnelling} gives the Java typing of local classes.
+Replacing rule \textsc{new-local} with rule \textsc{new-local-java} gives the Java typing of local classes.
 
 \subsection{Syntax}
 \label{sec:syntax}
@@ -189,7 +189,7 @@ For a class type $\gen{C}{\pl{T}}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\p
 It also gives the types $\pl{T}''$ that the arguments $\pl{T}$ assign to the type variables in $\Delta_0$.
 For a top-level class, $\Delta_0$ is the bounds of the class and $\pl{T}''=\pl{T}$.
 $\mathsf{scope}(\_)=\Delta;\pl{T}$ is expected to always return a $\Delta$ and a $\pl{T}$ of the same length.
-This is enforced at the usage points, where we use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution of Section~\ref{sec:substitution}, defined only when $\Delta$ and $\pl{T}$ have the same length.
+This is enforced at the usage points, where we use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length.
 \\[1ex]
 For a type variable $X$, $\Delta(X)$ is the bound of $X$ in $\Delta$.
 $\mathrm{dom}(\Delta)$ is the sequence of the type variables in $\Delta$, and $\mathrm{cod}(\Delta)$ is the sequence of the bounds in $\Delta$.
@@ -207,10 +207,10 @@ Finally, $m\not\in\pl{M}$ holds when no method in $\pl{M}$ has name $m$.
 The pairing $\pairing{\Delta}{\pl{F}}{\pl{T}}$ goes through the funnels $\pl{F}$ and the arguments $\pl{T}$ together, one position at a time, where $\emptyset$ is the empty sequence.
 At the position of a funnel $\funnel{X}$, it adds $\ext{X}{\Delta(X)}$ to the bounds and the argument to the types.
 At the position of a ground funnel $G$, the argument must be $G$ itself, and nothing is added.
-The operator $\cdot$ concatenates two results of a pairing, component by component.
-An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for an expression context $\mathcal{C}$ of Section~\ref{sec:contexts}.
+The operator $(\Delta;\pl{T})\cdot(\Delta';\pl{T}')$ concatenates two results of a pairing, component by component.
+An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for an expression context $\mathcal{C}$.
 Expression contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
-The reduction of Section~\ref{sec:opsem} uses the values $v$ and the evaluation contexts $\mathcal{E}$ of Section~\ref{sec:contexts}.
+The reduction uses the values $v$ and the evaluation contexts $\mathcal{E}$.
 \\[1ex]
 Rules \textsc{simpleFound}, \textsc{innerFound} and \textsc{ifThen} use the relation $\mathsf{fresh}$.
 The names bound in an expression $e$ are the variable of every \Q@if@ in $e$ and the type variables and parameters of every method of a local class in $e$.
@@ -220,9 +220,13 @@ A method $\mathsf{fresh}(M)$ is $M$ renamed in the same way.
 Thus $\mathsf{fresh}$ is not a function: a rule using $\mathsf{fresh}$ can choose any fresh names.
 The variable \Q@this@ is never renamed.
 Renaming is needed because a value of a local class carries the code of its methods.
-For example, consider a local class \Q@L@ whose method \Q@m@ has a parameter \Q@x@ and calls \Q@m@ on a captured value of class \Q@L@.
-The body of a call of \Q@m@ then contains the captured value, and the captured value contains a copy of the method \Q@m@ binding \Q@x@ again.
-Without renaming, rule \textsc{innerFound} would replace \Q@x@ also in the method \Q@m@ of the captured value.
+For example, consider a local class \Q@L@ whose method \Q@m@ has a parameter \Q@x@ and calls \Q@m@ on a captured value \Q@y@ of class \Q@L@:
+\begin{lstlisting}
+Object<> k(L<> y){ return
+  new L<> extends Object<>(){ Object<> m(Object<> x){ return y.m(x); } }; }
+\end{lstlisting}
+In a call of \Q@k@ with a value \Q@v@ of class \Q@L@, the body of \Q@m@ becomes \Q@v.m(x)@, and \Q@v@ contains a copy of the method \Q@m@ binding \Q@x@ again.
+Without renaming, rule \textsc{innerFound} would replace \Q@x@ also in the method \Q@m@ of \Q@v@.
 With renaming, requirement A7 holds for the main expression at every step of the reduction.
 Rules \textsc{simpleFound}, \textsc{innerFound} and \textsc{ifThen} place values under the binders of the expression they substitute into.
 Those binders are fresh, so the values do not bind the same names.
@@ -738,7 +742,7 @@ The variable $x'$ of an \Q@if@ and the parameters $x'_1,\ldots,x'_k$ of a method
 
 \subsection{Java Typing of Local Classes}
 \label{sec:java}
-Rule \textsc{new-local-java} of Section~\ref{sec:funnelling} types local classes as Java does.
+Rule \textsc{new-local-java} types local classes as Java does.
 A local class has no funnels, and its methods are typed under the full $\Delta$ and $\Gamma$ in scope, except for \Q@this@.
 Replacing rule \textsc{new-local} with rule \textsc{new-local-java} makes our system unsound for the same reason Java is unsound.
 Consider the method \Q@mk@ below, the method \Q@m@ of Example~1 in our syntax:
