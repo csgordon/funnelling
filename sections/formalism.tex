@@ -142,7 +142,7 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \[
 \begin{array}{rcl}
 \mathsf{scope}(\gen{C}{\pl{T}}) & = & \Delta;\pl{T}\\
-\multicolumn{3}{l}{\quad\textrm{where }\subclass{C}{\Delta}{\_}{\_}{\_}{\_}\in\decls}\\
+\multicolumn{3}{l}{\quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}}\\
 \mathsf{scope}(\gen{C_0}{\pl{T}}) & = & \pairing{\Delta,\Delta'}{\pl{F}}{\pl{T}}\\
 \multicolumn{3}{l}{\quad\textrm{where }\method{\Delta'}{\_}{m}{\_}{\ret{e}}\in C}\\
 \multicolumn{3}{l}{\quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e}\\
@@ -185,9 +185,9 @@ M\in C & \textrm{iff} & M\in K\\
 By well-formedness requirement A1, a class name $C$ identifies at most one $K$ with $\declared{K}$.
 $M\in K$ holds when $M$ is a method of the class declaration $K$, top-level or local.
 $M\in C$ holds when $M$ is a method of the declared class $C$, top-level or local.
-For a class type $\gen{C}{\pl{T}}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}''$ gives the bounds $\Delta_0$ of the type variables that are in scope for all the methods of $C$.\footnote{Note that the type variables declared by each individual generic method are not accounted for here.}
-It also gives the types $\pl{T}''$ that the arguments $\pl{T}$ assign to the type variables in $\Delta_0$.
-For a top-level class, $\Delta_0$ is the bounds of the class and $\pl{T}''=\pl{T}$.
+For a class type $\gen{C}{\pl{T}}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}_0$ gives the bounds $\Delta_0$ of the type variables that are in scope for all the methods of $C$.\footnote{Note that the type variables declared by each individual generic method are not accounted for here.}
+It also gives the types $\pl{T}_0$ that the arguments $\pl{T}$ assign to the type variables in $\Delta_0$.
+For a top-level class, $\Delta_0$ is the bounds of the class and $\pl{T}_0=\pl{T}$.
 $\mathsf{scope}(\_)=\Delta;\pl{T}$ is expected to always return a $\Delta$ and a $\pl{T}$ of the same length.
 This is enforced at the usage points, where we use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length.
 \\[1ex]
@@ -219,7 +219,7 @@ The reduction is small step, and uses the values $v$ and the evaluation contexts
 \begin{mathpar}
 \fbox{$\step{e}{e'}$}\\
 \inferrule[simpleFieldFound]{
-    \subclass{C}{\_}{\_}{\_}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}\in\decls\\
+    \declared{\subclass{C}{\_}{\_}{\_}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}}\\
     f_i\in f_1,\ldots,f_n
 }{
     \step{
@@ -230,7 +230,7 @@ The reduction is small step, and uses the values $v$ and the evaluation contexts
 }
 \and
 \inferrule[simpleFieldSuper]{
-    \subclass{C}{\Delta}{C'}{\pl{T}}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}\in\decls\\
+    \declared{\subclass{C}{\Delta}{C'}{\pl{T}}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}}\\
     f\not\in f_1,\ldots,f_n\\
     C\neq\Object
 }{
@@ -289,7 +289,7 @@ The reduction is small step, and uses the values $v$ and the evaluation contexts
 }
 \and
 \inferrule[simpleFound]{
-    \subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}\in\decls\\
+    \declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\
     M\in\pl{M}\\
     \mathsf{fresh}(M)=\method{\Delta'}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e_0}}\\
     e = \tsubst{\tsubst{e_0}{\Delta,\Delta'}{\pl{G},\pl{G}'}}{\this,x_1,\ldots,x_n}{v_0,\ldots,v_n}
@@ -317,7 +317,7 @@ The reduction is small step, and uses the values $v$ and the evaluation contexts
 }
 \and
 \inferrule[searchSuper]{
-    \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\_}\in\decls\\
+    \declared{\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\_}}\\
     m\not\in \pl{M}\\
     C\neq\Object
 }{
@@ -412,8 +412,8 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 }
 \and
 \inferrule[declField]{
-  \typing{\Delta}{\Gamma}{e}{\classtype{C}{\pl{T}}}\\\\
-  \subclass{C}{\Delta'}{\_}{\_}{\_}{\pl{S}}\in\decls\\\\
+  \typing{\Delta}{\Gamma}{e}{\classtype{C}{\pl{T}'}}\\\\
+  \declared{\subclass{C}{\Delta'}{\_}{\_}{\_}{\pl{S}}}\\\\
   T\gap f\semi\in\pl{S}
 }{
   % thanks to subsumption, no need of multiple rules (C<Ts> can simply be set to supertype of relevance, via subsumption)
@@ -423,72 +423,72 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 \end{mathpar}
 \begin{mathpar}
 \inferrule[call-top]{
-  \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}'}}\\
-  \kind{\Delta}{\pl{T}''}\\\\
+  \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\
+  \kind{\Delta}{\pl{T}_1}\\\\
   \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\pl{M}}{\_}}\\\\
   \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in \pl{M}\\\\
-  \subtype{\Delta}{\pl{T}''}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}',\pl{T}''}}\\\\
-  \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{\tsubst{T_1,\ldots,T_n}{\Delta_0,\Delta_1}{\pl{T}',\pl{T}''}}
+  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}\\\\
+  \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{\tsubst{T_1,\ldots,T_n}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}
 }{
-  \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}''}{m}{e_1,\ldots,e_n}}{\tsubst{T_0}{\Delta_0,\Delta_1}{\pl{T}',\pl{T}''}}
+  \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}}{\tsubst{T_0}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}
 }
 \and
 \inferrule[call-local]{
-  \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}'}}\\
-  \kind{\Delta}{\pl{T}''}\\\\
+  \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\
+  \kind{\Delta}{\pl{T}_1}\\\\
   \declared{\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\pl{M}}}\\\\
   \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in \pl{M}\\\\
-  \subtype{\Delta}{\pl{T}''}{\tsubst{\mathrm{cod}(\Delta_1)}{\pl{F},\Delta_1}{\pl{T}',\pl{T}''}}\\\\
-  \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{\tsubst{T_1,\ldots,T_n}{\pl{F},\Delta_1}{\pl{T}',\pl{T}''}}
+  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\pl{F},\Delta_1}{\pl{T}_0,\pl{T}_1}}\\\\
+  \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{\tsubst{T_1,\ldots,T_n}{\pl{F},\Delta_1}{\pl{T}_0,\pl{T}_1}}
 }{
   \typing{\Delta}{\Gamma}{
-    \call{e_0}{\pl{T}''}{m}{e_1,\ldots,e_n}
-  }{\tsubst{T_0}{\pl{F},\Delta_1}{\pl{T}',\pl{T}''}}
+    \call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}
+  }{\tsubst{T_0}{\pl{F},\Delta_1}{\pl{T}_0,\pl{T}_1}}
 }
 \and
 \inferrule[call-lb-runtime]{
-  \typing{\Delta}{\Gamma}{e_0}{\gen{C}{\pl{T}'''}}\\
-  \kind{\Delta}{\gen{C}{\pl{T}'''}}\\
-  \kind{\Delta}{\pl{T}''}\\\\
-  \subclass{C}{\_}{\_}{\_}{\_}{\_}\in\decls\\
-  \subtype{\Delta}{\gen{C}{\pl{T}'''}}{\gen{C_0}{\pl{T}'}}\\\\
+  \typing{\Delta}{\Gamma}{e_0}{\gen{C}{\pl{T}}}\\
+  \kind{\Delta}{\gen{C}{\pl{T}}}\\
+  \kind{\Delta}{\pl{T}_1}\\\\
+  \declared{\subclass{C}{\_}{\_}{\_}{\_}{\_}}\\
+  \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C_0}{\pl{T}_0}}\\\\
   \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\pl{M}}{\_}}\\
   \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in \pl{M}\\\\
-  \subtype{\Delta}{\pl{T}''}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}',\pl{T}''}}\\\\
-  \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{\tsubst{T_1,\ldots,T_n}{\Delta_0,\Delta_1}{\pl{T}',\pl{T}''}}
+  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}\\\\
+  \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{\tsubst{T_1,\ldots,T_n}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}
 }{
   \typing{\Delta}{\Gamma}{
-    \explicitcall{e_0}{\gen{C}{\pl{T}'''}}{\pl{T}''}{m}{e_1,\ldots,e_n}
-  }{\tsubst{T_0}{\Delta_0,\Delta_1}{\pl{T}',\pl{T}''}}
+    \explicitcall{e_0}{\gen{C}{\pl{T}}}{\pl{T}_1}{m}{e_1,\ldots,e_n}
+  }{\tsubst{T_0}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}
 }
 \end{mathpar}
 \begin{mathpar}
 \inferrule[new-top]{
-  \declared{\subclass{C}{\Delta'}{C'}{\pl{T}'}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}}\\\\
-  \typing{\Delta}{\Gamma}{\obj{C'}{\tsubst{\pl{T}'}{\Delta'}{\pl{T}}}{\pl{e}}}{\_}\\
-  \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{\tsubst{T_1,\ldots,T_n}{\Delta'}{\pl{T}}}\\
-  \kind{\Delta}{\gen{C}{\pl{T}}}
+  \declared{\subclass{C}{\Delta'}{C'}{\pl{T}}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}}\\\\
+  \typing{\Delta}{\Gamma}{\obj{C'}{\tsubst{\pl{T}}{\Delta'}{\pl{T}'}}{\pl{e}}}{\_}\\
+  \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{\tsubst{T_1,\ldots,T_n}{\Delta'}{\pl{T}'}}\\
+  \kind{\Delta}{\gen{C}{\pl{T}'}}
 }{
-  \typing{\Delta}{\Gamma}{\obj{C}{\pl{T}}{e_1,\ldots,e_n,\pl{e}}}{\gen{C}{\pl{T}}}
+  \typing{\Delta}{\Gamma}{\obj{C}{\pl{T}'}{e_1,\ldots,e_n,\pl{e}}}{\gen{C}{\pl{T}'}}
 }
 \and
 \inferrule[new-local]{
   \pairing{\Delta}{\pl{F}}{|\pl{F}|}=\Delta';\_\\
   \ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')\\
   \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\\\
-  \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\
-  \kind{\Delta'}{\gen{C'}{\pl{T}}}\\\\
+  \typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}\\
+  \kind{\Delta'}{\gen{C_0}{\pl{T}}}\\\\
   \Gamma'=\{ T\gap x \mid T\gap x\in\Gamma \land x\neq\this \land \ftv{T}\subseteq\ftv{|\pl{F}|} \}\\\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
   \mok{\Delta'}{\Gamma',\gen{C}{|\pl{F}|}\gap\this}{\pl{M}}\\\\
-  \forall C'',\pl{T}'\ldotp\subtype{\Delta'}{\gen{C'}{\pl{T}}}{\gen{C''}{\pl{T}'}}\Rightarrow
-    \mathsf{overrideOk}(\gen{C''}{\pl{T}'},\pl{M})\\\\
-  \declared{\innerobj{C}{\pl{F}_0}{C'}{\pl{T}_0}{\_}{\pl{M}_0}}\\
+  \forall C_1,\pl{T}_1\ldotp\subtype{\Delta'}{\gen{C_0}{\pl{T}}}{\gen{C_1}{\pl{T}_1}}\Rightarrow
+    \mathsf{overrideOk}(\gen{C_1}{\pl{T}_1},\pl{M})\\\\
+  \declared{\innerobj{C}{\pl{F}_0}{C_0}{\pl{T}_0}{\_}{\pl{M}_0}}\\
   \pl{T}=\tsubst{\pl{T}_0}{\pl{F}_0}{|\pl{F}|}\\\\
   \mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})\\
   \forall m\ldotp m\not\in\pl{M}\Rightarrow m\not\in\pl{M}_0
 }{
   \typing{\Delta}{\Gamma}{
-    \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}
+    \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}
   }{\gen{C}{|\pl{F}|}}
 }
 %
@@ -528,10 +528,10 @@ The rule constructs a restricted set of type bounds and variable bindings reflec
 $\Delta'$ includes only the explicitly-funnelled type variables, and $\Gamma'$ keeps only the variables of $\Gamma$, other than \Q@this@, whose types mention only type variables of the result type $\gen{C}{|\pl{F}|}$ (which must be well-kinded under $\Delta'$).
 The bounds $\Delta'$ are computed by $\pairing{\Delta}{\pl{F}}{|\pl{F}|}$, which is undefined when a funnelled type variable is not in $\Delta$.
 However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., an explicit call), but will reduce to a value which no longer depends on such type variables.
-This is why the premise $\typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C'}{\pl{T}}}$ ensures the resulting type of that
+This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ ensures the resulting type of that
 expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
 \\[1ex]
-The last premises of rule \textsc{new-local} make the local class agree with its declaration $\innerobj{C}{\pl{F}_0}{C'}{\pl{T}_0}{\_}{\pl{M}_0}$.
+The last premises of rule \textsc{new-local} make the local class agree with its declaration $\innerobj{C}{\pl{F}_0}{C_0}{\pl{T}_0}{\_}{\pl{M}_0}$.
 The supertype and the method signatures of the local class are those of the declaration, with the funnelled type variables of $\pl{F}_0$ replaced by $|\pl{F}|$.
 The local class and the declaration have the same method names.
 For a local class in \decls, the declaration is the local class itself.
@@ -554,11 +554,11 @@ Rules \textsc{call-local} and \textsc{sub-inherit-local} read the declaration, w
 \inferrule[class-ok]{
   \kind{\Delta}{\mathrm{cod}(\Delta)}\\
   \forall T\gap f\semi\in\pl{S}\ldotp\kind{\Delta}{T}\\\\
-  \subclass{C'}{\_}{\_}{\_}{\_}{\_}\in\decls\\
+  \declared{\subclass{C'}{\_}{\_}{\_}{\_}{\_}}\\
   \kind{\Delta}{\gen{C'}{\pl{T}}}\\\\
   \mok{\Delta}{\gen{C}{\mathrm{dom}(\Delta)}\gap\this}{\pl{M}}\\\\
-  \forall C'',\pl{T}'\ldotp\subtype{\Delta}{\gen{C'}{\pl{T}}}{\gen{C''}{\pl{T}'}}\Rightarrow
-    \mathsf{overrideOk}(\gen{C''}{\pl{T}'},\pl{M})
+  \forall C_1,\pl{T}_1\ldotp\subtype{\Delta}{\gen{C'}{\pl{T}}}{\gen{C_1}{\pl{T}_1}}\Rightarrow
+    \mathsf{overrideOk}(\gen{C_1}{\pl{T}_1},\pl{M})
 }{
   \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}\gap\mathrm{Ok}
 }
@@ -579,14 +579,14 @@ Rules \textsc{call-local} and \textsc{sub-inherit-local} read the declaration, w
 \\
 \fbox{$\mathsf{overrideOk}(T,M)$}\\
 \inferrule[override-new]{
-  \subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}\in\decls\\
+  \declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\
   m\not\in\pl{M}
 }{
   \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\_}{\_}{m}{\_}{\_})
 }
 \and
 \inferrule[override-same]{
-  \subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}\in\decls\\\\
+  \declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\\\
   \method{\Delta''}{T''_0}{m}{T''_1\gap x'_1,\ldots,T''_n\gap x'_n}{\_}\in\pl{M}\\\\
   \tsubst{\mathrm{cod}(\Delta'')}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\\\
   \tsubst{T''_0,\ldots,T''_n}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n
@@ -622,9 +622,9 @@ Rule \textsc{override-local-same} compares a method of a local class with the me
 }
 \and
 \inferrule[wf-class]{
-  \mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}''\\
+  \mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}_0\\
   \kind{\Delta}{\pl{T}}\\\\
-  \subtype{\Delta}{\pl{T}''}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}''}}
+  \subtype{\Delta}{\pl{T}_0}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}_0}}
 }{
   \kind{\Delta}{\gen{C}{\pl{T}}}
 }
@@ -633,17 +633,17 @@ Rule \textsc{override-local-same} compares a method of a local class with the me
 \inferrule[sub-refl]{ }{\subtype{\Delta}{T}{T}}
 \and
 \inferrule[sub-inherit]{
-  \subclass{C}{\Delta_0}{C'}{\pl{T}'}{\_}{\_}\in\decls\\\\
-  \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}'}}{\Delta_0}{\pl{T}}}{T''}
+  \declared{\subclass{C}{\Delta_0}{C'}{\pl{T}}{\_}{\_}}\\\\
+  \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}}}{\Delta_0}{\pl{T}_0}}{T'}
 }{
-  \subtype{\Delta}{\gen{C}{\pl{T}}}{T''}
+  \subtype{\Delta}{\gen{C}{\pl{T}_0}}{T'}
 }
 \and
 \inferrule[sub-inherit-local]{
   \declared{\innerobj{C}{\pl{F}}{C'}{\pl{T}'}{\_}{\_}}\\\\
-  \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}'}}{\pl{F}}{\pl{T}}}{T''}
+  \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}'}}{\pl{F}}{\pl{T}}}{T'}
 }{
-  \subtype{\Delta}{\gen{C}{\pl{T}}}{T''}
+  \subtype{\Delta}{\gen{C}{\pl{T}}}{T'}
 }
 \and
 \inferrule[sub-var]{
@@ -656,7 +656,7 @@ Rule \textsc{override-local-same} compares a method of a local class with the me
 \par}
 
 Rule \textsc{wf-class} kinds both top-level and local classes, including a local class written in a method of another local class.
-Every type in $\pl{T}''$ is checked against the bound of its type variable in $\Delta_0$.
+Every type in $\pl{T}_0$ is checked against the bound of its type variable in $\Delta_0$.
 A funnelled type variable that is not in scope where its local class $C$ is written leaves $\mathsf{scope}(\gen{C}{\pl{T}})$ undefined; thus no type $\gen{C}{\pl{T}}$ is well kinded.
 
 \subsection{Checked Casts}

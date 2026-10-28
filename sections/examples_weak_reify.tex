@@ -407,8 +407,8 @@ Rule \textsc{new-local-java} enables the unsound Java typing:
   \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\
   \kind{\Delta}{\gen{C'}{\pl{T}}}\\\\
   \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\gap\this}{\pl{M}}\\\\
-  \forall C'',\pl{T}'\ldotp\subtype{\Delta}{\gen{C'}{\pl{T}}}{\gen{C''}{\pl{T}'}}\Rightarrow
-    \mathsf{overrideOk}(\gen{C''}{\pl{T}'},\pl{M})
+  \forall C_1,\pl{T}_1\ldotp\subtype{\Delta}{\gen{C'}{\pl{T}}}{\gen{C_1}{\pl{T}_1}}\Rightarrow
+    \mathsf{overrideOk}(\gen{C_1}{\pl{T}_1},\pl{M})
 }{
   \typing{\Delta}{\Gamma}{
     \innerobj{C}{}{C'}{\pl{T}}{\pl{e}}{\pl{M}}
