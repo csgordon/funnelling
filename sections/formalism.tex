@@ -426,40 +426,41 @@ Thus a substitution never reaches a type variable or a variable bound inside the
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\\\
   \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\pl{M}}{\_}}\\\\
   \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in \pl{M}\\\\
-  \kind{\Delta}{\pl{T}_1}\\
+  \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\\\
+  \kind{\Delta}{\pl{T}_1}\\\\
   \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}\\\\
-  \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{\tsubst{T_1,\ldots,T_n}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}
+  \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T'_1,\ldots,T'_n}
 }{
-  \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}}{\tsubst{T_0}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}
+  \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}}{T'_0}
 }
 \and
 \inferrule[call-local]{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\\\
   \declared{\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\pl{M}}}\\\\
   \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in \pl{M}\\\\
-  \kind{\Delta}{\pl{T}_1}\\
+  \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\pl{F},\Delta_1}{\pl{T}_0,\pl{T}_1}\\\\
+  \kind{\Delta}{\pl{T}_1}\\\\
   \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\pl{F},\Delta_1}{\pl{T}_0,\pl{T}_1}}\\\\
-  \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{\tsubst{T_1,\ldots,T_n}{\pl{F},\Delta_1}{\pl{T}_0,\pl{T}_1}}
+  \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T'_1,\ldots,T'_n}
 }{
-  \typing{\Delta}{\Gamma}{
-    \call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}
-  }{\tsubst{T_0}{\pl{F},\Delta_1}{\pl{T}_0,\pl{T}_1}}
+  \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}}{T'_0}
 }
-\and
+\\
 \inferrule[call-lb-runtime]{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C_0}{\pl{T}_0}}\\\\
   \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\pl{M}}{\_}}\\\\
   \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in \pl{M}\\\\
+  \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\\\
   \declared{\subclass{C}{\_}{\_}{\_}{\_}{\_}}\\
   \kind{\Delta}{\gen{C}{\pl{T}}}\\\\
-  \kind{\Delta}{\pl{T}_1}\\
+  \kind{\Delta}{\pl{T}_1}\\\\
   \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}\\\\
   \typing{\Delta}{\Gamma}{e_0}{\gen{C}{\pl{T}}}\\\\
-  \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{\tsubst{T_1,\ldots,T_n}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}
+  \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T'_1,\ldots,T'_n}
 }{
   \typing{\Delta}{\Gamma}{
     \explicitcall{e_0}{\gen{C}{\pl{T}}}{\pl{T}_1}{m}{e_1,\ldots,e_n}
-  }{\tsubst{T_0}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}
+  }{T'_0}
 }
 \end{mathpar}
 \begin{mathpar}
