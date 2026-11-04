@@ -119,22 +119,13 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \subsection{Declarations}
 \label{sec:declarations}
 {\small
-\begin{mathpar}
-\fbox{\declared{K}}\\
-\inferrule[decl-top]{
-  \mathsf{Dec}\in\decls
-}{
-  \declared{\mathsf{Dec}}
-}
-\and
-\inferrule[decl-local]{
-  \declared{K}\\
-  \method{\_}{\_}{m}{\_}{\ret{e}}\in K\\\\
-  \innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\textrm{ occurs in }e
-}{
-  \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}
-}
-\end{mathpar}
+\begin{Define}{\declared{K}}
+\declared{\mathsf{Dec}}\textrm{ iff }\mathsf{Dec}\in\decls\\[1ex]
+\declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}\\
+\quad\textrm{iff }\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\textrm{ occurs in }e\\
+\quad\textrm{where }\declared{K}\\
+\quad\phantom{\textrm{where }}\method{\_}{\_}{m}{\_}{\ret{e}}\in K
+\end{Define}
 \begin{Define}{\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}'}
 \mathsf{scope}(\gen{C}{\pl{T}}) = \Delta;\pl{T}\\
 \quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}\\
@@ -499,17 +490,14 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 }{
   \typing{\Delta}{\Gamma}{\ifthen{e_0}{T}{x}{e_1}{e_2}}{T'}
 }
-\\
-\fbox{$K\gap\mathsf{consistent}$}\\
-\inferrule[consistent]{
-  \declared{\innerobj{C}{\pl{F}'}{C_0}{\pl{T}'}{\_}{\pl{M}'}}\\
-  \pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\\\
-  \mathrm{dom}(\pl{M}')=\mathrm{dom}(\pl{M})\\
-  \mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})
-}{
-  \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}
-}
     \end{mathpar}
+\begin{Define}{K\gap\mathsf{consistent}}
+\innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
+\quad\textrm{iff }\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\
+\quad\phantom{\textrm{iff }}\mathrm{dom}(\pl{M}')=\mathrm{dom}(\pl{M})\\
+\quad\phantom{\textrm{iff }}\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})\\
+\quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C_0}{\pl{T}'}{\_}{\pl{M}'}}
+\end{Define}
 \par}
 
 The rule \textsc{new-local} is the heart of funnelling, including subtle management of type environments.
@@ -520,7 +508,7 @@ However, the rule still uses the \emph{full} ambient environments for checking c
 This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ ensures the resulting type of that
 expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
 \\[1ex]
-Rule \textsc{consistent} makes the local class agree with its declaration, found by the first premise of rule \textsc{consistent}.
+The local class $K$ in $K\gap\mathsf{consistent}$ agrees with its declaration, found by the \emph{where} line of the definition.
 The supertype and the method signatures of the local class are those of the declaration, with the funnelled type variables of $\pl{F}'$ replaced by $|\pl{F}|$.
 The local class and the declaration have the same method names.
 For a local class in \decls, the declaration is the local class itself; thus every local class in \decls is consistent.
@@ -531,13 +519,26 @@ Rules \textsc{call-local} and \textsc{sub-inherit-local} read the declaration, w
 \label{sec:classtyping}
 {\small
     \begin{mathpar}
-\fbox{$\vdash\decls\gap e\gap\mathrm{Ok}$}\\
+\begin{array}[t]{@{}c@{}}
+\fbox{$\vdash\decls\gap e\gap\mathrm{Ok}$}\cr\noalign{\vskip 2ex}
 \inferrule[prog-ok]{
   \forall\mathsf{Dec}\in\decls\ldotp\mathsf{Dec}\gap\mathrm{Ok}\\
   \typing{\emptyset}{\emptyset}{e}{\_}
 }{
   \vdash\decls\gap e\gap\mathrm{Ok}
 }
+\end{array}
+\and
+\begin{array}[t]{@{}c@{}}
+\fbox{\mok{\Delta}{\Gamma}{M}}\cr\noalign{\vskip 2ex}
+\inferrule[method-ok]{
+  \kind{\Delta,\Delta'}{\mathrm{cod}(\Delta')}\\
+  \kind{\Delta,\Delta'}{T_0,\ldots,T_n}\\\\
+  \typing{\Delta,\Delta'}{\Gamma,T_1\gap x_1,\ldots,T_n\gap x_n}{e}{T_0}
+}{
+  \mok{\Delta}{\Gamma}{\method{\Delta'}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e}}}
+}
+\end{array}
 \\
 \fbox{$\mathsf{Dec}\gap\mathrm{Ok}$}\\
 \inferrule[class-ok]{
@@ -550,26 +551,14 @@ Rules \textsc{call-local} and \textsc{sub-inherit-local} read the declaration, w
 }{
   \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}\gap\mathrm{Ok}
 }
-\\
-\fbox{\mok{\Delta}{\Gamma}{M}}\\
-\inferrule[method-ok]{
-  \kind{\Delta,\Delta'}{\mathrm{cod}(\Delta')}\\
-  \kind{\Delta,\Delta'}{T_0,\ldots,T_n}\\\\
-  \typing{\Delta,\Delta'}{\Gamma,T_1\gap x_1,\ldots,T_n\gap x_n}{e}{T_0}
-}{
-  \mok{\Delta}{\Gamma}{\method{\Delta'}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e}}}
-}
 %
 %  Bs,Bs';G,x1:T1,..xn:Tn |- e : T0
 %  Bs,Bs'|- T0 : Ok .. Bs|- Tn : Ok
 %------------------------------------------------------------------------
 %  Bs;G |- <Bs'> T0 m(T1 x1..Tn xn){return e;} : Ok
     \end{mathpar}
-\begin{Define}{\mathsf{overrideOk}(\Delta,T,\pl{M})\qquad\mathsf{overrideOk}(T,\pl{M})\qquad\mathsf{overrideOk}(T,M)}
-\mathsf{overrideOk}(\Delta,T,\pl{M})\textrm{ iff }\mathsf{overrideOk}(\gen{C}{\pl{T}},\pl{M})\\
-\quad\textrm{for every }\gen{C}{\pl{T}}\textrm{ such that }\subtype{\Delta}{T}{\gen{C}{\pl{T}}}\\
-\mathsf{overrideOk}(T,\pl{M})\textrm{ iff }\mathsf{overrideOk}(T,M)\\
-\quad\textrm{for every }M\textrm{ in }\pl{M}\\[1ex]
+\begin{Define}{\mathsf{overrideOk}(\Delta,T,\pl{M})\qquad\mathsf{overrideOk}(T,M)}
+\mathsf{overrideOk}(\Delta,T,\pl{M})\textrm{ iff }\mathsf{overrideOk}(\gen{C}{\pl{T}},\pl{M})\textrm{ for every }\gen{C}{\pl{T}}\textrm{ such that }\subtype{\Delta}{T}{\gen{C}{\pl{T}}}\\[1ex]
 \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\_}{\_}{m}{\_}{\_})\textrm{ iff }m\not\in\pl{M}\\
 \quad\textrm{where }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\[1ex]
 \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_n\gap x_n}{\_})\\
