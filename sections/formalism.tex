@@ -203,6 +203,8 @@ $\subtype{\Delta}{T_1,\ldots,T_n}{T'_1,\ldots,T'_n}$ is $\subtype{\Delta}{T_1}{T
 $\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T_1,\ldots,T_n}$ is $\typing{\Delta}{\Gamma}{e_1}{T_1}\quad\ldots\quad\typing{\Delta}{\Gamma}{e_n}{T_n}$;
 $\mathsf{overrideOk}(T,\pl{M})$ is $\mathsf{overrideOk}(T,M)$ for every $M$ in $\pl{M}$.
 Finally, $m\not\in\pl{M}$ holds when no method in $\pl{M}$ has name $m$.
+$\Gamma\setminus x$ is $\Gamma$ without the variable $x$.
+For a set of type variables $\pl{X}$, $\Gamma|_{\pl{X}}$ keeps the variables $T\gap x$ of $\Gamma$ such that $\ftv{T}\subseteq\pl{X}$.
 \\[1ex]
 The pairing $\pairing{\Delta}{\pl{F}}{\pl{T}}$ goes through the funnels $\pl{F}$ and the arguments $\pl{T}$ together, one position at a time, where $\emptyset$ is the empty sequence.
 At the position of a funnel $\funnel{X}$, it adds $\ext{X}{\Delta(X)}$ to the bounds and the argument to the types.
@@ -476,14 +478,13 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 \inferrule[new-local]{
   \declared{\innerobj{C}{\pl{F}_0}{C_0}{\pl{T}_0}{\_}{\pl{M}_0}}\\
   \pairing{\Delta}{\pl{F}}{|\pl{F}|}=\Delta';\_\\\\
-  \Gamma'=\{ T\gap x \mid T\gap x\in\Gamma \land x\neq\this \land \ftv{T}\subseteq\ftv{|\pl{F}|} \}\\\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
   \pl{T}=\tsubst{\pl{T}_0}{\pl{F}_0}{|\pl{F}|}\\
   \forall m\ldotp m\not\in\pl{M}\Rightarrow m\not\in\pl{M}_0\\
   \ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')\\\\
   \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\
   \kind{\Delta'}{\gen{C_0}{\pl{T}}}\\
   \typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}\\\\
-  \mok{\Delta'}{\Gamma',\gen{C}{|\pl{F}|}\gap\this}{\pl{M}}\\\\
+  \mok{\Delta'}{(\Gamma\setminus\this)|_{\mathrm{dom}(\Delta')},\gen{C}{|\pl{F}|}\gap\this}{\pl{M}}\\\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
   \mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})\\
   \forall C_1,\pl{T}_1\ldotp\subtype{\Delta'}{\gen{C_0}{\pl{T}}}{\gen{C_1}{\pl{T}_1}}\Rightarrow
     \mathsf{overrideOk}(\gen{C_1}{\pl{T}_1},\pl{M})
@@ -526,7 +527,7 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 
 The rule \textsc{new-local} is the heart of funnelling, including subtle management of type environments.
 The rule constructs a restricted set of type bounds and variable bindings reflecting only the explicitly-funnelled type variables:
-$\Delta'$ includes only the explicitly-funnelled type variables, and $\Gamma'$ keeps only the variables of $\Gamma$, other than \Q@this@, whose types mention only type variables of the result type $\gen{C}{|\pl{F}|}$ (which must be well-kinded under $\Delta'$).
+$\Delta'$ includes only the explicitly-funnelled type variables, and $(\Gamma\setminus\this)|_{\mathrm{dom}(\Delta')}$ keeps only the variables of $\Gamma$, other than \Q@this@, whose types mention only the funnelled type variables $\mathrm{dom}(\Delta')$; those are the type variables of the result type $\gen{C}{|\pl{F}|}$ (which must be well-kinded under $\Delta'$).
 The bounds $\Delta'$ are computed by $\pairing{\Delta}{\pl{F}}{|\pl{F}|}$, which is undefined when a funnelled type variable is not in $\Delta$.
 However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., an explicit call), but will reduce to a value which no longer depends on such type variables.
 This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ ensures the resulting type of that
