@@ -32,8 +32,9 @@ The second call of \Q@m@ instantiates \Q@X@ with \Q@String@.
 In the second call, \Q@other instanceof MyFoo@ is true, and the cast \Q@(MyFoo)other@ at Line~\ref{line:ex2cast} succeeds with no warning.
 Then \Q@local.x()@ has static type \Q@String@, but returns the \Q@Integer@ \Q@5@, and \Q@f.apply(local.x())@ at Line~\ref{line:ex2apply} throws a \Q@ClassCastException@.
 
+\todo[inline]{consider moving this level of detail (the cast is in a generated synthetic method) to the appendix. Maybe just say "the cast is in generated code" and put the rest in an appendix? Or footnote?}
 No instruction of \Q@m@ performs the failing cast.
-javac compiles the body of the lambda \Q@s->s@ into a private static method \Q@lambda$main$1(String)@ of the class \Q@Broken@.
+\texttt{javac} compiles the body of the lambda \Q@s->s@ into a private static method \Q@lambda$main$1(String)@ of the class \Q@Broken@.
 At run time, the first evaluation of the lambda \Q@s->s@ calls \Q@LambdaMetafactory@, which generates a class implementing \Q@Function@; we call this class the \emph{lambda class}.
 The method \Q@apply(Object)@ of the lambda class casts its argument to \Q@String@, and then calls \Q@lambda$main$1@ with the result of that cast.
 Thus \Q@f.apply(local.x())@ passes the \Q@Integer@ \Q@5@ to the method \Q@apply@ of the lambda class, and the cast to \Q@String@ in that method throws the \Q@ClassCastException@.
@@ -72,6 +73,7 @@ public class Broken {
 As in Example~2, the method \Q@apply@ of the lambda class throws the \Q@ClassCastException@.
 
 \subsection{Example 4: Pattern Matching in \Q@switch@}
+\todo[inline]{Colins ays: this should be one sentence after previous example that a switch can trigger the same thing, and ref to an appendix w/ code}
 Example~4 exercises the same fault with a \Q@switch@ instead of an \Q@instanceof@.
 Here the case \Q@case MyFoo local@ performs the same type test as the pattern \Q@other instanceof MyFoo local@ of Example~3.
 
@@ -99,6 +101,7 @@ public class Broken {
 \end{minipage}
 
 \subsection{Example 5: No \Q@checkcast@ on the Result}
+\todo[inline]{this is redundant with example 2's lambda discussion. Maybe use this code for three examples: Object vs. generic type, switch instead of explicit instanceof, and lambda moving cast failure to synthesized method. actually the actual lambdas are different. Can we fold example 5 into example 2 by changing line 12 to ``""+s.length''?}
 Example~5 exercises the same fault without a \Q@checkcast@ instruction on the result of \Q@f.apply@ in the bytecode of \Q@m@.
 Example~5 could be expressed with either the \Q@switch@ of Example~4 or the \Q@instanceof@ of Example~3; here we chose the switch, but the other way would make the same point.
 Example~5 uses \Q@Function<X,Integer>@ and the lambda \Q@s->s.length()@ instead of \Q@Function<X,String>@ and the lambda \Q@s->s@.
@@ -145,6 +148,9 @@ Example~6 exercises the same fault without \Q@X@ in the public signature of \Q@M
 Here \Q@MyFoo@ extends \Q@Object@, and its only public method \Q@show@ takes a \Q@MyFoo@ and returns a \Q@String@.
 \Q@X@ occurs only in the type of the private field \Q@v@, and in the body of \Q@show@, through the captured \Q@f@.
 
+\todo[inline]{focus is not really about private members, but that MyFoo's public signature doesn't mention X. Could have line 6 just capture x rather than storing in a field.
+Could turn example 2 into a family where we replace one line of example 2 with this show() definition we get this new example where X doesn't appear in the public signature.}
+
 \noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
 // Example 6
@@ -174,8 +180,8 @@ At Line~\ref{line:ex6show}, \Q@mine.show(local)@ applies the \Q@f@ of the second
 As in Example~2, the method \Q@apply@ of the lambda class throws the \Q@ClassCastException@.
 No type that a client of \Q@MyFoo@ can see mentions \Q@X@, and still the two instances of \Q@MyFoo@ disagree on \Q@X@.
 
-\subsection{Example 7: Class Generics}
-Example~7 moves Example~3 into a generic class:
+\subsection{Counterexample 7: Class Generics}
+Counterexample~7 moves Example~3 into a generic class:
 \Q@X@ is a generic parameter of the class \Q@Box@ instead of a generic parameter of the method \Q@m@.
 
 \noindent\begin{minipage}{\linewidth}
@@ -234,6 +240,7 @@ through the type of its enclosing instance.
 Java does not do the same for the generic parameters of the enclosing method: no type of the local class carries the instantiation of the generic parameters of a method.
 
 \section{The Impact of Generic Reification}
+\todo[inline]{With the new pile of examples, this should go much later in the paper. The ``counterexample'' is a perfect transition to jump into explaining funnelling and how it solves the issue, and reification would be a distracting tangent here. This should go near the end of the paper (and be shorter, and maybe be mentioned in the introduction that we explain how it's not about reification)}
 \todo[inline]{Not yet verified: the claims on Roslyn lifted classes, Rust (E0401, closure and opaque type identity, precise capturing), Swift, D, OCaml and SML local exceptions, and Scala outer tests.}
 A natural suspicion is that this problem is ``simply'' a consequence of generic erasure:
 a language that cannot distinguish the generic instantiations of a class at run time must have difficulties of this sort.
