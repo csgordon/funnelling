@@ -484,9 +484,8 @@ Thus a substitution never reaches a type variable or a variable bound inside the
   \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\
   \kind{\Delta'}{\gen{C_0}{\pl{T}}}\\
   \typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}\\\\
-  \mok{\Delta'}{(\Gamma\setminus\this)|_{\mathrm{dom}(\Delta')},\gen{C}{|\pl{F}|}\gap\this}{\pl{M}}\\\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
-  \mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})\\
-  \forall C_1,\pl{T}_1\ldotp\subtype{\Delta'}{\gen{C_0}{\pl{T}}}{\gen{C_1}{\pl{T}_1}}\Rightarrow
+  \mok{\Delta'}{\Gamma|_{\ftv{|\pl{F}|}}\setminus\this,\gen{C}{|\pl{F}|}\gap\this}{\pl{M}}\\\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
+  \forall C_1,\pl{T}_1\ldotp\subtype{\Delta'}{\gen{C}{|\pl{F}|}}{\gen{C_1}{\pl{T}_1}}\Rightarrow
     \mathsf{overrideOk}(\gen{C_1}{\pl{T}_1},\pl{M})
 }{
   \typing{\Delta}{\Gamma}{
@@ -527,13 +526,13 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 
 The rule \textsc{new-local} is the heart of funnelling, including subtle management of type environments.
 The rule constructs a restricted set of type bounds and variable bindings reflecting only the explicitly-funnelled type variables:
-$\Delta'$ includes only the explicitly-funnelled type variables, and $(\Gamma\setminus\this)|_{\mathrm{dom}(\Delta')}$ keeps only the variables of $\Gamma$, other than \Q@this@, whose types mention only the funnelled type variables $\mathrm{dom}(\Delta')$; those are the type variables of the result type $\gen{C}{|\pl{F}|}$ (which must be well-kinded under $\Delta'$).
+$\Delta'$ includes only the explicitly-funnelled type variables, and $\Gamma|_{\ftv{|\pl{F}|}}\setminus\this$ keeps only the variables of $\Gamma$, other than \Q@this@, whose types mention only type variables of the result type $\gen{C}{|\pl{F}|}$ (which must be well-kinded under $\Delta'$).
 The bounds $\Delta'$ are computed by $\pairing{\Delta}{\pl{F}}{|\pl{F}|}$, which is undefined when a funnelled type variable is not in $\Delta$.
 However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., an explicit call), but will reduce to a value which no longer depends on such type variables.
 This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ ensures the resulting type of that
 expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
 \\[1ex]
-The premises of rule \textsc{new-local} on $\pl{T}_0$, $\pl{M}_0$ and $\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})$ make the local class agree with its declaration $\innerobj{C}{\pl{F}_0}{C_0}{\pl{T}_0}{\_}{\pl{M}_0}$.
+The premises of rule \textsc{new-local} on $\pl{T}_0$, $\pl{M}_0$ and $\mathsf{overrideOk}$ make the local class agree with its declaration $\innerobj{C}{\pl{F}_0}{C_0}{\pl{T}_0}{\_}{\pl{M}_0}$.
 The supertype and the method signatures of the local class are those of the declaration, with the funnelled type variables of $\pl{F}_0$ replaced by $|\pl{F}|$.
 The local class and the declaration have the same method names.
 For a local class in \decls, the declaration is the local class itself.
