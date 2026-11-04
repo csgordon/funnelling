@@ -579,8 +579,9 @@ A method that a class declares again must keep the signature it has in every sup
 \textsc{call-top} reads the signature from the class chosen by subsumption, while the reduction runs the method of the class of the receiver.
 The last case of $\mathsf{overrideOk}(T,M)$ compares a method of a local class with the method of the same name in the declaration of the local class, in the same way.
 
-\subsection{Kinding and Subtyping}
+\subsection{Kinding, Subtyping and Checked Casts}
 \label{sec:kinding}
+\label{sec:cast}
 {\small
     \begin{mathpar}
 \fbox{\kind{\Delta}{T}}\\
@@ -621,17 +622,7 @@ The last case of $\mathsf{overrideOk}(T,M)$ compares a method of a local class w
 }{
   \subtype{\Delta}{X}{T'}
 }
-    \end{mathpar}
-\par}
-
-Rule \textsc{wf-class} kinds both top-level and local classes, including a local class written in a method of another local class.
-Every type in $\pl{T}_0$ is checked against the bound of its type variable in $\Delta_0$.
-A funnelled type variable that is not in scope where its local class $C$ is written leaves $\mathsf{scope}(\gen{C}{\pl{T}})$ undefined; thus no type $\gen{C}{\pl{T}}$ is well kinded.
-
-\subsection{Checked Casts}
-\label{sec:cast}
-{\small
-    \begin{mathpar}
+\\
 \fbox{\cast{\Delta}{T}{T'}}\\
 \inferrule[cast-up]{
   \subtype{\Delta}{T}{T'}
@@ -640,7 +631,7 @@ A funnelled type variable that is not in scope where its local class $C$ is writ
 }
 \and
 \inferrule[cast-var]{
-  \ext{X}{T}\in\Delta\\
+  \ext{X}{T}\in\Delta\\\\
   \cast{\Delta}{T}{T'}
 }{
   \cast{\Delta}{X}{T'}
@@ -656,6 +647,10 @@ A funnelled type variable that is not in scope where its local class $C$ is writ
 }
     \end{mathpar}
 \par}
+
+Rule \textsc{wf-class} kinds both top-level and local classes, including a local class written in a method of another local class.
+Every type in $\pl{T}_0$ is checked against the bound of its type variable in $\Delta_0$.
+A funnelled type variable that is not in scope where its local class $C$ is written leaves $\mathsf{scope}(\gen{C}{\pl{T}})$ undefined; thus no type $\gen{C}{\pl{T}}$ is well kinded.
 
 \subsection{Substitution of Type Variables}
 \label{sec:substitution}
