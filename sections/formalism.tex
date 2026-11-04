@@ -134,52 +134,34 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 }{
   \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}
 }
-\\
-\fbox{$\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}'$}
-\and
-\fbox{$\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'$}
 \end{mathpar}
-\[
-\begin{array}{rcl}
-\mathsf{scope}(\gen{C}{\pl{T}}) & = & \Delta;\pl{T}\\
-\multicolumn{3}{l}{\quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}}\\
-\mathsf{scope}(\gen{C_0}{\pl{T}}) & = & \pairing{\Delta,\Delta'}{\pl{F}}{\pl{T}}\\
-\multicolumn{3}{l}{\quad\textrm{where }\method{\Delta'}{\_}{m}{\_}{\ret{e}}\in C}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e}\\
-\multicolumn{3}{l}{\quad\phantom{\textrm{where }}\mathsf{scope}(\generic{C})=\Delta;\_}
-\end{array}
-\]
-\[
-\begin{array}{rcl}
-\pairing{\Delta}{\emptyset}{\emptyset} & = & \emptyset;\emptyset\\
-\pairing{\Delta}{\funnel{X},\pl{F}}{T,\pl{T}} & = & (\ext{X}{\Delta(X)};T)\cdot(\pairing{\Delta}{\pl{F}}{\pl{T}})\\
-\pairing{\Delta}{G,\pl{F}}{G,\pl{T}} & = & \pairing{\Delta}{\pl{F}}{\pl{T}}\\[1ex]
-(\Delta;\pl{T})\cdot(\Delta';\pl{T}') & = & \Delta,\Delta';\pl{T},\pl{T}'
-\end{array}
-\]
-\begin{mathpar}
-\fbox{$\generic{C}=T$}
-\and
-\fbox{$|F|=T$}
-\and
-\fbox{$M\in K$}
-\and
-\fbox{$M\in C$}
-\end{mathpar}
-\[
-\begin{array}{rcl}
-M\in K & \textrm{iff} & M\in\pl{M}\\
-\multicolumn{3}{l}{\quad\textrm{where }K\in\{\subclass{\_}{\_}{\_}{\_}{\pl{M}}{\_},\innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}\}}\\
-M\in C & \textrm{iff} & M\in K\\
-\multicolumn{3}{l}{\quad\textrm{where }\declared{K}\textrm{ and }K\in\{\subclass{C}{\_}{\_}{\_}{\_}{\_},\innerobj{C}{\_}{\_}{\_}{\_}{\_}\}}\\[1ex]
-\generic{C} & = & \gen{C}{\mathrm{dom}(\Delta)}\\
-\multicolumn{3}{l}{\quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}}\\
-\generic{C} & = & \gen{C}{|\pl{F}|}\\
-\multicolumn{3}{l}{\quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}}\\[1ex]
-|\funnel{X}| & = & X\\
-|G| & = & G
-\end{array}
-\]
+\begin{Define}{\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}'}
+\mathsf{scope}(\gen{C}{\pl{T}}) = \Delta;\pl{T}\\
+\quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}\\
+\mathsf{scope}(\gen{C_0}{\pl{T}}) = \pairing{\Delta,\Delta'}{\pl{F}}{\pl{T}}\\
+\quad\textrm{where }\method{\Delta'}{\_}{m}{\_}{\ret{e}}\in C\\
+\quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e\\
+\quad\phantom{\textrm{where }}\mathsf{scope}(\generic{C})=\Delta;\_
+\end{Define}
+\begin{Define}{\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'\qquad(\Delta;\pl{T})\cdot(\Delta';\pl{T}')=\Delta'';\pl{T}''}
+\pairing{\Delta}{\emptyset}{\emptyset} = \emptyset;\emptyset\\
+\pairing{\Delta}{\funnel{X},\pl{F}}{T,\pl{T}} = (\ext{X}{\Delta(X)};T)\cdot(\pairing{\Delta}{\pl{F}}{\pl{T}})\\
+\pairing{\Delta}{G,\pl{F}}{G,\pl{T}} = \pairing{\Delta}{\pl{F}}{\pl{T}}\\[1ex]
+(\Delta;\pl{T})\cdot(\Delta';\pl{T}') = \Delta,\Delta';\pl{T},\pl{T}'
+\end{Define}
+\begin{Define}{M\in K\qquad M\in C\qquad\generic{C}=T\qquad|F|=T}
+M\in K\textrm{ iff }M\in\pl{M}\\
+\quad\textrm{where }K\in\{\subclass{\_}{\_}{\_}{\_}{\pl{M}}{\_},\innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}\}\\
+M\in C\textrm{ iff }M\in K\\
+\quad\textrm{where }\declared{K}\\
+\quad\phantom{\textrm{where }}K\in\{\subclass{C}{\_}{\_}{\_}{\_}{\_},\innerobj{C}{\_}{\_}{\_}{\_}{\_}\}\\[1ex]
+\generic{C} = \gen{C}{\mathrm{dom}(\Delta)}\\
+\quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}\\
+\generic{C} = \gen{C}{|\pl{F}|}\\
+\quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}\\[1ex]
+|\funnel{X}| = X\\
+|G| = G
+\end{Define}
 \par}
 
 By well-formedness requirement A1, a class name $C$ identifies at most one $K$ with $\declared{K}$.
@@ -200,9 +182,8 @@ A function or a judgement applied to sequences stands for one application at eve
 $|F_1,\ldots,F_n|$ is $|F_1|,\ldots,|F_n|$;
 $\kind{\Delta}{T_1,\ldots,T_n}$ is $\kind{\Delta}{T_1}\quad\ldots\quad\kind{\Delta}{T_n}$;
 $\subtype{\Delta}{T_1,\ldots,T_n}{T'_1,\ldots,T'_n}$ is $\subtype{\Delta}{T_1}{T'_1}\quad\ldots\quad\subtype{\Delta}{T_n}{T'_n}$;
-$\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T_1,\ldots,T_n}$ is $\typing{\Delta}{\Gamma}{e_1}{T_1}\quad\ldots\quad\typing{\Delta}{\Gamma}{e_n}{T_n}$;
-$\mathsf{overrideOk}(T,\pl{M})$ is $\mathsf{overrideOk}(T,M)$ for every $M$ in $\pl{M}$.
-Finally, $m\not\in\pl{M}$ holds when no method in $\pl{M}$ has name $m$.
+$\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T_1,\ldots,T_n}$ is $\typing{\Delta}{\Gamma}{e_1}{T_1}\quad\ldots\quad\typing{\Delta}{\Gamma}{e_n}{T_n}$.
+Finally, $m\not\in\pl{M}$ holds when no method in $\pl{M}$ has name $m$, and $\mathrm{dom}(\pl{M})$ is the set of the names of the methods in $\pl{M}$.
 $\Gamma\setminus x$ is $\Gamma$ without the variable $x$.
 For a set of type variables $\pl{X}$, $\Gamma|_{\pl{X}}$ keeps the variables $T\gap x$ of $\Gamma$ such that $\ftv{T}\subseteq\pl{X}$.
 \\[1ex]
@@ -476,17 +457,14 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 }
 \and
 \inferrule[new-local]{
-  \declared{\innerobj{C}{\pl{F}_0}{C_0}{\pl{T}_0}{\_}{\pl{M}_0}}\\
-  \pairing{\Delta}{\pl{F}}{|\pl{F}|}=\Delta';\_\\\\
-  \pl{T}=\tsubst{\pl{T}_0}{\pl{F}_0}{|\pl{F}|}\\
-  \forall m\ldotp m\not\in\pl{M}\Rightarrow m\not\in\pl{M}_0\\
+  \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\\\
+  \pairing{\Delta}{\pl{F}}{|\pl{F}|}=\Delta';\_\\
   \ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')\\\\
   \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\
   \kind{\Delta'}{\gen{C_0}{\pl{T}}}\\
   \typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}\\\\
   \mok{\Delta'}{\Gamma|_{\ftv{|\pl{F}|}}\setminus\this,\gen{C}{|\pl{F}|}\gap\this}{\pl{M}}\\\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
-  \forall C_1,\pl{T}_1\ldotp\subtype{\Delta'}{\gen{C}{|\pl{F}|}}{\gen{C_1}{\pl{T}_1}}\Rightarrow
-    \mathsf{overrideOk}(\gen{C_1}{\pl{T}_1},\pl{M})
+  \mathsf{overrideOk}(\Delta',\gen{C_0}{\pl{T}},\pl{M})
 }{
   \typing{\Delta}{\Gamma}{
     \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}
@@ -521,6 +499,16 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 }{
   \typing{\Delta}{\Gamma}{\ifthen{e_0}{T}{x}{e_1}{e_2}}{T'}
 }
+\\
+\fbox{$K\gap\mathsf{consistent}$}\\
+\inferrule[consistent]{
+  \declared{\innerobj{C}{\pl{F}'}{C_0}{\pl{T}'}{\_}{\pl{M}'}}\\
+  \pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\\\
+  \mathrm{dom}(\pl{M}')=\mathrm{dom}(\pl{M})\\
+  \mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})
+}{
+  \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}
+}
     \end{mathpar}
 \par}
 
@@ -532,10 +520,10 @@ However, the rule still uses the \emph{full} ambient environments for checking c
 This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ ensures the resulting type of that
 expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
 \\[1ex]
-The premises of rule \textsc{new-local} on $\pl{T}_0$, $\pl{M}_0$ and $\mathsf{overrideOk}$ make the local class agree with its declaration $\innerobj{C}{\pl{F}_0}{C_0}{\pl{T}_0}{\_}{\pl{M}_0}$.
-The supertype and the method signatures of the local class are those of the declaration, with the funnelled type variables of $\pl{F}_0$ replaced by $|\pl{F}|$.
+Rule \textsc{consistent} makes the local class agree with its declaration, found by the first premise of rule \textsc{consistent}.
+The supertype and the method signatures of the local class are those of the declaration, with the funnelled type variables of $\pl{F}'$ replaced by $|\pl{F}|$.
 The local class and the declaration have the same method names.
-For a local class in \decls, the declaration is the local class itself.
+For a local class in \decls, the declaration is the local class itself; thus every local class in \decls is consistent.
 In the main expression, a local class is a copy of its declaration where reduction has replaced type variables with types and variables with values.
 Rules \textsc{call-local} and \textsc{sub-inherit-local} read the declaration, while the reduction runs the methods of the local class itself.
 
@@ -558,8 +546,7 @@ Rules \textsc{call-local} and \textsc{sub-inherit-local} read the declaration, w
   \kind{\Delta}{\gen{C'}{\pl{T}}}\\
   \forall T\gap f\semi\in\pl{S}\ldotp\kind{\Delta}{T}\\\\
   \mok{\Delta}{\gen{C}{\mathrm{dom}(\Delta)}\gap\this}{\pl{M}}\\\\
-  \forall C_1,\pl{T}_1\ldotp\subtype{\Delta}{\gen{C'}{\pl{T}}}{\gen{C_1}{\pl{T}_1}}\Rightarrow
-    \mathsf{overrideOk}(\gen{C_1}{\pl{T}_1},\pl{M})
+  \mathsf{overrideOk}(\Delta,\gen{C'}{\pl{T}},\pl{M})
 }{
   \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}\gap\mathrm{Ok}
 }
@@ -577,39 +564,31 @@ Rules \textsc{call-local} and \textsc{sub-inherit-local} read the declaration, w
 %  Bs,Bs'|- T0 : Ok .. Bs|- Tn : Ok
 %------------------------------------------------------------------------
 %  Bs;G |- <Bs'> T0 m(T1 x1..Tn xn){return e;} : Ok
-\\
-\fbox{$\mathsf{overrideOk}(T,M)$}\\
-\inferrule[override-new]{
-  \declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\
-  m\not\in\pl{M}
-}{
-  \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\_}{\_}{m}{\_}{\_})
-}
-\and
-\inferrule[override-same]{
-  \declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\\\
-  \method{\Delta''}{T''_0}{m}{T''_1\gap x'_1,\ldots,T''_n\gap x'_n}{\_}\in\pl{M}\\\\
-  \tsubst{\mathrm{cod}(\Delta'')}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\\\
-  \tsubst{T''_0,\ldots,T''_n}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n
-}{
-  \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_n\gap x_n}{\_})
-}
-\and
-\inferrule[override-local-same]{
-  \declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\pl{M}}}\\\\
-  \method{\Delta''}{T''_0}{m}{T''_1\gap x'_1,\ldots,T''_n\gap x'_n}{\_}\in\pl{M}\\\\
-  \tsubst{\mathrm{cod}(\Delta'')}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\\\
-  \tsubst{T''_0,\ldots,T''_n}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n
-}{
-  \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_n\gap x_n}{\_})
-}
     \end{mathpar}
+\begin{Define}{\mathsf{overrideOk}(\Delta,T,\pl{M})\qquad\mathsf{overrideOk}(T,\pl{M})\qquad\mathsf{overrideOk}(T,M)}
+\mathsf{overrideOk}(\Delta,T,\pl{M})\textrm{ iff }\mathsf{overrideOk}(\gen{C}{\pl{T}},\pl{M})\\
+\quad\textrm{for every }\gen{C}{\pl{T}}\textrm{ such that }\subtype{\Delta}{T}{\gen{C}{\pl{T}}}\\
+\mathsf{overrideOk}(T,\pl{M})\textrm{ iff }\mathsf{overrideOk}(T,M)\\
+\quad\textrm{for every }M\textrm{ in }\pl{M}\\[1ex]
+\mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\_}{\_}{m}{\_}{\_})\textrm{ iff }m\not\in\pl{M}\\
+\quad\textrm{where }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\[1ex]
+\mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_n\gap x_n}{\_})\\
+\quad\textrm{iff }\tsubst{\mathrm{cod}(\Delta'')}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\
+\quad\phantom{\textrm{iff }}\tsubst{T''_0,\ldots,T''_n}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n\\
+\quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\
+\quad\phantom{\textrm{where }}\method{\Delta''}{T''_0}{m}{T''_1\gap x'_1,\ldots,T''_n\gap x'_n}{\_}\in\pl{M}\\[1ex]
+\mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_n\gap x_n}{\_})\\
+\quad\textrm{iff }\tsubst{\mathrm{cod}(\Delta'')}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\
+\quad\phantom{\textrm{iff }}\tsubst{T''_0,\ldots,T''_n}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n\\
+\quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\pl{M}}}\\
+\quad\phantom{\textrm{where }}\method{\Delta''}{T''_0}{m}{T''_1\gap x'_1,\ldots,T''_n\gap x'_n}{\_}\in\pl{M}
+\end{Define}
 \par}
 
 Rule \textsc{class-ok} types the methods of a top-level class with \Q@this@ of type $\gen{C}{\mathrm{dom}(\Delta)}$.
 A method that a class declares again must keep the signature it has in every superclass, up to the names of its own type variables:
 \textsc{call-top} reads the signature from the class chosen by subsumption, while the reduction runs the method of the class of the receiver.
-Rule \textsc{override-local-same} compares a method of a local class with the method of the same name in the declaration of the local class, in the same way.
+The last case of $\mathsf{overrideOk}(T,M)$ compares a method of a local class with the method of the same name in the declaration of the local class, in the same way.
 
 \subsection{Kinding and Subtyping}
 \label{sec:kinding}
