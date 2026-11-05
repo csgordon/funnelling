@@ -239,141 +239,47 @@ Thus for the generic parameters of the enclosing class, Java already exposes the
 through the type of its enclosing instance.
 Java does not do the same for the generic parameters of the enclosing method: no type of the local class carries the instantiation of the generic parameters of a method.
 
-\section{The Impact of Generic Reification}
-\todo[inline]{With the new pile of examples, this should go much later in the paper. The ``counterexample'' is a perfect transition to jump into explaining funnelling and how it solves the issue, and reification would be a distracting tangent here. This should go near the end of the paper (and be shorter, and maybe be mentioned in the introduction that we explain how it's not about reification)}
-\todo[inline]{Not yet verified: the claims on Roslyn lifted classes, Rust (E0401, closure and opaque type identity, precise capturing), Swift, D, OCaml and SML local exceptions, and Scala outer tests.}
+
+\section{Funnelling}
+\label{sec:funnelling}
+
 A natural suspicion is that this problem is ``simply'' a consequence of generic erasure:
 a language that cannot distinguish the generic instantiations of a class at run time must have difficulties of this sort.
-There is some truth to this suspicion: javac accepts a cast that the JVM cannot check, because of erasure.
+There is some truth to this suspicion: javac can accept a cast that the JVM cannot check, because of erasure.
 However, javac does flag uncheckable type tests:
 for \Q@o@ of type \Q@Object@, javac reports an unchecked warning for the cast \Q@(List<String>)o@, and an error for \Q@o instanceof List<String>@.
 javac reports nothing for Examples~1 to~6 because \Q@MyFoo@ is not generic:
 the type test of \Q@other@ against \Q@MyFoo@ has no generic argument to leave unchecked.
-
-Reification does not change this by itself.
-A reified runtime can only check what the run-time identity of a class contains.
-If the run-time identity of \Q@MyFoo@ is just the declared class \Q@MyFoo@, reification adds nothing to the cast \Q@(MyFoo)other@.
-Java treats the class \Q@MyFoo extends Foo<X>@ as it treats the class \Q@String extends Comparable<String>@: a cast inspects only the declared class.
-A cast to \Q@String@ does not inspect the generic argument of \Q@Comparable<String>@,
-and a cast to \Q@MyFoo@ does not inspect the generic argument of \Q@Foo<X>@.
-But the argument \Q@String@ of \Q@Comparable<String>@ is a constant of the class \Q@String@: a reified runtime records it once, in the class table of \Q@String@.
-The argument \Q@X@ of \Q@Foo<X>@ is not a constant of the class \Q@MyFoo@: \Q@X@ is free in the declaration of \Q@MyFoo@, and \Q@X@ changes between calls of \Q@m@.
+So reification does not change the situation by itself.\todo{this paragraph may duplicate counterexample 7 text, otherwise we should move it there}
 
 The implementations of method-local classes, and of the similar features of other languages, differ in the granularity of the identity of the local class.
 The identity of the local class matters in two places:
 in the type system, where it decides whether two types of the local class are the same type,
 and at run time, where it decides the result of casts and type tests.
-There are three granularities: (1) one identity per declared class, (2) one identity per instantiation of the enclosing scope, and (3) one identity per evaluation of the declaration.%
-\footnote{Some languages avoid the choice by forbidding the capture of generic types.
-In Rust, a struct, function or impl declared inside a generic function can not use the generic parameters of the enclosing function (error E0401):
-the programmer must declare those generic parameters again on the inner item.
-Swift rejects a type declared inside a generic function.
-\todo[inline]{cite Swift: type cannot be nested in generic function}}
-
-In (1), the declaration of a local class is a single point in the source code.
+There are three granularities:
+\begin{enumerate}
+\item \textbf{Identity as Declaration Point}: The declaration of a local class is a single point in the source code.
 So the local class \Q@MyFoo@ is one class, and the identity of \Q@MyFoo@ is its declaration point, the same for every instantiation of \Q@m@.
-In (2), generic classes and generic methods are functions from generic arguments to concrete classes and methods:
+\item \textbf{Identity as Generic Instantiation}:
+Generic classes and generic methods are functions from generic arguments to concrete classes and methods:
 \Q@static <X> Object m(..)@ declares infinitely many methods \Q@m<Integer>@, \Q@m<String>@, and so on, one for each instantiation of \Q@X@.
 In the same way, the generic class declaration \Q@class Foo<X>@ declares infinitely many classes \Q@Foo<Integer>@, \Q@Foo<String>@, and so on.
-So in (2) each method \Q@m<T>@ declares its own local class \Q@MyFoo@, since the body of each \Q@m<T>@ is the body of a different method.
+So each method \Q@m<T>@ declares its own local class \Q@MyFoo@, since the body of each \Q@m<T>@ is the body of a different method.
+\item \textbf{Identity as Dynamic Evaluation}: 
+A declaration creates a new class, even for the same instantiation of the generic parameters.
+Scala has this granularity for captured values instead of captured types.
+An instance of an inner class \Q@Inner@ captures its enclosing instance \Q@$outer@, and its type is the path-dependent type \Q@a.Inner@.
+For the pattern \Q@case i: a.Inner@, the Scala compiler emits an ``outer test'' that compares the captured \Q@$outer@ with \Q@a@~\tocite{Scala outer tests}.%
+\footnote{Even here the type system exposes what is captured: inside the class of \Q@a@, \Q@Inner@ means \Q@this.Inner@.}
+This is sound, but it is stricter than needed to avoid the problem at hand.
+\end{enumerate}
 
-Java checks casts and type tests with granularity (1):
-each class has a declaration point, and for each declaration point there is one \Q@Class<?>@ object, whose identity decides the result of the casts that the JVM checks.
-For class generics, the Java type system instead assumes granularity (2), as Example~7 shows.
-For member classes, the Java Language Specification states this granularity directly:
-if a generic class \Q@C@ has a non-generic member class \Q@D@, then \Q@C<String>.D@ is a parameterized type, even though \Q@D@ is not generic~\cite[\S 4.5]{jls}.
-A local class declared in an instance method is an inner class of the enclosing class~\cite[\S 8.1.3]{jls}, and javac gives the local class the same kind of type:
-in Example~7, \Q@MyFoo@ is \Q@Box<X>.MyFoo@, so \Q@Box<String>.MyFoo@ and \Q@Box<Integer>.MyFoo@ are different types.
-A narrowing conversion from \Q@Object@ to such a parameterized type is unchecked~\cite[\S 5.1.6.2]{jls}:
-the cast \Q@(MyFoo)other@ causes an unchecked warning, and the type test \Q@other instanceof MyFoo@ is a compile-time error~\cite[\S 15.20.2]{jls}.
-These are the warning and the error of Example~7.
-However, generic methods are not treated in the same way:
-in Examples~1 to~6, the type of the local class is \Q@MyFoo@, not \Q@m<X>.MyFoo@.
 For method generics, the Java type system assumes granularity (1), as the casts do, so javac reports nothing and the program fails at run time.
 If the type of a local class contained the enclosing method and its generic instantiation, as in \Q@Box<T1>.m<T2>.MyFoo@,
 then javac would flag the problem for generic methods too, as it does for generic classes.
-
 A version of Java with reified generics could solve the mismatch in Example~7, between the granularity (1) of the casts and the granularity (2) of the types.
 But reification would not change Examples~1 to~6, unless the types of local classes take the form \Q@A<T1>.m<T2>.MyFoo@.
-Moreover, Example~6 shows that the generic types needed by a local class can stay fully private:
-in Example~6, \Q@X@ occurs only in the private field \Q@v@ and in the body of \Q@show@.
-Without an explicit way to put the needed generic types in the public API of the local class, such generic types stay private details.
-A type error caused by a fully private detail would make type checking non-modular.
-A failing dynamic cast caused by a fully private detail would make the private detail observable, and the language overall less predictable.
 
-Granularity (2) is the default view for languages that implement parametric polymorphism by generative programming instead of generic programming~\tocite{generative programming}%
-\footnote{Also called templating or heterogeneous compilation.},
-like C++ or early experiments with generic Java~\cite{agesen1997adding}.
-There each instantiation of \Q@m@ with different generic parameters is compiled separately, resulting in separate class declarations for each instantiation:
-generative programming forces (2) as the interpretation both at compile time and at run time.
-Each instantiation of \Q@m@ is a separate method of the compiled program, with its own local class \Q@MyFoo@.
-Consider reinterpreting Example~1 in C++.
-
-\noindent\begin{minipage}{\linewidth}
-\begin{lstlisting}[numbers=left,xleftmargin=2em,language=c++]
-// Example 1 in C++
-class Object{ public: virtual ~Object(){} };
-template<typename X> class Foo : public Object {
-    public: virtual X x() { return x(); } };
-template<typename X>
-Foo<X>* m(Object* other, const X* x) {
-    class MyFoo : public Foo<X> {
-        const X* v;
-      public: MyFoo(const X* v):v(v){} X x() { return *v; } };
-    MyFoo* d = dynamic_cast<MyFoo*>(other);(*\label{line:cpp_cast}*)
-    if(d == nullptr) { return new MyFoo(x); }
-    return d;
-}
-\end{lstlisting}
-\end{minipage}
-
-A C++ local class cannot use the parameters of its enclosing function, so \Q@MyFoo@ receives \Q@x@ through its constructor.
-\Q@Object@ has a virtual destructor, since \Q@dynamic_cast@ requires a polymorphic source type.
-The calls \Q@r1=m<int>(nullptr,&i)@ and then \Q@m<std::string>(r1,&s)@ mirror Example~1.
-In the second call, the \Q@dynamic_cast@ at Line \ref{line:cpp_cast} returns \Q@nullptr@:
-\Q@m<int>@ and \Q@m<std::string>@ declare two distinct classes \Q@MyFoo@, and \Q@r1@ is an instance of the first one.
-Thus the second call returns a new \Q@MyFoo@, as a sound type test should.
-In its diagnostics, \Q@gcc@ names the first class \Q@m<int>(Object*, const int*)::MyFoo@:
-the instantiation of the method signature is the scope of the declaration of \Q@MyFoo@.
-Inside the template \Q@m<X>@, the C++ type system sees \Q@MyFoo@ as the dependent type \Q@m<X>::MyFoo@.
-So C++ does expose \Q@X@ in the type of \Q@MyFoo@: through the name of the enclosing scope instead of through a generic parameter of \Q@MyFoo@.
-This is the form \Q@m<T2>.MyFoo@ that the Java type system does not have.
-D works in the same way, and its ``Voldemort types'' make the scope visible:
-a local struct \Q@S@ returned from the template function \Q@f@ has the type \Q@f!int.S@ when \Q@f@ is instantiated with \Q@int@~\tocite{D Voldemort types}.
-
-C\# has no local classes, but its compiler lifts closures, local functions, iterators and async methods into generated classes.
-Inside a generic method \Q@M<T>@, the generated classes are themselves generic in the captured \Q@T@, as in \Q@<>c__DisplayClass0_0<T>@~\tocite{Roslyn lowering}.
-Since .NET reifies generics, the generated classes for \Q@M<int>@ and \Q@M<string>@ can be observed as distinct at run-time.
-A programmer can not name these generated classes in C\# source, so a programmer can not write a cast to them.
-
-Rust closures and \Q@impl Trait@ opaque types capture the generic parameters of the enclosing function,
-and the type of the closure, or the opaque type, includes those generic parameters in its identity:
-the \Q@TypeId@ of a closure created in \Q@m::<i32>@ differs from the \Q@TypeId@ of the same closure created in \Q@m::<String>@~\cite{rustClosures}.
-The precise capturing syntax of Rust 2024, \Q@impl Trait + use<T>@, lists explicitly the generic parameters that an opaque type captures~\tocite{Rust precise capturing RFC 3617}.
-
-Generative programming has subtle costs and wide-ranging consequences for language design, not just implementation,
-and complex performance consequences~\cite{odersky2001two,kennedy2001design}.
-However, these costs are not intrinsic to granularity (2):
-.NET keeps a single implementation for the instantiations at reference types and still gives each instantiation its own run-time identity~\cite{kennedy2001design}.
-
-Each of these sound designs follows granularity (2), and makes the captured generic types part of the identity of the local class:
-in the type system and at run time (C++, D, Rust), or only at run time (C\# generated classes).
-
-Overall, reification simply changes when a cast can be accepted by the type system.
-With reification we can have more expressive run time checks, so a more relaxed type system can still be sound.
-
-Granularity (3) is a more extreme version of granularity (2): each evaluation of a declaration creates a new class, even for the same instantiation of the generic parameters.
-In OCaml, \Q@let exception E of a in ...@ creates a fresh exception constructor each time the declaration is evaluated;
-local exception declarations in Standard ML are generative in the same way~\tocite{OCaml local exceptions, SML generative exceptions}.
-A handler for \Q@E@ does not catch an \Q@E@ raised by another evaluation of the declaration, whatever the instantiation of \Q@a@.
-Scala has granularity (3) for captured values instead of captured types.
-An instance of an inner class \Q@Inner@ captures its enclosing instance \Q@$outer@, and its type is the path-dependent type \Q@a.Inner@.
-For the pattern \Q@case i: a.Inner@, the Scala compiler emits an ``outer test'' that compares the captured \Q@$outer@ with \Q@a@~\tocite{Scala outer tests}.
-Even here the type system exposes what is captured: inside the class of \Q@a@, \Q@Inner@ means \Q@this.Inner@.
-Granularity (3) is sound\footnote{Granularity (3) also has many other useful applications, but those applications are unconnected with the problem at hand.}, but it is stricter than needed to avoid the problem at hand.
-
-\section{Funnelling}
-\label{sec:funnelling}
 Granularities (1), (2) and (3) are points in a space of design options,
 but other points lie between them.
 Funnelling, the approach we present in this paper, lies between (1) and (2):
