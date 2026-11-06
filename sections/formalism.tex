@@ -372,6 +372,7 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 
 \subsection{Typing}
 \label{sec:typing}
+\label{sec:cast}
 {\small
     \begin{mathpar}
 \fbox{\typing{\Delta}{\Gamma}{e}{T}}\\
@@ -483,6 +484,29 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 }{
   \typing{\Delta}{\Gamma}{\ifthen{e_0}{T}{x}{e_1}{e_2}}{T'}
 }
+\\
+\fbox{\cast{\Delta}{T}{T'}}\\
+\inferrule[cast-up]{
+  \subtype{\Delta}{T}{T'}
+}{
+  \cast{\Delta}{T}{T'}
+}
+\and
+\inferrule[cast-var]{
+  \ext{X}{T}\in\Delta\\\\
+  \cast{\Delta}{T}{T'}
+}{
+  \cast{\Delta}{X}{T'}
+}
+\and
+\inferrule[cast-down]{
+  \generic{C}=\gen{C}{\pl{T}''}\\
+  \subtype{\emptyset}{\gen{C}{\pl{T}''}}{\gen{C'}{\pl{T}'}}\\\\
+  \ftv{\pl{T}''}\subseteq\ftv{\pl{T}'}\\
+  \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C'}{\pl{T}_0}}
+}{
+  \cast{\Delta}{\gen{C'}{\pl{T}_0}}{\gen{C}{\pl{T}}}
+}
     \end{mathpar}
 \begin{Define}{K\gap\mathsf{consistent}}
 \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
@@ -507,35 +531,6 @@ The local class and the declaration have the same method names.
 For a local class in \decls, the declaration is the local class itself; thus every local class in \decls is consistent.
 In the main expression, a local class is a copy of its declaration where reduction has replaced type variables with types and variables with values.
 Rules \textsc{call} and \textsc{sub-inherit-local} read the declaration, while the reduction runs the methods of the local class itself.
-
-\subsection{Checked Casts}
-\label{sec:cast}
-{\small
-    \begin{mathpar}
-\fbox{\cast{\Delta}{T}{T'}}\\
-\inferrule[cast-up]{
-  \subtype{\Delta}{T}{T'}
-}{
-  \cast{\Delta}{T}{T'}
-}
-\and
-\inferrule[cast-var]{
-  \ext{X}{T}\in\Delta\\\\
-  \cast{\Delta}{T}{T'}
-}{
-  \cast{\Delta}{X}{T'}
-}
-\and
-\inferrule[cast-down]{
-  \generic{C}=\gen{C}{\pl{T}''}\\
-  \subtype{\emptyset}{\gen{C}{\pl{T}''}}{\gen{C'}{\pl{T}'}}\\\\
-  \ftv{\pl{T}''}\subseteq\ftv{\pl{T}'}\\
-  \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C'}{\pl{T}_0}}
-}{
-  \cast{\Delta}{\gen{C'}{\pl{T}_0}}{\gen{C}{\pl{T}}}
-}
-    \end{mathpar}
-\par}
 
 \subsection{Typing of Programs, Classes and Methods}
 \label{sec:classtyping}
