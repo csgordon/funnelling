@@ -525,16 +525,17 @@ However, the rule still uses the \emph{full} ambient environments for checking c
 This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ ensures the resulting type of that
 expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
 \\[1ex]
-A local class occurs in two places.
-The declaration of the local class is written in the body of a method of a top-level class, possibly nested inside other local classes.
-The copies of the local class are in the main expression: reduction copies the declaration, replacing type variables with types and variables with values.
-The relation $K\gap\mathsf{consistent}$ restricts only the main expression: for a local class in \decls, the declaration is the local class itself; thus every local class in \decls is consistent.
-For a copy $K$, the first condition of the definition finds the declaration of $K$.
-The supertype and the method signatures of $K$ are those of the declaration, with the funnelled type variables of $\pl{F}'$ replaced by $|\pl{F}|$.
+A local class occurs in two places:
+(1) The (original) declaration of the local class is written in the body of a method of a top-level class, possibly nested inside other local classes.
+(2) Copies of the local class can be in the main expression: reduction copies the declaration from the class table into the main expression, replacing type variables with types and variables with values.
+
+The relation $K\gap\mathsf{consistent}$ trivially holds for case (1). For case (2), the first condition of the definition finds the declaration of $K$.
+The supertype and the method signatures of $K$ must be those of the declaration, with the funnelled type variables of $\pl{F}'$ replaced by $|\pl{F}|$.
 $K$ and the declaration have the same method names.
+
 Rules \textsc{call} and \textsc{sub-inherit-local} read the declaration, while the reduction runs the methods of the copy.
 
-The premise $\subtype{\emptyset}{\gen{C}{\pl{T}''}}{\gen{C'}{\pl{T}'}}$ of rule \textsc{cast-down} needs no bounds: a subtyping derivation between class types uses only rules \textsc{sub-refl}, \textsc{sub-inherit} and \textsc{sub-inherit-local}, which do not read $\Delta$.
+The premise $\subtype{\emptyset}{\gen{C}{\pl{T}''}}{\gen{C'}{\pl{T}'}}$ of rule \textsc{cast-down} is correctly called with $\emptyset$ as the generic bounds: a subtyping derivation between class types uses only rules \textsc{sub-refl}, \textsc{sub-inherit} and \textsc{sub-inherit-local}, which do not read $\Delta$.
 
 \subsection{Typing of Programs, Classes and Methods}
 \label{sec:classtyping}
