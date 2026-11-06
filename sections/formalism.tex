@@ -86,8 +86,8 @@ We require the following well-formedness conditions:
     \item[(A2)] In a class, all the field names, including the field names of the superclasses, are disjoint.
     \item[(A3)] In a class, top-level or local, all the method names are disjoint.
     \item[(A4)] In a method, all the parameter names $x_1,\ldots,x_n$ are disjoint.
-    \item[(A5)] In a $\Delta$, all the $X$ are disjoint.
-    \item[(A6)] In a list of funnels $\pl{F}$, all the funnelled type variables are disjoint.
+    \item[(A5)] In a $\Delta$, all the $X$ in $\mathrm{dom}(\Delta)$ are disjoint.
+    \item[(A6)] In a list of funnels $\pl{F}$, all the $X$ in $\mathrm{dom}(\pl{F})$ are disjoint.
     \item[(A7)] There is no shadowing of $X$ or $x$, except for \Q@this@.
     \item[(A8)] No parameter and no variable of an \Q@if@ is \Q@this@.
     \item[(A9)] \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every other top-level class reaches \Q@Object@.
@@ -122,9 +122,9 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \begin{Define}{\declared{K}}
 \declared{\mathsf{Dec}}\textrm{ iff }\mathsf{Dec}\in\decls\\[1ex]
 \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}\\
-\quad\textrm{iff }\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\textrm{ occurs in }e\\
 \quad\textrm{where }\declared{K}\\
-\quad\phantom{\textrm{where }}\method{\_}{\_}{m}{\_}{\ret{e}}\in K
+\quad\phantom{\textrm{where }}\method{\_}{\_}{m}{\_}{\ret{e}}\in K\\
+\quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\textrm{ occurs in }e
 \end{Define}
 \begin{Define}{\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}'}
 \mathsf{scope}(\gen{C}{\pl{T}}) = \Delta;\pl{T}\\
@@ -166,6 +166,7 @@ This is enforced at the usage points, where we use the notation $\tsubst{T}{\Del
 \\[1ex]
 For a type variable $X$, $\Delta(X)$ is the bound of $X$ in $\Delta$.
 $\mathrm{dom}(\Delta)$ is the sequence of the type variables in $\Delta$, and $\mathrm{cod}(\Delta)$ is the sequence of the bounds in $\Delta$.
+$\mathrm{dom}(\pl{F})$ is the sequence of the $X$ such that $\funnel{X}$ is in $\pl{F}$.
 $\ftv{T}$ is the set of the type variables occurring in $T$; for a sequence, $\mathsf{FTV}$ is the union over its elements.
 The figures leave the following conventions implicit.
 A sequence $e_1,\ldots,e_n$, or $\pl{e}$, separates its elements with commas; a comma also concatenates two sequences, and either sequence may be empty.
