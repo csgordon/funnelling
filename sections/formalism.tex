@@ -508,6 +508,35 @@ For a local class in \decls, the declaration is the local class itself; thus eve
 In the main expression, a local class is a copy of its declaration where reduction has replaced type variables with types and variables with values.
 Rules \textsc{call} and \textsc{sub-inherit-local} read the declaration, while the reduction runs the methods of the local class itself.
 
+\subsection{Checked Casts}
+\label{sec:cast}
+{\small
+    \begin{mathpar}
+\fbox{\cast{\Delta}{T}{T'}}\\
+\inferrule[cast-up]{
+  \subtype{\Delta}{T}{T'}
+}{
+  \cast{\Delta}{T}{T'}
+}
+\and
+\inferrule[cast-var]{
+  \ext{X}{T}\in\Delta\\\\
+  \cast{\Delta}{T}{T'}
+}{
+  \cast{\Delta}{X}{T'}
+}
+\and
+\inferrule[cast-down]{
+  \generic{C}=\gen{C}{\pl{T}''}\\
+  \subtype{\emptyset}{\gen{C}{\pl{T}''}}{\gen{C'}{\pl{T}'}}\\\\
+  \ftv{\pl{T}''}\subseteq\ftv{\pl{T}'}\\
+  \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C'}{\pl{T}_0}}
+}{
+  \cast{\Delta}{\gen{C'}{\pl{T}_0}}{\gen{C}{\pl{T}}}
+}
+    \end{mathpar}
+\par}
+
 \subsection{Typing of Programs, Classes and Methods}
 \label{sec:classtyping}
 {\small
@@ -572,9 +601,8 @@ A method that a class declares again must keep the signature it has in every sup
 \textsc{call} reads the signature from the class chosen by subsumption, while the reduction runs the method of the class of the receiver.
 The last case of $\mathsf{overrideOk}(T,M)$ compares a method of a local class with the method of the same name in the declaration of the local class, in the same way.
 
-\subsection{Kinding, Subtyping and Checked Casts}
+\subsection{Kinding and Subtyping}
 \label{sec:kinding}
-\label{sec:cast}
 {\small
     \begin{mathpar}
 \fbox{\kind{\Delta}{T}}\\
@@ -614,29 +642,6 @@ The last case of $\mathsf{overrideOk}(T,M)$ compares a method of a local class w
   \subtype{\Delta}{T}{T'}
 }{
   \subtype{\Delta}{X}{T'}
-}
-\\
-\fbox{\cast{\Delta}{T}{T'}}\\
-\inferrule[cast-up]{
-  \subtype{\Delta}{T}{T'}
-}{
-  \cast{\Delta}{T}{T'}
-}
-\and
-\inferrule[cast-var]{
-  \ext{X}{T}\in\Delta\\\\
-  \cast{\Delta}{T}{T'}
-}{
-  \cast{\Delta}{X}{T'}
-}
-\and
-\inferrule[cast-down]{
-  \generic{C}=\gen{C}{\pl{T}''}\\
-  \subtype{\emptyset}{\gen{C}{\pl{T}''}}{\gen{C'}{\pl{T}'}}\\\\
-  \ftv{\pl{T}''}\subseteq\ftv{\pl{T}'}\\
-  \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C'}{\pl{T}_0}}
-}{
-  \cast{\Delta}{\gen{C'}{\pl{T}_0}}{\gen{C}{\pl{T}}}
 }
     \end{mathpar}
 \par}
