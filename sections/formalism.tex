@@ -532,6 +532,8 @@ For a local class in \decls, the declaration is the local class itself; thus eve
 In the main expression, a local class is a copy of its declaration where reduction has replaced type variables with types and variables with values.
 Rules \textsc{call} and \textsc{sub-inherit-local} read the declaration, while the reduction runs the methods of the local class itself.
 
+The premise $\subtype{\emptyset}{\gen{C}{\pl{T}''}}{\gen{C'}{\pl{T}'}}$ of rule \textsc{cast-down} needs no bounds: a subtyping derivation between class types uses only rules \textsc{sub-refl}, \textsc{sub-inherit} and \textsc{sub-inherit-local}, which do not read $\Delta$.
+
 \subsection{Typing of Programs, Classes and Methods}
 \label{sec:classtyping}
 {\small
