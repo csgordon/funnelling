@@ -234,7 +234,7 @@ The reduction is small step, and uses the values $v$ and the evaluation contexts
 \begin{mathpar}
 \inferrule[ifThen]{
     \emptyset\vdash \mathsf{typeOf}(v) <: \gen{C'}{\_}\\
-    \mathsf{fresh}(e_1)=e'_1
+    \mathsf{fresh}(e_1,e'_1)
     %\match{v}{C\langle\_\rangle} = \mathsf{true}
 }{
     \step{\ifthen{v}{\gen{C'}{\pl{T}}}{x}{e_1}{e_2}}
@@ -269,7 +269,7 @@ The reduction is small step, and uses the values $v$ and the evaluation contexts
 \inferrule[simpleFound]{
     \declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\
     M\in\pl{M}\\
-    \mathsf{fresh}(M)=\method{\Delta'}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e_0}}\\
+    \mathsf{fresh}(M,\method{\Delta'}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e_0}})\\
     e = \tsubst{\tsubst{e_0}{\Delta,\Delta'}{\pl{G},\pl{G}'}}{\this,x_1,\ldots,x_n}{v_0,\ldots,v_n}
 }{
     \step{\explicitcall{v_0}{\gen{C}{\pl{G}}}{\pl{G}'}{m}{v_1,\ldots,v_n}}{e}
@@ -279,7 +279,7 @@ The reduction is small step, and uses the values $v$ and the evaluation contexts
 \inferrule[innerFound]{
     v_0 = \innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}\\
     M\in\pl{M}\\
-    \mathsf{fresh}(M)=\method{\Delta'}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e_0}}\\
+    \mathsf{fresh}(M,\method{\Delta'}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e_0}})\\
     e = \tsubst{\tsubst{e_0}{\Delta'}{\pl{G}'}}{\this,x_1,\ldots,x_n}{v_0,\ldots,v_n}
 }{
     \step{\call{v_0}{\pl{G}'}{m}{v_1,\ldots,v_n}}{e}
@@ -320,7 +320,7 @@ Rule \textsc{simpleFieldFound} reads a field declared by the class of the object
 Rule \textsc{simpleFieldSuper} reads a field not declared by the class $C$ of the object from the object of the superclass of $C$, made of the remaining values.
 A local class declares no fields, so rule \textsc{innerFieldSuper} reads every field from the object of the superclass.
 
-Rules \textsc{ifThen} and \textsc{ifElse} test the class of the value $v$ against the class $C'$ of the type test, ignoring the type arguments of $C'$.
+Rules \textsc{ifThen} and \textsc{ifElse} test the class of the value $v$ against the class $C'$ of the type test, ignoring the type arguments $\pl{T}$ of $\gen{C'}{\pl{T}}$.
 Rule \textsc{ifThen} reduces to $e_1$ with $x$ replaced by $v$; rule \textsc{ifElse} reduces to $e_2$.
 
 Rules \textsc{simpleAddSuper}, \textsc{simpleFound}, \textsc{innerFound}, \textsc{innerSuper} and \textsc{searchSuper} call a method.
@@ -334,9 +334,9 @@ Rule \textsc{ctx} reduces inside an evaluation context.
 Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} also use the relation $\mathsf{fresh}$.
 The names bound in an expression $e$ are the variable of every \Q@if@ in $e$ and the type variables and parameters of every method of a local class in $e$.
 The names bound in a method $M$ are the type variables of its signature, its parameters, and the names bound in its body.
-An expression $\mathsf{fresh}(e)$ is $e$ where every name bound in $e$ is renamed into a fresh name, that is a name occurring nowhere in the program; distinct binders get distinct fresh names.
-A method $\mathsf{fresh}(M)$ is $M$ renamed in the same way.
-Thus $\mathsf{fresh}$ is not a function: a rule using $\mathsf{fresh}$ can choose any fresh names.
+$\mathsf{fresh}(e,e')$ holds when $e'$ is $e$ where every name bound in $e$ is renamed into a fresh name, that is a name occurring nowhere in the program; distinct binders get distinct fresh names.
+$\mathsf{fresh}(M,M')$ holds when $M'$ is $M$ renamed in the same way.
+A rule using $\mathsf{fresh}$ can choose any fresh names.
 The variable \Q@this@ is never renamed.
 Renaming is needed because a value of a local class carries the code of its methods.
 For example, consider a local class \Q@L@ whose method \Q@m@ has a parameter \Q@x@ and calls \Q@m@ on a captured value \Q@y@ of class \Q@L@:
