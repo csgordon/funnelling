@@ -501,7 +501,7 @@ However, the rule still uses the \emph{full} ambient environments for checking c
 This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ ensures the resulting type of that
 expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
 \\[1ex]
-The local class $K$ in $K\gap\mathsf{consistent}$ agrees with its declaration, found by the first \emph{where} line of the definition.
+The local class $K$ in $K\gap\mathsf{consistent}$ agrees with its declaration, found by the first condition of the definition.
 The supertype and the method signatures of the local class are those of the declaration, with the funnelled type variables of $\pl{F}'$ replaced by $|\pl{F}|$.
 The local class and the declaration have the same method names.
 For a local class in \decls, the declaration is the local class itself; thus every local class in \decls is consistent.
