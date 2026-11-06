@@ -161,17 +161,20 @@ $M\in C$ holds when $M$ is a method of the declared class $C$, top-level or loca
 For a class type $\gen{C}{\pl{T}}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}_0$ gives the bounds $\Delta_0$ of the type variables that are in scope for all the methods of $C$.\footnote{Note that the type variables declared by each individual generic method are not accounted for here.}
 It also gives the types $\pl{T}_0$ that the arguments $\pl{T}$ assign to the type variables in $\Delta_0$.
 For a top-level class, $\Delta_0$ is the bounds of the class and $\pl{T}_0=\pl{T}$.
+For a local class $C$ with funnels $\pl{F}$, declared in the body of a method $m$ of a class $C'$, $\Delta_0$ is the bounds of the $X$ in $\mathrm{dom}(\pl{F})$, as given by the bounds in scope in $m$: the bounds of $\mathsf{scope}(\generic{C'})$ followed by the bounds of the type variables of $m$.
+$\pl{T}_0$ is the arguments in $\pl{T}$ at the positions of the funnels $\funnel{X}$ in $\pl{F}$.
 $\mathsf{scope}(\_)=\Delta;\pl{T}$ is expected to always return a $\Delta$ and a $\pl{T}$ of the same length.
 This is enforced at the usage points, where we use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length.
 \\[1ex]
 For a type variable $X$, $\Delta(X)$ is the bound of $X$ in $\Delta$.
 $\mathrm{dom}(\Delta)$ is the sequence of the type variables in $\Delta$, and $\mathrm{cod}(\Delta)$ is the sequence of the bounds in $\Delta$.
 $\mathrm{dom}(\pl{F})$ is the sequence of the $X$ such that $\funnel{X}$ is in $\pl{F}$.
-$\ftv{T}$ is the set of the type variables occurring in $T$; for a sequence, $\mathsf{FTV}$ is the union over its elements.
+$\ftv{T}$ is the set of the type variables occurring in $T$.
 The figures leave the following conventions implicit.
 A sequence $e_1,\ldots,e_n$, or $\pl{e}$, separates its elements with commas; a comma also concatenates two sequences, and either sequence may be empty.
 A function or a judgement applied to sequences stands for one application at every position, and requires the sequences to have the same length:
 $|F_1,\ldots,F_n|$ is $|F_1|,\ldots,|F_n|$;
+$\ftv{T_1,\ldots,T_n}$ is $\ftv{T_1}\cup\ldots\cup\ftv{T_n}$;
 $\kind{\Delta}{T_1,\ldots,T_n}$ is $\kind{\Delta}{T_1}\quad\ldots\quad\kind{\Delta}{T_n}$;
 $\subtype{\Delta}{T_1,\ldots,T_n}{T'_1,\ldots,T'_n}$ is $\subtype{\Delta}{T_1}{T'_1}\quad\ldots\quad\subtype{\Delta}{T_n}{T'_n}$;
 $\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T_1,\ldots,T_n}$ is $\typing{\Delta}{\Gamma}{e_1}{T_1}\quad\ldots\quad\typing{\Delta}{\Gamma}{e_n}{T_n}$.
