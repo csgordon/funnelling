@@ -192,6 +192,10 @@ Expression contexts $\mathcal{C}$ do not enter the methods of a local class; thu
 We now present the reduction $\step{e}{e'}$ of the main expression.
 The reduction is small step, and uses the values $v$ and the evaluation contexts $\mathcal{E}$.
 {\small
+\begin{Define}{\mathsf{typeOf}(v)=G}
+\mathsf{typeOf}(v)=\gen{C}{\pl{G}}\\
+\quad\textrm{where }v\in\{\obj{C}{\pl{G}}{\_},\innerobj{C}{\pl{G}}{\_}{\_}{\_}{\_}\}
+\end{Define}
 \begin{mathpar}
 \fbox{$\step{e}{e'}$}\\
 \inferrule[simpleFieldFound]{
@@ -229,8 +233,7 @@ The reduction is small step, and uses the values $v$ and the evaluation contexts
 \end{mathpar}
 \begin{mathpar}
 \inferrule[ifThen]{
-    v\in\{\obj{C}{\pl{G}}{\_}, \innerobj{C}{\pl{G}}{\_}{\_}{\_}{\_}\}\\
-    \emptyset\vdash \gen{C}{\pl{G}} <: \gen{C'}{\_}\\
+    \emptyset\vdash \mathsf{typeOf}(v) <: \gen{C'}{\_}\\
     \mathsf{fresh}(e_1)=e'_1
     %\match{v}{C\langle\_\rangle} = \mathsf{true}
 }{
@@ -241,8 +244,7 @@ The reduction is small step, and uses the values $v$ and the evaluation contexts
 \inferrule[ifElse]{
     %v\not\in\{\obj{C}{\_}{\_}, \innerobj{C}{\_}{\_}{\_}{\_}{\_}\}
     %\match{v}{C\langle\_\rangle} = \mathsf{false}
-    v\in\{\obj{C}{\pl{G}}{\_}, \innerobj{C}{\pl{G}}{\_}{\_}{\_}{\_}\}\\
-    \emptyset\not\vdash \gen{C}{\pl{G}} <: \gen{C'}{\_}
+    \emptyset\not\vdash \mathsf{typeOf}(v) <: \gen{C'}{\_}
 }{
     \step{\ifthen{v}{\gen{C'}{\pl{T}}}{x}{e_1}{e_2}}
     {e_2}
