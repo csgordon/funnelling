@@ -402,11 +402,11 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 \begin{mathpar}
 \inferrule[call]{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\\\
-  \generic{C_0}=\gen{C_0}{\pl{T}_2}\\\\
+  \mathsf{scope}(\gen{C_0}{\pl{T}_0})=\Delta_0;\pl{T}_2\\\\
   \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in C_0\\\\
-  \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\pl{T}_2,\Delta_1}{\pl{T}_0,\pl{T}_1}\\\\
+  \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_2,\pl{T}_1}\\\\
   \kind{\Delta}{\pl{T}_1}\\\\
-  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\pl{T}_2,\Delta_1}{\pl{T}_0,\pl{T}_1}}\\\\
+  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_2,\pl{T}_1}}\\\\
   \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T'_1,\ldots,T'_n}
 }{
   \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}}{T'_0}
@@ -677,8 +677,6 @@ Substitution does not rename the type variables it meets.
 No renaming is needed: the substituted types are ground, and the domain of the substitution never contains a type variable bound inside the substituted term, by requirement A7 on the main expression.
 In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables:
 $\tsubst{T}{F_1,\ldots,F_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $i\in 1..n$ such that $F_i=\funnel{X_i}$; the ground funnels are ignored.
-In the same way, a sequence of types $T'_1,\ldots,T'_n$ in the domain stands for its type variables: $\tsubst{T}{T'_1,\ldots,T'_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $i\in 1..n$ such that $T'_i=X_i$; the ground types are ignored.
-Thus for $\generic{C}=\gen{C}{\pl{T}_0}$, the substitution $\tsubst{T}{\pl{T}_0}{\pl{T}}$ replaces the type variables of the class $C$, top-level or local.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
 Thus $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground type $G$, and the result is again a funnel.
 
