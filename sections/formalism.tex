@@ -416,8 +416,8 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 \\
 \inferrule[call-lb-runtime]{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C_0}{\pl{T}_0}}\\\\
-  \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\pl{M}}{\_}}\\\\
-  \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in \pl{M}\\\\
+  \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\_}{\_}}\\\\
+  \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in C_0\\\\
   \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\\\
   \declared{\subclass{C}{\_}{\_}{\_}{\_}{\_}}\\\\
   \kind{\Delta}{\gen{C}{\pl{T}}}\\
