@@ -423,8 +423,7 @@ Thus a substitution never reaches a type variable or a variable bound inside the
   \kind{\Delta}{\gen{C}{\pl{T}}}\\
   \kind{\Delta}{\pl{T}_1}\\\\
   \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}\\\\
-  \typing{\Delta}{\Gamma}{e_0}{\gen{C}{\pl{T}}}\\\\
-  \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T'_1,\ldots,T'_n}
+  \typing{\Delta}{\Gamma}{e_0,\ldots,e_n}{\gen{C}{\pl{T}},T'_1,\ldots,T'_n}
 }{
   \typing{\Delta}{\Gamma}{
     \explicitcall{e_0}{\gen{C}{\pl{T}}}{\pl{T}_1}{m}{e_1,\ldots,e_n}
@@ -487,10 +486,10 @@ Thus a substitution never reaches a type variable or a variable bound inside the
     \end{mathpar}
 \begin{Define}{K\gap\mathsf{consistent}}
 \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
-\quad\textrm{iff }\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\
-\quad\phantom{\textrm{iff }}\mathrm{dom}(\pl{M}')=\mathrm{dom}(\pl{M})\\
-\quad\phantom{\textrm{iff }}\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})\\
-\quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C_0}{\pl{T}'}{\_}{\pl{M}'}}
+\quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C_0}{\pl{T}'}{\_}{\pl{M}'}}\\
+\quad\phantom{\textrm{where }}\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\
+\quad\phantom{\textrm{where }}\mathrm{dom}(\pl{M}')=\mathrm{dom}(\pl{M})\\
+\quad\phantom{\textrm{where }}\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})
 \end{Define}
 \par}
 
@@ -502,7 +501,7 @@ However, the rule still uses the \emph{full} ambient environments for checking c
 This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ ensures the resulting type of that
 expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
 \\[1ex]
-The local class $K$ in $K\gap\mathsf{consistent}$ agrees with its declaration, found by the \emph{where} line of the definition.
+The local class $K$ in $K\gap\mathsf{consistent}$ agrees with its declaration, found by the first \emph{where} line of the definition.
 The supertype and the method signatures of the local class are those of the declaration, with the funnelled type variables of $\pl{F}'$ replaced by $|\pl{F}|$.
 The local class and the declaration have the same method names.
 For a local class in \decls, the declaration is the local class itself; thus every local class in \decls is consistent.
