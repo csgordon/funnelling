@@ -384,11 +384,13 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 }
 \and
 \inferrule[var]{ }{\typing{\Delta}{\Gamma}{x}{\Gamma(x)}}
-\and
+\end{mathpar}
+\begin{mathpar}
+\begin{array}[b]{c}
 \inferrule[new-object]{ }{
   \typing{\Delta}{\Gamma}{\obj{\Object}{}{}}{\gen{\Object}{}}
 }
-\and
+\\[4ex]
 \inferrule[declField]{
   \typing{\Delta}{\Gamma}{e}{\classtype{C}{\pl{T}'}}\\\\
   \declared{\subclass{C}{\Delta'}{\_}{\_}{\_}{\pl{S}}}\\\\
@@ -398,8 +400,8 @@ Thus a substitution never reaches a type variable or a variable bound inside the
   \typing{\Delta}{\Gamma}{e\fstop f}{\tsubst{T}{\Delta'}{\pl{T}'}}
   %\subclass{C_0}{\Delta_0}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}\in\decls
 }
-\end{mathpar}
-\begin{mathpar}
+\end{array}
+\and
 \inferrule[call]{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\\\
   \mathsf{scope}(\gen{C_0}{\pl{T}_0})=\Delta_0;\pl{T}_2\\\\
@@ -417,8 +419,8 @@ Thus a substitution never reaches a type variable or a variable bound inside the
   \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\pl{M}}{\_}}\\\\
   \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in \pl{M}\\\\
   \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\\\
-  \declared{\subclass{C}{\_}{\_}{\_}{\_}{\_}}\\
-  \kind{\Delta}{\gen{C}{\pl{T}}}\\\\
+  \declared{\subclass{C}{\_}{\_}{\_}{\_}{\_}}\\\\
+  \kind{\Delta}{\gen{C}{\pl{T}}}\\
   \kind{\Delta}{\pl{T}_1}\\\\
   \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}\\\\
   \typing{\Delta}{\Gamma}{e_0}{\gen{C}{\pl{T}}}\\\\
