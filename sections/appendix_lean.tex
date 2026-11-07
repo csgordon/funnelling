@@ -854,10 +854,10 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
 \begin{cmp}{\textsc{innerSuper}}
 \begin{paperside}
 \fit{$\inferrule{
-    v_0 = \innerobj{\_}{\_}{C}{\pl{G}}{\_}{\pl{M}}\\
+    v_0 = \innerobj{\_}{\_}{C'}{\pl{G}}{\_}{\pl{M}}\\
     m\not\in \pl{M}
 }{
-    \step{\call{v_0}{\pl{G}'}{m}{v_1,\ldots,v_n}}{\explicitcall{v_0}{\gen{C}{\pl{G}}}{\pl{G}'}{m}{v_1,\ldots,v_n}}
+    \step{\call{v_0}{\pl{G}'}{m}{v_1,\ldots,v_n}}{\explicitcall{v_0}{\gen{C'}{\pl{G}}}{\pl{G}'}{m}{v_1,\ldots,v_n}}
 }$}
 \end{paperside}
 \begin{leanside}
@@ -868,7 +868,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       Step d (.call v0 Gs' m vs) (.superCall v0 (.cls C' Gs) Gs' m vs)
 \end{lstlisting}
 \end{leanside}
-\mapping{The superclass $C$ of the paper is \texttt{C'} in Lean.}
+\nomapping
 \end{cmp}
 
 \begin{cmp}{\textsc{searchSuper}}

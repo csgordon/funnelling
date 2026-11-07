@@ -51,7 +51,7 @@ A method call $\call{e}{\pl{T}}{m}{\pl{e}}$ calls the method $m$ on the receiver
 A super call $\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}$ searches the method $m$ starting from the class of the type $T$, instead of from the class of the receiver $e$.
 That is, a super call works as a flexible kind of Java \Q@super@ call, attempting to call the method $m$ as if the receiver were of the supertype $T$.
 An object creation $\obj{C}{\pl{T}}{\pl{e}}$ creates an instance of the top-level class $\gen{C}{\pl{T}}$.
-The arguments $\pl{e}$ are the values of the fields of $C$, followed by the arguments of the object creation of the superclass of $C$.
+The first arguments of $\pl{e}$ initialize the fields of $C$; the other arguments are the arguments of the object creation of the superclass of $C$.
 A local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ declares the local class $C$ and creates an instance of $C$.
 \end{sloppypar}
 
@@ -61,7 +61,7 @@ From the perspective of the \Q@new@ expression itself, the funnels $\pl{F}$ inst
 
 To allow a local class instance to exist in the main expression, a funnel is either a ground type $G$ or a funnelled type variable $\funnel{X}$.
 In \decls, all the funnels are of the form $\funnel{X}$, by well-formedness requirement A11.
-In a well-typed main expression, outside of the methods of local classes, all the funnels are of the form $G$: under the bounds $\emptyset$, the pairing of rule \textsc{new-local} is undefined for a funnel $\funnel{X}$.
+In the main expression, outside of the methods of local classes, all the funnels are of the form $G$, by A12: there, no type variable is in scope.
 When a local class is nested in a method of a local class in the main expression, a mixture of funnels $\funnel{X}$ and $G$ can be present.
 
 A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $\gen{C'}{\pl{T}}$.
@@ -292,11 +292,11 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 }
 \and
 \inferrule[innerSuper]{
-    v_0 = \innerobj{\_}{\_}{C}{\pl{G}}{\_}{\pl{M}}\\
+    v_0 = \innerobj{\_}{\_}{C'}{\pl{G}}{\_}{\pl{M}}\\
     m\not\in \pl{M}
 }{
     \step{\call{v_0}{\pl{G}'}{m}{v_1,\ldots,v_n}}{
-        \explicitcall{v_0}{\gen{C}{\pl{G}}}{\pl{G}'}{m}{v_1,\ldots,v_n}
+        \explicitcall{v_0}{\gen{C'}{\pl{G}}}{\pl{G}'}{m}{v_1,\ldots,v_n}
     }
 }
 \and
@@ -327,7 +327,7 @@ Rule \textsc{simpleFieldSuper} reads a field not declared by the class $C$ of th
 A local class declares no fields, so rule \textsc{innerFieldSuper} reads every field from the object of the superclass.
 
 Rules \textsc{ifThen} and \textsc{ifElse} test the class of the value $v$ against the class $C'$ of the type test, ignoring the type arguments $\pl{T}$ of $\gen{C'}{\pl{T}}$.
-Rule \textsc{ifThen} reduces to $e_1$ with $x$ replaced by $v$; rule \textsc{ifElse} reduces to $e_2$.
+Rule \textsc{ifThen} reduces to $e'_1$ with $x$ replaced by $v$, where $e'_1$ is $e_1$ renamed by $\mathsf{fresh}$; rule \textsc{ifElse} reduces to $e_2$.
 
 Rules \textsc{simpleAddSuper}, \textsc{simpleFound}, \textsc{innerFound}, \textsc{innerSuper} and \textsc{searchSuper} call a method.
 Rule \textsc{simpleAddSuper} turns a call on an object of a top-level class into a super call starting from the class of the object.
@@ -536,7 +536,7 @@ The supertype and the method signatures of $K$ must be those of the declaration,
 $K$ and the declaration have the same method names.
 The bodies of the methods of $K$ are not required to be those of the declaration: the main expression can hold a local class whose method bodies differ from the declaration, and rule \textsc{new-local} types those method bodies.
 
-Rules \textsc{call}, \textsc{sub-inherit-local}, \textsc{wf-class} and \textsc{cast-down} read the declaration, while the reduction runs the methods of the copy.
+Rules \textsc{call}, \textsc{sub-inherit-local}, \textsc{wf-class} and \textsc{cast-down}, the relation $\mathsf{consistent}$ and the last case of $\mathsf{overrideOk}(T,M)$ read the declaration, while the reduction runs the methods of the copy.
 
 The relation $\cast{\Delta}{T}{T'}$ is the \emph{checked cast}: a type test against $T'$ on a value of static type $T$ is decided by the class of the value alone.
 Rule \textsc{if-instanceof} accepts the type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ only when $\cast{\Delta}{T_0}{T}$, where $T_0$ is the type of $e_0$.
