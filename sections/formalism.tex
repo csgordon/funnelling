@@ -162,7 +162,7 @@ By well-formedness requirement A1, a class name $C$ identifies at most one $K$ w
 $M\in K$ holds when $M$ is a method of the class declaration $K$, top-level or local.
 $M\in C$ holds when $M$ is a method of the declared class $C$, top-level or local.
 For a top-level class $C$ with bounds $\Delta$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$.
-For a local class $C_0$ with funnels $\pl{F}$, $\mathsf{scope}(\gen{C_0}{\pl{T}})=\Delta_0;\pl{T}_0$, where $\Delta_0$ holds, in the order of $\mathrm{dom}(\pl{F})$, the bound of each $X\in\mathrm{dom}(\pl{F})$ in scope in the body of the method $m$ declaring $C_0$; note that $m$ could be a method of either a top-level or local class.
+For a local class $C_0$ with funnels $\pl{F}$, $\mathsf{scope}(\gen{C_0}{\pl{T}})=\Delta_0;\pl{T}_0$, where $\Delta_0$ holds, in the order of $\mathrm{dom}(\pl{F})$, the bound $\ext{X}{T}$ of each $X\in\mathrm{dom}(\pl{F})$ in the body of the method $m$ declaring $C_0$; note that $m$ could be a method of either a top-level or local class.
 By A11, every funnel of $\pl{F}$ is of the form $\funnel{X}$, so $\pl{T}_0$ is $\pl{T}$.
 For a top-level class, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$ can return $\Delta$ and $\pl{T}$ of different lengths.
 The usage points of $\mathsf{scope}$ use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length; in the same way, $\tsubst{T}{\pl{F}}{\pl{T}}$ is defined only when $\pl{F}$ and $\pl{T}$ have the same length.
