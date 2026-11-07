@@ -184,14 +184,14 @@ structure Names where
   xs : List VarName
   Xs : List TVarName
 
-abbrev FreshNames (avoid : Names) (xs : List VarName) (Xs : List TVarName) : Prop :=
-  xs.Nodup /\ Xs.Nodup /\ xs.all (fun x => !(avoid.xs.contains x)) = true /\
-    Xs.all (fun X => !(avoid.Xs.contains X)) = true
-
 def Fresh (avoid : Names) (e e' : Expr) : Prop :=
-  RenE [] [] e e' /\ FreshNames avoid e'.vbinders e'.tbinders
+  RenE [] [] e e' /\ e'.vbinders.Nodup /\ e'.tbinders.Nodup /\
+    (forall x, List.Mem x e'.vbinders -> Not (List.Mem x avoid.xs)) /\
+    (forall X, List.Mem X e'.tbinders -> Not (List.Mem X avoid.Xs))
 
 def FreshM (avoid : Names) (M M' : Method) : Prop :=
-  RenM [] [] M M' /\ FreshNames avoid M'.vbinders M'.tbinders
+  RenM [] [] M M' /\ M'.vbinders.Nodup /\ M'.tbinders.Nodup /\
+    (forall x, List.Mem x M'.vbinders -> Not (List.Mem x avoid.xs)) /\
+    (forall X, List.Mem X M'.tbinders -> Not (List.Mem X avoid.Xs))
 
 end Funnelling.High

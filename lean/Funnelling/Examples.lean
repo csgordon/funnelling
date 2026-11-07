@@ -98,7 +98,7 @@ theorem r5 : Reduces d1 (.call (.field (Value.new (cn "Box") [gA] [vA]) (fn "val
 theorem r6Then : Reduces d1 (.ifInst vA tA (vn "x") (.var (vn "x")) vB) vA :=
   And.intro
     (Step.ifThen (v := vA) (C' := cn "A") (Ts := []) (Ts' := []) (x := vn "x") (e1 := .var (vn "x"))
-      (e1' := .var (vn "x")) (e2 := vB) .refl (And.intro .var (by decide)))
+      (e1' := .var (vn "x")) (e2 := vB) .subRefl (And.intro .var (by decide)))
     (by decide)
 
 theorem r6Else : Reduces d1 (.ifInst vA tB (vn "x") (.var (vn "x")) vB) vB := by
@@ -163,14 +163,14 @@ theorem r10 : Reduces d2 (.field vLocal (fn "f")) (.field (Value.new (cn "Foo") 
 
 -- T1: new Box<A<>>(new A<>()).val has type A<>.
 theorem kindA : Kind d1 [] tA :=
-  Kind.cls (Delta0 := []) (Ts0 := []) (Scope.dec (D := decA) (.dec (.tail _ (.head _))))
+  Kind.wfClass (Delta0 := []) (Ts0 := []) (Scope.dec (D := decA) (.dec (.tail _ (.head _))))
     (by intro T h; cases h) rfl .nil
 
 theorem subAObj : Sub d1 [] tA obj :=
-  Sub.inherit (D := decA) (.dec (.tail _ (.head _))) rfl .refl
+  Sub.subInherit (D := decA) (.dec (.tail _ (.head _))) rfl .subRefl
 
 theorem kindBoxA : Kind d1 [] (.cls (cn "Box") [tA]) :=
-  Kind.cls (Delta0 := decBox.bounds) (Ts0 := [tA])
+  Kind.wfClass (Delta0 := decBox.bounds) (Ts0 := [tA])
     (Scope.dec (D := decBox) (.dec (.tail _ (.tail _ (.tail _ (.head _))))))
     (by intro T h; cases h with
       | head => exact kindA
@@ -201,10 +201,10 @@ theorem myFooDeclared : Declared d2 myFooK :=
 
 -- C1: rule cast-down accepts the type test instanceof MyFoo<X> from Foo<X>.
 theorem c1 : Cast d2 [{ X := tn "X", T := obj }] (tFoo (.var (tn "X"))) (.cls (cn "MyFoo") [.var (tn "X")]) :=
-  Cast.down (Xs := [tn "Y"]) (Ts' := [.var (tn "Y")])
-    (Sub.inheritLocal myFooDeclared rfl .refl)
+  Cast.castDown (Xs := [tn "Y"]) (Ts' := [.var (tn "Y")])
+    (Sub.subInheritLocal myFooDeclared rfl .subRefl)
     (Generic.loc myFooDeclared)
-    (Sub.inheritLocal myFooDeclared rfl .refl)
+    (Sub.subInheritLocal myFooDeclared rfl .subRefl)
     (by intro X h; cases h with
       | head => exact .head _
       | tail _ h => cases h)
@@ -511,14 +511,14 @@ theorem scopeOuter : Scope d9 (.cls (cn "Outer") [tv "X"]) [bnd "X" obj] [tv "X"
     (Exists.intro .hole rfl) (Generic.dec nestDeclared) (Scope.dec nestDeclared) (Pairing.funnel (.head _) .nil)
 
 theorem kindA9 : Kind d9 [] tA :=
-  Kind.cls (Delta0 := []) (Ts0 := []) (Scope.dec (D := decA) (.dec (.tail _ (.head _))))
+  Kind.wfClass (Delta0 := []) (Ts0 := []) (Scope.dec (D := decA) (.dec (.tail _ (.head _))))
     (by intro T h; cases h) rfl .nil
 
-theorem subAObj9 : Sub d9 [] tA obj := Sub.inherit (D := decA) (.dec (.tail _ (.head _))) rfl .refl
+theorem subAObj9 : Sub d9 [] tA obj := Sub.subInherit (D := decA) (.dec (.tail _ (.head _))) rfl .subRefl
 
 -- K1: Inner<A<>> is well kinded: its scope goes through the scope of Outer<X>.
 theorem k1 : Kind d9 [] (.cls (cn "Inner") [tA]) :=
-  Kind.cls (Delta0 := [bnd "X" obj]) (Ts0 := [tA])
+  Kind.wfClass (Delta0 := [bnd "X" obj]) (Ts0 := [tA])
     (Scope.loc (C := cn "Outer") (T := .cls (cn "Outer") [tv "X"]) (Delta := [bnd "X" obj]) (Ts'' := [tv "X"])
       (Exists.intro outerK (And.intro outerDeclared (And.intro rfl (.head _))))
       (Exists.intro (.callRecv .hole [] (mn "x") []) rfl)
@@ -598,17 +598,17 @@ theorem o4 : Not (ClassOk d11 decP3) /\ Not (ClassOk d11 decP4) := by
 
 -- C3: rule cast-var, then rule cast-down: from X extends Foo<A<>> to MyFoo<A<>>.
 theorem c3 : Cast d2 [bnd "X" (tFoo tA)] (tv "X") (.cls (cn "MyFoo") [tA]) :=
-  Cast.var (.head _)
-    (Cast.down (Xs := [tn "Y"]) (Ts' := [tv "Y"])
-      (Sub.inheritLocal myFooDeclared rfl .refl)
+  Cast.castVar (.head _)
+    (Cast.castDown (Xs := [tn "Y"]) (Ts' := [tv "Y"])
+      (Sub.subInheritLocal myFooDeclared rfl .subRefl)
       (Generic.loc myFooDeclared)
-      (Sub.inheritLocal myFooDeclared rfl .refl)
+      (Sub.subInheritLocal myFooDeclared rfl .subRefl)
       (by intro X h; cases h with
         | head => exact .head _
         | tail _ h => cases h))
 
 -- C4: rule cast-up: from B<> to Object<>.
-theorem c4 : Cast d1 [] tB obj := Cast.up (Sub.inherit (D := decB) (.dec (.tail _ (.tail _ (.head _)))) rfl .refl)
+theorem c4 : Cast d1 [] tB obj := Cast.castUp (Sub.subInherit (D := decB) (.dec (.tail _ (.tail _ (.head _)))) rfl .subRefl)
 
 -- C5: no checked cast between unrelated classes: from A<> to B<>.
 theorem c5 : Not (Cast d1 [] tA tB) := by
@@ -642,22 +642,22 @@ theorem r20 : Steps d12 derivedF vA :=
       Steps.refl)
 
 theorem kindA12 : Kind d12 [] tA :=
-  Kind.cls (Delta0 := []) (Ts0 := []) (Scope.dec (D := decA) (.dec (.tail _ (.head _))))
+  Kind.wfClass (Delta0 := []) (Ts0 := []) (Scope.dec (D := decA) (.dec (.tail _ (.head _))))
     (by intro T h; cases h) rfl .nil
 
 theorem kindB12 : Kind d12 [] tB :=
-  Kind.cls (Delta0 := []) (Ts0 := []) (Scope.dec (D := decB) (.dec (.tail _ (.tail _ (.head _)))))
+  Kind.wfClass (Delta0 := []) (Ts0 := []) (Scope.dec (D := decB) (.dec (.tail _ (.tail _ (.head _)))))
     (by intro T h; cases h) rfl .nil
 
 theorem kindBaseA : Kind d12 [] (.cls (cn "Base") [tA]) :=
-  Kind.cls (Delta0 := decBase.bounds) (Ts0 := [tA]) (Scope.dec declBase)
+  Kind.wfClass (Delta0 := decBase.bounds) (Ts0 := [tA]) (Scope.dec declBase)
     (by intro T h; cases h with
       | head => exact kindA12
       | tail _ h => cases h)
-    rfl (.cons (Sub.inherit (D := decA) (.dec (.tail _ (.head _))) rfl .refl) .nil)
+    rfl (.cons (Sub.subInherit (D := decA) (.dec (.tail _ (.head _))) rfl .subRefl) .nil)
 
 theorem kindDerived : Kind d12 [] (.cls (cn "Derived") []) :=
-  Kind.cls (Delta0 := []) (Ts0 := []) (Scope.dec declDerived) (by intro T h; cases h) rfl .nil
+  Kind.wfClass (Delta0 := []) (Ts0 := []) (Scope.dec declDerived) (by intro T h; cases h) rfl .nil
 
 theorem typA12 : Typing d12 [] [] vA tA :=
   Typing.newTop (D := decA) (es1 := []) (es2 := []) (.dec (.tail _ (.head _))) kindA12 rfl .nil Typing.newObject
@@ -674,7 +674,7 @@ theorem typDerived : Typing d12 [] [] (Value.new (cn "Derived") [] [vB, vA]) (.c
 -- T4: the field f of a Derived<> has type A<>: rule subs to Base<A<>>, then rule declField.
 theorem t4 : Typing d12 [] [] derivedF tA :=
   Typing.declField (D := decBase) (Ts' := [tA]) (T := tv "X")
-    (Typing.subs typDerived kindBaseA (Sub.inherit (D := decDerived) declDerived rfl .refl))
+    (Typing.subs typDerived kindBaseA (Sub.subInherit (D := decDerived) declDerived rfl .subRefl))
     declBase (.head _) rfl
 
 -- Well-formedness requirements one by one.
@@ -723,7 +723,7 @@ def nestedIf' : Expr := .ifInst (ev "x") tA (vn "y1") (ev "y1") (ev "x")
 theorem r21 : Reduces d1 (.ifInst vA tA (vn "x") nestedIf vB) (.ifInst vA tA (vn "y1") (ev "y1") vA) :=
   And.intro
     (Step.ifThen (v := vA) (C' := cn "A") (Ts := []) (Ts' := []) (x := vn "x") (e1 := nestedIf) (e1' := nestedIf')
-      (e2 := vB) .refl (And.intro (RenE.ifInst .var .var .var) (by decide)))
+      (e2 := vB) .subRefl (And.intro (RenE.ifInst .var .var .var) (by decide)))
     (by decide)
 
 -- The example of Section 4.4: a local class L whose method m calls m on a captured value y of class L.

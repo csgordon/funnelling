@@ -14,6 +14,7 @@
 \newenvironment{paperside}{\begin{minipage}[t]{0.45\textwidth}\vspace{0pt}\scriptsize}{\end{minipage}\hfill}
 \newenvironment{leanside}{\begin{minipage}[t]{0.53\textwidth}\vspace{0pt}}{\end{minipage}}
 \newcommand{\mapping}[1]{\par\smallskip\noindent{\scriptsize\textit{Mapping.} #1}\par\smallskip\hrule}
+\newcommand{\nomapping}{\par\smallskip\hrule}
 
 This appendix relates the formalism of Section~\ref{sec:core} to a Lean~4 formalization in the folder \texttt{lean} of the paper repository.
 Rule \textsc{new-local-java} of Section~\ref{sec:java} is not formalized: Type Soundness concerns only the type system with rule \textsc{new-local}.
@@ -82,8 +83,9 @@ The following differences hold for every piece below, and the pieces do not repe
 \begin{itemize}
 \item \textbf{Metavariables.}
 Each metavariable of the paper is a Lean type: \texttt{ClassName} ($C$), \texttt{MethName} ($m$), \texttt{FieldName} ($f$), \texttt{VarName} ($x$), \texttt{TVarName} ($X$), \texttt{Ty} ($T$), \texttt{GTy} ($G$), \texttt{Funnel} ($F$), \texttt{Value} ($v$), \texttt{Expr} ($e$), \texttt{Method} ($M$), \texttt{Dec}, \texttt{K}.
-A ground type and a value are also an expression and a type: Lean inserts the conversions \texttt{GTy.ty} and \texttt{Value.expr} where needed.
+A ground type is also a type, and a value is also an expression: Lean inserts the conversions \texttt{GTy.ty} and \texttt{Value.expr}, and \texttt{GTy.tys} and \texttt{Value.exprs} for lists, where needed.
 A rule written with $G$ or $v$ in the paper is written with a \texttt{GTy} or a \texttt{Value} in Lean.
+A Lean constructor has the name of the rule of the paper: \texttt{subInherit} is \textsc{sub-inherit}, \texttt{callLbRuntime} is \textsc{call-lb-runtime}.
 \item \textbf{Grammar and well-formedness.}
 In the paper, the well-formedness requirements restrict the grammar (Section~\ref{sec:clarifications}).
 Lean defines the syntax as inductive types, and A1-A11 as the propositions \texttt{WFDecls} and \texttt{WFExpr}.
@@ -132,6 +134,8 @@ inductive Funnel where
   | funnel (X : TVarName)
 instance : Coe GTy Ty where
   coe := GTy.ty
+instance : Coe (List GTy) (List Ty) where
+  coe := GTy.tys
 \end{lstlisting}
 \end{leanside}
 \mapping{\texttt{GTy.ty} turns $G$ into the same type $T$.}
@@ -204,6 +208,8 @@ inductive Value where
       (vs : List Value) (Ms : List Method)
 instance : Coe Value Expr where
   coe := Value.expr
+instance : Coe (List Value) (List Expr) where
+  coe := Value.exprs
 \end{lstlisting}
 \end{leanside}
 \mapping{\texttt{Value.expr} turns $v$ into the same expression; the funnels $\pl{G}$ of a value of a local class become ground funnels.}
@@ -283,10 +289,8 @@ inductive ECtx where
 \begin{lstlisting}[style=leanside]
 abbrev A1 (d : Decls) : Prop := ((classes d).map K.name).Nodup
 abbrev A2 (d : Decls) : Prop :=
-  d.all (fun D => decide (((superChain d (d.length + 1) D.C).flatMap
-    fun D' => D'.Ss.map Slot.f).Nodup)) = true
-abbrev A3 (ks : List K) : Prop :=
-  ks.all (fun k => decide ((k.Ms.map Method.name).Nodup)) = true
+  forall D, List.Mem D d -> ((superChain d (d.length + 1) D.C).flatMap fun D' => D'.Ss.map Slot.f).Nodup
+abbrev A3 (ks : List K) : Prop := forall k, List.Mem k ks -> (k.Ms.map Method.name).Nodup
 \end{lstlisting}
 \end{leanside}
 \mapping{\texttt{classes d} lists the top-level classes and every local class written in their methods. \texttt{superChain d n C} is the chain of superclasses of $C$, cut after $n$ classes; an acyclic chain is never longer than $|\decls|$, and A9 rejects a cyclic one.}
@@ -300,11 +304,9 @@ abbrev A3 (ks : List K) : Prop :=
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-abbrev A4 (Ms : List Method) : Prop :=
-  Ms.all (fun M => decide ((M.params.map VarDecl.x).Nodup)) = true
-abbrev A5 (Deltas : List Bounds) : Prop :=
-  Deltas.all (fun Delta => decide ((dom Delta).Nodup)) = true
-abbrev A6 (ks : List K) : Prop := ks.all (fun k => decide ((domF k.Fs).Nodup)) = true
+abbrev A4 (Ms : List Method) : Prop := forall M, List.Mem M Ms -> (M.params.map VarDecl.x).Nodup
+abbrev A5 (Deltas : List Bounds) : Prop := forall Delta, List.Mem Delta Deltas -> (dom Delta).Nodup
+abbrev A6 (ks : List K) : Prop := forall k, List.Mem k ks -> (domF k.Fs).Nodup
 \end{lstlisting}
 \end{leanside}
 \mapping{Each requirement is applied to all the methods, bounds and local classes of \decls, and of the main expression.}
@@ -331,7 +333,7 @@ def Method.noShadow (Xs : List TVarName) (xs : List VarName) : Method -> Bool
     (ps.map VarDecl.x).all (fun x => !(xs.contains x)) &&
     e.noShadow (Xs ++ dom Delta) (this :: xs ++ ps.map VarDecl.x)
 abbrev A7Decls (d : Decls) : Prop :=
-  d.all (fun D => Method.noShadowList (dom D.bounds) [] D.Ms) = true
+  forall D, List.Mem D d -> Method.noShadowList (dom D.bounds) [] D.Ms = true
 \end{lstlisting}
 \end{leanside}
 \mapping{\texttt{Xs} and \texttt{xs} are the type variables and the variables in scope; the cases written \texttt{...} go into the subexpressions. Funnels bind nothing: $\funnel{X}$ refers to the $X$ in scope.}
@@ -347,17 +349,17 @@ abbrev A7Decls (d : Decls) : Prop :=
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
 abbrev A8 (Ms : List Method) (ifVars : List VarName) : Prop :=
-  Ms.all (fun M => !((M.params.map VarDecl.x).contains this)) = true /\
-  ifVars.contains this = false
+  (forall M, List.Mem M Ms -> Not (List.Mem this (M.params.map VarDecl.x))) /\ Not (List.Mem this ifVars)
 abbrev A9 (d : Decls) : Prop :=
-  d.any (fun D => D.C == Object && D.bounds.isEmpty && D.C' == Object &&
-    D.Ts.isEmpty && D.Ms.isEmpty && D.Ss.isEmpty) = true /\
-  d.all (fun D => (superChain d (d.length + 1) D.C).any fun D' => D'.C == Object) = true
-abbrev A10 (d : Decls) : Prop := (classes d).all (fun k => (findDec d k.sup).isSome) = true
-abbrev A11 (d : Decls) : Prop :=
-  (classes d).all (fun k => k.Fs.all fun
-    | .funnel _ => true
-    | .ground _ => false) = true
+  (exists D, List.Mem D d /\ D.C = Object /\ D.bounds.isEmpty /\ D.C' = Object /\ D.Ts.isEmpty /\
+    D.Ms.isEmpty /\ D.Ss.isEmpty) /\
+  forall D, List.Mem D d -> exists D', List.Mem D' (superChain d (d.length + 1) D.C) /\ D'.C = Object
+abbrev A10 (d : Decls) : Prop := forall k, List.Mem k (classes d) -> (findDec d k.sup).isSome
+abbrev A11 (d : Decls) : Prop := forall k, List.Mem k (classes d) -> forall F, List.Mem F k.Fs -> F.isFunnel
+abbrev WFDecls (d : Decls) : Prop :=
+  A1 d /\ A2 d /\ A3 (classes d) /\ A4 d.methods /\
+  A5 (d.map Dec.bounds ++ d.methods.map Method.bounds) /\ A6 (classes d) /\ A7Decls d /\
+  A8 d.methods (d.flatMap fun D => Method.ifVarsList D.Ms) /\ A9 d /\ A10 d /\ A11 d
 \end{lstlisting}
 \end{leanside}
 \mapping{\texttt{ifVars} lists the variables of all the \Q@if@.}
@@ -437,18 +439,17 @@ M\in C\textrm{ iff }M\in K\\
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-def MemK (M : Method) (k : K) : Prop := List.Mem M k.Ms
 inductive Declared (d : Decls) : K -> Prop
   | dec {D} : List.Mem D d -> Declared d (.dec D)
   | loc {k Delta T0 m ps e C0 Fs C' Ts es Ms} :
-      Declared d k -> MemK (.mk Delta T0 m ps e) k ->
+      Declared d k -> List.Mem (.mk Delta T0 m ps e) k.Ms ->
       OccursIn (.newLocal C0 Fs C' Ts es Ms) e ->
       Declared d (.loc C0 Fs C' Ts es Ms)
 def MethodIn (d : Decls) (M : Method) (C : ClassName) : Prop :=
-  exists k, Declared d k /\ k.name = C /\ MemK M k
+  exists k, Declared d k /\ k.name = C /\ List.Mem M k.Ms
 \end{lstlisting}
 \end{leanside}
-\mapping{$\declared{K}$ is \texttt{Declared d K}; $M\in K$ is \texttt{MemK M K}; $M\in C$ is \texttt{MethodIn d M C}.}
+\mapping{$\declared{K}$ is \texttt{Declared d K}; $M\in K$ is \texttt{List.Mem M K.Ms}; $M\in C$ is \texttt{MethodIn d M C}.}
 \end{cmp}
 
 \begin{cmp}{$\generic{C}$, $|F|$}
@@ -535,11 +536,11 @@ inductive Scope (d : Decls) : Ty -> Bounds -> List Ty -> Prop
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
 def typeOf : Value -> Ty
-  | .new C Gs _ => .cls C (GTy.tys Gs)
-  | .newLocal C Gs _ _ _ _ => .cls C (GTy.tys Gs)
+  | .new C Gs _ => .cls C Gs
+  | .newLocal C Gs _ _ _ _ => .cls C Gs
 \end{lstlisting}
 \end{leanside}
-\mapping{\texttt{GTy.tys} turns the list $\pl{G}$ into the same list of types.}
+\nomapping
 \end{cmp}
 
 \subsubsection{Substitution and Renaming}
@@ -629,13 +630,14 @@ inductive RenM : VRen -> TRen -> Method -> Method -> Prop
       Xs'.length = Delta.length -> xs'.length = ps.length ->
       RenE ((ps.map VarDecl.x).zip xs' ++ rv) ((dom Delta).zip Xs' ++ rt) e e' ->
       RenM rv rt (.mk Delta T0 m ps e) (.mk ... (renamed by Xs' and xs') ... e')
-abbrev FreshNames (avoid : Names) (xs : List VarName) (Xs : List TVarName) : Prop :=
-  xs.Nodup /\ Xs.Nodup /\ xs.all (fun x => !(avoid.xs.contains x)) = true /\
-    Xs.all (fun X => !(avoid.Xs.contains X)) = true
 def Fresh (avoid : Names) (e e' : Expr) : Prop :=
-  RenE [] [] e e' /\ FreshNames avoid e'.vbinders e'.tbinders
+  RenE [] [] e e' /\ e'.vbinders.Nodup /\ e'.tbinders.Nodup /\
+    (forall x, List.Mem x e'.vbinders -> Not (List.Mem x avoid.xs)) /\
+    (forall X, List.Mem X e'.tbinders -> Not (List.Mem X avoid.Xs))
 def FreshM (avoid : Names) (M M' : Method) : Prop :=
-  RenM [] [] M M' /\ FreshNames avoid M'.vbinders M'.tbinders
+  RenM [] [] M M' /\ M'.vbinders.Nodup /\ M'.tbinders.Nodup /\
+    (forall x, List.Mem x M'.vbinders -> Not (List.Mem x avoid.xs)) /\
+    (forall X, List.Mem X M'.tbinders -> Not (List.Mem X avoid.Xs))
 \end{lstlisting}
 \end{leanside}
 \mapping{\texttt{RenE rv rt e e'}: $e'$ is $e$ with every binder renamed to any name, and its bound occurrences renamed with it; \texttt{rv} and \texttt{rt} are the renamings of variables and type variables in scope. \texttt{vbinders} and \texttt{tbinders} list the names bound in $e'$, once per binder: \texttt{Nodup} is \emph{distinct binders get distinct names}. \texttt{avoid} is \texttt{programNames d p}, the names of \decls and of the main expression.}
@@ -655,7 +657,7 @@ def FreshM (avoid : Names) (M M' : Method) : Prop :=
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
 inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
-  | simpleFieldFound {D Gs f} {vs1 vs : List Value} {v : Value} :
+  | simpleFieldFound {D f} {Gs : List GTy} {vs1 vs : List Value} {v : Value} :
       Declared d (.dec D) ->
       vs1.length = D.Ss.length ->
       List.Mem (f, v) ((D.Ss.map Slot.f).zip vs1) ->
@@ -677,18 +679,17 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | simpleFieldSuper {D Gs f} {vs1 vs : List Value} :
+  | simpleFieldSuper {D f} {Gs : List GTy} {vs1 vs : List Value} :
       Declared d (.dec D) ->
       vs1.length = D.Ss.length ->
       Not (List.Mem f (D.Ss.map Slot.f)) ->
       Not (D.C = Object) ->
       Gs.length = D.bounds.length ->
       Step d p (.field (Value.new D.C Gs (vs1 ++ vs)) f)
-        (.field (.new D.C' (Ty.substList ((dom D.bounds).zip (GTy.tys Gs)) D.Ts)
-          (Value.exprs vs)) f)
+        (.field (.new D.C' (Ty.substList ((dom D.bounds).zip (GTy.tys Gs)) D.Ts) vs) f)
 \end{lstlisting}
 \end{leanside}
-\mapping{\texttt{Value.exprs vs} is $\pl{v}$ as expressions.}
+\nomapping
 \end{cmp}
 
 \begin{cmp}{\textsc{innerFieldSuper}}
@@ -699,11 +700,11 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | innerFieldSuper {C Gs C' Gs' vs Ms f} :
+  | innerFieldSuper {C C' Ms f} {Gs Gs' : List GTy} {vs : List Value} :
       Step d p (.field (Value.newLocal C Gs C' Gs' vs Ms) f) (.field (Value.new C' Gs' vs) f)
 \end{lstlisting}
 \end{leanside}
-\mapping{Same rule.}
+\nomapping
 \end{cmp}
 
 \begin{cmp}{\textsc{ifThen}}
@@ -717,7 +718,7 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | ifThen {v C' Ts Ts' x e1 e1' e2} :
+  | ifThen {C' Ts Ts' x e1 e1' e2} {v : Value} :
       Sub d [] (typeOf v) (.cls C' Ts') ->
       Fresh (programNames d p) e1 e1' ->
       Step d p (.ifInst v (.cls C' Ts) x e1 e2) (e1'.vsubst [(x, v)])
@@ -736,12 +737,12 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | ifElse {v C' Ts x e1 e2} :
+  | ifElse {C' Ts x e1 e2} {v : Value} :
       Not (exists Ts', Sub d [] (typeOf v) (.cls C' Ts')) ->
       Step d p (.ifInst v (.cls C' Ts) x e1 e2) e2
 \end{lstlisting}
 \end{leanside}
-\mapping{Same rule.}
+\nomapping
 \end{cmp}
 
 \begin{cmp}{\textsc{simpleAddSuper}}
@@ -754,13 +755,12 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | simpleAddSuper {v C Gs vs0 Gs' m vs} :
+  | simpleAddSuper {C m} {v : Value} {Gs Gs' : List GTy} {vs0 vs : List Value} :
       v = Value.new C Gs vs0 ->
-      Step d p (.call v (GTy.tys Gs') m (Value.exprs vs))
-        (.superCall v (.cls C (GTy.tys Gs)) (GTy.tys Gs') m (Value.exprs vs))
+      Step d p (.call v Gs' m vs) (.superCall v (.cls C Gs) Gs' m vs)
 \end{lstlisting}
 \end{leanside}
-\mapping{Same rule.}
+\nomapping
 \end{cmp}
 
 \begin{cmp}{\textsc{simpleFound}}
@@ -776,7 +776,7 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | simpleFound {D M v0 Gs Gs' m vs Delta' T0 ps e0 e} :
+  | simpleFound {D M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs' : List GTy} {vs : List Value} :
       Declared d (.dec D) ->
       List.Mem M D.Ms ->
       FreshM (programNames d p) M (.mk Delta' T0 m ps e0) ->
@@ -784,7 +784,7 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
       ps.length = vs.length ->
       e = (e0.gsubst ((dom D.bounds ++ dom Delta').zip (Gs ++ Gs'))).vsubst
         ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
-      Step d p (.superCall v0 (.cls D.C (GTy.tys Gs)) (GTy.tys Gs') m (Value.exprs vs)) e
+      Step d p (.superCall v0 (.cls D.C Gs) Gs' m vs) e
 \end{lstlisting}
 \end{leanside}
 \mapping{$x_1,\ldots,x_n$ is \texttt{ps.map VarDecl.x}, as many as the arguments \texttt{vs}.}
@@ -803,18 +803,17 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | innerFound {v0 C Gs C' Gs'' vs0 Ms M Gs' m vs Delta' T0 ps e0 e} :
+  | innerFound {C C' Ms M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} :
       v0 = Value.newLocal C Gs C' Gs'' vs0 Ms ->
       List.Mem M Ms ->
       FreshM (programNames d p) M (.mk Delta' T0 m ps e0) ->
       Gs'.length = Delta'.length ->
       ps.length = vs.length ->
-      e = (e0.gsubst ((dom Delta').zip Gs')).vsubst
-        ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
-      Step d p (.call v0 (GTy.tys Gs') m (Value.exprs vs)) e
+      e = (e0.gsubst ((dom Delta').zip Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
+      Step d p (.call v0 Gs' m vs) e
 \end{lstlisting}
 \end{leanside}
-\mapping{Same rule.}
+\nomapping
 \end{cmp}
 
 \begin{cmp}{\textsc{innerSuper}}
@@ -828,11 +827,10 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | innerSuper {v0 C Gs0 C' Gs vs0 Ms Gs' m vs} :
+  | innerSuper {C C' Ms m} {v0 : Value} {Gs0 Gs Gs' : List GTy} {vs0 vs : List Value} :
       v0 = Value.newLocal C Gs0 C' Gs vs0 Ms ->
       Not (List.Mem m (Ms.map Method.name)) ->
-      Step d p (.call v0 (GTy.tys Gs') m (Value.exprs vs))
-        (.superCall v0 (.cls C' (GTy.tys Gs)) (GTy.tys Gs') m (Value.exprs vs))
+      Step d p (.call v0 Gs' m vs) (.superCall v0 (.cls C' Gs) Gs' m vs)
 \end{lstlisting}
 \end{leanside}
 \mapping{The superclass $C$ of the paper is \texttt{C'} in Lean.}
@@ -850,17 +848,16 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | searchSuper {D v Gs Gs' m vs} :
+  | searchSuper {D m} {v : Value} {Gs Gs' : List GTy} {vs : List Value} :
       Declared d (.dec D) ->
       Not (List.Mem m (D.Ms.map Method.name)) ->
       Not (D.C = Object) ->
       Gs.length = D.bounds.length ->
-      Step d p (.superCall v (.cls D.C (GTy.tys Gs)) (GTy.tys Gs') m (Value.exprs vs))
-        (.superCall v (.cls D.C' (Ty.substList ((dom D.bounds).zip (GTy.tys Gs)) D.Ts))
-          (GTy.tys Gs') m (Value.exprs vs))
+      Step d p (.superCall v (.cls D.C Gs) Gs' m vs)
+        (.superCall v (.cls D.C' (Ty.substList ((dom D.bounds).zip (GTy.tys Gs)) D.Ts)) Gs' m vs)
 \end{lstlisting}
 \end{leanside}
-\mapping{Same rule.}
+\nomapping
 \end{cmp}
 
 \begin{cmp}{\textsc{ctx}, $\rightarrow$ and $\rightarrow^*$}
@@ -902,8 +899,8 @@ def IsValue (e : Expr) : Prop := exists v : Value, e = v
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
 inductive Sub (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
-  | refl {T} : Sub d Delta T T
-  | var {X T T'} :
+  | subRefl {T} : Sub d Delta T T
+  | subVar {X T T'} :
       List.Mem { X := X, T := T } Delta -> Sub d Delta T T' -> Sub d Delta (.var X) T'
 \end{lstlisting}
 \end{leanside}
@@ -921,7 +918,7 @@ inductive Sub (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | inherit {D Ts0 T'} :
+  | subInherit {D Ts0 T'} :
       Declared d (.dec D) ->
       Ts0.length = D.bounds.length ->
       Sub d Delta ((Ty.cls D.C' D.Ts).subst ((dom D.bounds).zip Ts0)) T' ->
@@ -942,14 +939,14 @@ inductive Sub (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | inheritLocal {C Fs C' Ts' es Ms Ts T'} :
+  | subInheritLocal {C Fs C' Ts' es Ms Ts T'} :
       Declared d (.loc C Fs C' Ts' es Ms) ->
       Ts.length = Fs.length ->
       Sub d Delta ((Ty.cls C' Ts').subst (substF Fs Ts)) T' ->
       Sub d Delta (.cls C Ts) T'
 \end{lstlisting}
 \end{leanside}
-\mapping{Same rule.}
+\nomapping
 \end{cmp}
 
 \begin{cmp}{\textsc{wf-var}, \textsc{wf-class}}
@@ -970,8 +967,8 @@ inductive Sub (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
 inductive Kind (d : Decls) (Delta : Bounds) : Ty -> Prop
-  | var {X T} : List.Mem { X := X, T := T } Delta -> Kind d Delta (.var X)
-  | cls {C Ts Delta0 Ts0} :
+  | wfVar {X T} : List.Mem { X := X, T := T } Delta -> Kind d Delta (.var X)
+  | wfClass {C Ts Delta0 Ts0} :
       Scope d (.cls C Ts) Delta0 Ts0 ->
       (forall T, List.Mem T Ts -> Kind d Delta T) ->
       Ts0.length = Delta0.length ->
@@ -1001,8 +998,8 @@ inductive Kind (d : Decls) (Delta : Bounds) : Ty -> Prop
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
 inductive Cast (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
-  | up {T T'} : Sub d Delta T T' -> Cast d Delta T T'
-  | var {X T T'} :
+  | castUp {T T'} : Sub d Delta T T' -> Cast d Delta T T'
+  | castVar {X T T'} :
       List.Mem { X := X, T := T } Delta -> Cast d Delta T T' -> Cast d Delta (.var X) T'
 \end{lstlisting}
 \end{leanside}
@@ -1022,7 +1019,7 @@ inductive Cast (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | down {C Ts C' Ts0 Xs Ts'} :
+  | castDown {C Ts C' Ts0 Xs Ts'} :
       Sub d Delta (.cls C Ts) (.cls C' Ts0) ->
       Generic d C (.cls C (vars Xs)) ->
       Sub d [] (.cls C (vars Xs)) (.cls C' Ts') ->
@@ -1140,7 +1137,7 @@ inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | superCall {Delta gamma e0 D Ts D0 Ts0 Delta1 T0 m ps body Ts1 es T0' Ts'} :
+  | callLbRuntime {Delta gamma e0 D Ts D0 Ts0 Delta1 T0 m ps body Ts1 es T0' Ts'} :
       Sub d Delta (.cls D.C Ts) (.cls D0.C Ts0) ->
       Declared d (.dec D0) ->
       MethodIn d (.mk Delta1 T0 m ps body) D0.C ->
@@ -1240,7 +1237,7 @@ def withoutThis (gamma : Gamma) : Gamma := gamma.filter fun d => d.x != this
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | ifInst {Delta gamma e0 T0 T x e1 e2 T'} :
+  | ifInstanceof {Delta gamma e0 T0 T x e1 e2 T'} :
       Typing d Delta gamma e0 T0 ->
       Kind d Delta T ->
       Cast d Delta T0 T ->
@@ -1379,7 +1376,7 @@ inductive OverrideOk1 (d : Decls) : Ty -> Method -> Prop
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
 inductive MethodOk (d : Decls) : Bounds -> Gamma -> Method -> Prop
-  | mk {Delta gamma Delta' T0 m ps e} :
+  | methodOk {Delta gamma Delta' T0 m ps e} :
       (forall T, List.Mem T (cod Delta') -> Kind d (Delta ++ Delta') T) ->
       (forall T, List.Mem T (T0 :: ps.map VarDecl.T) -> Kind d (Delta ++ Delta') T) ->
       Typing d (Delta ++ Delta') (gamma ++ ps) e T0 ->
