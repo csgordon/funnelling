@@ -270,7 +270,7 @@ def tv (X : String) : Ty := .var (tn X)
 def call0 (e : Expr) (m : String) (es : List Expr) : Expr := .call e [] (mn m) es
 def onlyBCall (e : Expr) : Expr := call0 e "onlyB" []
 
--- Example 1, funnelled as in Section 4.9.
+-- Example 1, funnelled as in Section 4.10.
 
 def decFixed : Dec :=
   { C := cn "Fixed", bounds := [], C' := Object, Ts := [],
@@ -442,7 +442,7 @@ theorem n7 : Not (ClassOk d8 decBox7F) := by
 theorem r16 : Steps d8 main7 stuckB /\ Stuck d8 stuckB := by
   sorry
 
--- The method leak of Section 4.9.
+-- The method leak of Section 4.10.
 
 def leakMain : Expr :=
   onlyBCall (call0 (.call (Value.new (cn "Leaker") [] []) [tB] (mn "leak")

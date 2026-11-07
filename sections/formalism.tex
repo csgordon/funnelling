@@ -66,7 +66,7 @@ When a local class is nested in a method of a local class in the main expression
 
 A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $\gen{C'}{\pl{T}}$.
 The methods $\pl{M}$ of a local class can use the variables and the type variables in scope.
-The type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ reduces to $e_1$, with $x$ bound to the value of $e_0$, when the value of $e_0$ is an instance of $T$; otherwise the type test reduces to $e_2$.
+The type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ reduces to $e_1$, with $x$ bound to the value of $e_0$, when the class of the value of $e_0$ is a subclass of the class of $T$; otherwise the type test reduces to $e_2$.
 \\[1ex]
 A type is a class type $\gen{C}{\pl{T}}$ or a type variable $X$.
 A ground type $G$ is a type with no type variables.
@@ -94,6 +94,7 @@ We require the following well-formedness conditions:
     \item[(A11)] In \decls, every funnel is of the form $\funnel{X}$.
 \end{enumerate}
 Well-formedness requirements A1-A10 are common requirements, such as uniqueness of names.
+A11 is the funnel requirement of Section~\ref{sec:syntax}.
 To simplify scoping, no shadowing is allowed.
 A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ of the enclosing method; this is the only form of shadowing.
 
@@ -525,14 +526,14 @@ expression satisfies the funnelling constraints by checking kinding under the mo
 \\[1ex]
 A local class occurs in two places:
 (1) The (original) declaration of the local class is written in the body of a method of a top-level class, possibly nested inside other local classes.
-(2) Copies of the local class can be in the main expression: reduction copies the declaration from the class table into the main expression, replacing type variables with types and variables with values.
+(2) Copies of the local class can be in the main expression: reduction copies the declaration from the class table into the main expression, possibly inside the methods of another copy, renaming its bound names by $\mathsf{fresh}$, replacing type variables with types and variables with values.
 
 The relation $K\gap\mathsf{consistent}$ trivially holds for case (1). For case (2), the first condition of the definition finds the declaration of $K$.
 The supertype and the method signatures of $K$ must be those of the declaration, with the funnelled type variables of $\pl{F}'$ replaced by $|\pl{F}|$.
 $K$ and the declaration have the same method names.
 The bodies of the methods of $K$ are not required to be those of the declaration: the main expression can hold a local class whose method bodies differ from the declaration, and rule \textsc{new-local} types those method bodies.
 
-Rules \textsc{call} and \textsc{sub-inherit-local} read the declaration, while the reduction runs the methods of the copy.
+Rules \textsc{call}, \textsc{sub-inherit-local}, \textsc{wf-class} and \textsc{cast-down} read the declaration, while the reduction runs the methods of the copy.
 
 The relation $\cast{\Delta}{T}{T'}$ is the \emph{checked cast}: a type test against $T'$ on a value of static type $T$ is decided by the class of the value alone.
 Rule \textsc{if-instanceof} accepts the type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ only when $\cast{\Delta}{T_0}{T}$, where $T_0$ is the type of $e_0$.
@@ -686,7 +687,7 @@ A funnelled type variable that is not in scope where its local class $C$ is writ
 \end{Define}
 \par}
 
-Substitution replaces every occurrence of a type variable, \emph{including} the ones in the method signatures of a method-local class.
+Substitution replaces every occurrence of a type variable, \emph{including} the ones in the method signatures of a local class.
 Substitution does not rename the type variables it meets.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
 Substitution of type variables is defined only when the type variables of the methods it enters are not in its domain.
@@ -718,8 +719,8 @@ Thus $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground typ
 \end{Define}
 \par}
 
-A method-local class binds \Q@this@, as in Java: inside the methods of a method-local class, \Q@this@ is the local object, and the outer \Q@this@ is hidden.
-Thus substitution of variables enters the methods of a method-local class for every variable except \Q@this@.
+A local class binds \Q@this@, as in Java: inside the methods of a local class, \Q@this@ is the local object, and the outer \Q@this@ is hidden.
+Thus substitution of variables enters the methods of a local class for every variable except \Q@this@.
 Substitution of variables is defined only when the variable $x'$ of an \Q@if@ and the parameters $x'_1,\ldots,x'_k$ of a method are not in $\pl{x}$.
 
 \ldots

@@ -492,7 +492,7 @@ inductive Pairing (Delta : Bounds) : List Funnel -> List Ty -> Bounds -> List Ty
       Pairing Delta Fs Ts Delta' Ts' -> Pairing Delta (.ground G :: Fs) (G.ty :: Ts) Delta' Ts'
 \end{lstlisting}
 \end{leanside}
-\mapping{$\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'$ is \texttt{Pairing Delta Fs Ts Delta' Ts'}; $\Delta(X)=T$ is \texttt{List.Mem \{ X := X, T := T \} Delta}, unique by A5.}
+\mapping{$\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'$ is \texttt{Pairing Delta Fs Ts Delta' Ts'}; $\Delta(X)=T$ is \texttt{List.Mem \{ X := X, T := T \} Delta}, unique by A5 and A7.}
 \end{cmp}
 
 \begin{cmp}{$\mathsf{scope}(\gen{C}{\pl{T}})$}
@@ -637,7 +637,7 @@ def Fresh (e e' : Expr) : Prop := RenE [] [] e e' /\ RenE [] [] e' e
 def FreshM (M M' : Method) : Prop := RenM [] [] M M' /\ RenM [] [] M' M
 \end{lstlisting}
 \end{leanside}
-\mapping{\texttt{RenE rv rt e e'}: $e'$ is $e$ with every binder renamed to any name, and its bound occurrences renamed with it; \texttt{rv} and \texttt{rt} are the renamings of variables and type variables in scope. \texttt{RenE} alone allows a renaming that captures a free name; requiring the renaming in both directions excludes the capture of every free name other than \Q@this@.
+\mapping{\texttt{RenE rv rt e e'}: $e'$ is $e$ with every binder renamed to any name, and its bound occurrences renamed with it; \texttt{rv} and \texttt{rt} are the renamings of variables and type variables in scope. \texttt{RenE} alone allows a renaming that captures a free name; requiring the renaming in both directions excludes the capture of every free name; it does not exclude a binder renamed to \Q@this@, which the implicit \Q@this@ of a method of a local class captures.
 A renaming that gives two nested binders the same name, or that names a binder \Q@this@, is excluded by the other premises of the rules: \texttt{WFExpr} in \texttt{Reduces} (A7 and A8), \texttt{Nodup} and \texttt{VSubstDefined}.
 Thus, in a rule, \texttt{Fresh} is equality up to the names of binders, as in the paper.}
 \end{cmp}
@@ -1491,7 +1491,7 @@ The planned proofs of progress and preservation, on whichever level they are pro
 \item \textbf{Weakening} of $\Gamma$ and $\Delta$, for typing, kinding and subtyping.
 \item \textbf{Substitution of type variables.} If $\Delta,\Delta'$ types $e$, and ground types $\pl{G}$ satisfy the bounds $\Delta'$, then $e[\Delta'=\pl{G}]$ is typed under $\Delta$ with the substituted type.
 Kinding and subtyping are preserved, but the checked cast is not: in rule \textsc{cast-var}, after $X$ becomes $G$, the source $G$ may not reach the target through \textsc{cast-up} or \textsc{cast-down}.
-For the typing of rule \textsc{if-instanceof} the lemma uses rule \textsc{subs} to lift $e_0$ from $G$ to the substituted bound of $X$, and applies \textsc{cast-down} from there.
+For the typing of rule \textsc{if-instanceof} the lemma uses rule \textsc{subs} to lift $e_0$ from $G$ to the substituted bound of $X$, and applies there the substituted premise $\cast{\Delta}{T}{T'}$ of rule \textsc{cast-var}, which ends in \textsc{cast-up}, \textsc{cast-var} or \textsc{cast-down}.
 \item \textbf{Substitution of variables.} Values are closed and typed under $\emptyset;\emptyset$, so substituting values for variables of the same types preserves typing; \Q@this@ is not substituted into the methods of a local class.
 \item \textbf{Inversion} of typing for each form of expression, through rule \textsc{subs}.
 \item \textbf{Canonical forms.} A value of type $\gen{C}{\pl{T}}$ has a class that is a subclass of $C$.
@@ -1615,7 +1615,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[W21] \texttt{w21}, proved: \Q@X funnel, X funnel@ violates A6.
 \item[W22] \texttt{w22}, proved: a parameter named \Q@this@ violates A8.
 \item[W23] \texttt{w23}, proved: two classes extending each other violate A9.
-\item[W24] \texttt{w24}, proved: the result of the call of \Q@k@ of Section~4.4 without renaming, a method \Q@m(x)@ holding a value whose method \Q@m@ binds \Q@x@ again, violates A7.
+\item[W24] \texttt{w24}, proved: the result of the call of \Q@k@ of Section~\ref{sec:opsem} without renaming, a method \Q@m(x)@ holding a value whose method \Q@m@ binds \Q@x@ again, violates A7.
 \item[W25] \texttt{w25}, proved: in \Q@if (new A<>() instanceof A<> x){ if (new B<>() instanceof B<> y){ y.onlyB() } else { new B<>() } } else { new B<>() }@, renaming \Q@y@ into \Q@x@ makes the substitution \Q@[x=new A<>()]@ of rule \textsc{ifThen} undefined, so rule \textsc{ifThen} has no instance with that renaming.
 \item[R1] \texttt{r1}, proved: \Q@new Box<A<>>(new A<>()).val@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFieldFound}.
 \item[R2] \texttt{r2}, proved: \Q@new C2<>().m()@ $\rightarrow$ \Q@new C2<>().[C2<>]m()@ by \textsc{simpleAddSuper}.
