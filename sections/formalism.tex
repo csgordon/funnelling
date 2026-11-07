@@ -348,7 +348,7 @@ Object<> k(L<> y){ return
 \end{lstlisting}
 In a call of \Q@k@ with a value \Q@v@ of class \Q@L@, the body of \Q@m@ becomes \Q@v.m(x)@, and \Q@v@ contains a copy of the method \Q@m@ binding \Q@x@ again.
 Without renaming, rule \textsc{innerFound} would replace \Q@x@ also in the method \Q@m@ of \Q@v@.
-Without renaming, for some redexes rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} would have no instance: the substitution would place a binder of a name under a binder of the same name, and requirement A7 excludes this shadowing.
+Without $\mathsf{fresh}$, the substitution would attempt to place a binder of a name under a binder of the same name, breaking well-formedness requirement A7.
 Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} place values under the binders of the expression they substitute into.
 Those binders are fresh, so the values do not bind the same names.
 A substitution can copy a value, so several copies of a value can bind the same names; those copies are never nested, so they do not shadow each other.
