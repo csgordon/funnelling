@@ -33,7 +33,8 @@ The Appendix, for each piece of formalism we report the following:
 \end{lstlisting}
 
 \subsection{Status}
-The Lean version is 4.35.0, without Mathlib; \texttt{lean/lean-toolchain} fixes it.
+The file \texttt{lean/lean-toolchain} selects Lean 4.35.0: elan runs that version for every command in the folder \texttt{lean}.
+The project uses only the core library of Lean.
 \texttt{lake build} in the folder \texttt{lean} checks all the files.
 The files are:
 \begin{itemize}
