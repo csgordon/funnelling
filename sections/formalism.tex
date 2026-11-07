@@ -66,7 +66,7 @@ When a local class is nested in a method of a local class in the main expression
 
 A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $\gen{C'}{\pl{T}}$.
 The methods $\pl{M}$ of a local class can use the variables and the type variables in scope.
-The type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ reduces to $e_1$, with $x$ bound to the value of $e_0$, when the value of $e_0$ is an instance of the class of $T$; otherwise the type test reduces to $e_2$.
+The type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ reduces to $e_1$, with $x$ bound to the value of $e_0$, when the value of $e_0$ is an instance of $T$; otherwise the type test reduces to $e_2$.
 \\[1ex]
 A type is a class type $\gen{C}{\pl{T}}$ or a type variable $X$.
 A ground type $G$ is a type with no type variables.
