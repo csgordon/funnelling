@@ -91,9 +91,8 @@ In the paper, the well-formedness requirements restrict the grammar (Section~\re
 Lean defines the syntax as inductive types, and A1-A11 as the propositions \texttt{WFDecls} and \texttt{WFExpr}.
 Type Soundness assumes them for the initial program.
 A step $\step{e}{e'}$ of the paper is \texttt{Reduces d e e'}: a \texttt{Step} whose result satisfies \texttt{WFExpr}, since an instance of a rule of the paper exists only when its result is an expression.
-\item \textbf{The program.}
+\item \textbf{The class table.}
 \decls is an explicit argument \texttt{d} of every judgement.
-The relation $\mathsf{fresh}$ avoids the names of the program, so \texttt{Step} also takes the main expression \texttt{p}; \texttt{Reduces d e e'} passes $e$ itself.
 \item \textbf{Sequences.}
 A judgement on sequences is \texttt{TypingSeq} for typing, \texttt{Seq2} for subtyping, and a premise for every element of the list for kinding and method typing.
 \item \textbf{Substitution and lengths.}
@@ -613,7 +612,7 @@ def Expr.vsubst (sigma : VSubst) : Expr -> Expr
 \begin{paperside}
 The names bound in an expression $e$ are the variable of every \Q@if@ occurring in $e$, and the names bound in every method of a local class occurring in $e$.
 The names bound in a method $M$ are the type variables of its signature, its parameters, and the names bound in its body.
-$\mathsf{fresh}(e,e')$ holds when $e'$ is $e$ where every name bound in $e$ is renamed into a fresh name, that is a name occurring nowhere in the program; distinct binders get distinct fresh names.
+$\mathsf{fresh}(e,e')$ holds when $e'$ is $e$ where every name bound in $e$ is renamed into a fresh name, that is a name occurring nowhere in \decls and in the expression on the left of the arrow; distinct binders get distinct fresh names.
 $\mathsf{fresh}(M,M')$ holds when $M'$ is $M$ renamed in the same way.
 The variable \Q@this@ is never renamed.
 \end{paperside}
@@ -640,7 +639,7 @@ def FreshM (avoid : Names) (M M' : Method) : Prop :=
     (forall X, List.Mem X M'.tbinders -> Not (List.Mem X avoid.Xs))
 \end{lstlisting}
 \end{leanside}
-\mapping{\texttt{RenE rv rt e e'}: $e'$ is $e$ with every binder renamed to any name, and its bound occurrences renamed with it; \texttt{rv} and \texttt{rt} are the renamings of variables and type variables in scope. \texttt{vbinders} and \texttt{tbinders} list the names bound in $e'$, once per binder: \texttt{Nodup} is \emph{distinct binders get distinct names}. \texttt{avoid} is \texttt{programNames d p}, the names of \decls and of the main expression.}
+\mapping{\texttt{RenE rv rt e e'}: $e'$ is $e$ with every binder renamed to any name, and its bound occurrences renamed with it; \texttt{rv} and \texttt{rt} are the renamings of variables and type variables in scope. \texttt{vbinders} and \texttt{tbinders} list the names bound in $e'$, once per binder: \texttt{Nodup} is \emph{distinct binders get distinct names}. \texttt{avoid} is \texttt{names d r}, the names of \decls and of the expression \texttt{r} on the left of the arrow.}
 \end{cmp}
 
 \subsubsection{Reduction}
@@ -656,12 +655,12 @@ def FreshM (avoid : Names) (M M' : Method) : Prop :=
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
+inductive Step (d : Decls) : Expr -> Expr -> Prop
   | simpleFieldFound {D f} {Gs : List GTy} {vs1 vs : List Value} {v : Value} :
       Declared d (.dec D) ->
       vs1.length = D.Ss.length ->
       List.Mem (f, v) ((D.Ss.map Slot.f).zip vs1) ->
-      Step d p (.field (Value.new D.C Gs (vs1 ++ vs)) f) v
+      Step d (.field (Value.new D.C Gs (vs1 ++ vs)) f) v
 \end{lstlisting}
 \end{leanside}
 \mapping{$v_1,\ldots,v_n$ is \texttt{vs1}, as long as the slots; $f_i$ and $v_i$ are a pair of \texttt{zip}.}
@@ -685,7 +684,7 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
       Not (List.Mem f (D.Ss.map Slot.f)) ->
       Not (D.C = Object) ->
       Gs.length = D.bounds.length ->
-      Step d p (.field (Value.new D.C Gs (vs1 ++ vs)) f)
+      Step d (.field (Value.new D.C Gs (vs1 ++ vs)) f)
         (.field (.new D.C' (Ty.substList ((dom D.bounds).zip (GTy.tys Gs)) D.Ts) vs) f)
 \end{lstlisting}
 \end{leanside}
@@ -701,7 +700,7 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
   | innerFieldSuper {C C' Ms f} {Gs Gs' : List GTy} {vs : List Value} :
-      Step d p (.field (Value.newLocal C Gs C' Gs' vs Ms) f) (.field (Value.new C' Gs' vs) f)
+      Step d (.field (Value.newLocal C Gs C' Gs' vs Ms) f) (.field (Value.new C' Gs' vs) f)
 \end{lstlisting}
 \end{leanside}
 \nomapping
@@ -720,8 +719,8 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
 \begin{lstlisting}[style=leanside]
   | ifThen {C' Ts Ts' x e1 e1' e2} {v : Value} :
       Sub d [] (typeOf v) (.cls C' Ts') ->
-      Fresh (programNames d p) e1 e1' ->
-      Step d p (.ifInst v (.cls C' Ts) x e1 e2) (e1'.vsubst [(x, v)])
+      Fresh (names d (.ifInst v (.cls C' Ts) x e1 e2)) e1 e1' ->
+      Step d (.ifInst v (.cls C' Ts) x e1 e2) (e1'.vsubst [(x, v)])
 \end{lstlisting}
 \end{leanside}
 \mapping{The $\_$ in $\gen{C'}{\_}$ is the implicit \texttt{Ts'}.}
@@ -739,7 +738,7 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
 \begin{lstlisting}[style=leanside]
   | ifElse {C' Ts x e1 e2} {v : Value} :
       Not (exists Ts', Sub d [] (typeOf v) (.cls C' Ts')) ->
-      Step d p (.ifInst v (.cls C' Ts) x e1 e2) e2
+      Step d (.ifInst v (.cls C' Ts) x e1 e2) e2
 \end{lstlisting}
 \end{leanside}
 \nomapping
@@ -757,7 +756,7 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
 \begin{lstlisting}[style=leanside]
   | simpleAddSuper {C m} {v : Value} {Gs Gs' : List GTy} {vs0 vs : List Value} :
       v = Value.new C Gs vs0 ->
-      Step d p (.call v Gs' m vs) (.superCall v (.cls C Gs) Gs' m vs)
+      Step d (.call v Gs' m vs) (.superCall v (.cls C Gs) Gs' m vs)
 \end{lstlisting}
 \end{leanside}
 \nomapping
@@ -779,12 +778,12 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
   | simpleFound {D M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs' : List GTy} {vs : List Value} :
       Declared d (.dec D) ->
       List.Mem M D.Ms ->
-      FreshM (programNames d p) M (.mk Delta' T0 m ps e0) ->
+      FreshM (names d (.superCall v0 (.cls D.C Gs) Gs' m vs)) M (.mk Delta' T0 m ps e0) ->
       (Gs ++ Gs').length = (D.bounds ++ Delta').length ->
       ps.length = vs.length ->
       e = (e0.gsubst ((dom D.bounds ++ dom Delta').zip (Gs ++ Gs'))).vsubst
         ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
-      Step d p (.superCall v0 (.cls D.C Gs) Gs' m vs) e
+      Step d (.superCall v0 (.cls D.C Gs) Gs' m vs) e
 \end{lstlisting}
 \end{leanside}
 \mapping{$x_1,\ldots,x_n$ is \texttt{ps.map VarDecl.x}, as many as the arguments \texttt{vs}.}
@@ -806,11 +805,11 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
   | innerFound {C C' Ms M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} :
       v0 = Value.newLocal C Gs C' Gs'' vs0 Ms ->
       List.Mem M Ms ->
-      FreshM (programNames d p) M (.mk Delta' T0 m ps e0) ->
+      FreshM (names d (.call v0 Gs' m vs)) M (.mk Delta' T0 m ps e0) ->
       Gs'.length = Delta'.length ->
       ps.length = vs.length ->
       e = (e0.gsubst ((dom Delta').zip Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
-      Step d p (.call v0 Gs' m vs) e
+      Step d (.call v0 Gs' m vs) e
 \end{lstlisting}
 \end{leanside}
 \nomapping
@@ -830,7 +829,7 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
   | innerSuper {C C' Ms m} {v0 : Value} {Gs0 Gs Gs' : List GTy} {vs0 vs : List Value} :
       v0 = Value.newLocal C Gs0 C' Gs vs0 Ms ->
       Not (List.Mem m (Ms.map Method.name)) ->
-      Step d p (.call v0 Gs' m vs) (.superCall v0 (.cls C' Gs) Gs' m vs)
+      Step d (.call v0 Gs' m vs) (.superCall v0 (.cls C' Gs) Gs' m vs)
 \end{lstlisting}
 \end{leanside}
 \mapping{The superclass $C$ of the paper is \texttt{C'} in Lean.}
@@ -853,7 +852,7 @@ inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
       Not (List.Mem m (D.Ms.map Method.name)) ->
       Not (D.C = Object) ->
       Gs.length = D.bounds.length ->
-      Step d p (.superCall v (.cls D.C Gs) Gs' m vs)
+      Step d (.superCall v (.cls D.C Gs) Gs' m vs)
         (.superCall v (.cls D.C' (Ty.substList ((dom D.bounds).zip (GTy.tys Gs)) D.Ts)) Gs' m vs)
 \end{lstlisting}
 \end{leanside}
@@ -873,8 +872,8 @@ $e_0\rightarrow^* e$: zero or more steps.
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
   | ctx {E : ECtx} {e e'} :
-      Step d p e e' -> Step d p (E.plug e) (E.plug e')
-def Reduces (d : Decls) (e e' : Expr) : Prop := Step d e e e' /\ WFExpr e'
+      Step d e e' -> Step d (E.plug e) (E.plug e')
+def Reduces (d : Decls) (e e' : Expr) : Prop := Step d e e' /\ WFExpr e'
 inductive Steps (d : Decls) : Expr -> Expr -> Prop
   | refl {e} : Steps d e e
   | step {e e' e''} : Reduces d e e' -> Steps d e' e'' -> Steps d e e''

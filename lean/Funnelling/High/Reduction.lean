@@ -68,69 +68,69 @@ def Method.tnamesList : List Method -> List TVarName
   | M :: Ms => M.tnames ++ Method.tnamesList Ms
 end
 
-def programNames (d : Decls) (p : Expr) : Names :=
-  { xs := d.flatMap (fun D => Method.vnamesList D.Ms) ++ p.vnames,
+def names (d : Decls) (e : Expr) : Names :=
+  { xs := d.flatMap (fun D => Method.vnamesList D.Ms) ++ e.vnames,
     Xs := d.flatMap (fun D => Bounds.tnames D.bounds ++ Ty.ftvList D.Ts ++
-      Ty.ftvList (D.Ss.map Slot.T) ++ Method.tnamesList D.Ms) ++ p.tnames }
+      Ty.ftvList (D.Ss.map Slot.T) ++ Method.tnamesList D.Ms) ++ e.tnames }
 
-inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
+inductive Step (d : Decls) : Expr -> Expr -> Prop
   | simpleFieldFound {D f} {Gs : List GTy} {vs1 vs : List Value} {v : Value} :
       Declared d (.dec D) ->
       vs1.length = D.Ss.length ->
       List.Mem (f, v) ((D.Ss.map Slot.f).zip vs1) ->
-      Step d p (.field (Value.new D.C Gs (vs1 ++ vs)) f) v
+      Step d (.field (Value.new D.C Gs (vs1 ++ vs)) f) v
   | simpleFieldSuper {D f} {Gs : List GTy} {vs1 vs : List Value} :
       Declared d (.dec D) ->
       vs1.length = D.Ss.length ->
       Not (List.Mem f (D.Ss.map Slot.f)) ->
       Not (D.C = Object) ->
       Gs.length = D.bounds.length ->
-      Step d p (.field (Value.new D.C Gs (vs1 ++ vs)) f)
+      Step d (.field (Value.new D.C Gs (vs1 ++ vs)) f)
         (.field (.new D.C' (Ty.substList ((dom D.bounds).zip (GTy.tys Gs)) D.Ts) vs) f)
   | innerFieldSuper {C C' Ms f} {Gs Gs' : List GTy} {vs : List Value} :
-      Step d p (.field (Value.newLocal C Gs C' Gs' vs Ms) f) (.field (Value.new C' Gs' vs) f)
+      Step d (.field (Value.newLocal C Gs C' Gs' vs Ms) f) (.field (Value.new C' Gs' vs) f)
   | ifThen {C' Ts Ts' x e1 e1' e2} {v : Value} :
       Sub d [] (typeOf v) (.cls C' Ts') ->
-      Fresh (programNames d p) e1 e1' ->
-      Step d p (.ifInst v (.cls C' Ts) x e1 e2) (e1'.vsubst [(x, v)])
+      Fresh (names d (.ifInst v (.cls C' Ts) x e1 e2)) e1 e1' ->
+      Step d (.ifInst v (.cls C' Ts) x e1 e2) (e1'.vsubst [(x, v)])
   | ifElse {C' Ts x e1 e2} {v : Value} :
       Not (exists Ts', Sub d [] (typeOf v) (.cls C' Ts')) ->
-      Step d p (.ifInst v (.cls C' Ts) x e1 e2) e2
+      Step d (.ifInst v (.cls C' Ts) x e1 e2) e2
   | simpleAddSuper {C m} {v : Value} {Gs Gs' : List GTy} {vs0 vs : List Value} :
       v = Value.new C Gs vs0 ->
-      Step d p (.call v Gs' m vs) (.superCall v (.cls C Gs) Gs' m vs)
+      Step d (.call v Gs' m vs) (.superCall v (.cls C Gs) Gs' m vs)
   | simpleFound {D M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs' : List GTy} {vs : List Value} :
       Declared d (.dec D) ->
       List.Mem M D.Ms ->
-      FreshM (programNames d p) M (.mk Delta' T0 m ps e0) ->
+      FreshM (names d (.superCall v0 (.cls D.C Gs) Gs' m vs)) M (.mk Delta' T0 m ps e0) ->
       (Gs ++ Gs').length = (D.bounds ++ Delta').length ->
       ps.length = vs.length ->
       e = (e0.gsubst ((dom D.bounds ++ dom Delta').zip (Gs ++ Gs'))).vsubst
         ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
-      Step d p (.superCall v0 (.cls D.C Gs) Gs' m vs) e
+      Step d (.superCall v0 (.cls D.C Gs) Gs' m vs) e
   | innerFound {C C' Ms M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} :
       v0 = Value.newLocal C Gs C' Gs'' vs0 Ms ->
       List.Mem M Ms ->
-      FreshM (programNames d p) M (.mk Delta' T0 m ps e0) ->
+      FreshM (names d (.call v0 Gs' m vs)) M (.mk Delta' T0 m ps e0) ->
       Gs'.length = Delta'.length ->
       ps.length = vs.length ->
       e = (e0.gsubst ((dom Delta').zip Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
-      Step d p (.call v0 Gs' m vs) e
+      Step d (.call v0 Gs' m vs) e
   | innerSuper {C C' Ms m} {v0 : Value} {Gs0 Gs Gs' : List GTy} {vs0 vs : List Value} :
       v0 = Value.newLocal C Gs0 C' Gs vs0 Ms ->
       Not (List.Mem m (Ms.map Method.name)) ->
-      Step d p (.call v0 Gs' m vs) (.superCall v0 (.cls C' Gs) Gs' m vs)
+      Step d (.call v0 Gs' m vs) (.superCall v0 (.cls C' Gs) Gs' m vs)
   | searchSuper {D m} {v : Value} {Gs Gs' : List GTy} {vs : List Value} :
       Declared d (.dec D) ->
       Not (List.Mem m (D.Ms.map Method.name)) ->
       Not (D.C = Object) ->
       Gs.length = D.bounds.length ->
-      Step d p (.superCall v (.cls D.C Gs) Gs' m vs)
+      Step d (.superCall v (.cls D.C Gs) Gs' m vs)
         (.superCall v (.cls D.C' (Ty.substList ((dom D.bounds).zip (GTy.tys Gs)) D.Ts)) Gs' m vs)
   | ctx {E : ECtx} {e e'} :
-      Step d p e e' -> Step d p (E.plug e) (E.plug e')
+      Step d e e' -> Step d (E.plug e) (E.plug e')
 
-def Reduces (d : Decls) (e e' : Expr) : Prop := Step d e e e' /\ WFExpr e'
+def Reduces (d : Decls) (e e' : Expr) : Prop := Step d e e' /\ WFExpr e'
 
 inductive Steps (d : Decls) : Expr -> Expr -> Prop
   | refl {e} : Steps d e e

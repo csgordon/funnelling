@@ -336,7 +336,8 @@ Rule \textsc{ctx} reduces inside an evaluation context.
 Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} also use the relation $\mathsf{fresh}$.
 The names bound in an expression $e$ are the variable of every \Q@if@ occurring in $e$, and the names bound in every method of a local class occurring in $e$.
 The names bound in a method $M$ are the type variables of its signature, its parameters, and the names bound in its body.
-$\mathsf{fresh}(e,e')$ holds when $e'$ is $e$ where every name bound in $e$ is renamed into a fresh name, that is a name occurring nowhere in the program; distinct binders get distinct fresh names.
+$\mathsf{fresh}(e,e')$ holds when $e'$ is $e$ where every name bound in $e$ is renamed into a fresh name, that is a name occurring nowhere in \decls and in the expression on the left of the arrow; distinct binders get distinct fresh names.
+An evaluation context binds no name around its hole, so the names of the main expression outside the expression on the left of the arrow cannot clash with the fresh names.
 $\mathsf{fresh}(M,M')$ holds when $M'$ is $M$ renamed in the same way.
 A rule using $\mathsf{fresh}$ can choose any fresh names.
 The variable \Q@this@ is never renamed.
