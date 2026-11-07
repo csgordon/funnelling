@@ -12,7 +12,7 @@ We now show that $\zeta(\mathsf{funnelled})$ is sound.
 
 \begin{theorem}[Progress]
 Under a global $\decls$ such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$:
-if $\typing{\emptyset}{\emptyset}{e}{T}$, then either $e$ is a value $v$, or there is an $e'$ such that $\step{e}{e'}$.
+if $\typing{\emptyset}{\emptyset}{e}{T}$, then either $e$ is of form $v$, or there is an $e'$ such that $\step{e}{e'}$.
 \end{theorem}
 
 \begin{theorem}[Preservation]
@@ -22,6 +22,6 @@ if $\typing{\emptyset}{\emptyset}{e}{T}$ and $\step{e}{e'}$, then $\typing{\empt
 
 \begin{corollary}[Type Soundness]
 Under a global $\decls$ such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$:
-if $\typing{\emptyset}{\emptyset}{e_0}{T}$, and $e_0\rightarrow^* e$ with no $e'$ such that $\step{e}{e'}$, then $e$ is a value $v$ and $\typing{\emptyset}{\emptyset}{v}{T}$.
+if $\typing{\emptyset}{\emptyset}{e_0}{T}$, and $e_0\rightarrow^* e$, then $\typing{\emptyset}{\emptyset}{e}{T}$ and either $e$ is of form $v$, or there is an $e'$ such that $\step{e}{e'}$.
 \end{corollary}
 % Reified type tests are left out of the formal model on purpose; see Section 2 and the comment after rule ifElse in Figure fig:opsem.
