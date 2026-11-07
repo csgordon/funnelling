@@ -1,28 +1,10 @@
-import Funnelling.Reduction
-import Funnelling.WellFormed
+import Funnelling.Proof
 
-namespace Funnelling
+namespace Funnelling.High
 
-def DeclsOk (d : Decls) : Prop := wfDecls d = true /\ forall dec, List.Mem dec d -> ClassOk d false dec
+theorem typeSoundness {d e0 e T} (hwf : WFDecls d) (hok : DeclsOk d .funnelled) (he0 : WFExpr e0)
+    (ht : Typing d .funnelled [] [] e0 T) (hs : Steps d e0 e) :
+    Typing d .funnelled [] [] e T /\ (IsValue e \/ exists e', Reduces d e e') :=
+  Proof.typeSoundness hwf hok he0 ht hs
 
-theorem stepWellFormed {d e e' t} (hd : DeclsOk d) (he : wfExpr e = true)
-    (ht : Typing d false [] [] e t) (hs : Step d e e') : wfExpr e' = true := by
-  sorry
-
-theorem progress {d e t} (hd : DeclsOk d) (he : wfExpr e = true)
-    (ht : Typing d false [] [] e t) :
-    e.isValue = true \/ exists e', Step d e e' := by
-  sorry
-
-theorem preservation {d e e' t} (hd : DeclsOk d) (he : wfExpr e = true)
-    (ht : Typing d false [] [] e t) (hs : Step d e e') : Typing d false [] [] e' t := by
-  sorry
-
-theorem typeSoundness {d e0 e t} (hd : DeclsOk d) (he0 : wfExpr e0 = true)
-    (ht : Typing d false [] [] e0 t) (hs : Steps d e0 e) :
-    Typing d false [] [] e t /\ (e.isValue = true \/ exists e', Step d e e') := by
-  induction hs with
-  | refl => exact And.intro ht (progress hd he0 ht)
-  | step h1 _ ih => exact ih (stepWellFormed hd he0 ht h1) (preservation hd he0 ht h1)
-
-end Funnelling
+end Funnelling.High

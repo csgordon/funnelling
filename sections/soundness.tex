@@ -10,18 +10,8 @@ rule \textsc{if-instanceof} accepts only checked casts, and at run time rules \t
 As shown in Section~\ref{sec:core}, $\zeta(\mathsf{Java})$ is unsound.
 We now show that $\zeta(\mathsf{funnelled})$ is sound.
 
-\begin{theorem}[Progress]
-Under a global $\decls$ such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$:
-if $\typing{\emptyset}{\emptyset}{e}{T}$, then either $e$ is of form $v$, or there is an $e'$ such that $\step{e}{e'}$.
-\end{theorem}
-
-\begin{theorem}[Preservation]
-Under a global $\decls$ such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$:
-if $\typing{\emptyset}{\emptyset}{e}{T}$ and $\step{e}{e'}$, then $\typing{\emptyset}{\emptyset}{e'}{T}$.
-\end{theorem}
-
-\begin{corollary}[Type Soundness]
+\begin{theorem}[Type Soundness]
 Under a global $\decls$ such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$:
 if $\typing{\emptyset}{\emptyset}{e_0}{T}$, and $e_0\rightarrow^* e$, then $\typing{\emptyset}{\emptyset}{e}{T}$ and either $e$ is of form $v$, or there is an $e'$ such that $\step{e}{e'}$.
-\end{corollary}
+\end{theorem}
 % Reified type tests are left out of the formal model on purpose; see Section 2 and the comment after rule ifElse in Figure fig:opsem.

@@ -1,6 +1,6 @@
-import Funnelling.Declarations
+import Funnelling.Low.Declarations
 
-namespace Funnelling
+namespace Funnelling.Low
 
 def nodup (xs : List Name) : Bool := decide xs.Nodup
 
@@ -122,4 +122,4 @@ def wfExpr (e : Expr) : Bool :=
 
 def WFProgram (d : Decls) (e : Expr) : Prop := wfDecls d = true /\ wfExpr e = true
 
-end Funnelling
+end Funnelling.Low
