@@ -62,8 +62,8 @@ The files are:
 \item \leanfile{Low/*.lean}: the low level, and \leanfile{Low/Soundness.lean}, progress and preservation of the low level.
 \item \leanfile{Translation.lean}: the translation from the high level to the low level.
 \item \leanfile{Adequacy.lean}: lemmas that relate the two levels through the translation.
-\item \leanfile{Proof.lean}: the proof of Type Soundness.
-\item \leanfile{Soundness.lean}: Type Soundness, on the high level.
+\item \leanfile{Proof.lean}: the proofs of Type Soundness and Determinism.
+\item \leanfile{Soundness.lean}: Type Soundness and Determinism, on the high level.
 \item \leanfile{Examples.lean}: the validation examples, on the high level.
 \end{itemize}
 Lean accepts all the files.
@@ -100,8 +100,8 @@ $\tsubst{T}{\Delta}{\pl{T}}$ is \texttt{T.subst (bind Delta Ts)} and $\tsubst{T}
 The paper defines a simultaneous substitution only when the names in its domain are distinct.
 Rules \textsc{simpleFound} and \textsc{innerFound} have this as premises (\texttt{Nodup}), since their domains hold the names chosen by $\mathsf{fresh}$; in the other rules the domain is distinct by A5, A6 and A7.
 \item \textbf{Definitions.}
-A \textbf{Define} box of the paper with \emph{where} clauses ($\mathsf{declared}$, $M\in C$, $\mathrm{generic}$, $\mathsf{scope}$, the pairing, $\mathsf{overrideOk}(T,M)$) is an inductive relation, one constructor per clause.
-A \textbf{Define} box that defines a function ($\mathrm{dom}$, $\mathrm{cod}$, $|F|$, $\mathsf{typeOf}$, the substitutions) is a function.
+A \textbf{Define} box of the paper with \emph{where} clauses ($\mathsf{declared}$, $\mathrm{generic}$, $\mathsf{scope}$, the pairing, $\mathsf{overrideOk}(T,M)$) is an inductive relation, one constructor per clause; $M\in C$ and $K\gap\mathsf{consistent}$ are definitions with an existential, \texttt{MethodIn} and \texttt{Consistent}.
+A definition of a function ($\mathrm{dom}$, $\mathrm{cod}$, $|F|$, $\mathsf{typeOf}$, the substitutions) is a function.
 \end{itemize}
 
 \subsection{Side by Side: Paper and Lean}
