@@ -295,7 +295,7 @@ A local class is written as an expression, like an anonymous class in Java, but 
 This brings method-local classes into an expression-based calculus, without modelling statements.
 The funnels \Q@Fs@ are the generic parameters of \Q@MyFoo@: a funnel \Q@X funnel@ funnels the type variable \Q@X@ in scope.
 During reduction, \Q@X funnel@ becomes the ground type that instantiates \Q@X@.
-The type test \Q@if (e instanceof T x){ e1 } else { e2 }@ binds \Q@x@ in \Q@e1@; the core language has no casts.
+The type test \Q@if (e instanceof T x){ e1 } else { e2 }@ binds \Q@x@ in \Q@e1@; the core language has no cast expression.
 In the listings, we omit the empty \Q@<>@ of methods and calls, and we write \Q@<X>@ for \Q@<X extends Object<>>@.
 This is Example~1 in the core language, without funnels:
 
