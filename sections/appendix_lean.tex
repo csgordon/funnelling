@@ -94,10 +94,10 @@ A step $\step{e}{e'}$ of the paper is \texttt{Reduces d e e'}: a \texttt{Step} w
 \item \textbf{The class table.}
 \decls is an explicit argument \texttt{d} of every judgement.
 \item \textbf{Sequences.}
-A judgement on sequences is \texttt{TypingSeq} for typing, \texttt{Seq2} for subtyping, and a premise for every element of the list for kinding and method typing.
+A judgement on sequences has its own name: $\kind{\Delta}{\pl{T}}$ is \texttt{KindSeq d Delta Ts}, $\subtype{\Delta}{\pl{T}}{\pl{T}'}$ is \texttt{SubSeq d Delta Ts Ts'}, and $\typing{\Delta}{\Gamma}{\pl{e}}{\pl{T}}$ is \texttt{TypingSeq d Delta gamma es Ts}; $\mok{\Delta}{\Gamma}{\pl{M}}$ is a premise for every method.
 \item \textbf{Substitution and lengths.}
 The paper defines $\tsubst{T}{\Delta}{\pl{T}}$ only when $\Delta$ and $\pl{T}$ have the same length.
-Lean builds the substitution with \texttt{zip}, and the rule has the premise that the lengths are the same.
+$\tsubst{T}{\Delta}{\pl{T}}$ is \texttt{T.subst (bind Delta Ts)}, and the rule has the premise that the lengths are the same; $\tsubst{T}{\pl{F}}{\pl{T}}$ is \texttt{T.subst (bindF Fs Ts)}.
 \item \textbf{Definitions.}
 A \textbf{Define} box of the paper with \emph{where} clauses ($\mathsf{declared}$, $M\in C$, $\mathrm{generic}$, $\mathsf{scope}$, the pairing, $\mathsf{overrideOk}(T,M)$) is an inductive relation, one constructor per clause.
 A \textbf{Define} box that defines a function ($\mathrm{dom}$, $\mathrm{cod}$, $|F|$, $\mathsf{typeOf}$, the substitutions) is a function.
@@ -565,7 +565,8 @@ abbrev TSubst := List (Prod TVarName Ty)
 def Ty.subst (sigma : TSubst) : Ty -> Ty
   | .var X => (sigma.lookup X).getD (.var X)
   | .cls C Ts => .cls C (Ty.substList sigma Ts)
-def substF (Fs : List Funnel) (Ts : List Ty) : TSubst :=
+def bind {A : Type} (Delta : Bounds) (as : List A) : List (Prod TVarName A) := (dom Delta).zip as
+def bindF (Fs : List Funnel) (Ts : List Ty) : TSubst :=
   (Fs.zip Ts).filterMap fun
     | (.funnel X, T) => some (X, T)
     | (.ground _, _) => none
@@ -580,7 +581,7 @@ abbrev GSubstDefined (Xs : List TVarName) (e : Expr) : Prop :=
   forall X, List.Mem X e.tbinders -> Not (List.Mem X Xs)
 \end{lstlisting}
 \end{leanside}
-\mapping{$[\Delta=\pl{T}]$ is \texttt{(dom Delta).zip Ts}, with a premise that the lengths are the same; $[\pl{F}=\pl{T}]$ is \texttt{substF Fs Ts}. The function \texttt{Expr.gsubst} is total; a rule that substitutes into an expression \texttt{e} has the premise \texttt{GSubstDefined Xs e}, which is the condition under which the substitution of the paper is defined. Substitution into expressions, \texttt{Expr.gsubst}, takes ground types, so $\tsubst{\funnel{X_i}}{\ldots}{\ldots}$ is again a funnel.}
+\mapping{$[\Delta=\pl{T}]$ is \texttt{bind Delta Ts}, with a premise that the lengths are the same; $[\pl{F}=\pl{T}]$ is \texttt{bindF Fs Ts}. The function \texttt{Expr.gsubst} is total; a rule that substitutes into an expression \texttt{e} has the premise \texttt{GSubstDefined Xs e}, which is the condition under which the substitution of the paper is defined. Substitution into expressions, \texttt{Expr.gsubst}, takes ground types, so $\tsubst{\funnel{X_i}}{\ldots}{\ldots}$ is again a funnel.}
 \end{cmp}
 
 \begin{cmp}{Substitution of variables}
@@ -688,7 +689,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       Not (D.C = Object) ->
       Gs.length = D.bounds.length ->
       Step d (.field (Value.new D.C Gs (vs1 ++ vs)) f)
-        (.field (.new D.C' (Ty.substList ((dom D.bounds).zip (GTy.tys Gs)) D.Ts) vs) f)
+        (.field (.new D.C' (Ty.substList (bind D.bounds (Gs : List Ty)) D.Ts) vs) f)
 \end{lstlisting}
 \end{leanside}
 \nomapping
@@ -787,7 +788,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       ps.length = vs.length ->
       GSubstDefined (dom D.bounds ++ dom Delta') e0 ->
       VSubstDefined (this :: ps.map VarDecl.x) e0 ->
-      e = (e0.gsubst ((dom D.bounds ++ dom Delta').zip (Gs ++ Gs'))).vsubst
+      e = (e0.gsubst (bind (D.bounds ++ Delta') (Gs ++ Gs'))).vsubst
         ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
       Step d (.superCall v0 (.cls D.C Gs) Gs' m vs) e
 \end{lstlisting}
@@ -816,7 +817,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       ps.length = vs.length ->
       GSubstDefined (dom Delta') e0 ->
       VSubstDefined (this :: ps.map VarDecl.x) e0 ->
-      e = (e0.gsubst ((dom Delta').zip Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
+      e = (e0.gsubst (bind Delta' Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
       Step d (.call v0 Gs' m vs) e
 \end{lstlisting}
 \end{leanside}
@@ -861,7 +862,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       Not (D.C = Object) ->
       Gs.length = D.bounds.length ->
       Step d (.superCall v (.cls D.C Gs) Gs' m vs)
-        (.superCall v (.cls D.C' (Ty.substList ((dom D.bounds).zip (GTy.tys Gs)) D.Ts)) Gs' m vs)
+        (.superCall v (.cls D.C' (Ty.substList (bind D.bounds (Gs : List Ty)) D.Ts)) Gs' m vs)
 \end{lstlisting}
 \end{leanside}
 \nomapping
@@ -928,7 +929,7 @@ inductive Sub (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
   | subInherit {D Ts0 T'} :
       Declared d (.dec D) ->
       Ts0.length = D.bounds.length ->
-      Sub d Delta ((Ty.cls D.C' D.Ts).subst ((dom D.bounds).zip Ts0)) T' ->
+      Sub d Delta ((Ty.cls D.C' D.Ts).subst (bind D.bounds Ts0)) T' ->
       Sub d Delta (.cls D.C Ts0) T'
 \end{lstlisting}
 \end{leanside}
@@ -949,7 +950,7 @@ inductive Sub (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
   | subInheritLocal {C Fs C' Ts' es Ms Ts T'} :
       Declared d (.loc C Fs C' Ts' es Ms) ->
       Ts.length = Fs.length ->
-      Sub d Delta ((Ty.cls C' Ts').subst (substF Fs Ts)) T' ->
+      Sub d Delta ((Ty.cls C' Ts').subst (bindF Fs Ts)) T' ->
       Sub d Delta (.cls C Ts) T'
 \end{lstlisting}
 \end{leanside}
@@ -979,11 +980,11 @@ inductive Kind (d : Decls) (Delta : Bounds) : Ty -> Prop
       Scope d (.cls C Ts) Delta0 Ts0 ->
       (forall T, List.Mem T Ts -> Kind d Delta T) ->
       Ts0.length = Delta0.length ->
-      Seq2 (Sub d Delta) Ts0 (Ty.substList ((dom Delta0).zip Ts0) (cod Delta0)) ->
+      SubSeq d Delta Ts0 (Ty.substList (bind Delta0 Ts0) (cod Delta0)) ->
       Kind d Delta (.cls C Ts)
 \end{lstlisting}
 \end{leanside}
-\mapping{\texttt{Seq2 R as bs}: \texttt{R} holds at every position, and the lists have the same length.}
+\nomapping
 \end{cmp}
 
 \subsubsection{Checked Cast}
@@ -1085,7 +1086,7 @@ inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
       Declared d (.dec D) ->
       List.Mem { T := T, f := f } D.Ss ->
       Ts'.length = D.bounds.length ->
-      Typing d Delta gamma (.field e f) (T.subst ((dom D.bounds).zip Ts'))
+      Typing d Delta gamma (.field e f) (T.subst (bind D.bounds Ts'))
 \end{lstlisting}
 \end{leanside}
 \mapping{$\Delta'$ is \texttt{D.bounds}; $\pl{S}$ is \texttt{D.Ss}.}
@@ -1112,16 +1113,16 @@ inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
       Scope d (.cls C0 Ts0) Delta0 Ts2 ->
       MethodIn d (.mk Delta1 T0 m ps body) C0 ->
       (Ts2 ++ Ts1).length = (Delta0 ++ Delta1).length ->
-      T0' :: Ts' = Ty.substList ((dom Delta0 ++ dom Delta1).zip (Ts2 ++ Ts1))
+      T0' :: Ts' = Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ Ts1))
         (T0 :: ps.map VarDecl.T) ->
-      (forall T, List.Mem T Ts1 -> Kind d Delta T) ->
-      Seq2 (Sub d Delta) Ts1
-        (Ty.substList ((dom Delta0 ++ dom Delta1).zip (Ts2 ++ Ts1)) (cod Delta1)) ->
+      KindSeq d Delta Ts1 ->
+      SubSeq d Delta Ts1
+        (Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ Ts1)) (cod Delta1)) ->
       TypingSeq d Delta gamma es Ts' ->
       Typing d Delta gamma (.call e0 Ts1 m es) T0'
 \end{lstlisting}
 \end{leanside}
-\mapping{$T'_0,\ldots,T'_n$ is \texttt{T0' :: Ts'}; $\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T'_1,\ldots,T'_n}$ is \texttt{TypingSeq}.}
+\mapping{$T'_0,\ldots,T'_n$ is \texttt{T0' :: Ts'}.}
 \end{cmp}
 
 \begin{cmp}{\textsc{call-lb-runtime}}
@@ -1149,13 +1150,13 @@ inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
       Declared d (.dec D0) ->
       MethodIn d (.mk Delta1 T0 m ps body) D0.C ->
       (Ts0 ++ Ts1).length = (D0.bounds ++ Delta1).length ->
-      T0' :: Ts' = Ty.substList ((dom D0.bounds ++ dom Delta1).zip (Ts0 ++ Ts1))
+      T0' :: Ts' = Ty.substList (bind (D0.bounds ++ Delta1) (Ts0 ++ Ts1))
         (T0 :: ps.map VarDecl.T) ->
       Declared d (.dec D) ->
       Kind d Delta (.cls D.C Ts) ->
-      (forall T, List.Mem T Ts1 -> Kind d Delta T) ->
-      Seq2 (Sub d Delta) Ts1
-        (Ty.substList ((dom D0.bounds ++ dom Delta1).zip (Ts0 ++ Ts1)) (cod Delta1)) ->
+      KindSeq d Delta Ts1 ->
+      SubSeq d Delta Ts1
+        (Ty.substList (bind (D0.bounds ++ Delta1) (Ts0 ++ Ts1)) (cod Delta1)) ->
       TypingSeq d Delta gamma (e0 :: es) (.cls D.C Ts :: Ts') ->
       Typing d Delta gamma (.superCall e0 (.cls D.C Ts) Ts1 m es) T0'
 \end{lstlisting}
@@ -1180,8 +1181,8 @@ inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
       Declared d (.dec D) ->
       Kind d Delta (.cls D.C Ts') ->
       Ts'.length = D.bounds.length ->
-      TypingSeq d Delta gamma es1 (Ty.substList ((dom D.bounds).zip Ts') (D.Ss.map Slot.T)) ->
-      Typing d Delta gamma (.new D.C' (Ty.substList ((dom D.bounds).zip Ts') D.Ts) es2) T'' ->
+      TypingSeq d Delta gamma es1 (Ty.substList (bind D.bounds Ts') (D.Ss.map Slot.T)) ->
+      Typing d Delta gamma (.new D.C' (Ty.substList (bind D.bounds Ts') D.Ts) es2) T'' ->
       Typing d Delta gamma (.new D.C Ts' (es1 ++ es2)) (.cls D.C Ts')
 \end{lstlisting}
 \end{leanside}
@@ -1227,7 +1228,7 @@ def restrict (gamma : Gamma) (Xs : List TVarName) : Gamma :=
 def withoutThis (gamma : Gamma) : Gamma := gamma.filter fun d => d.x != this
 \end{lstlisting}
 \end{leanside}
-\mapping{$\Gamma|_{\pl{X}}$ is \texttt{restrict gamma Xs}; $\Gamma\setminus\this$ is \texttt{withoutThis gamma}; $\mok{\Delta'}{\ldots}{\pl{M}}$ on the sequence $\pl{M}$ is one \texttt{MethodOk} per method.}
+\mapping{$\Gamma|_{\pl{X}}$ is \texttt{restrict gamma Xs}; $\Gamma\setminus\this$ is \texttt{withoutThis gamma}.}
 \end{cmp}
 
 \begin{cmp}{\textsc{if-instanceof}}
@@ -1256,13 +1257,17 @@ def withoutThis (gamma : Gamma) : Gamma := gamma.filter fun d => d.x != this
 \mapping{$\Gamma,T\gap x$ is \texttt{gamma ++ [\{ T := T, x := x \}]}.}
 \end{cmp}
 
-\begin{cmp}{Typing of sequences}
+\begin{cmp}{Judgements on sequences}
 \begin{paperside}
 A judgement applied to sequences stands for one application at every position, and requires the sequences to have the same length:
+$\kind{\Delta}{T_1,\ldots,T_n}$ is $\kind{\Delta}{T_1}\quad\ldots\quad\kind{\Delta}{T_n}$;
+$\subtype{\Delta}{T_1,\ldots,T_n}{T'_1,\ldots,T'_n}$ is $\subtype{\Delta}{T_1}{T'_1}\quad\ldots\quad\subtype{\Delta}{T_n}{T'_n}$;
 $\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T_1,\ldots,T_n}$ is $\typing{\Delta}{\Gamma}{e_1}{T_1}\quad\ldots\quad\typing{\Delta}{\Gamma}{e_n}{T_n}$.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
+abbrev KindSeq (d : Decls) (Delta : Bounds) (Ts : List Ty) : Prop := forall T, List.Mem T Ts -> Kind d Delta T
+abbrev SubSeq (d : Decls) (Delta : Bounds) : List Ty -> List Ty -> Prop := Seq2 (Sub d Delta)
 inductive TypingSeq (d : Decls) : Bounds -> Gamma -> List Expr -> List Ty -> Prop
   | nil {Delta gamma} : TypingSeq d Delta gamma [] []
   | cons {Delta gamma e es T Ts} :
@@ -1273,7 +1278,7 @@ inductive Seq2 {A B : Type} (R : A -> B -> Prop) : List A -> List B -> Prop
   | cons {a b as bs} : R a b -> Seq2 R as bs -> Seq2 R (a :: as) (b :: bs)
 \end{lstlisting}
 \end{leanside}
-\mapping{\texttt{TypingSeq} is defined together with \texttt{Typing}; \texttt{Seq2} is the same convention for any relation, used for subtyping.}
+\mapping{\texttt{TypingSeq} is defined together with \texttt{Typing}. Inside the definition of \texttt{Kind}, rule \textsc{wf-class} writes $\kind{\Delta}{\pl{T}}$ as a premise for every element, since \texttt{KindSeq} is defined after \texttt{Kind}.}
 \end{cmp}
 
 \subsubsection{Consistency and Overriding}
@@ -1296,13 +1301,13 @@ def Consistent (d : Decls) : K -> Prop
     exists Fs' Ts' es' Ms',
       Declared d (.loc C Fs' C0 Ts' es' Ms') /\
       Fs.length = Fs'.length /\
-      Ts = Ty.substList (substF Fs' (abs Fs)) Ts' /\
+      Ts = Ty.substList (bindF Fs' (abs Fs)) Ts' /\
       (forall m, List.Mem m (Ms'.map Method.name) <-> List.Mem m (Ms.map Method.name)) /\
-      forall M, List.Mem M Ms -> OverrideOk1 d (.cls C (abs Fs)) M
+      forall M, List.Mem M Ms -> OverrideOkM d (.cls C (abs Fs)) M
   | .dec _ => False
 \end{lstlisting}
 \end{leanside}
-\mapping{$\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})$ on the sequence $\pl{M}$ is one \texttt{OverrideOk1} per method.}
+\mapping{$\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})$ on the sequence $\pl{M}$ is one \texttt{OverrideOkM} per method.}
 \end{cmp}
 
 \begin{cmp}{$\mathsf{overrideOk}(\Delta,T,\pl{M})$}
@@ -1315,10 +1320,10 @@ def Consistent (d : Decls) : K -> Prop
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
 def OverrideOk (d : Decls) (Delta : Bounds) (T : Ty) (Ms : List Method) : Prop :=
-  forall M C Ts, List.Mem M Ms -> Sub d Delta T (.cls C Ts) -> OverrideOk1 d (.cls C Ts) M
+  forall M C Ts, List.Mem M Ms -> Sub d Delta T (.cls C Ts) -> OverrideOkM d (.cls C Ts) M
 \end{lstlisting}
 \end{leanside}
-\mapping{$\mathsf{overrideOk}(T,M)$ is \texttt{OverrideOk1 d T M}.}
+\mapping{$\mathsf{overrideOk}(T,M)$ is \texttt{OverrideOkM d T M}.}
 \end{cmp}
 
 \begin{cmp}{$\mathsf{overrideOk}(T,M)$}
@@ -1340,29 +1345,29 @@ def OverrideOk (d : Decls) (Delta : Bounds) (T : Ty) (Ms : List Method) : Prop :
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-inductive OverrideOk1 (d : Decls) : Ty -> Method -> Prop
+inductive OverrideOkM (d : Decls) : Ty -> Method -> Prop
   | absent {D Ts Delta' T0' m ps' e'} :
       Declared d (.dec D) ->
       Not (List.Mem m (D.Ms.map Method.name)) ->
-      OverrideOk1 d (.cls D.C Ts) (.mk Delta' T0' m ps' e')
+      OverrideOkM d (.cls D.C Ts) (.mk Delta' T0' m ps' e')
   | dec {D Ts Delta' T0' m ps' e' Delta'' T0 ps e} :
       Declared d (.dec D) ->
       List.Mem (Method.mk Delta'' T0 m ps e) D.Ms ->
       (Ts ++ vars (dom Delta')).length = (D.bounds ++ Delta'').length ->
-      Ty.substList ((dom D.bounds ++ dom Delta'').zip (Ts ++ vars (dom Delta')))
+      Ty.substList (bind (D.bounds ++ Delta'') (Ts ++ vars (dom Delta')))
         (cod Delta'') = cod Delta' ->
-      Ty.substList ((dom D.bounds ++ dom Delta'').zip (Ts ++ vars (dom Delta')))
+      Ty.substList (bind (D.bounds ++ Delta'') (Ts ++ vars (dom Delta')))
         (T0 :: ps.map VarDecl.T) = T0' :: ps'.map VarDecl.T ->
-      OverrideOk1 d (.cls D.C Ts) (.mk Delta' T0' m ps' e')
+      OverrideOkM d (.cls D.C Ts) (.mk Delta' T0' m ps' e')
   | loc {C Fs C0 Ts0 es Ms Ts Delta' T0' m ps' e' Delta'' T0 ps e} :
       Declared d (.loc C Fs C0 Ts0 es Ms) ->
       List.Mem (Method.mk Delta'' T0 m ps e) Ms ->
       Ts.length = Fs.length -> Delta'.length = Delta''.length ->
-      Ty.substList (substF Fs Ts ++ (dom Delta'').zip (vars (dom Delta')))
+      Ty.substList (bindF Fs Ts ++ bind Delta'' (vars (dom Delta')))
         (cod Delta'') = cod Delta' ->
-      Ty.substList (substF Fs Ts ++ (dom Delta'').zip (vars (dom Delta')))
+      Ty.substList (bindF Fs Ts ++ bind Delta'' (vars (dom Delta')))
         (T0 :: ps.map VarDecl.T) = T0' :: ps'.map VarDecl.T ->
-      OverrideOk1 d (.cls C Ts) (.mk Delta' T0' m ps' e')
+      OverrideOkM d (.cls C Ts) (.mk Delta' T0' m ps' e')
 \end{lstlisting}
 \end{leanside}
 \mapping{One constructor per case of the paper. Comparing the lists $T_0,\ldots,T_n$ and $T'_0,\ldots,T'_n$ also requires the same number of parameters, as the paper does by writing $n$ in both methods.}
@@ -1384,8 +1389,8 @@ inductive OverrideOk1 (d : Decls) : Ty -> Method -> Prop
 \begin{lstlisting}[style=leanside]
 inductive MethodOk (d : Decls) : Bounds -> Gamma -> Method -> Prop
   | methodOk {Delta gamma Delta' T0 m ps e} :
-      (forall T, List.Mem T (cod Delta') -> Kind d (Delta ++ Delta') T) ->
-      (forall T, List.Mem T (T0 :: ps.map VarDecl.T) -> Kind d (Delta ++ Delta') T) ->
+      KindSeq d (Delta ++ Delta') (cod Delta') ->
+      KindSeq d (Delta ++ Delta') (T0 :: ps.map VarDecl.T) ->
       Typing d (Delta ++ Delta') (gamma ++ ps) e T0 ->
       MethodOk d Delta gamma (.mk Delta' T0 m ps e)
 \end{lstlisting}
@@ -1407,8 +1412,8 @@ inductive MethodOk (d : Decls) : Bounds -> Gamma -> Method -> Prop
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
 def ClassOk (d : Decls) (D : Dec) : Prop :=
-  (forall T, List.Mem T (cod D.bounds) -> Kind d D.bounds T) /\
-  (forall T, List.Mem T (Ty.cls D.C' D.Ts :: D.Ss.map Slot.T) -> Kind d D.bounds T) /\
+  KindSeq d D.bounds (cod D.bounds) /\
+  KindSeq d D.bounds (Ty.cls D.C' D.Ts :: D.Ss.map Slot.T) /\
   (forall M, List.Mem M D.Ms ->
     MethodOk d D.bounds [{ T := .cls D.C (vars (dom D.bounds)), x := this }] M) /\
   OverrideOk d D.bounds (.cls D.C' D.Ts) D.Ms
