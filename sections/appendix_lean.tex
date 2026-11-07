@@ -1666,7 +1666,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[R16] \texttt{r16}, stated: Counterexample~7 reduces as Example~2, to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
 \item[R17] \texttt{r17}, stated: \Q@new Leaker<>().<B<>>leak(new Leaker<>().<A<>>mk2(new A<>())).x().onlyB()@ reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
 \item[R18] \texttt{r18}, stated: \Q@new Nest<>().<A<>>mk(new A<>()).x()@ $\rightarrow^*$ \Q@new A<>()@, through a value of \Q@Outer@ and a value of \Q@Inner@.
-\item[R19] \texttt{r19}, stated: calling \Q@g<B<>>@ on the value of W16 gives \Q@new Inner2<B<>> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }@.
+\item[R19] \texttt{r19}, stated: calling \Q@g<B<>>(new B<>())@ on the value of W16 gives \Q@new Inner2<B<>> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }@.
 \item[R20] \texttt{r20}, proved: \Q@new Derived<>(new B<>(), new A<>()).f@ $\rightarrow$ \Q@new Base<A<>>(new A<>()).f@ $\rightarrow$ \Q@new A<>()@, by \textsc{simpleFieldSuper} and \textsc{simpleFieldFound}.
 \item[R21] \texttt{r21}, proved: \Q@if (new A<>() instanceof A<> x){ if (x instanceof A<> y){ y } else { x } } else { new B<>() }@ $\rightarrow$ \Q@if (new A<>() instanceof A<> y1){ y1 } else { new A<>() }@: \textsc{ifThen} renames the inner \Q@y@.
 \item[R22] \texttt{r22}, proved: \Q@new K<>().k(vL)@ $\rightarrow^*$ \Q@new L<> extends Object<>(){ Object<> m(Object<> x1){ return vL.m(x1); } }@, where \Q@vL@ is a value of \Q@L@ whose method \Q@m@ binds \Q@x@: \textsc{simpleFound} renames \Q@y@ and \Q@x@, so the result satisfies A7 (compare W24).

@@ -45,7 +45,7 @@ Replacing rule \textsc{new-local} with rule \textsc{new-local-java} gives the Ja
 \]
 
 \noindent\begin{sloppypar}
-An expression is a variable $x$, a method call $\call{e}{\pl{T}}{m}{\pl{e}}$, a super call $\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}$, a field access $e\fstop f$, an object creation $\obj{C}{\pl{T}}{\pl{e}}$ for a top-level type, a local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ or a type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$.\footnote{The syntax \Q@if (a instanceof B c)@ is valid Java since Java 16.}
+An expression is a variable $x$, a method call $\call{e}{\pl{T}}{m}{\pl{e}}$, a super call $\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}$, a field access $e\fstop f$, an object creation $\obj{C}{\pl{T}}{\pl{e}}$ of a top-level class, a local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ or a type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$.\footnote{The syntax \Q@if (a instanceof B c)@ is valid Java since Java 16.}
 As in FJ, \Q@this@ is just a special case of a variable $x$.
 A method call $\call{e}{\pl{T}}{m}{\pl{e}}$ calls the method $m$ on the receiver $e$, with type arguments $\pl{T}$ and arguments $\pl{e}$.
 A super call $\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}$ searches the method $m$ starting from the class of the type $T$, instead of from the class of the receiver $e$.
@@ -96,6 +96,7 @@ We require the following well-formedness conditions:
 \end{enumerate}
 Well-formedness requirements A1-A10 and A12 are common requirements, such as uniqueness of names.
 A11 is the funnel requirement of Section~\ref{sec:syntax}.
+Section~\ref{sec:clarifications} states how A1-A12 restrict the metarules.
 A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ of the enclosing method.
 
 \subsection{Values and Contexts}
@@ -524,15 +525,14 @@ The rule constructs restricted bounds and a restricted type environment, reflect
 $\Delta'$ includes only the funnelled type variables, and $\Gamma|_{\ftv{|\pl{F}|}}\setminus\this$ keeps only the variables of $\Gamma$, other than \Q@this@, whose types mention only type variables of the result type $\gen{C}{|\pl{F}|}$ (which must be well-kinded under $\Delta'$).
 The bounds $\Delta'$ are computed by $\pairing{\Delta}{\pl{F}}{|\pl{F}|}$, which is undefined when a funnelled type variable is not in $\Delta$.
 However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., in the type arguments of a method call), but will reduce to a value which no longer depends on such type variables.
-This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ ensures the resulting type of that
-expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
+This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ types the object creation of the superclass $\obj{C_0}{\pl{T}}{\pl{e}}$ under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ checks the superclass type $\gen{C_0}{\pl{T}}$ under the more restrictive $\Delta'$.
 \\[1ex]
 A local class appears in two kinds of places:
 (1) The (original) declaration of the local class is written in the body of a method of a top-level class, possibly nested inside other local classes.
 (2) Copies of the local class can be in the main expression: reduction copies the declaration from the class table into the main expression, possibly inside the methods of another copy, renaming its bound names by $\mathsf{fresh}$, replacing type variables with types and variables with values.
 
 The relation $K\gap\mathsf{consistent}$ trivially holds for case (1). For case (2), the first condition of the definition finds the declaration of $K$.
-The supertype and the method signatures of $K$ must be those of the declaration, with the funnelled type variables of $\pl{F}'$ replaced by $|\pl{F}|$.
+The supertype and the method signatures of $K$ must be those of the declaration, with the funnelled type variables of $\pl{F}'$ replaced by $|\pl{F}|$, up to the names of the type variables of each method.
 $K$ and the declaration have the same method names.
 The bodies of the methods of $K$ are not required to be those of the declaration: the main expression can hold a local class whose method bodies differ from the declaration, and rule \textsc{new-local} types those method bodies.
 
@@ -696,7 +696,7 @@ Substitution of type variables into expressions happens only during reduction, w
 Substitution of type variables is defined only when the type variables of the methods it enters are not in its domain.
 In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables:
 $\tsubst{T}{F_1,\ldots,F_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $i\in 1..n$ such that $F_i=\funnel{X_i}$; the ground funnels are ignored.
-Thus $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground type $G$, and the result is again a funnel.
+Since the substituted types are ground, $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground type $G$, and the result is again a funnel.
 
 \subsection{Substitution of Variables}
 \label{sec:termsubstitution}
