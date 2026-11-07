@@ -28,51 +28,6 @@ def ECtx.plug : ECtx -> Expr -> Expr
     .newLocal C (Gs.map Funnel.ground) C' Gs' (Value.exprs vs ++ E.plug e :: es) Ms
   | .ifCond E G x e1 e2, e => .ifInst (E.plug e) G x e1 e2
 
-mutual
-def Expr.vnames : Expr -> List VarName
-  | .var x => [x]
-  | .call e _ _ es => e.vnames ++ Expr.vnamesList es
-  | .superCall e _ _ _ es => e.vnames ++ Expr.vnamesList es
-  | .field e _ => e.vnames
-  | .new _ _ es => Expr.vnamesList es
-  | .newLocal _ _ _ _ es Ms => Expr.vnamesList es ++ Method.vnamesList Ms
-  | .ifInst e0 _ x e1 e2 => x :: e0.vnames ++ e1.vnames ++ e2.vnames
-def Expr.vnamesList : List Expr -> List VarName
-  | [] => []
-  | e :: es => e.vnames ++ Expr.vnamesList es
-def Method.vnames : Method -> List VarName
-  | .mk _ _ _ ps e => ps.map VarDecl.x ++ e.vnames
-def Method.vnamesList : List Method -> List VarName
-  | [] => []
-  | M :: Ms => M.vnames ++ Method.vnamesList Ms
-end
-
-def Bounds.tnames (Delta : Bounds) : List TVarName := Delta.flatMap fun b => b.X :: b.T.ftv
-
-mutual
-def Expr.tnames : Expr -> List TVarName
-  | .var _ => []
-  | .call e Ts _ es => e.tnames ++ Ty.ftvList Ts ++ Expr.tnamesList es
-  | .superCall e T Ts _ es => e.tnames ++ T.ftv ++ Ty.ftvList Ts ++ Expr.tnamesList es
-  | .field e _ => e.tnames
-  | .new _ Ts es => Ty.ftvList Ts ++ Expr.tnamesList es
-  | .newLocal _ Fs _ Ts es Ms => domF Fs ++ Ty.ftvList Ts ++ Expr.tnamesList es ++ Method.tnamesList Ms
-  | .ifInst e0 T _ e1 e2 => e0.tnames ++ T.ftv ++ e1.tnames ++ e2.tnames
-def Expr.tnamesList : List Expr -> List TVarName
-  | [] => []
-  | e :: es => e.tnames ++ Expr.tnamesList es
-def Method.tnames : Method -> List TVarName
-  | .mk Delta T0 _ ps e => Bounds.tnames Delta ++ T0.ftv ++ Ty.ftvList (ps.map VarDecl.T) ++ e.tnames
-def Method.tnamesList : List Method -> List TVarName
-  | [] => []
-  | M :: Ms => M.tnames ++ Method.tnamesList Ms
-end
-
-def names (d : Decls) (e : Expr) : Names :=
-  { xs := d.flatMap (fun D => Method.vnamesList D.Ms) ++ e.vnames,
-    Xs := d.flatMap (fun D => Bounds.tnames D.bounds ++ Ty.ftvList D.Ts ++
-      Ty.ftvList (D.Ss.map Slot.T) ++ Method.tnamesList D.Ms) ++ e.tnames }
-
 inductive Step (d : Decls) : Expr -> Expr -> Prop
   | simpleFieldFound {D f} {Gs : List GTy} {vs1 vs : List Value} {v : Value} :
       Declared d (.dec D) ->
@@ -91,7 +46,8 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       Step d (.field (Value.newLocal C Gs C' Gs' vs Ms) f) (.field (Value.new C' Gs' vs) f)
   | ifThen {C' Ts Ts' x e1 e1' e2} {v : Value} :
       Sub d [] (typeOf v) (.cls C' Ts') ->
-      Fresh (names d (.ifInst v (.cls C' Ts) x e1 e2)) e1 e1' ->
+      Fresh e1 e1' ->
+      VSubstDefined [x] e1' ->
       Step d (.ifInst v (.cls C' Ts) x e1 e2) (e1'.vsubst [(x, v)])
   | ifElse {C' Ts x e1 e2} {v : Value} :
       Not (exists Ts', Sub d [] (typeOf v) (.cls C' Ts')) ->
@@ -102,18 +58,22 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
   | simpleFound {D M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs' : List GTy} {vs : List Value} :
       Declared d (.dec D) ->
       List.Mem M D.Ms ->
-      FreshM (names d (.superCall v0 (.cls D.C Gs) Gs' m vs)) M (.mk Delta' T0 m ps e0) ->
+      FreshM M (.mk Delta' T0 m ps e0) ->
       (Gs ++ Gs').length = (D.bounds ++ Delta').length ->
       ps.length = vs.length ->
+      GSubstDefined (dom D.bounds ++ dom Delta') e0 ->
+      VSubstDefined (this :: ps.map VarDecl.x) e0 ->
       e = (e0.gsubst ((dom D.bounds ++ dom Delta').zip (Gs ++ Gs'))).vsubst
         ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
       Step d (.superCall v0 (.cls D.C Gs) Gs' m vs) e
   | innerFound {C C' Ms M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} :
       v0 = Value.newLocal C Gs C' Gs'' vs0 Ms ->
       List.Mem M Ms ->
-      FreshM (names d (.call v0 Gs' m vs)) M (.mk Delta' T0 m ps e0) ->
+      FreshM M (.mk Delta' T0 m ps e0) ->
       Gs'.length = Delta'.length ->
       ps.length = vs.length ->
+      GSubstDefined (dom Delta') e0 ->
+      VSubstDefined (this :: ps.map VarDecl.x) e0 ->
       e = (e0.gsubst ((dom Delta').zip Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
       Step d (.call v0 Gs' m vs) e
   | innerSuper {C C' Ms m} {v0 : Value} {Gs0 Gs Gs' : List GTy} {vs0 vs : List Value} :
