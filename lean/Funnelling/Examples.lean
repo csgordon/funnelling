@@ -1274,4 +1274,14 @@ theorem w26 : Fresh capBefore capAfter /\ Not (WFExpr capAfter) :=
         (.newLocal .nil (.cons (.mk (Xs' := []) (xs' := []) rfl rfl .var) .nil)) (.new .nil)))
     (by decide)
 
+def renamedIf : Expr := .ifInst vA tA (vn "x") (innerIf "x") vB
+
+-- W27: Fresh accepts renaming the inner y of the program of W25 into x; the result violates A7.
+theorem w27 : Fresh outerIf renamedIf /\ WFExpr outerIf /\ Not (WFExpr renamedIf) :=
+  And.intro
+    (And.intro
+      (RenE.ifInst (.new .nil) (RenE.ifInst (.new .nil) (.call .var .nil) (.new .nil)) (.new .nil))
+      (RenE.ifInst (.new .nil) (RenE.ifInst (.new .nil) (.call .var .nil) (.new .nil)) (.new .nil)))
+    (And.intro (by decide) (by decide))
+
 end Funnelling.Examples

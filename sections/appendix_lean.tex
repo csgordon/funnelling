@@ -89,6 +89,7 @@ In the paper, the well-formedness requirements restrict the grammar (Section~\re
 Lean defines the syntax as inductive types, and A1-A11 as the propositions \texttt{WFDecls} and \texttt{WFExpr}.
 Type Soundness assumes them for the initial program.
 A step $\step{e}{e'}$ of the paper is \texttt{Reduces d e e'}: a \texttt{Step} whose result satisfies \texttt{WFExpr}, since an instance of a rule of the paper exists only when its result is an expression.
+The premise of \texttt{Step.ctx} is a \texttt{Step}: an evaluation context binds no name, so \texttt{WFExpr (E.plug e')} implies \texttt{WFExpr e'}.
 \item \textbf{The class table.}
 \decls is an explicit argument \texttt{d} of every judgement.
 \item \textbf{Sequences.}
@@ -1444,7 +1445,7 @@ def ProgOk (d : Decls) (e : Expr) : Prop :=
 
 \subsection{Statements and High Level Proofs}
 \label{app:lean:statements}
-The fixed statements are the two theorems of the paper, Type Soundness and Determinism, on the high level:
+The fixed statements are the two theorems of Section~\ref{sec:soundness}, Type Soundness and Determinism, on the high level:
 \begin{lstlisting}[language=lean,basicstyle=\scriptsize\ttfamily]
 theorem typeSoundness {d e0 e T} (hwf : WFDecls d) (hok : DeclsOk d) (he0 : WFExpr e0)
     (ht : Typing d [] [] e0 T) (hs : Steps d e0 e) :
@@ -1452,7 +1453,6 @@ theorem typeSoundness {d e0 e T} (hwf : WFDecls d) (hok : DeclsOk d) (he0 : WFEx
 theorem determinism {d e e1 e2} (hwf : WFDecls d) (he : WFExpr e) (h1 : Reduces d e e1)
     (h2 : Reduces d e e2) : Fresh e1 e2
 \end{lstlisting}
-They are the theorems Type Soundness and Determinism of the section on the (un)soundness of method local classes.
 \texttt{hok} is the global \decls such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$; \texttt{hwf} says that \decls satisfies A1-A11, and \texttt{he0} says that the initial expression satisfies A3-A8, as every program of the paper does.
 \\[1ex]
 The proofs are in \leanfile{Proof.lean}, and they can take any structure; \texttt{determinism} is stated there with \texttt{sorry}.
@@ -1487,7 +1487,7 @@ The low level, the translation and these lemmas can change together; what must n
 The planned proofs of progress and preservation, on whichever level they are proved, are:
 \begin{enumerate}
 \item \textbf{Basic lemmas.} \texttt{lookup} on a substitution built by \texttt{zip}; by A1, $\mathsf{declared}$, $\mathsf{scope}$ and $\mathrm{generic}$ have one result per class name.
-\item \textbf{Renaming.} $\mathsf{fresh}$ renames bound names consistently, so typing, kinding and well-formedness are invariant under it.
+\item \textbf{Renaming.} A renaming by \texttt{Fresh} whose result satisfies A7 and A8 keeps typing and kinding; \texttt{Fresh} alone does not keep A7 and A8 (W26, W27).
 \item \textbf{Weakening} of $\Gamma$ and $\Delta$, for typing, kinding and subtyping.
 \item \textbf{Substitution of type variables.} If $\Delta,\Delta'$ types $e$, and ground types $\pl{G}$ satisfy the bounds $\Delta'$, then $e[\Delta'=\pl{G}]$ is typed under $\Delta$ with the substituted type.
 Kinding and subtyping are preserved, but the checked cast is not: in rule \textsc{cast-var}, after $X$ becomes $G$, the source $G$ may not reach the target through \textsc{cast-up} or \textsc{cast-down}.
@@ -1618,6 +1618,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[W24] \texttt{w24}, proved: the result of the call of \Q@k@ of Section~\ref{sec:opsem} without renaming, a method \Q@m(x)@ holding a value whose method \Q@m@ binds \Q@x@ again, violates A7.
 \item[W25] \texttt{w25}, proved: in \Q@if (new A<>() instanceof A<> x){ if (new B<>() instanceof B<> y){ y.onlyB() } else { new B<>() } } else { new B<>() }@, renaming \Q@y@ into \Q@x@ makes the substitution \Q@[x=new A<>()]@ of rule \textsc{ifThen} undefined, so rule \textsc{ifThen} has no instance with that renaming.
 \item[W26] \texttt{w26}, proved: \texttt{Fresh} relates \Q@if (new A<>() instanceof A<> x){ new L<> extends Object<>(){ Object<> m(){ return x; } } } else { new B<>() }@ to the same expression with \Q@x@ renamed into \Q@this@, which the method \Q@m@ captures; the renamed expression violates A8.
+\item[W27] \texttt{w27}, proved: \texttt{Fresh} relates the program of W25 to the same program with \Q@y@ renamed into \Q@x@; the renamed program violates A7.
 \item[R1] \texttt{r1}, proved: \Q@new Box<A<>>(new A<>()).val@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFieldFound}.
 \item[R2] \texttt{r2}, proved: \Q@new C2<>().m()@ $\rightarrow$ \Q@new C2<>().[C2<>]m()@ by \textsc{simpleAddSuper}.
 \item[R3] \texttt{r3}, proved: \Q@new C2<>().[C2<>]m()@ $\rightarrow$ \Q@new C2<>().[C1<>]m()@ by \textsc{searchSuper}.
