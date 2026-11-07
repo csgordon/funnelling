@@ -9,11 +9,7 @@ Both variants use the type test of Java:
 rule \textsc{if-instanceof} accepts only checked casts, and at run time rules \textsc{ifThen} and \textsc{ifElse} compare class names only.
 As shown in Section~\ref{sec:core}, $\zeta(\mathsf{Java})$ is unsound.
 We now show that $\zeta(\mathsf{funnelled})$ is sound.
-In the statements below, the program $\decls\gap e$ satisfies well-formedness requirements A1-A11, and $\mathsf{Dec}\gap\mathrm{Ok}$ holds for every $\mathsf{Dec}\in\decls$.
-
-\begin{lemma}[Well-Formedness]
-If $\step{e}{e'}$, then the program $\decls\gap e'$ satisfies well-formedness requirements A1-A11.
-\end{lemma}
+In the statements below, $\mathsf{Dec}\gap\mathrm{Ok}$ holds for every $\mathsf{Dec}\in\decls$.
 
 \begin{theorem}[Progress]
 If $\typing{\emptyset}{\emptyset}{e}{T}$, then either $e$ is a value $v$, or there is an $e'$ such that $\step{e}{e'}$.
