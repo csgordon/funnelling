@@ -1516,12 +1516,13 @@ The planned proofs of progress and preservation, on whichever level they are pro
 \item \textbf{Renaming.} A renaming by \texttt{Fresh} keeps typing and kinding under $\Delta;\Gamma$ when the renamed expression binds no name of $\mathrm{dom}(\Delta)$ or $\mathrm{dom}(\Gamma)$ and satisfies A7 and A8; in the rules, \texttt{VSubstDefined}, \texttt{GSubstDefined} and \texttt{Nodup} give the first condition; \texttt{Fresh} alone does not keep A7 and A8 (W26, W27).
 For \texttt{FreshM}: if $\typing{\Delta,\Delta_m}{\Gamma,\pl{T}\gap\pl{x}}{e}{T_0}$ and \texttt{FreshM} renames $\Delta_m$, $\pl{x}$ and $e$ into $\Delta''$, $\pl{x}'$ and $e_0$, then $\typing{\Delta,\Delta''}{\Gamma,\pl{T}\sigma\gap\pl{x}'}{e_0}{T_0\sigma}$, with $\sigma=[\Delta_m=\mathrm{dom}(\Delta'')]$, when $\mathrm{dom}(\Delta'')$ and $\pl{x}'$ are disjoint from $\mathrm{dom}(\Delta)$ and $\mathrm{dom}(\Gamma)$.
 \item \textbf{Weakening} of $\Gamma$ and $\Delta$, for typing, kinding and subtyping.
-\item \textbf{Substitution of type variables.} If $\Delta,\Delta'$ types $e$, and ground types $\pl{G}$, well kinded under $\emptyset$, satisfy the bounds $\Delta'$, then $e[\Delta'=\pl{G}]$ is typed under $\Delta$ with the substituted type.
+\item \textbf{Substitution of type variables.} If $\Delta$ types $e$, and ground types $\pl{G}$, well kinded under $\emptyset$, satisfy the bounds in $\Delta$ of the type variables $\pl{X}$, then $e\sigma$ is typed with the substituted type under $\Delta_\sigma$, where $\sigma$ is $[\pl{X}=\pl{G}]$ and $\Delta_\sigma$ is $\Delta$ without $\pl{X}$ and with $\sigma$ applied to the other bounds.
+The type variables $\pl{X}$ can be in any position of $\Delta$: rule \textsc{method-ok} appends the bounds of the method, and the pairing of rule \textsc{new-local} orders the bounds as the funnels.
 Kinding and subtyping are preserved, but the checked cast is not: in rule \textsc{cast-var}, after $X$ becomes $G$, the source $G$ may not reach the target through \textsc{cast-up} or \textsc{cast-down}.
-For rule \textsc{if-instanceof} the lemma uses, by induction on the checked cast: if $\cast{\Delta,\Delta'}{T_0}{T}$, then there is $T_1$, either $T_0\sigma$ or the substituted bound of a type variable, with $\subtype{\Delta}{T_0\sigma}{T_1}$ and $\cast{\Delta}{T_1}{T\sigma}$, where $\sigma$ is $[\Delta'=\pl{G}]$.
-In case \textsc{cast-var}, $T_1$ comes from the induction hypothesis, and $\subtype{\Delta}{X\sigma}{T_1}$ follows from the bound of $X$ (rule \textsc{sub-var} when $X$ stays, the premise on $\pl{G}$ when $X$ is replaced) and transitivity.
+For rule \textsc{if-instanceof} the lemma uses, by induction on the checked cast: if $\cast{\Delta}{T_0}{T}$, then there is $T_1$, either $T_0\sigma$ or the substituted bound of a type variable, with $\subtype{\Delta_\sigma}{T_0\sigma}{T_1}$ and $\cast{\Delta_\sigma}{T_1}{T\sigma}$.
+In case \textsc{cast-var}, $T_1$ comes from the induction hypothesis, and $\subtype{\Delta_\sigma}{X\sigma}{T_1}$ follows from the bound of $X$ (rule \textsc{sub-var} when $X$ stays, the premise on $\pl{G}$ when $X$ is replaced) and transitivity.
 Rule \textsc{subs} lifts the tested expression from $T_0\sigma$ to $T_1$.
-$T_0\sigma$ is a type variable when $T_0$ is a type variable of a method of a local class whose bound mentions $\mathrm{dom}(\Delta')$.
+$T_0\sigma$ is a type variable when $T_0$ is a type variable of a method of a local class whose bound mentions a type variable of $\pl{X}$.
 \item \textbf{Substitution of variables.} Values are closed and typed under $\emptyset;\emptyset$, so substituting values for variables of the same types preserves typing; \Q@this@ is not substituted into the methods of a local class.
 \item \textbf{Inversion} of typing for each form of expression, through rule \textsc{subs}.
 \item \textbf{Canonical forms.} If $\typing{\emptyset}{\emptyset}{v}{T}$ then $\subtype{\emptyset}{\mathsf{typeOf}(v)}{T}$.
@@ -1662,7 +1663,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[R4] \texttt{r4}, proved: \Q@new C2<>().[C1<>]m()@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFound}.
 \item[R5] \texttt{r5}, proved: R1 inside the receiver of a call, by \textsc{ctx}.
 \item[R6] \texttt{r6Then}, proved: \Q@if (new A<>() instanceof A<> x){ x } else { new B<>() }@ $\rightarrow$ \Q@new A<>()@ by \textsc{ifThen}.
-\item[R6] \texttt{r6Else}, stated: the same with \Q@B<>@ as the test $\rightarrow$ \Q@new B<>()@ by \textsc{ifElse}.
+\item[R6] \texttt{r6Else}, proved: the same with \Q@B<>@ as the test $\rightarrow$ \Q@new B<>()@ by \textsc{ifElse}.
 \item[R7] \texttt{r7}, proved: \Q@new Maker<>().[Maker<>]<A<>>mk(new A<>())@ $\rightarrow$ \Q@new MyFoo<A<>> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }@ by \textsc{simpleFound}, renaming \Q@Y@ and \Q@y@ into \Q@Y1@ and \Q@y1@.
 \item[R8] \texttt{r8}, proved: the value of R7 \Q@.x()@ $\rightarrow$ \Q@new A<>()@ by \textsc{innerFound}.
 \item[R9] \texttt{r9}, proved: the value of R7 \Q@.other()@ $\rightarrow$ \Q@.[Foo<A<>>]other()@ by \textsc{innerSuper}.
@@ -1684,6 +1685,9 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[T2] \texttt{t2}, stated: \Q@new Box<A<>>(new B<>())@ is ill typed: \Q@B<>@ is not a subtype of \Q@A<>@.
 \item[T3] \texttt{t3}, stated: in d5, \Q@new Fixed<>().<A<>>mk(new Foo<A<>>(), new A<>()) : Foo<A<>>@.
 \item[T4] \texttt{t4}, proved: \Q@new Derived<>(new B<>(), new A<>()).f : A<>@, by \textsc{subs} to \Q@Base<A<>>@ and then \textsc{declField}.
+\item[T5] \texttt{t5}, proved: \Q@new C2<>().[C2<>]m() : A<>@ and \Q@new C2<>().[C1<>]m() : A<>@, the results of R2 and R3, by \textsc{call-lb-runtime}.
+\item[T6] \texttt{t6}, proved: \Q@if (new A<>() instanceof A<> x){ x } else { new A<>() } : A<>@, by \textsc{if-instanceof} and \textsc{cast-up}.
+\item[T7] \texttt{t7}, proved: in d2, \Q@if (v instanceof MyFoo<A<>> w){ w } else { v } : Foo<A<>>@, where \Q@v@ is the result of R7, by \textsc{if-instanceof} and \textsc{cast-down}.
 \item[C1] \texttt{c1}, proved: $\cast{\QQ{X extends Object<>}}{\QQ{Foo<X>}}{\QQ{MyFoo<X>}}$ in d2, by \textsc{cast-down}.
 \item[C2] \texttt{c2}, stated: not $\cast{\QQ{X extends Object<>}}{\QQ{Object<>}}{\QQ{MyFoo<X>}}$ in d2: \textsc{cast-down} needs $\QQ{Y}\in\ftv{\emptyset}$, since $\generic{\QQ{MyFoo}}$ is \Q@MyFoo<Y>@, and \Q@MyFoo<Y>@ has the supertype \Q@Object<>@ with no type arguments.
 \item[C3] \texttt{c3}, proved: $\cast{\QQ{X extends Foo<A<>>}}{\QQ{X}}{\QQ{MyFoo<A<>>}}$ in d2, by \textsc{cast-var} and then \textsc{cast-down}.
@@ -1699,6 +1703,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[V1] \texttt{v1}, proved: the hypotheses of \texttt{typeSoundness} hold together on d1 and the expression of T1; in particular every class of d1 is Ok.
 \item[V2] \texttt{v2}, proved: the hypotheses of \texttt{typeSoundness} hold together on d2, with the funnelled local class \Q@MyFoo@, and \Q@new Maker<>().<A<>>mk(new A<>()) : Foo<A<>>@.
 \item[V3] \texttt{v3}, proved: the result of R7, a copy of \Q@MyFoo@ in the main expression, has type \Q@Foo<A<>>@.
+\item[V4] \texttt{v4}, proved: d2 with the main expression of V2 is Ok, by \textsc{prog-ok}.
 \item[P1] \texttt{p1}, stated: class \Q@Fixed@ is Ok.
 \item[P2] \texttt{p2}, stated: class \Q@Fixed2@ is Ok: \Q@Holder<X>@ determines \Q@X@.
 \item[P3] \texttt{p3}, stated: class \Q@LeakerF@ is Ok.
