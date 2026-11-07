@@ -60,7 +60,7 @@ From the perspective of the inside of the local class (the methods $\pl{M}$), th
 From the perspective of the \Q@new@ expression itself, the funnels $\pl{F}$ instantiate those generic parameters, forming the actual type of the created instance.
 
 To allow a local class instance to exist in the main expression, a funnel is either a ground type $G$ or a funnelled type variable $\funnel{X}$.
-In a method body, we expect all the funnels to be of the form $\funnel{X}$.
+In \decls, all the funnels are of the form $\funnel{X}$, by well-formedness requirement A10.
 In the main expression, outside of the methods of local classes, we expect all the funnels to be of the form $G$.
 When a local class is nested in a method of a local class in the main expression, a mixture of funnels $\funnel{X}$ and $G$ can be present.
 
@@ -91,6 +91,7 @@ We require the following well-formedness conditions:
     \item[(A7)] There is no shadowing of $X$ or $x$, except for \Q@this@.
     \item[(A8)] No parameter and no variable of an \Q@if@ is \Q@this@.
     \item[(A9)] \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every other top-level class reaches \Q@Object@.
+    \item[(A10)] In \decls, every funnel is of the form $\funnel{X}$.
 \end{enumerate}
 Well-formedness requirements A1-A9 are common requirements, such as uniqueness of names.
 To simplify scoping, no shadowing is allowed.
@@ -148,7 +149,7 @@ M\in C\textrm{ iff }M\in K\\
 \quad\phantom{\textrm{where }}K\in\{\subclass{C}{\_}{\_}{\_}{\_}{\_},\innerobj{C}{\_}{\_}{\_}{\_}{\_}\}\\[1ex]
 \generic{C} = \gen{C}{\mathrm{dom}(\Delta)}\\
 \quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}\\
-\generic{C} = \gen{C}{|\pl{F}|}\\
+\generic{C} = \gen{C}{\mathrm{dom}(\pl{F})}\\
 \quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}\\[1ex]
 |\funnel{X}| = X\\
 |G| = G
@@ -500,9 +501,9 @@ Thus a substitution never reaches a type variable or a variable bound inside the
 }
 \and
 \inferrule[cast-down]{
-  \generic{C}=\gen{C}{\pl{T}''}\\
-  \subtype{\emptyset}{\gen{C}{\pl{T}''}}{\gen{C'}{\pl{T}'}}\\\\
-  \ftv{\pl{T}''}\subseteq\ftv{\pl{T}'}\\
+  \generic{C}=\gen{C}{\pl{X}}\\
+  \subtype{\emptyset}{\gen{C}{\pl{X}}}{\gen{C'}{\pl{T}'}}\\\\
+  \pl{X}\subseteq\ftv{\pl{T}'}\\
   \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C'}{\pl{T}_0}}
 }{
   \cast{\Delta}{\gen{C'}{\pl{T}_0}}{\gen{C}{\pl{T}}}
@@ -535,7 +536,7 @@ $K$ and the declaration have the same method names.
 
 Rules \textsc{call} and \textsc{sub-inherit-local} read the declaration, while the reduction runs the methods of the copy.
 
-The premise $\subtype{\emptyset}{\gen{C}{\pl{T}''}}{\gen{C'}{\pl{T}'}}$ of rule \textsc{cast-down} is correctly called with $\emptyset$ as the generic bounds: a subtyping derivation between class types uses only rules \textsc{sub-refl}, \textsc{sub-inherit} and \textsc{sub-inherit-local}, which do not read $\Delta$.
+The premise $\subtype{\emptyset}{\gen{C}{\pl{X}}}{\gen{C'}{\pl{T}'}}$ of rule \textsc{cast-down} is correctly called with $\emptyset$ as the generic bounds: a subtyping derivation between class types uses only rules \textsc{sub-refl}, \textsc{sub-inherit} and \textsc{sub-inherit-local}, which do not read $\Delta$.
 
 
 The relation $\cast{\Delta}{T}{T'}$ is the \emph{checked cast}: a type test against $T'$ on a value of static type $T$ is decided by the class of the value alone.
@@ -543,8 +544,8 @@ Rule \textsc{if-instanceof} accepts the type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$
 Rule \textsc{cast-up} accepts a target $T'$ that is a supertype of the source $T$.
 Rule \textsc{cast-var} replaces a source type variable $X$ with the bound of $X$.
 Rule \textsc{cast-down} accepts a target $\gen{C}{\pl{T}}$ that is a subtype of the source $\gen{C'}{\pl{T}_0}$, when the source determines the type arguments $\pl{T}$.
-$\generic{C}=\gen{C}{\pl{T}''}$ is the class $C$ instantiated with its own generic parameters, and $\gen{C'}{\pl{T}'}$ is the supertype of $\gen{C}{\pl{T}''}$ with class $C'$.
-Every type variable of $\pl{T}''$ occurs in $\pl{T}'$, thus the type arguments $\pl{T}_0$ of the source fix the type arguments $\pl{T}$ of the target.
+$\generic{C}=\gen{C}{\pl{X}}$ is the class $C$ instantiated with its own type variables $\pl{X}$, and $\gen{C'}{\pl{T}'}$ is the supertype of $\gen{C}{\pl{X}}$ with class $C'$.
+Every type variable of $\pl{X}$ occurs in $\pl{T}'$, thus the type arguments $\pl{T}_0$ of the source fix the type arguments $\pl{T}$ of the target.
 Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is a subclass of $C$ has type $\gen{C}{\pl{T}}$, and rule \textsc{ifThen} compares only class names.
 
 
