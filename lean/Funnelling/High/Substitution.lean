@@ -13,7 +13,9 @@ def Ty.substList (sigma : TSubst) : List Ty -> List Ty
   | T :: Ts => T.subst sigma :: Ty.substList sigma Ts
 end
 
-def substF (Fs : List Funnel) (Ts : List Ty) : TSubst :=
+def bind {A : Type} (Delta : Bounds) (as : List A) : List (Prod TVarName A) := (dom Delta).zip as
+
+def bindF (Fs : List Funnel) (Ts : List Ty) : TSubst :=
   (Fs.zip Ts).filterMap fun
     | (.funnel X, T) => some (X, T)
     | (.ground _, _) => none

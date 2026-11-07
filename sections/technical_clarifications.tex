@@ -11,4 +11,4 @@ A judgement holds when it is the conclusion of a derivation built from instances
 In particular, an instance of a reduction rule $\step{e}{e'}$ exists only when the right side $e'$ is an expression.
 Thus a reduction step never produces a sequence of symbols that the grammar does not generate.
 When the substitutions of a reduction rule are undefined for a redex, or would produce such a sequence of symbols, that reduction rule has no instance for that redex.
-The proof of Progress shows that, for every well-typed expression that is not a value, some reduction rule has an instance.
+Type Soundness implies that, for every well-typed expression that is not a value, some reduction rule has an instance.

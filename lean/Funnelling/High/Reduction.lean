@@ -41,7 +41,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       Not (D.C = Object) ->
       Gs.length = D.bounds.length ->
       Step d (.field (Value.new D.C Gs (vs1 ++ vs)) f)
-        (.field (.new D.C' (Ty.substList ((dom D.bounds).zip (GTy.tys Gs)) D.Ts) vs) f)
+        (.field (.new D.C' (Ty.substList (bind D.bounds (Gs : List Ty)) D.Ts) vs) f)
   | innerFieldSuper {C C' Ms f} {Gs Gs' : List GTy} {vs : List Value} :
       Step d (.field (Value.newLocal C Gs C' Gs' vs Ms) f) (.field (Value.new C' Gs' vs) f)
   | ifThen {C' Ts Ts' x e1 e1' e2} {v : Value} :
@@ -63,7 +63,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       ps.length = vs.length ->
       GSubstDefined (dom D.bounds ++ dom Delta') e0 ->
       VSubstDefined (this :: ps.map VarDecl.x) e0 ->
-      e = (e0.gsubst ((dom D.bounds ++ dom Delta').zip (Gs ++ Gs'))).vsubst
+      e = (e0.gsubst (bind (D.bounds ++ Delta') (Gs ++ Gs'))).vsubst
         ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
       Step d (.superCall v0 (.cls D.C Gs) Gs' m vs) e
   | innerFound {C C' Ms M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} :
@@ -74,7 +74,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       ps.length = vs.length ->
       GSubstDefined (dom Delta') e0 ->
       VSubstDefined (this :: ps.map VarDecl.x) e0 ->
-      e = (e0.gsubst ((dom Delta').zip Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
+      e = (e0.gsubst (bind Delta' Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
       Step d (.call v0 Gs' m vs) e
   | innerSuper {C C' Ms m} {v0 : Value} {Gs0 Gs Gs' : List GTy} {vs0 vs : List Value} :
       v0 = Value.newLocal C Gs0 C' Gs vs0 Ms ->
@@ -86,7 +86,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       Not (D.C = Object) ->
       Gs.length = D.bounds.length ->
       Step d (.superCall v (.cls D.C Gs) Gs' m vs)
-        (.superCall v (.cls D.C' (Ty.substList ((dom D.bounds).zip (GTy.tys Gs)) D.Ts)) Gs' m vs)
+        (.superCall v (.cls D.C' (Ty.substList (bind D.bounds (Gs : List Ty)) D.Ts)) Gs' m vs)
   | ctx {E : ECtx} {e e'} :
       Step d e e' -> Step d (E.plug e) (E.plug e')
 

@@ -576,12 +576,12 @@ def d11 : Decls := [decObject, decA, decP1, decP2, decP3, decP4]
 theorem w17 : WFDecls d11 := by decide
 
 -- O1: P2 overrides id with its type variable renamed: Z for X.
-theorem o1 : OverrideOk1 d11 (.cls (cn "P1") []) p2Id :=
-  OverrideOk1.dec (D := decP1) (Delta'' := [bnd "X" obj]) (T0 := tv "X") (ps := [par (tv "X") "x"]) (e := ev "x")
+theorem o1 : OverrideOkM d11 (.cls (cn "P1") []) p2Id :=
+  OverrideOkM.dec (D := decP1) (Delta'' := [bnd "X" obj]) (T0 := tv "X") (ps := [par (tv "X") "x"]) (e := ev "x")
     (.dec (.tail _ (.tail _ (.head _)))) (.head _) rfl rfl rfl
 
 -- O2: P3 changes the return type of id.
-theorem o2 : Not (OverrideOk1 d11 (.cls (cn "P1") []) p3Id) := by
+theorem o2 : Not (OverrideOkM d11 (.cls (cn "P1") []) p3Id) := by
   sorry
 
 -- O3: P2 is Ok.
