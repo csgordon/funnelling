@@ -5,7 +5,7 @@ The two variants differ only in the typing of local classes:
 \item $\zeta(\mathsf{Java})$ types local classes with rule \textsc{new-local-java}, as Java does;
 \item $\zeta(\mathsf{funnelled})$ types local classes with rule \textsc{new-local}.
 \end{enumerate}
-Both variants use the type test of Java:
+Both variants use the same type test:
 rule \textsc{if-instanceof} accepts only checked casts, and at run time rules \textsc{ifThen} and \textsc{ifElse} compare class names only.
 As shown in Section~\ref{sec:core}, $\zeta(\mathsf{Java})$ is unsound.
 We now show that $\zeta(\mathsf{funnelled})$ is sound.

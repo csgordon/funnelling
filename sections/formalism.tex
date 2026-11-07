@@ -530,6 +530,7 @@ A local class occurs in two places:
 The relation $K\gap\mathsf{consistent}$ trivially holds for case (1). For case (2), the first condition of the definition finds the declaration of $K$.
 The supertype and the method signatures of $K$ must be those of the declaration, with the funnelled type variables of $\pl{F}'$ replaced by $|\pl{F}|$.
 $K$ and the declaration have the same method names.
+The bodies of the methods of $K$ are not required to be those of the declaration: the main expression can hold a local class whose method bodies differ from the declaration, and rule \textsc{new-local} types those method bodies.
 
 Rules \textsc{call} and \textsc{sub-inherit-local} read the declaration, while the reduction runs the methods of the copy.
 
@@ -709,10 +710,8 @@ Thus $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground typ
   \twolines{\kw{if}\gap\OR\s{e_0}\gap\kw{instanceof}\gap T\gap x'\CR}{\OC\gap\s{e_1}\gap\CC\gap\kw{else}\gap\OC\gap\s{e_2}\gap\CC}\\
   && \quad\textrm{if }x'\not\in\pl{x}\\[3ex]
 \twolines{\kw{new}\gap\gen{C}{\pl{F}}\gap\kw{extends}\gap\gen{C'}{\pl{T}}}{\OR\pl{e}\CR\OC\pl{M}\CC\gap\s{}} & = &
-  \twolines{\kw{new}\gap\gen{C}{\pl{F}}\gap\kw{extends}\gap\gen{C'}{\pl{T}}}{\OR\s{\pl{e}}\CR\OC\s{\pl{M}}\CC}\\
-  && \quad\textrm{if }\this\not\in\pl{x}\\[1ex]
-\twolines{\kw{new}\gap\gen{C}{\pl{F}}\gap\kw{extends}\gap\gen{C'}{\pl{T}}}{\OR\pl{e}\CR\OC\pl{M}\CC\gap\tsubst{}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'}} & = &
-  \twolines{\kw{new}\gap\gen{C}{\pl{F}}\gap\kw{extends}\gap\gen{C'}{\pl{T}}}{\OR\tsubst{\pl{e}}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'}\CR\OC\tsubst{\pl{M}}{\pl{x},\pl{x}'}{\pl{v},\pl{v}'}\CC}\\[3ex]
+  \twolines{\kw{new}\gap\gen{C}{\pl{F}}\gap\kw{extends}\gap\gen{C'}{\pl{T}}}{\OR\s{\pl{e}}\CR\OC\tsubst{\pl{M}}{\pl{x}'}{\pl{v}'}\CC}\\
+  && \quad\textrm{where }\tsubst{}{\pl{x}'}{\pl{v}'}\textrm{ is }\tsubst{}{\pl{x}}{\pl{v}}\textrm{ without the pair of }\this\\[3ex]
 \twolines{\methodsig{\Delta}{T_0}{m}{T_1\gap x'_1,\ldots,T_k\gap x'_k}}{\OC\gap\ret{e}\gap\CC\gap\s{}} & = &
   \twolines{\methodsig{\Delta}{T_0}{m}{T_1\gap x'_1,\ldots,T_k\gap x'_k}}{\OC\gap\ret{\s{e}}\gap\CC}\\
   && \quad\textrm{if }x'_1,\ldots,x'_k\not\in\pl{x}

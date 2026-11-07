@@ -97,7 +97,7 @@ A judgement on sequences has its own name: $\kind{\Delta}{\pl{T}}$ is \texttt{Ki
 The paper defines $\tsubst{T}{\Delta}{\pl{T}}$ only when $\Delta$ and $\pl{T}$ have the same length.
 $\tsubst{T}{\Delta}{\pl{T}}$ is \texttt{T.subst (bind Delta Ts)} and $\tsubst{T}{\pl{F}}{\pl{T}}$ is \texttt{T.subst (bindF Fs Ts)}; the rule has the premise that the lengths are the same.
 The paper defines a simultaneous substitution only when the names in its domain are distinct.
-Rules \textsc{simpleFound} and \textsc{innerFound} have this as premises (\texttt{Nodup}), since their domains hold the names chosen by $\mathsf{fresh}$; in the other rules the domain is distinct by A5 and A7.
+Rules \textsc{simpleFound} and \textsc{innerFound} have this as premises (\texttt{Nodup}), since their domains hold the names chosen by $\mathsf{fresh}$; in the other rules the domain is distinct by A5, A6 and A7.
 \item \textbf{Definitions.}
 A \textbf{Define} box of the paper with \emph{where} clauses ($\mathsf{declared}$, $M\in C$, $\mathrm{generic}$, $\mathsf{scope}$, the pairing, $\mathsf{overrideOk}(T,M)$) is an inductive relation, one constructor per clause.
 A \textbf{Define} box that defines a function ($\mathrm{dom}$, $\mathrm{cod}$, $|F|$, $\mathsf{typeOf}$, the substitutions) is a function.
@@ -585,10 +585,8 @@ abbrev GSubstDefined (Xs : List TVarName) (e : Expr) : Prop :=
 \fit{$\begin{array}{@{}l@{}}
 \tsubst{x_i}{x_1,\ldots,x_n}{v_1,\ldots,v_n} = v_i\\[1ex]
 \tsubst{(\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}})}{\pl{x}}{\pl{v}}\\
-\quad = \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\tsubst{\pl{e}}{\pl{x}}{\pl{v}}}{\tsubst{\pl{M}}{\pl{x}}{\pl{v}}}
-\quad\textrm{if }\this\not\in\pl{x}\\[1ex]
-\tsubst{(\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}})}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'}\\
-\quad = \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\tsubst{\pl{e}}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'}}{\tsubst{\pl{M}}{\pl{x},\pl{x}'}{\pl{v},\pl{v}'}}\\[1ex]
+\quad = \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\tsubst{\pl{e}}{\pl{x}}{\pl{v}}}{\tsubst{\pl{M}}{\pl{x}'}{\pl{v}'}}\\
+\quad\textrm{where }\tsubst{}{\pl{x}'}{\pl{v}'}\textrm{ is }\tsubst{}{\pl{x}}{\pl{v}}\textrm{ without the pair of }\this\\[1ex]
 \tsubst{(\ifthen{e_0}{T}{x'}{e_1}{e_2})}{\pl{x}}{\pl{v}} = \ldots\quad\textrm{if }x'\not\in\pl{x}\\
 \tsubst{(\methodsig{\Delta}{T_0}{m}{T_1\gap x'_1,\ldots,T_k\gap x'_k}\gap\OC\ldots\CC)}{\pl{x}}{\pl{v}} = \ldots\quad\textrm{if }x'_1,\ldots,x'_k\not\in\pl{x}
 \end{array}$}\\[1ex]
@@ -611,7 +609,7 @@ abbrev VSubstDefined (xs : List VarName) (e : Expr) : Prop :=
   forall x, List.Mem x e.vbinders -> Not (List.Mem x xs)
 \end{lstlisting}
 \end{leanside}
-\mapping{The two cases of the local class are one case: removing \Q@this@ from the substitution changes nothing when \Q@this@ is not in it. The function \texttt{Expr.vsubst} is total; a rule that substitutes into an expression \texttt{e} has the premise \texttt{VSubstDefined xs e}, which is the condition under which the substitution of the paper is defined.}
+\mapping{$\tsubst{}{\pl{x}'}{\pl{v}'}$ is \texttt{sigma.filter fun p => p.1 != this}. The function \texttt{Expr.vsubst} is total; a rule that substitutes into an expression \texttt{e} has the premise \texttt{VSubstDefined xs e}, which is the condition under which the substitution of the paper is defined.}
 \end{cmp}
 
 \begin{cmp}{$\mathsf{fresh}(e,e')$ and $\mathsf{fresh}(M,M')$}
@@ -639,7 +637,9 @@ def Fresh (e e' : Expr) : Prop := RenE [] [] e e' /\ RenE [] [] e' e
 def FreshM (M M' : Method) : Prop := RenM [] [] M M' /\ RenM [] [] M' M
 \end{lstlisting}
 \end{leanside}
-\mapping{\texttt{RenE rv rt e e'}: $e'$ is $e$ with every binder renamed to any name, and its bound occurrences renamed with it; \texttt{rv} and \texttt{rt} are the renamings of variables and type variables in scope. \texttt{RenE} alone allows a renaming that captures a free name, or that gives two nested binders the same name; requiring the renaming in both directions excludes both, so \texttt{Fresh} is equality up to the names of binders, as in the paper.}
+\mapping{\texttt{RenE rv rt e e'}: $e'$ is $e$ with every binder renamed to any name, and its bound occurrences renamed with it; \texttt{rv} and \texttt{rt} are the renamings of variables and type variables in scope. \texttt{RenE} alone allows a renaming that captures a free name; requiring the renaming in both directions excludes the capture of every free name other than \Q@this@.
+A renaming that gives two nested binders the same name, or that names a binder \Q@this@, is excluded by the other premises of the rules: \texttt{WFExpr} in \texttt{Reduces} (A7 and A8), \texttt{Nodup} and \texttt{VSubstDefined}.
+Thus, in a rule, \texttt{Fresh} is equality up to the names of binders, as in the paper.}
 \end{cmp}
 
 \subsubsection{Reduction}
@@ -1453,7 +1453,7 @@ theorem determinism {d e e1 e2} (hwf : WFDecls d) (he : WFExpr e) (h1 : Reduces 
     (h2 : Reduces d e e2) : Fresh e1 e2
 \end{lstlisting}
 They are the theorems Type Soundness and Determinism of the section on the (un)soundness of method local classes.
-\texttt{hok} is the global \decls such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$; \texttt{hwf} and \texttt{he0} say that the initial program satisfies A1-A11, as every program of the paper does.
+\texttt{hok} is the global \decls such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$; \texttt{hwf} says that \decls satisfies A1-A11, and \texttt{he0} says that the initial expression satisfies A3-A8, as every program of the paper does.
 \\[1ex]
 The proofs are in \leanfile{Proof.lean}, and they can take any structure; \texttt{determinism} is stated there with \texttt{sorry}.
 For \texttt{typeSoundness}, the two structures below are both acceptable:
@@ -1510,7 +1510,7 @@ The proof uses that the chain of superclasses is unique and that $\pl{X}\subsete
 A Lean theorem marked \emph{proved} is accepted by Lean, with no axiom other than the standard ones; a theorem marked \emph{stated} has \texttt{sorry}: a positive one needs a derivation, and a negative one needs the inversion lemmas of Section~\ref{app:lean:statements}.
 The core language has no strings, no lambdas, no \Q@switch@ and no casts.
 The examples of Section~2 use \Q@Fun<X,Y>@ for \Q@Function<X,Y>@, and its subclasses \Q@AToB@ and \Q@AsB@ for the lambdas of the two calls of \Q@m@.
-\Q@AsB@ plays the lambda \Q@s->s@: its method \Q@apply@ uses its argument as a \Q@B<>@, so a failing cast to \Q@String@ becomes the call \Q@new A<>().onlyB()@, which is stuck.
+\Q@AsB@ plays the lambda \Q@s->s@: its method \Q@apply@ uses its argument as a \Q@B<>@, so a failing cast to \Q@String@ becomes the call \Q@new A<>().onlyB()@, which reduces by \textsc{simpleAddSuper} and \textsc{searchSuper} to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
 Examples~2 and~3 differ only in the cast, so in the core language they are one program; Examples~4 and~5 differ from Example~3 only in \Q@switch@ and in the bytecode, so they have no counterpart.
 \begin{lstlisting}
 class Object<> extends Object<>{}
@@ -1631,10 +1631,10 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[R11] \texttt{r11}, proved: R2, R3, R4 in sequence.
 \item[R12] \texttt{r12}, stated: in d5, \Q@new Fixed<>().<A<>>mk(new Foo<A<>>(), new A<>())@ $\rightarrow^*$ \Q@new MyFoo<A<>> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }@: the type test fails by \textsc{ifElse}.
 \item[R13] \texttt{r13}, stated: in d5, \Q@mk@ given that value of \Q@MyFoo<A<>>@ returns it: the type test succeeds by \textsc{ifThen}.
-\item[R14] \texttt{r14}, stated: Example~2 reduces to \Q@new A<>().onlyB()@, which is stuck: the second call finds the \Q@MyFoo2@ of the first call, and \Q@AsB@ receives the \Q@A<>@ of the first call.
-\item[R15] \texttt{r15}, stated: Example~6 reduces to \Q@new A<>().onlyB()@, which is stuck: \Q@mine.show(local)@ applies the \Q@f@ of the second call to the \Q@v()@ of the first call.
-\item[R16] \texttt{r16}, stated: Counterexample~7 reduces as Example~2, to \Q@new A<>().onlyB()@, which is stuck.
-\item[R17] \texttt{r17}, stated: \Q@new Leaker<>().<B<>>leak(new Leaker<>().<A<>>mk2(new A<>())).x().onlyB()@ reduces to \Q@new A<>().onlyB()@, which is stuck.
+\item[R14] \texttt{r14}, stated: Example~2 reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck: the second call finds the \Q@MyFoo2@ of the first call, and \Q@AsB@ receives the \Q@A<>@ of the first call.
+\item[R15] \texttt{r15}, stated: Example~6 reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck: \Q@mine.show(local)@ applies the \Q@f@ of the second call to the \Q@v()@ of the first call.
+\item[R16] \texttt{r16}, stated: Counterexample~7 reduces as Example~2, to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
+\item[R17] \texttt{r17}, stated: \Q@new Leaker<>().<B<>>leak(new Leaker<>().<A<>>mk2(new A<>())).x().onlyB()@ reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
 \item[R18] \texttt{r18}, stated: \Q@new Nest<>().<A<>>mk(new A<>()).x()@ $\rightarrow^*$ \Q@new A<>()@, through a value of \Q@Outer@ and a value of \Q@Inner@.
 \item[R19] \texttt{r19}, stated: calling \Q@g<B<>>@ on the value of W16 gives \Q@new Inner2<B<>> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }@.
 \item[R20] \texttt{r20}, proved: \Q@new Derived<>(new B<>(), new A<>()).f@ $\rightarrow$ \Q@new Base<A<>>(new A<>()).f@ $\rightarrow$ \Q@new A<>()@, by \textsc{simpleFieldSuper} and \textsc{simpleFieldFound}.
@@ -1646,7 +1646,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[T3] \texttt{t3}, stated: in d5, \Q@new Fixed<>().<A<>>mk(new Foo<A<>>(), new A<>()) : Foo<A<>>@.
 \item[T4] \texttt{t4}, proved: \Q@new Derived<>(new B<>(), new A<>()).f : A<>@, by \textsc{subs} to \Q@Base<A<>>@ and then \textsc{declField}.
 \item[C1] \texttt{c1}, proved: $\cast{\QQ{X extends Object<>}}{\QQ{Foo<X>}}{\QQ{MyFoo<X>}}$ in d2, by \textsc{cast-down}.
-\item[C2] \texttt{c2}, stated: not $\cast{\QQ{X extends Object<>}}{\QQ{Object<>}}{\QQ{MyFoo<X>}}$ in d2: \textsc{cast-down} needs $\QQ{X}\in\ftv{\emptyset}$, since \Q@MyFoo<Y>@ has the supertype \Q@Object<>@ with no type arguments.
+\item[C2] \texttt{c2}, stated: not $\cast{\QQ{X extends Object<>}}{\QQ{Object<>}}{\QQ{MyFoo<X>}}$ in d2: \textsc{cast-down} needs $\QQ{Y}\in\ftv{\emptyset}$, since $\generic{\QQ{MyFoo}}$ is \Q@MyFoo<Y>@, and \Q@MyFoo<Y>@ has the supertype \Q@Object<>@ with no type arguments.
 \item[C3] \texttt{c3}, proved: $\cast{\QQ{X extends Foo<A<>>}}{\QQ{X}}{\QQ{MyFoo<A<>>}}$ in d2, by \textsc{cast-var} and then \textsc{cast-down}.
 \item[C4] \texttt{c4}, proved: $\cast{\emptyset}{\QQ{B<>}}{\QQ{Object<>}}$, by \textsc{cast-up}.
 \item[C5] \texttt{c5}, stated: not $\cast{\emptyset}{\QQ{A<>}}{\QQ{B<>}}$: the classes are unrelated.
@@ -1656,7 +1656,10 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[O2] \texttt{o2}, stated: not $\mathsf{overrideOk}(\QQ{P1<>},M)$ for the method \Q@id@ of \Q@P3@, which returns \Q@Object<>@.
 \item[O3] \texttt{o3}, stated: class \Q@P2@ is Ok.
 \item[O4] \texttt{o4}, stated: classes \Q@P3@ and \Q@P4@ are not Ok: \Q@P3@ changes the return type, \Q@P4@ changes the bound of the type variable.
-\item[M1] \texttt{m1}, stated: class \Q@Maker@ is Ok.
+\item[M1] \texttt{m1}, proved: class \Q@Maker@ is Ok.
+\item[V1] \texttt{v1}, proved: the hypotheses of \texttt{typeSoundness} hold together on d1 and the expression of T1; in particular every class of d1 is Ok.
+\item[V2] \texttt{v2}, proved: the hypotheses of \texttt{typeSoundness} hold together on d2, with the funnelled local class \Q@MyFoo@, and \Q@new Maker<>().<A<>>mk(new A<>()) : Foo<A<>>@.
+\item[V3] \texttt{v3}, proved: the result of R7, a copy of \Q@MyFoo@ in the main expression, has type \Q@Foo<A<>>@.
 \item[P1] \texttt{p1}, stated: class \Q@Fixed@ is Ok.
 \item[P2] \texttt{p2}, stated: class \Q@Fixed2@ is Ok: \Q@Holder<X>@ determines \Q@X@.
 \item[P3] \texttt{p3}, stated: class \Q@LeakerF@ is Ok.
@@ -1668,7 +1671,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[N6] \texttt{n6}, stated: class \Q@Box7@ is not Ok: \Q@MyFoo7@ does not funnel the class type variable \Q@X@.
 \item[N7] \texttt{n7}, stated: class \Q@Box7F@ is not Ok: \Q@Object<>@ does not determine \Q@X@; javac rejects Counterexample~7 for the same reason.
 \item[N8] \texttt{n8}, stated: in d4F, the main expression of the leak is ill typed: a \Q@MyFoo2F<A<>>@ is passed where a \Q@MyFoo2F<B<>>@ is expected.
-\item[J2] \texttt{j2}, stated: Example~1 reduces to \Q@new A<>().onlyB()@, which is stuck.
+\item[J2] \texttt{j2}, stated: Example~1 reduces to \Q@new A<>().onlyB()@, and then to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
 \item[L2] \texttt{l2}, stated: class \Q@Leaker@ is not Ok: the local class in \Q@mk2@ funnels nothing, as in N1.
 \item[S1] \texttt{s1}, stated: \Q@new Object<>().f@ is stuck.
 \end{description}

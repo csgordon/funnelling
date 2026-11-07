@@ -214,10 +214,6 @@ theorem c1 : Cast d2 [{ X := tn "X", T := obj }] (tFoo (.var (tn "X"))) (.cls (c
 theorem c2 : Not (Cast d2 [{ X := tn "X", T := obj }] obj (.cls (cn "MyFoo") [.var (tn "X")])) := by
   sorry
 
--- M1: the class Maker is Ok.
-theorem m1 : ClassOk d2 decMaker := by
-  sorry
-
 def brokenBody : Expr :=
   .ifInst (.var (vn "other")) (.cls (cn "MyFoo") []) (vn "w") (.var (vn "w"))
     (.newLocal (cn "MyFoo") [] (cn "Foo") [.var (tn "X")] [] [.mk [] (.var (tn "X")) (mn "x") [] (.var (vn "x"))])
@@ -234,12 +230,13 @@ def brokenMain : Expr :=
   .call (.call (.call (Value.new (cn "Broken") [] []) [tB] (mn "m") [eA, vB]) [] (mn "x") []) [] (mn "onlyB") []
 
 def Stuck (d : Decls) (e : Expr) : Prop := Not (IsValue e) /\ forall e', Not (Reduces d e e')
+def stuckB : Expr := .superCall vA obj [] (mn "onlyB") []
 
 -- W6: Example 1 in the core language is well formed.
 theorem w6 : WFDecls d3 /\ WFExpr brokenMain := by decide
 
--- J2: Example 1 reduces to new A<>().onlyB(), which is stuck.
-theorem j2 : Steps d3 brokenMain (.call vA [] (mn "onlyB") []) /\ Stuck d3 (.call vA [] (mn "onlyB") []) := by
+-- J2: Example 1 reduces to new A<>().onlyB(), then to new A<>().[Object<>]onlyB(), which is stuck.
+theorem j2 : Steps d3 brokenMain stuckB /\ Stuck d3 stuckB := by
   sorry
 
 -- N1: Example 1 is ill typed.
@@ -347,8 +344,8 @@ theorem w9 : WFDecls d6 /\ WFExpr main2 := by decide
 theorem n3 : Not (ProgOk d6 main2) := by
   sorry
 
--- R14: Example 2 reduces to new A<>().onlyB(), which is stuck: AsB uses an A<> as a B<>.
-theorem r14 : Steps d6 main2 (onlyBCall vA) /\ Stuck d6 (onlyBCall vA) := by
+-- R14: Example 2 reduces to new A<>().[Object<>]onlyB(), which is stuck: AsB uses an A<> as a B<>.
+theorem r14 : Steps d6 main2 stuckB /\ Stuck d6 stuckB := by
   sorry
 
 def decHolder : Dec := { C := cn "Holder", bounds := [bnd "X" obj], C' := Object, Ts := [], Ms := [], Ss := [] }
@@ -405,8 +402,8 @@ theorem w11 : WFDecls d7 /\ WFExpr main6 := by decide
 theorem n5 : Not (ProgOk d7 main6) := by
   sorry
 
--- R15: Example 6 reduces to new A<>().onlyB(), which is stuck.
-theorem r15 : Steps d7 main6 (onlyBCall vA) /\ Stuck d7 (onlyBCall vA) := by
+-- R15: Example 6 reduces to new A<>().[Object<>]onlyB(), which is stuck.
+theorem r15 : Steps d7 main6 stuckB /\ Stuck d7 stuckB := by
   sorry
 
 -- Counterexample 7: class generics; javac rejects it, and so does funnelling.
@@ -441,8 +438,8 @@ theorem n6 : Not (ClassOk d8 decBox7) := by
 theorem n7 : Not (ClassOk d8 decBox7F) := by
   sorry
 
--- R16: Counterexample 7 reduces as Example 2: to new A<>().onlyB(), which is stuck.
-theorem r16 : Steps d8 main7 (onlyBCall vA) /\ Stuck d8 (onlyBCall vA) := by
+-- R16: Counterexample 7 reduces as Example 2: to new A<>().[Object<>]onlyB(), which is stuck.
+theorem r16 : Steps d8 main7 stuckB /\ Stuck d8 stuckB := by
   sorry
 
 -- The method leak of Section 4.9.
@@ -451,8 +448,8 @@ def leakMain : Expr :=
   onlyBCall (call0 (.call (Value.new (cn "Leaker") [] []) [tB] (mn "leak")
     [.call (Value.new (cn "Leaker") [] []) [tA] (mn "mk2") [vA]]) "x" [])
 
--- R17: leak returns a MyFoo2 built with A<> as a Foo<B<>>; the program reduces to new A<>().onlyB(), which is stuck.
-theorem r17 : Steps d4 leakMain (onlyBCall vA) /\ Stuck d4 (onlyBCall vA) := by
+-- R17: leak returns a MyFoo2 built with A<> as a Foo<B<>>; the program reduces to new A<>().[Object<>]onlyB(), which is stuck.
+theorem r17 : Steps d4 leakMain stuckB /\ Stuck d4 stuckB := by
   sorry
 
 def decLeakerF : Dec :=
@@ -801,5 +798,464 @@ theorem r23 : Steps d1 outerIf vB :=
               rfl rfl (by decide) (by decide) rfl (by decide) (by decide) rfl)
             (by decide))
           Steps.refl)))
+
+-- The hypotheses of typeSoundness hold together: DeclsOk for d1 and for d2.
+
+theorem localsList_append (a b : List Expr) :
+    Expr.localsList (a ++ b) = Expr.localsList a ++ Expr.localsList b := by
+  induction a with
+  | nil => simp [Expr.localsList]
+  | cons x xs ih => simp [Expr.localsList, ih]
+
+theorem one {A : Type} {a b : A} (h : List.Mem a [b]) : a = b := by
+  cases h with
+  | head => rfl
+  | tail _ h => cases h
+
+theorem noMem {A : Type} {a : A} (h : List.Mem a []) : False := by cases h
+
+theorem occurs_mem (ctx : ExprCtx) (C0 Fs C' Ts es Ms) :
+    List.Mem (K.loc C0 Fs C' Ts es Ms) (ctx.plug (.newLocal C0 Fs C' Ts es Ms)).locals := by
+  have key : forall l : List K, Membership.mem l (K.loc C0 Fs C' Ts es Ms) -> List.Mem (K.loc C0 Fs C' Ts es Ms) l :=
+    fun _ h => h
+  apply key
+  induction ctx with
+  | hole => simp [ExprCtx.plug, Expr.locals]
+  | callRecv ctx _ _ _ ih => simp [ExprCtx.plug, Expr.locals, ih]
+  | callArg _ _ _ _ ctx _ ih => simp [ExprCtx.plug, Expr.locals, localsList_append, Expr.localsList, ih]
+  | superRecv ctx _ _ _ _ ih => simp [ExprCtx.plug, Expr.locals, ih]
+  | superArg _ _ _ _ _ ctx _ ih => simp [ExprCtx.plug, Expr.locals, localsList_append, Expr.localsList, ih]
+  | field ctx _ ih => simp [ExprCtx.plug, Expr.locals, ih]
+  | newArg _ _ _ ctx _ ih => simp [ExprCtx.plug, Expr.locals, localsList_append, Expr.localsList, ih]
+  | localArg _ _ _ _ _ ctx _ _ ih => simp [ExprCtx.plug, Expr.locals, localsList_append, Expr.localsList, ih]
+  | ifCond ctx _ _ _ _ ih => simp [ExprCtx.plug, Expr.locals, ih]
+  | ifThen _ _ _ ctx _ ih => simp [ExprCtx.plug, Expr.locals, ih]
+  | ifElse _ _ _ _ ctx ih => simp [ExprCtx.plug, Expr.locals, ih]
+
+namespace OkD1
+
+theorem bodies : forall D, List.Mem D d1 -> forall M, List.Mem M D.Ms -> M.body.locals.isEmpty = true := by
+  decide
+
+theorem declared {k} (h : Declared d1 k) : exists D, k = .dec D /\ List.Mem D d1 := by
+  induction h with
+  | dec hD => exact Exists.intro _ (And.intro rfl hD)
+  | @loc k Delta T0 m ps e C0 Fs C' Ts es Ms _ hM hOcc ih =>
+    cases ih with
+    | intro D hk =>
+    cases hk with
+    | intro hk hD =>
+    subst hk
+    cases hOcc with
+    | intro ctx hctx =>
+    have hmem := occurs_mem ctx C0 Fs C' Ts es Ms
+    rw [<- hctx] at hmem
+    have h1 := bodies D hD _ hM
+    simp [Method.body] at h1
+    rw [h1] at hmem
+    exact absurd hmem (fun h => noMem h)
+
+theorem objDec {D} (h : Declared d1 (.dec D)) (hC : D.C = Object) : D = decObject := by
+  cases h with
+  | dec hmem =>
+    have hm : Membership.mem d1 D := hmem
+    simp [d1] at hm
+    rcases hm with h | h | h | h | h | h <;> subst h <;>
+      first | rfl | (simp [decA, decB, decBox, decC1, decC2, cn, Object] at hC)
+
+theorem subObject {Delta S T} (h : Sub d1 Delta S T) : S = .cls Object [] -> T = .cls Object [] := by
+  induction h with
+  | subRefl => exact id
+  | @subInherit D Ts0 T' hD _ _ ih =>
+    intro hS
+    injection hS with hC hTs
+    have := objDec hD hC
+    subst this
+    subst hTs
+    exact ih rfl
+  | subInheritLocal hD _ _ _ =>
+    intro _
+    cases declared hD with
+    | intro D h2 => exact absurd h2.1 (fun e => by cases e)
+  | subVar _ _ _ => intro hS; cases hS
+
+theorem kObj (Delta : Bounds) : Kind d1 Delta obj :=
+  Kind.wfClass (Delta0 := []) (Ts0 := []) (Scope.dec (D := decObject) (.dec (.head _)))
+    (by intro T h; cases h) rfl .nil
+
+theorem overrideObj (Delta : Bounds) (Ms : List Method) : OverrideOk d1 Delta obj Ms := by
+  intro M C Ts _ hs
+  have := subObject hs rfl
+  cases this
+  cases M with
+  | mk _ _ m _ _ => exact OverrideOkM.absent (D := decObject) (.dec (.head _)) (by intro h; cases h)
+
+theorem kB : Kind d1 [] tB :=
+  Kind.wfClass (Delta0 := []) (Ts0 := []) (Scope.dec (D := decB) (.dec (.tail _ (.tail _ (.head _)))))
+    (by intro T h; cases h) rfl .nil
+
+theorem kC1 : Kind d1 [] (.cls (cn "C1") []) :=
+  Kind.wfClass (Delta0 := []) (Ts0 := [])
+    (Scope.dec (D := decC1) (.dec (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))))
+    (by intro T h; cases h) rfl .nil
+
+theorem kX : Kind d1 [bnd "X" obj] (tv "X") := Kind.wfVar (T := obj) (.head _)
+
+theorem okObject : ClassOk d1 decObject :=
+  And.intro (by intro T h; cases h)
+    (And.intro (by intro T h; rw [one h]; exact kObj _) (And.intro (by intro M h; cases h) (overrideObj _ _)))
+
+theorem okA : ClassOk d1 decA :=
+  And.intro (by intro T h; cases h)
+    (And.intro (by intro T h; rw [one h]; exact kObj _) (And.intro (by intro M h; cases h) (overrideObj _ _)))
+
+theorem okB : ClassOk d1 decB :=
+  And.intro (by intro T h; cases h)
+    (And.intro (by intro T h; rw [one h]; exact kObj _)
+      (And.intro
+        (by
+          intro M h
+          rw [one h]
+          exact MethodOk.methodOk (by intro T h; cases h) (by intro T h; rw [one h]; exact kB)
+            (Typing.newTop (D := decB) (es1 := []) (es2 := []) (.dec (.tail _ (.tail _ (.head _)))) kB rfl .nil
+              Typing.newObject))
+        (overrideObj _ _)))
+
+theorem okC1 : ClassOk d1 decC1 :=
+  And.intro (by intro T h; cases h)
+    (And.intro (by intro T h; rw [one h]; exact kObj _)
+      (And.intro
+        (by
+          intro M h
+          rw [one h]
+          exact MethodOk.methodOk (by intro T h; cases h) (by intro T h; rw [one h]; exact kindA)
+            (Typing.newTop (D := decA) (es1 := []) (es2 := []) (.dec (.tail _ (.head _))) kindA rfl .nil Typing.newObject))
+        (overrideObj _ _)))
+
+theorem okC2 : ClassOk d1 decC2 :=
+  And.intro (by intro T h; cases h)
+    (And.intro (by intro T h; rw [one h]; exact kC1) (And.intro (by intro M h; cases h) (by intro M C Ts h; cases h)))
+
+theorem okBox : ClassOk d1 decBox :=
+  And.intro (by intro T h; rw [one h]; exact kObj _)
+    (And.intro
+      (by
+        intro T h
+        cases h with
+        | head => exact kObj _
+        | tail _ h => rw [one h]; exact kX)
+      (And.intro
+        (by
+          intro M h
+          rw [one h]
+          exact MethodOk.methodOk (by intro T h; cases h) (by intro T h; rw [one h]; exact kX)
+            (Typing.declField (D := decBox) (Ts' := [tv "X"]) (T := tv "X")
+              (Typing.var rfl) (.dec (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl))
+        (overrideObj _ _)))
+
+theorem declsOk : DeclsOk d1 := by
+  intro D h
+  have hm : Membership.mem d1 D := h
+  simp [d1] at hm
+  rcases hm with h | h | h | h | h | h <;> subst h <;>
+    first | exact okObject | exact okA | exact okB | exact okBox | exact okC1 | exact okC2
+
+end OkD1
+
+namespace OkD2
+
+theorem bodies : forall D, List.Mem D d2 -> Not (D.C = cn "Maker") -> forall M, List.Mem M D.Ms ->
+    M.body.locals.isEmpty = true := by
+  decide
+
+theorem declared {k} (h : Declared d2 k) : (exists D, k = .dec D /\ List.Mem D d2) \/ k = myFooK := by
+  induction h with
+  | dec hD => exact Or.inl (Exists.intro _ (And.intro rfl hD))
+  | @loc k Delta T0 m ps e C0 Fs C' Ts es Ms _ hM hOcc ih =>
+    cases hOcc with
+    | intro ctx hctx =>
+    have hmem := occurs_mem ctx C0 Fs C' Ts es Ms
+    rw [<- hctx] at hmem
+    cases ih with
+    | inl h =>
+      cases h with
+      | intro D hk =>
+      cases hk with
+      | intro hk hD =>
+      subst hk
+      by_cases hC : D.C = cn "Maker"
+      case pos =>
+        have hDm : Membership.mem d2 D := hD
+        simp [d2] at hDm
+        rcases hDm with h | h | h | h | h <;> subst h <;> simp [decObject, decA, decB, decFoo, cn, Object] at hC
+        have hm := one hM
+        simp only [mkMethod] at hm
+        cases hm
+        have h2 : List.Mem (K.loc C0 Fs C' Ts es Ms) [myFooK] := by
+          simpa [myFooK, myFooBody, Expr.locals, Expr.localsList, Method.localsList, myFooMethod, Method.locals]
+            using hmem
+        exact Or.inr (one h2)
+      case neg =>
+        have h1 := bodies D hD hC _ hM
+        simp [Method.body] at h1
+        rw [h1] at hmem
+        exact absurd hmem (fun h => noMem h)
+    | inr hk =>
+      subst hk
+      have hm := one hM
+      simp only [myFooMethod] at hm
+      cases hm
+      exact absurd hmem (fun h => noMem (by simpa [Expr.locals] using h))
+
+theorem decName {D C} (h : Declared d2 (.dec D)) (hC : D.C = C) :
+    (C = Object -> D = decObject) /\ (C = cn "Foo" -> D = decFoo) := by
+  cases h with
+  | dec hmem =>
+    have hm : Membership.mem d2 D := hmem
+    simp [d2] at hm
+    subst hC
+    rcases hm with h | h | h | h | h <;> subst h <;> simp [decObject, decA, decB, decFoo, decMaker, cn, Object]
+
+theorem locName {C Fs C' Ts es Ms} (h : Declared d2 (.loc C Fs C' Ts es Ms)) : C = cn "MyFoo" := by
+  cases declared h with
+  | inl h1 =>
+    cases h1 with
+    | intro D h2 => exact absurd h2.1 (fun e => by cases e)
+  | inr hk => simp [myFooK] at hk; exact hk.1
+
+theorem subObject {Delta S T} (h : Sub d2 Delta S T) : S = .cls Object [] -> T = .cls Object [] := by
+  induction h with
+  | subRefl => exact id
+  | @subInherit D Ts0 T' hD _ _ ih =>
+    intro hS
+    injection hS with hC hTs
+    have := (decName hD hC).1 rfl
+    subst this
+    subst hTs
+    exact ih rfl
+  | subInheritLocal hD _ _ _ =>
+    intro hS
+    injection hS with hC
+    have := locName hD
+    rw [this] at hC
+    simp [cn, Object] at hC
+  | subVar _ _ _ => intro hS; cases hS
+
+theorem subFoo {Delta S T T0} (h : Sub d2 Delta S T) :
+    S = .cls (cn "Foo") [T0] -> T = .cls (cn "Foo") [T0] \/ T = .cls Object [] := by
+  induction h with
+  | subRefl => intro h; exact Or.inl h
+  | @subInherit D Ts0 T' hD _ hs _ =>
+    intro hS
+    injection hS with hC hTs
+    have := (decName hD hC).2 rfl
+    subst this
+    exact Or.inr (subObject hs rfl)
+  | subInheritLocal hD _ _ _ =>
+    intro hS
+    injection hS with hC
+    have := locName hD
+    rw [this] at hC
+    simp [cn] at hC
+  | subVar _ _ _ => intro hS; cases hS
+
+theorem declObj : Declared d2 (.dec decObject) := .dec (.head _)
+theorem declA : Declared d2 (.dec decA) := .dec (.tail _ (.head _))
+theorem declB : Declared d2 (.dec decB) := .dec (.tail _ (.tail _ (.head _)))
+theorem declFoo : Declared d2 (.dec decFoo) := .dec (.tail _ (.tail _ (.tail _ (.head _))))
+theorem declMaker : Declared d2 (.dec decMaker) := .dec (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))
+
+theorem kObj (Delta : Bounds) : Kind d2 Delta obj :=
+  Kind.wfClass (Delta0 := []) (Ts0 := []) (Scope.dec (D := decObject) declObj) (by intro T h; cases h) rfl .nil
+theorem kA (Delta : Bounds) : Kind d2 Delta tA :=
+  Kind.wfClass (Delta0 := []) (Ts0 := []) (Scope.dec (D := decA) declA) (by intro T h; cases h) rfl .nil
+theorem kB (Delta : Bounds) : Kind d2 Delta tB :=
+  Kind.wfClass (Delta0 := []) (Ts0 := []) (Scope.dec (D := decB) declB) (by intro T h; cases h) rfl .nil
+theorem kMaker (Delta : Bounds) : Kind d2 Delta (.cls (cn "Maker") []) :=
+  Kind.wfClass (Delta0 := []) (Ts0 := []) (Scope.dec (D := decMaker) declMaker) (by intro T h; cases h) rfl .nil
+
+theorem overrideObj (Delta : Bounds) (Ms : List Method) : OverrideOk d2 Delta obj Ms := by
+  intro M C Ts _ hs
+  have := subObject hs rfl
+  cases this
+  cases M with
+  | mk _ _ m _ _ => exact OverrideOkM.absent (D := decObject) declObj (by intro h; cases h)
+
+def dY : Bounds := [bnd "Y" obj]
+def dX : Bounds := [bnd "X" obj]
+
+theorem kFoo (Delta : Bounds) (T : Ty) (hk : Kind d2 Delta T) (hs : Sub d2 Delta T obj) :
+    Kind d2 Delta (tFoo T) :=
+  Kind.wfClass (Delta0 := decFoo.bounds) (Ts0 := [T]) (Scope.dec declFoo)
+    (by intro T' h; rw [one h]; exact hk) rfl (.cons hs .nil)
+
+theorem kY : Kind d2 dY (tv "Y") := Kind.wfVar (T := obj) (.head _)
+theorem sY : Sub d2 dY (tv "Y") obj := Sub.subVar (.head _) .subRefl
+theorem kX : Kind d2 dX (tv "X") := Kind.wfVar (T := obj) (.head _)
+theorem sA : Sub d2 [] tA obj := Sub.subInherit (D := decA) declA rfl .subRefl
+
+theorem typA2 (Delta : Bounds) (g : Gamma) : Typing d2 Delta g vA tA :=
+  Typing.newTop (D := decA) (es1 := []) (es2 := []) declA (kA _) rfl .nil Typing.newObject
+
+theorem typB2 (Delta : Bounds) (g : Gamma) : Typing d2 Delta g vB tB :=
+  Typing.newTop (D := decB) (es1 := []) (es2 := []) declB (kB _) rfl .nil Typing.newObject
+
+theorem okObject : ClassOk d2 decObject :=
+  And.intro (by intro T h; cases h)
+    (And.intro (by intro T h; rw [one h]; exact kObj _) (And.intro (by intro M h; cases h) (overrideObj _ _)))
+
+theorem okA : ClassOk d2 decA :=
+  And.intro (by intro T h; cases h)
+    (And.intro (by intro T h; rw [one h]; exact kObj _) (And.intro (by intro M h; cases h) (overrideObj _ _)))
+
+theorem okB : ClassOk d2 decB :=
+  And.intro (by intro T h; cases h)
+    (And.intro (by intro T h; rw [one h]; exact kObj _)
+      (And.intro
+        (by
+          intro M h
+          rw [one h]
+          exact MethodOk.methodOk (by intro T h; cases h) (by intro T h; rw [one h]; exact kB _) (typB2 _ _))
+        (overrideObj _ _)))
+
+theorem okFoo : ClassOk d2 decFoo :=
+  And.intro (by intro T h; rw [one h]; exact kObj _)
+    (And.intro (by intro T h; rw [one h]; exact kObj _)
+      (And.intro
+        (by
+          intro M h
+          rw [one h]
+          exact MethodOk.methodOk (by intro T h; cases h) (by intro T h; rw [one h]; exact kX)
+            (Typing.call (Delta0 := decFoo.bounds) (Ts2 := [tv "X"]) (Delta1 := []) (T0 := tv "X") (ps := [])
+              (body := .call thisE [] (mn "x") []) (Ts' := [])
+              (Typing.var rfl) (Scope.dec declFoo)
+              (Exists.intro (.dec decFoo) (And.intro declFoo (And.intro rfl (.head _)))) rfl rfl rfl
+              (by intro T h; cases h) .nil .nil))
+        (overrideObj _ _)))
+
+def gMk : Gamma := [{ T := .cls (cn "Maker") [], x := this }, par (tv "Y") "y"]
+
+theorem consistentMyFoo : Consistent d2 myFooK :=
+  Exists.intro [.funnel (tn "Y")] (Exists.intro [tv "Y"] (Exists.intro [] (Exists.intro [myFooMethod]
+    (And.intro myFooDeclared (And.intro rfl (And.intro rfl (And.intro (fun _ => Iff.rfl)
+      (by
+        intro M h
+        rw [one h]
+        exact OverrideOkM.loc (Delta'' := []) (T0 := tv "Y") (ps := []) (e := ev "y")
+          myFooDeclared (.head _) rfl rfl rfl rfl))))))))
+
+theorem kMyFooY : Kind d2 dY (.cls (cn "MyFoo") [tv "Y"]) :=
+  Kind.wfClass (Delta0 := dY) (Ts0 := [tv "Y"])
+    (Scope.loc (C := cn "Maker") (Delta' := dY) (T0 := tFoo (tv "Y")) (m := mn "mk") (ps := [par (tv "Y") "y"])
+      (e := myFooBody) (T := .cls (cn "Maker") []) (Delta := []) (Ts'' := [])
+      (Exists.intro (.dec decMaker) (And.intro declMaker (And.intro rfl (.head _))))
+      (Exists.intro .hole rfl) (Generic.dec declMaker) (Scope.dec declMaker) (Pairing.funnel (.head _) .nil))
+    (by intro T h; rw [one h]; exact kY) rfl (.cons sY .nil)
+
+theorem overrideFoo (Delta : Bounds) (T : Ty) (e : Expr) :
+    OverrideOk d2 Delta (tFoo T) [.mk [] T (mn "x") [] e] := by
+  intro M C Ts hM hs
+  rw [one hM]
+  cases subFoo hs rfl with
+  | inl h =>
+    cases h
+    exact OverrideOkM.dec (D := decFoo) (Delta'' := []) (T0 := tv "X") (ps := []) (e := .call thisE [] (mn "x") [])
+      declFoo (.head _) rfl rfl rfl rfl
+  | inr h => cases h; exact OverrideOkM.absent (D := decObject) declObj (by intro h; cases h)
+
+theorem typMyFoo : Typing d2 dY gMk myFooBody (tFoo (tv "Y")) :=
+  Typing.subs
+    (Typing.newLocal (Delta' := dY) (Ts'' := [tv "Y"]) consistentMyFoo (Pairing.funnel (.head _) .nil)
+      (by intro X h; simp [cod, dY, bnd, obj, Ty.ftvList, Ty.ftv] at h; exact absurd h (fun h => noMem h))
+      kMyFooY (kFoo _ _ kY sY)
+      (Typing.newTop (D := decFoo) (es1 := []) (es2 := []) declFoo (kFoo _ _ kY sY) rfl .nil Typing.newObject)
+      (by
+        intro M h
+        rw [one h]
+        exact MethodOk.methodOk (by intro T h; cases h) (by intro T h; rw [one h]; exact Kind.wfVar (T := obj) (.head _))
+          (Typing.var rfl))
+      (overrideFoo _ _ _))
+    (kFoo _ _ kY sY)
+    (Sub.subInheritLocal myFooDeclared rfl .subRefl)
+
+theorem okMaker : ClassOk d2 decMaker :=
+  And.intro (by intro T h; cases h)
+    (And.intro (by intro T h; rw [one h]; exact kObj _)
+      (And.intro
+        (by
+          intro M h
+          rw [one h]
+          exact MethodOk.methodOk (by intro T h; rw [one h]; exact kObj _)
+            (by
+              intro T h
+              cases h with
+              | head => exact kFoo _ _ kY sY
+              | tail _ h => rw [one h]; exact kY)
+            typMyFoo)
+        (overrideObj _ _)))
+
+theorem declsOk : DeclsOk d2 := by
+  intro D h
+  have hm : Membership.mem d2 D := h
+  simp [d2] at hm
+  rcases hm with h | h | h | h | h <;> subst h <;>
+    first | exact okObject | exact okA | exact okB | exact okFoo | exact okMaker
+
+def mainMk : Expr := .call (Value.new (cn "Maker") [] []) [tA] (mn "mk") [vA]
+
+theorem typMain : Typing d2 [] [] mainMk (tFoo tA) :=
+  Typing.call (Delta0 := []) (Ts2 := []) (Delta1 := dY) (T0 := tFoo (tv "Y")) (ps := [par (tv "Y") "y"])
+    (body := myFooBody) (Ts' := [tA])
+    (Typing.newTop (D := decMaker) (es1 := []) (es2 := []) declMaker (kMaker _) rfl .nil Typing.newObject)
+    (Scope.dec declMaker)
+    (Exists.intro (.dec decMaker) (And.intro declMaker (And.intro rfl (.head _)))) rfl rfl rfl
+    (by intro T h; rw [one h]; exact kA _) (.cons sA .nil)
+    (.cons (typA2 _ _) .nil)
+
+theorem typVLocal : Typing d2 [] [] vLocal (tFoo tA) :=
+  Typing.subs
+    (Typing.newLocal (Delta' := []) (Ts'' := [])
+      (Exists.intro [.funnel (tn "Y")] (Exists.intro [tv "Y"] (Exists.intro [] (Exists.intro [myFooMethod]
+        (And.intro myFooDeclared (And.intro rfl (And.intro rfl (And.intro (fun _ => Iff.rfl)
+          (by
+            intro M h
+            rw [one h]
+            exact OverrideOkM.loc (Delta'' := []) (T0 := tv "Y") (ps := []) (e := ev "y")
+              myFooDeclared (.head _) rfl rfl rfl rfl)))))))))
+      (Pairing.ground .nil)
+      (by intro X h; cases h)
+      (Kind.wfClass (Delta0 := dY) (Ts0 := [tA])
+        (Scope.loc (C := cn "Maker") (Delta' := dY) (T0 := tFoo (tv "Y")) (m := mn "mk") (ps := [par (tv "Y") "y"])
+          (e := myFooBody) (T := .cls (cn "Maker") []) (Delta := []) (Ts'' := [])
+          (Exists.intro (.dec decMaker) (And.intro declMaker (And.intro rfl (.head _))))
+          (Exists.intro .hole rfl) (Generic.dec declMaker) (Scope.dec declMaker) (Pairing.funnel (.head _) .nil))
+        (by intro T h; rw [one h]; exact kA _) rfl (.cons sA .nil))
+      (kFoo _ _ (kA _) sA)
+      (Typing.newTop (D := decFoo) (es1 := []) (es2 := []) declFoo (kFoo _ _ (kA _) sA) rfl .nil Typing.newObject)
+      (by
+        intro M h
+        rw [one h]
+        exact MethodOk.methodOk (by intro T h; cases h) (by intro T h; rw [one h]; exact kA _) (typA2 _ _))
+      (overrideFoo _ _ _))
+    (kFoo _ _ (kA _) sA)
+    (Sub.subInheritLocal myFooDeclared rfl .subRefl)
+
+end OkD2
+
+-- M1: the class Maker is Ok.
+theorem m1 : ClassOk d2 decMaker := OkD2.okMaker
+
+-- V1: the hypotheses of typeSoundness hold together on d1 and the expression of T1.
+theorem v1 : WFDecls d1 /\ DeclsOk d1 /\ WFExpr (.field (Value.new (cn "Box") [gA] [vA]) (fn "val")) /\
+    Typing d1 [] [] (.field (Value.new (cn "Box") [gA] [vA]) (fn "val")) tA :=
+  And.intro w1 (And.intro OkD1.declsOk (And.intro (by decide) t1))
+
+-- V2: the hypotheses of typeSoundness hold together on d2, with the funnelled local class MyFoo,
+-- and new Maker<>().<A<>>mk(new A<>()) : Foo<A<>>.
+theorem v2 : WFDecls d2 /\ DeclsOk d2 /\ WFExpr OkD2.mainMk /\ Typing d2 [] [] OkD2.mainMk (tFoo tA) :=
+  And.intro w5 (And.intro OkD2.declsOk (And.intro (by decide) OkD2.typMain))
+
+-- V3: the result of R7, a copy of MyFoo in the main expression, has type Foo<A<>>.
+theorem v3 : Typing d2 [] [] vLocal (tFoo tA) := OkD2.typVLocal
 
 end Funnelling.Examples
