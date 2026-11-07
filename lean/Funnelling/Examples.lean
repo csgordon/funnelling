@@ -270,7 +270,7 @@ def tv (X : String) : Ty := .var (tn X)
 def call0 (e : Expr) (m : String) (es : List Expr) : Expr := .call e [] (mn m) es
 def onlyBCall (e : Expr) : Expr := call0 e "onlyB" []
 
--- Example 1, funnelled as in Section 4.9.
+-- Example 1, funnelled as in Section 4.10.
 
 def decFixed : Dec :=
   { C := cn "Fixed", bounds := [], C' := Object, Ts := [],
@@ -442,7 +442,7 @@ theorem n7 : Not (ClassOk d8 decBox7F) := by
 theorem r16 : Steps d8 main7 stuckB /\ Stuck d8 stuckB := by
   sorry
 
--- The method leak of Section 4.9.
+-- The method leak of Section 4.10.
 
 def leakMain : Expr :=
   onlyBCall (call0 (.call (Value.new (cn "Leaker") [] []) [tB] (mn "leak")
@@ -1257,5 +1257,31 @@ theorem v2 : WFDecls d2 /\ DeclsOk d2 /\ WFExpr OkD2.mainMk /\ Typing d2 [] [] O
 
 -- V3: the result of R7, a copy of MyFoo in the main expression, has type Foo<A<>>.
 theorem v3 : Typing d2 [] [] vLocal (tFoo tA) := OkD2.typVLocal
+
+def capL (y : VarName) : Expr :=
+  .newLocal (cn "L") [] Object [] [] [.mk [] obj (mn "m") [] (.var y)]
+def capBefore : Expr := .ifInst vA tA (vn "x") (capL (vn "x")) vB
+def capAfter : Expr := .ifInst vA tA this (capL this) vB
+
+-- W26: Fresh accepts renaming the variable x of an if into this, which the method m of the local class captures;
+-- the result violates A8.
+theorem w26 : Fresh capBefore capAfter /\ Not (WFExpr capAfter) :=
+  And.intro
+    (And.intro
+      (RenE.ifInst (.new .nil)
+        (.newLocal .nil (.cons (.mk (Xs' := []) (xs' := []) rfl rfl .var) .nil)) (.new .nil))
+      (RenE.ifInst (.new .nil)
+        (.newLocal .nil (.cons (.mk (Xs' := []) (xs' := []) rfl rfl .var) .nil)) (.new .nil)))
+    (by decide)
+
+def renamedIf : Expr := .ifInst vA tA (vn "x") (innerIf "x") vB
+
+-- W27: Fresh accepts renaming the inner y of the program of W25 into x; the result violates A7.
+theorem w27 : Fresh outerIf renamedIf /\ WFExpr outerIf /\ Not (WFExpr renamedIf) :=
+  And.intro
+    (And.intro
+      (RenE.ifInst (.new .nil) (RenE.ifInst (.new .nil) (.call .var .nil) (.new .nil)) (.new .nil))
+      (RenE.ifInst (.new .nil) (RenE.ifInst (.new .nil) (.call .var .nil) (.new .nil)) (.new .nil)))
+    (And.intro (by decide) (by decide))
 
 end Funnelling.Examples

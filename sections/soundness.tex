@@ -1,4 +1,5 @@
 \section{(Un)Soundness of Method Local Classes}
+\label{sec:soundness}
 With our language primitives in place, we now consider type safety of two variants of our language.
 The two variants differ only in the typing of local classes:
 \begin{enumerate}
@@ -7,7 +8,7 @@ The two variants differ only in the typing of local classes:
 \end{enumerate}
 Both variants use the same type test:
 rule \textsc{if-instanceof} accepts only checked casts, and at run time rules \textsc{ifThen} and \textsc{ifElse} compare class names only.
-As shown in Section~\ref{sec:core}, $\zeta(\mathsf{Java})$ is unsound.
+As shown in Section~\ref{sec:java}, $\zeta(\mathsf{Java})$ is unsound.
 We now show that $\zeta(\mathsf{funnelled})$ is sound.
 
 \begin{theorem}[Type Soundness]
