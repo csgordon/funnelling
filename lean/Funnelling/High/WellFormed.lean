@@ -82,33 +82,30 @@ def superChain (d : Decls) : Nat -> ClassName -> List Dec
 abbrev A1 (d : Decls) : Prop := ((classes d).map K.name).Nodup
 
 abbrev A2 (d : Decls) : Prop :=
-  d.all (fun D => decide (((superChain d (d.length + 1) D.C).flatMap fun D' => D'.Ss.map Slot.f).Nodup)) = true
+  forall D, List.Mem D d -> ((superChain d (d.length + 1) D.C).flatMap fun D' => D'.Ss.map Slot.f).Nodup
 
-abbrev A3 (ks : List K) : Prop := ks.all (fun k => decide ((k.Ms.map Method.name).Nodup)) = true
+abbrev A3 (ks : List K) : Prop := forall k, List.Mem k ks -> (k.Ms.map Method.name).Nodup
 
-abbrev A4 (Ms : List Method) : Prop := Ms.all (fun M => decide ((M.params.map VarDecl.x).Nodup)) = true
+abbrev A4 (Ms : List Method) : Prop := forall M, List.Mem M Ms -> (M.params.map VarDecl.x).Nodup
 
-abbrev A5 (Deltas : List Bounds) : Prop := Deltas.all (fun Delta => decide ((dom Delta).Nodup)) = true
+abbrev A5 (Deltas : List Bounds) : Prop := forall Delta, List.Mem Delta Deltas -> (dom Delta).Nodup
 
-abbrev A6 (ks : List K) : Prop := ks.all (fun k => decide ((domF k.Fs).Nodup)) = true
+abbrev A6 (ks : List K) : Prop := forall k, List.Mem k ks -> (domF k.Fs).Nodup
 
-abbrev A7Decls (d : Decls) : Prop := d.all (fun D => Method.noShadowList (dom D.bounds) [] D.Ms) = true
+abbrev A7Decls (d : Decls) : Prop :=
+  forall D, List.Mem D d -> Method.noShadowList (dom D.bounds) [] D.Ms = true
 
 abbrev A8 (Ms : List Method) (ifVars : List VarName) : Prop :=
-  Ms.all (fun M => !((M.params.map VarDecl.x).contains this)) = true /\ ifVars.contains this = false
+  (forall M, List.Mem M Ms -> Not (List.Mem this (M.params.map VarDecl.x))) /\ Not (List.Mem this ifVars)
 
 abbrev A9 (d : Decls) : Prop :=
-  d.any (fun D => D.C == Object && D.bounds.isEmpty && D.C' == Object && D.Ts.isEmpty &&
-    D.Ms.isEmpty && D.Ss.isEmpty) = true /\
-  d.all (fun D => (superChain d (d.length + 1) D.C).any fun D' => D'.C == Object) = true
+  (exists D, List.Mem D d /\ D.C = Object /\ D.bounds.isEmpty /\ D.C' = Object /\ D.Ts.isEmpty /\
+    D.Ms.isEmpty /\ D.Ss.isEmpty) /\
+  forall D, List.Mem D d -> exists D', List.Mem D' (superChain d (d.length + 1) D.C) /\ D'.C = Object
 
-abbrev A10 (d : Decls) : Prop := (classes d).all (fun k => (findDec d k.sup).isSome) = true
+abbrev A10 (d : Decls) : Prop := forall k, List.Mem k (classes d) -> (findDec d k.sup).isSome
 
-abbrev A11 (d : Decls) : Prop :=
-  (classes d).all (fun k => k.Fs.all fun
-    | .funnel _ => true
-    | .ground _ => false) = true
-
+abbrev A11 (d : Decls) : Prop := forall k, List.Mem k (classes d) -> forall F, List.Mem F k.Fs -> F.isFunnel
 abbrev WFDecls (d : Decls) : Prop :=
   A1 d /\ A2 d /\ A3 (classes d) /\ A4 d.methods /\
   A5 (d.map Dec.bounds ++ d.methods.map Method.bounds) /\ A6 (classes d) /\ A7Decls d /\

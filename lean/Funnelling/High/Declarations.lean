@@ -32,17 +32,15 @@ def ExprCtx.plug : ExprCtx -> Expr -> Expr
 
 def OccursIn (e' e : Expr) : Prop := exists ctx : ExprCtx, e = ctx.plug e'
 
-def MemK (M : Method) (k : K) : Prop := List.Mem M k.Ms
-
 inductive Declared (d : Decls) : K -> Prop
   | dec {D} : List.Mem D d -> Declared d (.dec D)
   | loc {k Delta T0 m ps e C0 Fs C' Ts es Ms} :
-      Declared d k -> MemK (.mk Delta T0 m ps e) k ->
+      Declared d k -> List.Mem (.mk Delta T0 m ps e) k.Ms ->
       OccursIn (.newLocal C0 Fs C' Ts es Ms) e ->
       Declared d (.loc C0 Fs C' Ts es Ms)
 
 def MethodIn (d : Decls) (M : Method) (C : ClassName) : Prop :=
-  exists k, Declared d k /\ k.name = C /\ MemK M k
+  exists k, Declared d k /\ k.name = C /\ List.Mem M k.Ms
 
 inductive Generic (d : Decls) : ClassName -> Ty -> Prop
   | dec {D} : Declared d (.dec D) -> Generic d D.C (.cls D.C (vars (dom D.bounds)))
@@ -67,7 +65,7 @@ inductive Scope (d : Decls) : Ty -> Bounds -> List Ty -> Prop
       Scope d (.cls C0 Ts) Delta0 Ts0
 
 def typeOf : Value -> Ty
-  | .new C Gs _ => .cls C (GTy.tys Gs)
-  | .newLocal C Gs _ _ _ _ => .cls C (GTy.tys Gs)
+  | .new C Gs _ => .cls C Gs
+  | .newLocal C Gs _ _ _ _ => .cls C Gs
 
 end Funnelling.High

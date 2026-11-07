@@ -7,23 +7,23 @@ inductive Seq2 {A B : Type} (R : A -> B -> Prop) : List A -> List B -> Prop
   | cons {a b as bs} : R a b -> Seq2 R as bs -> Seq2 R (a :: as) (b :: bs)
 
 inductive Sub (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
-  | refl {T} : Sub d Delta T T
-  | inherit {D Ts0 T'} :
+  | subRefl {T} : Sub d Delta T T
+  | subInherit {D Ts0 T'} :
       Declared d (.dec D) ->
       Ts0.length = D.bounds.length ->
       Sub d Delta ((Ty.cls D.C' D.Ts).subst ((dom D.bounds).zip Ts0)) T' ->
       Sub d Delta (.cls D.C Ts0) T'
-  | inheritLocal {C Fs C' Ts' es Ms Ts T'} :
+  | subInheritLocal {C Fs C' Ts' es Ms Ts T'} :
       Declared d (.loc C Fs C' Ts' es Ms) ->
       Ts.length = Fs.length ->
       Sub d Delta ((Ty.cls C' Ts').subst (substF Fs Ts)) T' ->
       Sub d Delta (.cls C Ts) T'
-  | var {X T T'} :
+  | subVar {X T T'} :
       List.Mem { X := X, T := T } Delta -> Sub d Delta T T' -> Sub d Delta (.var X) T'
 
 inductive Kind (d : Decls) (Delta : Bounds) : Ty -> Prop
-  | var {X T} : List.Mem { X := X, T := T } Delta -> Kind d Delta (.var X)
-  | cls {C Ts Delta0 Ts0} :
+  | wfVar {X T} : List.Mem { X := X, T := T } Delta -> Kind d Delta (.var X)
+  | wfClass {C Ts Delta0 Ts0} :
       Scope d (.cls C Ts) Delta0 Ts0 ->
       (forall T, List.Mem T Ts -> Kind d Delta T) ->
       Ts0.length = Delta0.length ->
@@ -31,10 +31,10 @@ inductive Kind (d : Decls) (Delta : Bounds) : Ty -> Prop
       Kind d Delta (.cls C Ts)
 
 inductive Cast (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
-  | up {T T'} : Sub d Delta T T' -> Cast d Delta T T'
-  | var {X T T'} :
+  | castUp {T T'} : Sub d Delta T T' -> Cast d Delta T T'
+  | castVar {X T T'} :
       List.Mem { X := X, T := T } Delta -> Cast d Delta T T' -> Cast d Delta (.var X) T'
-  | down {C Ts C' Ts0 Xs Ts'} :
+  | castDown {C Ts C' Ts0 Xs Ts'} :
       Sub d Delta (.cls C Ts) (.cls C' Ts0) ->
       Generic d C (.cls C (vars Xs)) ->
       Sub d [] (.cls C (vars Xs)) (.cls C' Ts') ->
@@ -83,7 +83,6 @@ def restrict (gamma : Gamma) (Xs : List TVarName) : Gamma :=
 
 def withoutThis (gamma : Gamma) : Gamma := gamma.filter fun d => d.x != this
 
-
 mutual
 inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
   | subs {Delta gamma e T1 T2} :
@@ -109,7 +108,7 @@ inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
       Seq2 (Sub d Delta) Ts1 (Ty.substList ((dom Delta0 ++ dom Delta1).zip (Ts2 ++ Ts1)) (cod Delta1)) ->
       TypingSeq d Delta gamma es Ts' ->
       Typing d Delta gamma (.call e0 Ts1 m es) T0'
-  | superCall {Delta gamma e0 D Ts D0 Ts0 Delta1 T0 m ps body Ts1 es T0' Ts'} :
+  | callLbRuntime {Delta gamma e0 D Ts D0 Ts0 Delta1 T0 m ps body Ts1 es T0' Ts'} :
       Sub d Delta (.cls D.C Ts) (.cls D0.C Ts0) ->
       Declared d (.dec D0) ->
       MethodIn d (.mk Delta1 T0 m ps body) D0.C ->
@@ -140,7 +139,7 @@ inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
           (withoutThis (restrict gamma (Ty.ftvList (abs Fs))) ++ [{ T := .cls C (abs Fs), x := this }]) M) ->
       OverrideOk d Delta' (.cls C0 Ts) Ms ->
       Typing d Delta gamma (.newLocal C Fs C0 Ts es Ms) (.cls C (abs Fs))
-  | ifInst {Delta gamma e0 T0 T x e1 e2 T'} :
+  | ifInstanceof {Delta gamma e0 T0 T x e1 e2 T'} :
       Typing d Delta gamma e0 T0 ->
       Kind d Delta T ->
       Cast d Delta T0 T ->
@@ -153,7 +152,7 @@ inductive TypingSeq (d : Decls) : Bounds -> Gamma -> List Expr -> List Ty -> Pro
       Typing d Delta gamma e T -> TypingSeq d Delta gamma es Ts ->
       TypingSeq d Delta gamma (e :: es) (T :: Ts)
 inductive MethodOk (d : Decls) : Bounds -> Gamma -> Method -> Prop
-  | mk {Delta gamma Delta' T0 m ps e} :
+  | methodOk {Delta gamma Delta' T0 m ps e} :
       (forall T, List.Mem T (cod Delta') -> Kind d (Delta ++ Delta') T) ->
       (forall T, List.Mem T (T0 :: ps.map VarDecl.T) -> Kind d (Delta ++ Delta') T) ->
       Typing d (Delta ++ Delta') (gamma ++ ps) e T0 ->

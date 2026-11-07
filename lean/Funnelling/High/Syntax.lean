@@ -119,6 +119,12 @@ end
 instance : Coe Value Expr where
   coe := Value.expr
 
+instance : Coe (List GTy) (List Ty) where
+  coe := GTy.tys
+
+instance : Coe (List Value) (List Expr) where
+  coe := Value.exprs
+
 def Method.name : Method -> MethName
   | .mk _ _ m _ _ => m
 
@@ -178,5 +184,17 @@ def Gamma.lookup (gamma : Gamma) (x : VarName) : Option Ty :=
 
 instance memDecidable {A : Type} [DecidableEq A] (a : A) (l : List A) : Decidable (List.Mem a l) :=
   inferInstanceAs (Decidable (Membership.mem l a))
+
+instance forallMemDecidable {A : Type} (l : List A) (p : A -> Prop) [DecidablePred p] :
+    Decidable (forall x, List.Mem x l -> p x) :=
+  inferInstanceAs (Decidable (forall x, Membership.mem l x -> p x))
+
+instance existsMemDecidable {A : Type} (l : List A) (p : A -> Prop) [DecidablePred p] :
+    Decidable (exists x, List.Mem x l /\ p x) :=
+  inferInstanceAs (Decidable (exists x, Membership.mem l x /\ p x))
+
+def Funnel.isFunnel : Funnel -> Bool
+  | .funnel _ => true
+  | .ground _ => false
 
 end Funnelling.High
