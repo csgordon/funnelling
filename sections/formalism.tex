@@ -594,14 +594,14 @@ Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is a subclass of $C$ has t
 \quad\textrm{where }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\[1ex]
 \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_n\gap x_n}{\_})\\
 \quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\
-\quad\phantom{\textrm{where }}\method{\Delta''}{T''_0}{m}{T''_1\gap x'_1,\ldots,T''_n\gap x'_n}{\_}\in\pl{M}\\
+\quad\phantom{\textrm{where }}\method{\Delta''}{T_0}{m}{T_1\gap x'_1,\ldots,T_n\gap x'_n}{\_}\in\pl{M}\\
 \quad\phantom{\textrm{where }}\tsubst{\mathrm{cod}(\Delta'')}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\
-\quad\phantom{\textrm{where }}\tsubst{T''_0,\ldots,T''_n}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n\\[1ex]
+\quad\phantom{\textrm{where }}\tsubst{T_0,\ldots,T_n}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n\\[1ex]
 \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_n\gap x_n}{\_})\\
 \quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\pl{M}}}\\
-\quad\phantom{\textrm{where }}\method{\Delta''}{T''_0}{m}{T''_1\gap x'_1,\ldots,T''_n\gap x'_n}{\_}\in\pl{M}\\
+\quad\phantom{\textrm{where }}\method{\Delta''}{T_0}{m}{T_1\gap x'_1,\ldots,T_n\gap x'_n}{\_}\in\pl{M}\\
 \quad\phantom{\textrm{where }}\tsubst{\mathrm{cod}(\Delta'')}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\
-\quad\phantom{\textrm{where }}\tsubst{T''_0,\ldots,T''_n}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n
+\quad\phantom{\textrm{where }}\tsubst{T_0,\ldots,T_n}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n
 \end{Define}
 \par}
 
