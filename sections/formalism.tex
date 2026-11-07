@@ -336,9 +336,8 @@ Rule \textsc{ctx} reduces inside an evaluation context.
 Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} also use the relation $\mathsf{fresh}$.
 The names bound in an expression $e$ are the variable of every \Q@if@ occurring in $e$, and the names bound in every method of a local class occurring in $e$.
 The names bound in a method $M$ are the type variables of its signature, its parameters, and the names bound in its body.
-$\mathsf{fresh}(e,e')$ holds when $e'$ is $e$ where every name bound in $e$ is renamed into a fresh name, that is a name occurring nowhere in the program; distinct binders get distinct fresh names.
+$\mathsf{fresh}(e,e')$ holds when $e'$ is $e$ with the names bound in $e$ renamed: $e$ and $e'$ are equal up to the names of their binders.
 $\mathsf{fresh}(M,M')$ holds when $M'$ is $M$ renamed in the same way.
-A rule using $\mathsf{fresh}$ can choose any fresh names.
 The variable \Q@this@ is never renamed.
 Renaming is needed because a value of a local class carries the code of its methods.
 For example, consider a local class \Q@L@ whose method \Q@m@ has a parameter \Q@x@ and calls \Q@m@ on a captured value \Q@y@ of class \Q@L@:
@@ -350,9 +349,8 @@ In a call of \Q@k@ with a value \Q@v@ of class \Q@L@, the body of \Q@m@ becomes 
 Without renaming, rule \textsc{innerFound} would replace \Q@x@ also in the method \Q@m@ of \Q@v@.
 Without $\mathsf{fresh}$, the substitution would attempt to place a binder of a name under a binder of the same name, breaking well-formedness requirement A7.
 Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} place values under the binders of the expression they substitute into.
-Those binders are fresh, so the values do not bind the same names.
+Requirement A7 on the result requires those binders to differ from the names bound in the values.
 A substitution can copy a value, so several copies of a value can bind the same names; those copies are never nested, so they do not shadow each other.
-Thus a substitution never reaches a type variable or a variable bound inside the substituted expression.
 
 %Not totally sure about Ts vs Gs vs Fs in LHS of match
 %\[
@@ -679,7 +677,8 @@ A funnelled type variable that is not in scope where its local class $C$ is writ
 \tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n} & = & T_i\\
 \s{G} & = & G\\[1ex]
 \twolines{\methodsig{\Delta}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_k\gap x_k}}{\OC\gap\ret{e}\gap\CC\gap\s{}} & = &
-  \begin{array}[c]{@{}l@{}}\OA\s{\Delta}\CA\s{T'_0}\gap m\OR\\\quad\s{T'_1}\gap x_1,\ldots,\s{T'_k}\gap x_k\CR\\\OC\gap\ret{\s{e}}\gap\CC\end{array}\\[4ex]
+  \begin{array}[c]{@{}l@{}}\OA\s{\Delta}\CA\s{T'_0}\gap m\OR\\\quad\s{T'_1}\gap x_1,\ldots,\s{T'_k}\gap x_k\CR\\\OC\gap\ret{\s{e}}\gap\CC\end{array}\\
+  && \quad\textrm{if }\mathrm{dom}(\Delta)\cap\pl{X}=\emptyset\\[4ex]
 \s{(\ext{X'}{T'})} & = & \ext{X'}{\s{T'}}\\[1ex]
 \s{\gen{C}{\pl{T}'}} & = & \gen{C}{\s{\pl{T}'}}\\
 \s{X'} & = & X' \quad\textrm{if }X'\not\in\pl{X}\\
@@ -690,7 +689,7 @@ A funnelled type variable that is not in scope where its local class $C$ is writ
 Substitution replaces every occurrence of a type variable, \emph{including} the ones in the method signatures of a method-local class.
 Substitution does not rename the type variables it meets.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
-No renaming is needed: the substituted types are ground, and the domain of the substitution never contains a type variable bound inside the substituted term, by requirement A7.
+Substitution of type variables is defined only when the type variables of the methods it enters are not in its domain.
 In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables:
 $\tsubst{T}{F_1,\ldots,F_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $i\in 1..n$ such that $F_i=\funnel{X_i}$; the ground funnels are ignored.
 Thus $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground type $G$, and the result is again a funnel.
@@ -708,20 +707,22 @@ Thus $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground typ
 \s{e\fstop f} & = & \s{e}\fstop f\\[1ex]
 \s{\obj{C}{\pl{T}}{\pl{e}}} & = & \obj{C}{\pl{T}}{\s{\pl{e}}}\\[1ex]
 \twolines{\kw{if}\gap\OR e_0\gap\kw{instanceof}\gap T\gap x'\CR}{\OC\gap e_1\gap\CC\gap\kw{else}\gap\OC\gap e_2\gap\CC\gap\s{}} & = &
-  \twolines{\kw{if}\gap\OR\s{e_0}\gap\kw{instanceof}\gap T\gap x'\CR}{\OC\gap\s{e_1}\gap\CC\gap\kw{else}\gap\OC\gap\s{e_2}\gap\CC}\\[3ex]
+  \twolines{\kw{if}\gap\OR\s{e_0}\gap\kw{instanceof}\gap T\gap x'\CR}{\OC\gap\s{e_1}\gap\CC\gap\kw{else}\gap\OC\gap\s{e_2}\gap\CC}\\
+  && \quad\textrm{if }x'\not\in\pl{x}\\[3ex]
 \twolines{\kw{new}\gap\gen{C}{\pl{F}}\gap\kw{extends}\gap\gen{C'}{\pl{T}}}{\OR\pl{e}\CR\OC\pl{M}\CC\gap\s{}} & = &
   \twolines{\kw{new}\gap\gen{C}{\pl{F}}\gap\kw{extends}\gap\gen{C'}{\pl{T}}}{\OR\s{\pl{e}}\CR\OC\s{\pl{M}}\CC}\\
   && \quad\textrm{if }\this\not\in\pl{x}\\[1ex]
 \twolines{\kw{new}\gap\gen{C}{\pl{F}}\gap\kw{extends}\gap\gen{C'}{\pl{T}}}{\OR\pl{e}\CR\OC\pl{M}\CC\gap\tsubst{}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'}} & = &
   \twolines{\kw{new}\gap\gen{C}{\pl{F}}\gap\kw{extends}\gap\gen{C'}{\pl{T}}}{\OR\tsubst{\pl{e}}{\pl{x},\this,\pl{x}'}{\pl{v},v,\pl{v}'}\CR\OC\tsubst{\pl{M}}{\pl{x},\pl{x}'}{\pl{v},\pl{v}'}\CC}\\[3ex]
 \twolines{\methodsig{\Delta}{T_0}{m}{T_1\gap x'_1,\ldots,T_k\gap x'_k}}{\OC\gap\ret{e}\gap\CC\gap\s{}} & = &
-  \twolines{\methodsig{\Delta}{T_0}{m}{T_1\gap x'_1,\ldots,T_k\gap x'_k}}{\OC\gap\ret{\s{e}}\gap\CC}
+  \twolines{\methodsig{\Delta}{T_0}{m}{T_1\gap x'_1,\ldots,T_k\gap x'_k}}{\OC\gap\ret{\s{e}}\gap\CC}\\
+  && \quad\textrm{if }x'_1,\ldots,x'_k\not\in\pl{x}
 \end{Define}
 \par}
 
 A method-local class binds \Q@this@, as in Java: inside the methods of a method-local class, \Q@this@ is the local object, and the outer \Q@this@ is hidden.
 Thus substitution of variables enters the methods of a method-local class for every variable except \Q@this@.
-The variable $x'$ of an \Q@if@ and the parameters $x'_1,\ldots,x'_k$ of a method are never in $\pl{x}$, by requirement A7; so no renaming is needed.
+Substitution of variables is defined only when the variable $x'$ of an \Q@if@ and the parameters $x'_1,\ldots,x'_k$ of a method are not in $\pl{x}$.
 
 \ldots
 

@@ -22,4 +22,8 @@ theorem typeSoundness {d e0 e T} (hwf : WFDecls d) (hok : DeclsOk d) (he0 : WFEx
   | refl => exact And.intro ht (progress hwf hok he0 ht)
   | step h1 _ ih => exact ih h1.2 (preservation hwf hok he0 ht h1)
 
+theorem determinism {d e e1 e2} (hwf : WFDecls d) (he : WFExpr e) (h1 : Reduces d e e1)
+    (h2 : Reduces d e e2) : Fresh e1 e2 := by
+  sorry
+
 end Funnelling.Proof

@@ -11,9 +11,10 @@ proofs easier (other binder representations, algorithmic typing, other judgement
 low levels can be tried.
 The whole point is to keep the freedom of changing the low level without having to impact the
 high level.
-The only fixed statement is `Funnelling.High.typeSoundness` in `Funnelling.Soundness`, the Type
-Soundness theorem of the paper; it must be proved with no `sorry` and no new axiom.
-Everything else is a component of its proof and can change: the low level, the translation in
+The fixed statements are `Funnelling.High.typeSoundness` and `Funnelling.High.determinism` in
+`Funnelling.Soundness`, the two theorems of the paper; they must be proved with no `sorry` and no new
+axiom.
+Everything else is a component of their proofs and can change: the low level, the translation in
 `Funnelling.Translation`, the lemmas of this file and their statements, and `Funnelling.Proof`.
 
 `Funnelling.Proof` currently splits Type Soundness into progress and preservation on the high

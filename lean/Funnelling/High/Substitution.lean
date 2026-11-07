@@ -180,18 +180,14 @@ def Method.tbindersList : List Method -> List TVarName
   | M :: Ms => M.tbinders ++ Method.tbindersList Ms
 end
 
-structure Names where
-  xs : List VarName
-  Xs : List TVarName
+def Fresh (e e' : Expr) : Prop := RenE [] [] e e'
 
-def Fresh (avoid : Names) (e e' : Expr) : Prop :=
-  RenE [] [] e e' /\ e'.vbinders.Nodup /\ e'.tbinders.Nodup /\
-    (forall x, List.Mem x e'.vbinders -> Not (List.Mem x avoid.xs)) /\
-    (forall X, List.Mem X e'.tbinders -> Not (List.Mem X avoid.Xs))
+def FreshM (M M' : Method) : Prop := RenM [] [] M M'
 
-def FreshM (avoid : Names) (M M' : Method) : Prop :=
-  RenM [] [] M M' /\ M'.vbinders.Nodup /\ M'.tbinders.Nodup /\
-    (forall x, List.Mem x M'.vbinders -> Not (List.Mem x avoid.xs)) /\
-    (forall X, List.Mem X M'.tbinders -> Not (List.Mem X avoid.Xs))
+abbrev VSubstDefined (xs : List VarName) (e : Expr) : Prop :=
+  forall x, List.Mem x e.vbinders -> Not (List.Mem x xs)
+
+abbrev GSubstDefined (Xs : List TVarName) (e : Expr) : Prop :=
+  forall X, List.Mem X e.tbinders -> Not (List.Mem X Xs)
 
 end Funnelling.High
