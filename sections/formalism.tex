@@ -589,19 +589,19 @@ Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is a subclass of $C$ has t
 %  Bs;G |- <Bs'> T0 m(T1 x1..Tn xn){return e;} : Ok
     \end{mathpar}
 \begin{Define}{\mathsf{overrideOk}(\Delta,T,\pl{M})\qquad\mathsf{overrideOk}(T,M)}
-\mathsf{overrideOk}(\Delta,T,\pl{M})\textrm{ iff }\mathsf{overrideOk}(\gen{C}{\pl{T}},\pl{M})\textrm{ for every }\gen{C}{\pl{T}}\textrm{ such that }\subtype{\Delta}{T}{\gen{C}{\pl{T}}}\\[1ex]
+\mathsf{overrideOk}(\Delta,T,\pl{M})\textrm{ iff }\mathsf{overrideOk}(\gen{C}{\pl{T}},M)\textrm{ for every }M\in\pl{M}\textrm{ and every }\gen{C}{\pl{T}}\textrm{ such that }\subtype{\Delta}{T}{\gen{C}{\pl{T}}}\\[1ex]
 \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\_}{\_}{m}{\_}{\_})\textrm{ iff }m\not\in\pl{M}\\
 \quad\textrm{where }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\[1ex]
 \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_n\gap x_n}{\_})\\
-\quad\textrm{iff }\tsubst{\mathrm{cod}(\Delta'')}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\
-\quad\phantom{\textrm{iff }}\tsubst{T''_0,\ldots,T''_n}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n\\
 \quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\
-\quad\phantom{\textrm{where }}\method{\Delta''}{T''_0}{m}{T''_1\gap x'_1,\ldots,T''_n\gap x'_n}{\_}\in\pl{M}\\[1ex]
+\quad\phantom{\textrm{where }}\method{\Delta''}{T''_0}{m}{T''_1\gap x'_1,\ldots,T''_n\gap x'_n}{\_}\in\pl{M}\\
+\quad\phantom{\textrm{where }}\tsubst{\mathrm{cod}(\Delta'')}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\
+\quad\phantom{\textrm{where }}\tsubst{T''_0,\ldots,T''_n}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n\\[1ex]
 \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_n\gap x_n}{\_})\\
-\quad\textrm{iff }\tsubst{\mathrm{cod}(\Delta'')}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\
-\quad\phantom{\textrm{iff }}\tsubst{T''_0,\ldots,T''_n}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n\\
 \quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\pl{M}}}\\
-\quad\phantom{\textrm{where }}\method{\Delta''}{T''_0}{m}{T''_1\gap x'_1,\ldots,T''_n\gap x'_n}{\_}\in\pl{M}
+\quad\phantom{\textrm{where }}\method{\Delta''}{T''_0}{m}{T''_1\gap x'_1,\ldots,T''_n\gap x'_n}{\_}\in\pl{M}\\
+\quad\phantom{\textrm{where }}\tsubst{\mathrm{cod}(\Delta'')}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\
+\quad\phantom{\textrm{where }}\tsubst{T''_0,\ldots,T''_n}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n
 \end{Define}
 \par}
 
