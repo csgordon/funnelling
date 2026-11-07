@@ -2,124 +2,120 @@ import Funnelling.High.Declarations
 
 namespace Funnelling.High
 
-def nodup (xs : List Name) : Bool := decide xs.Nodup
+mutual
+def Expr.locals : Expr -> List K
+  | .var _ => []
+  | .call e _ _ es => e.locals ++ Expr.localsList es
+  | .superCall e _ _ _ es => e.locals ++ Expr.localsList es
+  | .field e _ => e.locals
+  | .new _ _ es => Expr.localsList es
+  | .newLocal C Fs C' Ts es Ms => K.loc C Fs C' Ts es Ms :: (Expr.localsList es ++ Method.localsList Ms)
+  | .ifInst e0 _ _ e1 e2 => e0.locals ++ e1.locals ++ e2.locals
+def Expr.localsList : List Expr -> List K
+  | [] => []
+  | e :: es => e.locals ++ Expr.localsList es
+def Method.locals : Method -> List K
+  | .mk _ _ _ _ e => e.locals
+def Method.localsList : List Method -> List K
+  | [] => []
+  | M :: Ms => M.locals ++ Method.localsList Ms
+end
+
+def classes (d : Decls) : List K := d.flatMap fun D => K.dec D :: Method.localsList D.Ms
+
+def Decls.methods (d : Decls) : List Method := (classes d).flatMap K.Ms
+
+def Expr.methods (e : Expr) : List Method := e.locals.flatMap K.Ms
 
 mutual
-def Expr.ifVars : Expr -> List Name
+def Expr.ifVars : Expr -> List VarName
   | .var _ => []
   | .call e _ _ es => e.ifVars ++ Expr.ifVarsList es
   | .superCall e _ _ _ es => e.ifVars ++ Expr.ifVarsList es
   | .field e _ => e.ifVars
   | .new _ _ es => Expr.ifVarsList es
-  | .newLocal _ _ _ _ es ms => Expr.ifVarsList es ++ Method.ifVarsList ms
+  | .newLocal _ _ _ _ es Ms => Expr.ifVarsList es ++ Method.ifVarsList Ms
   | .ifInst e0 _ x e1 e2 => x :: e0.ifVars ++ e1.ifVars ++ e2.ifVars
-def Expr.ifVarsList : List Expr -> List Name
+def Expr.ifVarsList : List Expr -> List VarName
   | [] => []
   | e :: es => e.ifVars ++ Expr.ifVarsList es
-def Method.ifVars : Method -> List Name
+def Method.ifVars : Method -> List VarName
   | .mk _ _ _ _ e => e.ifVars
-def Method.ifVarsList : List Method -> List Name
+def Method.ifVarsList : List Method -> List VarName
   | [] => []
-  | m :: ms => m.ifVars ++ Method.ifVarsList ms
+  | M :: Ms => M.ifVars ++ Method.ifVarsList Ms
 end
 
 mutual
-def Expr.noShadow (tvs vs : List Name) : Expr -> Bool
+def Expr.noShadow (Xs : List TVarName) (xs : List VarName) : Expr -> Bool
   | .var _ => true
-  | .call e _ _ es => e.noShadow tvs vs && Expr.noShadowList tvs vs es
-  | .superCall e _ _ _ es => e.noShadow tvs vs && Expr.noShadowList tvs vs es
-  | .field e _ => e.noShadow tvs vs
-  | .new _ _ es => Expr.noShadowList tvs vs es
-  | .newLocal _ _ _ _ es ms =>
-    Expr.noShadowList tvs vs es && Method.noShadowList tvs (vs.filter fun x => x != thisName) ms
+  | .call e _ _ es => e.noShadow Xs xs && Expr.noShadowList Xs xs es
+  | .superCall e _ _ _ es => e.noShadow Xs xs && Expr.noShadowList Xs xs es
+  | .field e _ => e.noShadow Xs xs
+  | .new _ _ es => Expr.noShadowList Xs xs es
+  | .newLocal _ _ _ _ es Ms =>
+    Expr.noShadowList Xs xs es && Method.noShadowList Xs (xs.filter fun x => x != this) Ms
   | .ifInst e0 _ x e1 e2 =>
-    e0.noShadow tvs vs && !(vs.contains x) && e1.noShadow tvs (x :: vs) && e2.noShadow tvs vs
-def Expr.noShadowList (tvs vs : List Name) : List Expr -> Bool
+    e0.noShadow Xs xs && !(xs.contains x) && e1.noShadow Xs (x :: xs) && e2.noShadow Xs xs
+def Expr.noShadowList (Xs : List TVarName) (xs : List VarName) : List Expr -> Bool
   | [] => true
-  | e :: es => e.noShadow tvs vs && Expr.noShadowList tvs vs es
-def Method.noShadow (tvs vs : List Name) : Method -> Bool
-  | .mk delta _ _ ps e =>
-    (dom delta).all (fun x => !(tvs.contains x)) &&
-    (ps.map Prod.snd).all (fun x => !(vs.contains x)) &&
-    e.noShadow (tvs ++ dom delta) (thisName :: vs ++ ps.map Prod.snd)
-def Method.noShadowList (tvs vs : List Name) : List Method -> Bool
+  | e :: es => e.noShadow Xs xs && Expr.noShadowList Xs xs es
+def Method.noShadow (Xs : List TVarName) (xs : List VarName) : Method -> Bool
+  | .mk Delta _ _ ps e =>
+    (dom Delta).all (fun X => !(Xs.contains X)) &&
+    (ps.map VarDecl.x).all (fun x => !(xs.contains x)) &&
+    e.noShadow (Xs ++ dom Delta) (this :: xs ++ ps.map VarDecl.x)
+def Method.noShadowList (Xs : List TVarName) (xs : List VarName) : List Method -> Bool
   | [] => true
-  | m :: ms => m.noShadow tvs vs && Method.noShadowList tvs vs ms
+  | M :: Ms => M.noShadow Xs xs && Method.noShadowList Xs xs Ms
 end
 
-def Method.params : Method -> List Name
-  | .mk _ _ _ ps _ => ps.map Prod.snd
+def findDec (d : Decls) (C : ClassName) : Option Dec := d.find? fun D => D.C == C
 
-def K.funnels : K -> List Funnel
-  | .top _ => []
-  | .loc _ fs _ _ _ _ => fs
-
-def K.sup : K -> Name
-  | .top dec => dec.sup
-  | .loc _ _ c _ _ _ => c
-
-def Decls.methods (d : Decls) : List Method :=
-  (declaredKs d).flatMap K.methods
-
-def Expr.methods (e : Expr) : List Method := e.locals.flatMap K.methods
-
-def superChain (d : Decls) : Nat -> Name -> List Dec
+def superChain (d : Decls) : Nat -> ClassName -> List Dec
   | 0, _ => []
-  | fuel + 1, c =>
-    match findDec d c with
+  | n + 1, C =>
+    match findDec d C with
     | none => []
-    | some dec => if c == objectName then [dec] else dec :: superChain d fuel dec.sup
+    | some D => if C == Object then [D] else D :: superChain d n D.C'
 
-def reachesObject (d : Decls) (c : Name) : Bool :=
-  (superChain d (d.length + 1) c).any fun dec => dec.name == objectName
+abbrev A1 (d : Decls) : Prop := ((classes d).map K.name).Nodup
 
-def objectDec : Dec := { name := objectName, bounds := [], sup := objectName, supArgs := [], methods := [], fields := [] }
+abbrev A2 (d : Decls) : Prop :=
+  d.all (fun D => decide (((superChain d (d.length + 1) D.C).flatMap fun D' => D'.Ss.map Slot.f).Nodup)) = true
 
-def a1 (d : Decls) : Bool := nodup ((declaredKs d).map K.name)
+abbrev A3 (ks : List K) : Prop := ks.all (fun k => decide ((k.Ms.map Method.name).Nodup)) = true
 
-def a2 (d : Decls) : Bool :=
-  d.all fun dec => nodup ((superChain d (d.length + 1) dec.name).flatMap fun c => c.fields.map Prod.snd)
+abbrev A4 (Ms : List Method) : Prop := Ms.all (fun M => decide ((M.params.map VarDecl.x).Nodup)) = true
 
-def a3 (ks : List K) : Bool := ks.all fun k => nodup (k.methods.map Method.name)
+abbrev A5 (Deltas : List Bounds) : Prop := Deltas.all (fun Delta => decide ((dom Delta).Nodup)) = true
 
-def a4 (ms : List Method) : Bool := ms.all fun m => nodup m.params
+abbrev A6 (ks : List K) : Prop := ks.all (fun k => decide ((domF k.Fs).Nodup)) = true
 
-def a5 (d : Decls) (ms : List Method) : Bool :=
-  d.all (fun dec => nodup (dom dec.bounds)) && ms.all fun m => nodup (dom m.bounds)
+abbrev A7Decls (d : Decls) : Prop := d.all (fun D => Method.noShadowList (dom D.bounds) [] D.Ms) = true
 
-def a6 (ks : List K) : Bool := ks.all fun k => nodup (domF k.funnels)
+abbrev A8 (Ms : List Method) (ifVars : List VarName) : Prop :=
+  Ms.all (fun M => !((M.params.map VarDecl.x).contains this)) = true /\ ifVars.contains this = false
 
-def a7Decls (d : Decls) : Bool := d.all fun dec => Method.noShadowList (dom dec.bounds) [] dec.methods
+abbrev A9 (d : Decls) : Prop :=
+  d.any (fun D => D.C == Object && D.bounds.isEmpty && D.C' == Object && D.Ts.isEmpty &&
+    D.Ms.isEmpty && D.Ss.isEmpty) = true /\
+  d.all (fun D => (superChain d (d.length + 1) D.C).any fun D' => D'.C == Object) = true
 
-def a8 (ms : List Method) (ifVars : List Name) : Bool :=
-  ms.all (fun m => !(m.params.contains thisName)) && !(ifVars.contains thisName)
+abbrev A10 (d : Decls) : Prop := (classes d).all (fun k => (findDec d k.sup).isSome) = true
 
-def a9 (d : Decls) : Bool :=
-  (d.any fun dec => dec.name == objectName && dec.bounds.isEmpty && dec.sup == objectName &&
-    dec.supArgs.isEmpty && dec.methods.isEmpty && dec.fields.isEmpty) &&
-  d.all fun dec => reachesObject d dec.name
-
-def a10 (d : Decls) : Bool := (declaredKs d).all fun k => (findDec d k.sup).isSome
-
-def a11 (d : Decls) : Bool :=
-  (declaredKs d).all fun k => k.funnels.all fun
+abbrev A11 (d : Decls) : Prop :=
+  (classes d).all (fun k => k.Fs.all fun
     | .funnel _ => true
-    | .ground _ => false
+    | .ground _ => false) = true
 
-def groundFunnels (ks : List K) : Bool :=
-  ks.all fun k => k.funnels.all fun
-    | .funnel _ => true
-    | .ground g => g.isGround
+abbrev WFDecls (d : Decls) : Prop :=
+  A1 d /\ A2 d /\ A3 (classes d) /\ A4 d.methods /\
+  A5 (d.map Dec.bounds ++ d.methods.map Method.bounds) /\ A6 (classes d) /\ A7Decls d /\
+  A8 d.methods (d.flatMap fun D => Method.ifVarsList D.Ms) /\ A9 d /\ A10 d /\ A11 d
 
-def wfDecls (d : Decls) : Bool :=
-  a1 d && a2 d && a3 (declaredKs d) && a4 d.methods && a5 d d.methods && a6 (declaredKs d) &&
-  a7Decls d && a8 d.methods (d.flatMap fun dec => Method.ifVarsList dec.methods) &&
-  a9 d && a10 d && a11 d && groundFunnels (declaredKs d)
-
-def wfExpr (e : Expr) : Bool :=
-  a3 e.locals && a4 e.methods && a5 [] e.methods && a6 e.locals && e.noShadow [] [] &&
-  a8 e.methods e.ifVars && groundFunnels e.locals
-
-def WFProgram (d : Decls) (e : Expr) : Prop := wfDecls d = true /\ wfExpr e = true
+abbrev WFExpr (e : Expr) : Prop :=
+  A3 e.locals /\ A4 e.methods /\ A5 (e.methods.map Method.bounds) /\ A6 e.locals /\
+  e.noShadow [] [] = true /\ A8 e.methods e.ifVars
 
 end Funnelling.High

@@ -13,5 +13,6 @@ import Funnelling.Low.Reduction
 import Funnelling.Low.Soundness
 import Funnelling.Translation
 import Funnelling.Adequacy
+import Funnelling.Proof
 import Funnelling.Soundness
 import Funnelling.Examples

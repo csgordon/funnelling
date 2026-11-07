@@ -1,114 +1,144 @@
-import Funnelling.High.Declarations
 import Funnelling.High.Typing
+import Funnelling.High.WellFormed
 
 namespace Funnelling.High
 
 inductive ECtx where
   | hole
-  | callRecv (ctx : ECtx) (gs : List Ty) (m : Name) (es : List Expr)
-  | callArg (v : Expr) (gs : List Ty) (m : Name) (vs : List Expr) (ctx : ECtx) (es : List Expr)
-  | superRecv (ctx : ECtx) (g : Ty) (gs : List Ty) (m : Name) (es : List Expr)
-  | superArg (v : Expr) (g : Ty) (gs : List Ty) (m : Name) (vs : List Expr) (ctx : ECtx) (es : List Expr)
-  | field (ctx : ECtx) (f : Name)
-  | newArg (c : Name) (gs : List Ty) (vs : List Expr) (ctx : ECtx) (es : List Expr)
-  | localArg (c : Name) (fs : List Funnel) (c' : Name) (gs : List Ty) (vs : List Expr) (ctx : ECtx)
-      (es : List Expr) (ms : List Method)
-  | ifCond (ctx : ECtx) (g : Ty) (x : Name) (e1 e2 : Expr)
+  | callRecv (E : ECtx) (Gs : List GTy) (m : MethName) (es : List Expr)
+  | callArg (v : Value) (Gs : List GTy) (m : MethName) (vs : List Value) (E : ECtx) (es : List Expr)
+  | superRecv (E : ECtx) (G : GTy) (Gs : List GTy) (m : MethName) (es : List Expr)
+  | superArg (v : Value) (G : GTy) (Gs : List GTy) (m : MethName) (vs : List Value) (E : ECtx)
+      (es : List Expr)
+  | field (E : ECtx) (f : FieldName)
+  | newArg (C : ClassName) (Gs : List GTy) (vs : List Value) (E : ECtx) (es : List Expr)
+  | localArg (C : ClassName) (Gs : List GTy) (C' : ClassName) (Gs' : List GTy) (vs : List Value)
+      (E : ECtx) (es : List Expr) (Ms : List Method)
+  | ifCond (E : ECtx) (G : GTy) (x : VarName) (e1 e2 : Expr)
 
 def ECtx.plug : ECtx -> Expr -> Expr
   | .hole, e => e
-  | .callRecv E gs m es, e => .call (E.plug e) gs m es
-  | .callArg v gs m vs E es, e => .call v gs m (vs ++ E.plug e :: es)
-  | .superRecv E g gs m es, e => .superCall (E.plug e) g gs m es
-  | .superArg v g gs m vs E es, e => .superCall v g gs m (vs ++ E.plug e :: es)
+  | .callRecv E Gs m es, e => .call (E.plug e) (GTy.tys Gs) m es
+  | .callArg v Gs m vs E es, e => .call v (GTy.tys Gs) m (Value.exprs vs ++ E.plug e :: es)
+  | .superRecv E G Gs m es, e => .superCall (E.plug e) G (GTy.tys Gs) m es
+  | .superArg v G Gs m vs E es, e => .superCall v G (GTy.tys Gs) m (Value.exprs vs ++ E.plug e :: es)
   | .field E f, e => .field (E.plug e) f
-  | .newArg c gs vs E es, e => .new c gs (vs ++ E.plug e :: es)
-  | .localArg c fs c' gs vs E es ms, e => .newLocal c fs c' gs (vs ++ E.plug e :: es) ms
-  | .ifCond E g x e1 e2, e => .ifInst (E.plug e) g x e1 e2
+  | .newArg C Gs vs E es, e => .new C (GTy.tys Gs) (Value.exprs vs ++ E.plug e :: es)
+  | .localArg C Gs C' Gs' vs E es Ms, e =>
+    .newLocal C (Gs.map Funnel.ground) C' (GTy.tys Gs') (Value.exprs vs ++ E.plug e :: es) Ms
+  | .ifCond E G x e1 e2, e => .ifInst (E.plug e) G x e1 e2
 
-def ECtx.ok : ECtx -> Bool
-  | .hole => true
-  | .callRecv E gs _ _ => E.ok && Ty.allGround gs
-  | .callArg v gs _ vs E _ => v.isValue && Ty.allGround gs && Expr.allValues vs && E.ok
-  | .superRecv E g gs _ _ => E.ok && g.isGround && Ty.allGround gs
-  | .superArg v g gs _ vs E _ => v.isValue && g.isGround && Ty.allGround gs && Expr.allValues vs && E.ok
-  | .field E _ => E.ok
-  | .newArg _ gs vs E _ => Ty.allGround gs && Expr.allValues vs && E.ok
-  | .localArg _ fs _ gs vs E _ _ =>
-    fs.all Funnel.isGround && Ty.allGround gs && Expr.allValues vs && E.ok
-  | .ifCond E g _ _ _ => E.ok && g.isGround
+mutual
+def Expr.vnames : Expr -> List VarName
+  | .var x => [x]
+  | .call e _ _ es => e.vnames ++ Expr.vnamesList es
+  | .superCall e _ _ _ es => e.vnames ++ Expr.vnamesList es
+  | .field e _ => e.vnames
+  | .new _ _ es => Expr.vnamesList es
+  | .newLocal _ _ _ _ es Ms => Expr.vnamesList es ++ Method.vnamesList Ms
+  | .ifInst e0 _ x e1 e2 => x :: e0.vnames ++ e1.vnames ++ e2.vnames
+def Expr.vnamesList : List Expr -> List VarName
+  | [] => []
+  | e :: es => e.vnames ++ Expr.vnamesList es
+def Method.vnames : Method -> List VarName
+  | .mk _ _ _ ps e => ps.map VarDecl.x ++ e.vnames
+def Method.vnamesList : List Method -> List VarName
+  | [] => []
+  | M :: Ms => M.vnames ++ Method.vnamesList Ms
+end
 
-def avoidNames (d : Decls) (e : Expr) : List Name := d.names ++ e.names
+def Bounds.tnames (Delta : Bounds) : List TVarName := Delta.flatMap fun b => b.X :: b.T.ftv
 
-def fieldNames (dec : Dec) : List Name := dec.fields.map Prod.snd
+mutual
+def Expr.tnames : Expr -> List TVarName
+  | .var _ => []
+  | .call e Ts _ es => e.tnames ++ Ty.ftvList Ts ++ Expr.tnamesList es
+  | .superCall e T Ts _ es => e.tnames ++ T.ftv ++ Ty.ftvList Ts ++ Expr.tnamesList es
+  | .field e _ => e.tnames
+  | .new _ Ts es => Ty.ftvList Ts ++ Expr.tnamesList es
+  | .newLocal _ Fs _ Ts es Ms => domF Fs ++ Ty.ftvList Ts ++ Expr.tnamesList es ++ Method.tnamesList Ms
+  | .ifInst e0 T _ e1 e2 => e0.tnames ++ T.ftv ++ e1.tnames ++ e2.tnames
+def Expr.tnamesList : List Expr -> List TVarName
+  | [] => []
+  | e :: es => e.tnames ++ Expr.tnamesList es
+def Method.tnames : Method -> List TVarName
+  | .mk Delta T0 _ ps e => Bounds.tnames Delta ++ T0.ftv ++ Ty.ftvList (ps.map VarDecl.T) ++ e.tnames
+def Method.tnamesList : List Method -> List TVarName
+  | [] => []
+  | M :: Ms => M.tnames ++ Method.tnamesList Ms
+end
 
-inductive Step (d : Decls) : Expr -> Expr -> Prop
-  | simpleFieldFound {c gs vs1 vs f v} {dec : Dec} :
-      List.Mem dec d -> dec.name = c ->
-      vs1.length = dec.fields.length ->
-      (Expr.new c gs (vs1 ++ vs)).isValue = true ->
-      ((fieldNames dec).zip vs1).lookup f = some v ->
-      Step d (.field (.new c gs (vs1 ++ vs)) f) v
-  | simpleFieldSuper {c gs vs1 vs f sigma} {dec : Dec} :
-      List.Mem dec d -> dec.name = c ->
-      vs1.length = dec.fields.length ->
-      (Expr.new c gs (vs1 ++ vs)).isValue = true ->
-      (fieldNames dec).contains f = false ->
-      Not (c = objectName) ->
-      mkSubst (dom dec.bounds) gs = some sigma ->
-      Step d (.field (.new c gs (vs1 ++ vs)) f) (.field (.new dec.sup (Ty.substList sigma dec.supArgs) vs) f)
-  | innerFieldSuper {c fs c' gs vs ms f} :
-      (Expr.newLocal c fs c' gs vs ms).isValue = true ->
-      Step d (.field (.newLocal c fs c' gs vs ms) f) (.field (.new c' gs vs) f)
-  | ifThen {v c' ts ts' tv x e1 e1' e2} :
-      v.isValue = true -> typeOf v = some tv ->
-      Sub d [] tv (.cls c' ts') ->
-      Fresh (avoidNames d (.ifInst v (.cls c' ts) x e1 e2)) e1 e1' ->
-      Step d (.ifInst v (.cls c' ts) x e1 e2) (e1'.vsubst [(x, v)])
-  | ifElse {v c' ts tv x e1 e2} :
-      v.isValue = true -> typeOf v = some tv ->
-      (forall ts', Not (Sub d [] tv (.cls c' ts'))) ->
-      Step d (.ifInst v (.cls c' ts) x e1 e2) e2
-  | simpleAddSuper {c gs vs0 gs' m vs} :
-      (Expr.new c gs vs0).isValue = true -> Ty.allGround gs' = true -> Expr.allValues vs = true ->
-      Step d (.call (.new c gs vs0) gs' m vs) (.superCall (.new c gs vs0) (.cls c gs) gs' m vs)
-  | simpleFound {v0 c gs gs' m vs mt delta' t0 ps e0 sigma} {dec : Dec} :
-      List.Mem dec d -> dec.name = c ->
-      v0.isValue = true -> Ty.allGround gs = true -> Ty.allGround gs' = true -> Expr.allValues vs = true ->
-      List.Mem mt dec.methods ->
-      FreshM (avoidNames d (.superCall v0 (.cls c gs) gs' m vs)) mt (.mk delta' t0 m ps e0) ->
-      mkSubst (dom dec.bounds ++ dom delta') (gs ++ gs') = some sigma ->
+def programNames (d : Decls) (p : Expr) : Names :=
+  { xs := d.flatMap (fun D => Method.vnamesList D.Ms) ++ p.vnames,
+    Xs := d.flatMap (fun D => Bounds.tnames D.bounds ++ Ty.ftvList D.Ts ++
+      Ty.ftvList (D.Ss.map Slot.T) ++ Method.tnamesList D.Ms) ++ p.tnames }
+
+inductive Step (d : Decls) (p : Expr) : Expr -> Expr -> Prop
+  | simpleFieldFound {D Gs f} {vs1 vs : List Value} {v : Value} :
+      Declared d (.dec D) ->
+      vs1.length = D.Ss.length ->
+      List.Mem (f, v) ((D.Ss.map Slot.f).zip vs1) ->
+      Step d p (.field (Value.new D.C Gs (vs1 ++ vs)) f) v
+  | simpleFieldSuper {D Gs f} {vs1 vs : List Value} :
+      Declared d (.dec D) ->
+      vs1.length = D.Ss.length ->
+      Not (List.Mem f (D.Ss.map Slot.f)) ->
+      Not (D.C = Object) ->
+      Gs.length = D.bounds.length ->
+      Step d p (.field (Value.new D.C Gs (vs1 ++ vs)) f)
+        (.field (.new D.C' (Ty.substList ((dom D.bounds).zip (GTy.tys Gs)) D.Ts) (Value.exprs vs)) f)
+  | innerFieldSuper {C Gs C' Gs' vs Ms f} :
+      Step d p (.field (Value.newLocal C Gs C' Gs' vs Ms) f) (.field (Value.new C' Gs' vs) f)
+  | ifThen {v C' Ts Ts' x e1 e1' e2} :
+      Sub d [] (typeOf v) (.cls C' Ts') ->
+      Fresh (programNames d p) e1 e1' ->
+      Step d p (.ifInst v (.cls C' Ts) x e1 e2) (e1'.vsubst [(x, v)])
+  | ifElse {v C' Ts x e1 e2} :
+      Not (exists Ts', Sub d [] (typeOf v) (.cls C' Ts')) ->
+      Step d p (.ifInst v (.cls C' Ts) x e1 e2) e2
+  | simpleAddSuper {v C Gs vs0 Gs' m vs} :
+      v = Value.new C Gs vs0 ->
+      Step d p (.call v (GTy.tys Gs') m (Value.exprs vs))
+        (.superCall v (.cls C (GTy.tys Gs)) (GTy.tys Gs') m (Value.exprs vs))
+  | simpleFound {D M v0 Gs Gs' m vs Delta' T0 ps e0 e} :
+      Declared d (.dec D) ->
+      List.Mem M D.Ms ->
+      FreshM (programNames d p) M (.mk Delta' T0 m ps e0) ->
+      (Gs ++ Gs').length = (D.bounds ++ Delta').length ->
       ps.length = vs.length ->
-      Step d (.superCall v0 (.cls c gs) gs' m vs)
-        ((e0.tsubst sigma).vsubst ((thisName, v0) :: (ps.map Prod.snd).zip vs))
-  | innerFound {c fs c' gs vs0 ms gs' m vs mt delta' t0 ps e0 sigma} :
-      (Expr.newLocal c fs c' gs vs0 ms).isValue = true -> Ty.allGround gs' = true ->
-      Expr.allValues vs = true ->
-      List.Mem mt ms ->
-      FreshM (avoidNames d (.call (.newLocal c fs c' gs vs0 ms) gs' m vs)) mt (.mk delta' t0 m ps e0) ->
-      mkSubst (dom delta') gs' = some sigma ->
+      e = (e0.gsubst ((dom D.bounds ++ dom Delta').zip (Gs ++ Gs'))).vsubst
+        ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
+      Step d p (.superCall v0 (.cls D.C (GTy.tys Gs)) (GTy.tys Gs') m (Value.exprs vs)) e
+  | innerFound {v0 C Gs C' Gs'' vs0 Ms M Gs' m vs Delta' T0 ps e0 e} :
+      v0 = Value.newLocal C Gs C' Gs'' vs0 Ms ->
+      List.Mem M Ms ->
+      FreshM (programNames d p) M (.mk Delta' T0 m ps e0) ->
+      Gs'.length = Delta'.length ->
       ps.length = vs.length ->
-      Step d (.call (.newLocal c fs c' gs vs0 ms) gs' m vs)
-        ((e0.tsubst sigma).vsubst ((thisName, .newLocal c fs c' gs vs0 ms) :: (ps.map Prod.snd).zip vs))
-  | innerSuper {c fs c' gs vs0 ms gs' m vs} :
-      (Expr.newLocal c fs c' gs vs0 ms).isValue = true -> Ty.allGround gs' = true ->
-      Expr.allValues vs = true ->
-      (ms.map Method.name).contains m = false ->
-      Step d (.call (.newLocal c fs c' gs vs0 ms) gs' m vs)
-        (.superCall (.newLocal c fs c' gs vs0 ms) (.cls c' gs) gs' m vs)
-  | searchSuper {v c gs gs' m vs sigma} {dec : Dec} :
-      List.Mem dec d -> dec.name = c ->
-      v.isValue = true -> Ty.allGround gs = true -> Ty.allGround gs' = true -> Expr.allValues vs = true ->
-      (dec.methods.map Method.name).contains m = false ->
-      Not (c = objectName) ->
-      mkSubst (dom dec.bounds) gs = some sigma ->
-      Step d (.superCall v (.cls c gs) gs' m vs)
-        (.superCall v (.cls dec.sup (Ty.substList sigma dec.supArgs)) gs' m vs)
+      e = (e0.gsubst ((dom Delta').zip Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
+      Step d p (.call v0 (GTy.tys Gs') m (Value.exprs vs)) e
+  | innerSuper {v0 C Gs0 C' Gs vs0 Ms Gs' m vs} :
+      v0 = Value.newLocal C Gs0 C' Gs vs0 Ms ->
+      Not (List.Mem m (Ms.map Method.name)) ->
+      Step d p (.call v0 (GTy.tys Gs') m (Value.exprs vs))
+        (.superCall v0 (.cls C' (GTy.tys Gs)) (GTy.tys Gs') m (Value.exprs vs))
+  | searchSuper {D v Gs Gs' m vs} :
+      Declared d (.dec D) ->
+      Not (List.Mem m (D.Ms.map Method.name)) ->
+      Not (D.C = Object) ->
+      Gs.length = D.bounds.length ->
+      Step d p (.superCall v (.cls D.C (GTy.tys Gs)) (GTy.tys Gs') m (Value.exprs vs))
+        (.superCall v (.cls D.C' (Ty.substList ((dom D.bounds).zip (GTy.tys Gs)) D.Ts)) (GTy.tys Gs') m
+          (Value.exprs vs))
   | ctx {E : ECtx} {e e'} :
-      E.ok = true -> Step d e e' -> Step d (E.plug e) (E.plug e')
+      Step d p e e' -> Step d p (E.plug e) (E.plug e')
+
+def Reduces (d : Decls) (e e' : Expr) : Prop := Step d e e e' /\ WFExpr e'
 
 inductive Steps (d : Decls) : Expr -> Expr -> Prop
   | refl {e} : Steps d e e
-  | step {e e' e''} : Step d e e' -> Steps d e' e'' -> Steps d e e''
+  | step {e e' e''} : Reduces d e e' -> Steps d e' e'' -> Steps d e e''
+
+def IsValue (e : Expr) : Prop := exists v : Value, e = v
 
 end Funnelling.High
