@@ -4,3 +4,8 @@ defaultTargets = ["Funnelling"]
 
 [[lean_lib]]
 name = "Funnelling"
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.35.0"
