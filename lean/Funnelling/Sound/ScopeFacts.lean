@@ -15,6 +15,7 @@ structure SF (d : Decls) (k : K) (Delta0 : Bounds) : Prop where
   meths : forall M, List.Mem M k.Ms -> exists gamma, MethodOk d Delta0 gamma M
   ns : forall M, List.Mem M k.Ms -> exists Xs xs, Sub1 (dom Delta0) Xs /\ Method.noShadow Xs xs M = true
   sup : forall C Fs C' Ts es Ms, k = .loc C Fs C' Ts es Ms -> forall X, List.Mem X (Ty.ftvList Ts) -> List.Mem X (domF Fs)
+  supK : forall C Fs C' Ts es Ms, k = .loc C Fs C' Ts es Ms -> Kind d Delta0 (.cls C' Ts)
 
 theorem noShadowListM_all {Xs : List TVarName} {xs : List VarName} {M : Method} : forall {Ms : List Method},
     Method.noShadowList Xs xs Ms = true -> List.Mem M Ms -> Method.noShadow Xs xs M = true
@@ -35,7 +36,7 @@ theorem methodOk_inv {d : Decls} {Delta : Bounds} {gamma : Gamma} {Delta' : Boun
 theorem sf_dec {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec} (hD : Declared d (.dec D)) :
     SF d (.dec D) D.bounds := by
   have hc := hok D hD.dec_mem
-  refine { closedB := ?_, ndom := ?_, gv := rfl, meths := ?_, ns := ?_, sup := ?_ }
+  refine { closedB := ?_, ndom := ?_, gv := rfl, meths := ?_, ns := ?_, sup := ?_, supK := ?_ }
   . intro X hX
     cases ftvList_mem.mp hX with
     | intro T hT => exact Kind.ftv (hc.1 T hT.1) X hT.2
@@ -46,6 +47,7 @@ theorem sf_dec {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec} (hD : D
   . intro M hM
     exact Exists.intro (dom D.bounds) (Exists.intro [] (And.intro (fun _ h => h)
       (noShadowListM_all (hwf.2.2.2.2.2.2.1 D hD.dec_mem) hM)))
+  . intro _ _ _ _ _ _ e; cases e
   . intro _ _ _ _ _ _ e; cases e
 
 theorem methods_mem {d : Decls} {k : K} (hk : Declared d k) {M : Method} (hM : List.Mem M k.Ms) :
@@ -105,7 +107,7 @@ theorem scopeFacts {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {T : Ty} {Del
                       have eD := Pairing.unique hnd h5 hw.pair
                       subst eD
                       refine Exists.intro (.loc C0 Fs C' Ts' es Ms) (And.intro hdecl (And.intro (Exists.intro Ts rfl) ?_))
-                      refine { closedB := hw.closedB, ndom := ?_, gv := h5.dom_eq, meths := ?_, ns := ?_, sup := ?_ }
+                      refine { closedB := hw.closedB, ndom := ?_, gv := h5.dom_eq, meths := ?_, ns := ?_, sup := ?_, supK := ?_ }
                       . rw [h5.dom_eq]; exact hwf.2.2.2.2.2.1 _ hdecl.mem
                       . intro M' hM'; exact Exists.intro _ (hw.meths M' hM')
                       . intro M' hM'
@@ -129,6 +131,9 @@ theorem scopeFacts {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {T : Ty} {Del
                         cases e
                         have := Kind.ftv hw.kindS X (by simpa [Ty.ftv] using hX)
                         rwa [h5.dom_eq] at this
+                      . intro C1 Fs1 C1' Ts1 es1 Ms1 e
+                        cases e
+                        exact hw.kindS
 
 def K.generic : K -> Ty
   | .dec D => .cls D.C (vars (dom D.bounds))
