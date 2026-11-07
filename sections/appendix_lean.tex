@@ -315,7 +315,7 @@ abbrev A6 (ks : List K) : Prop := forall k, List.Mem k ks -> (domF k.Fs).Nodup
 \begin{cmp}{A7}
 \begin{paperside}
 (A7) There is no shadowing of $X$ or $x$, except for \Q@this@.\\[1ex]
-A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ of the enclosing method; this is the only form of shadowing.
+A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ of the enclosing method.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
@@ -385,8 +385,8 @@ def Method.closed (Xs : List TVarName) (xs : List VarName) : Method -> Bool
 
 \begin{cmp}{All the requirements}
 \begin{paperside}
-We require the well-formedness conditions A1-A12.\\[1ex]
-The well-formedness requirements A1-A12 are part of the grammar (Section~\ref{sec:clarifications}).
+We require the following well-formedness conditions: (A1)-(A12).\\[1ex]
+The well-formedness requirements A1-A12 of Section~\ref{sec:core} are part of the grammar.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
@@ -655,7 +655,11 @@ inductive RenM : VRen -> TRen -> Method -> Method -> Prop
   | mk {rv rt Delta T0 m ps e e' Xs' xs'} :
       Xs'.length = Delta.length -> xs'.length = ps.length ->
       RenE ((ps.map VarDecl.x).zip xs' ++ rv) ((dom Delta).zip Xs' ++ rt) e e' ->
-      RenM rv rt (.mk Delta T0 m ps e) (.mk ... (renamed by Xs' and xs') ... e')
+      RenM rv rt (.mk Delta T0 m ps e)
+        (.mk ((Delta.zip Xs').map fun p =>
+                { X := p.2, T := p.1.T.ren ((dom Delta).zip Xs' ++ rt) })
+          (T0.ren ((dom Delta).zip Xs' ++ rt)) m
+          ((ps.zip xs').map fun p => { T := p.1.T.ren ((dom Delta).zip Xs' ++ rt), x := p.2 }) e')
 def Fresh (e e' : Expr) : Prop := RenE [] [] e e' /\ RenE [] [] e' e
 def FreshM (M M' : Method) : Prop := RenM [] [] M M' /\ RenM [] [] M' M
 \end{lstlisting}
@@ -899,7 +903,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
     \step{\ctx{e}}{\ctx{e'}}
 }$}\\[1ex]
 An instance of a reduction rule $\step{e}{e'}$ exists only when the right side $e'$ is an expression (Section~\ref{sec:clarifications}).
-$e_0\rightarrow^* e$: zero or more steps.
+$e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
@@ -1282,7 +1286,7 @@ def withoutThis (gamma : Gamma) : Gamma := gamma.filter fun d => d.x != this
 
 \begin{cmp}{Judgements on sequences}
 \begin{paperside}
-A judgement applied to sequences stands for one application at every position, and requires the sequences to have the same length:
+A function or a judgement applied to sequences stands for one application at every position, and requires the sequences to have the same length:
 $\kind{\Delta}{T_1,\ldots,T_n}$ is $\kind{\Delta}{T_1}\quad\ldots\quad\kind{\Delta}{T_n}$;
 $\subtype{\Delta}{T_1,\ldots,T_n}{T'_1,\ldots,T'_n}$ is $\subtype{\Delta}{T_1}{T'_1}\quad\ldots\quad\subtype{\Delta}{T_n}{T'_n}$;
 $\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T_1,\ldots,T_n}$ is $\typing{\Delta}{\Gamma}{e_1}{T_1}\quad\ldots\quad\typing{\Delta}{\Gamma}{e_n}{T_n}$.
@@ -1482,7 +1486,7 @@ For \texttt{typeSoundness}, the two structures below are both acceptable:
 \begin{itemize}
 \item \textbf{Divide first, then translate.}
 Type Soundness follows from progress and preservation on the high level, by induction on \texttt{Steps}.
-Progress and preservation on the high level follow from progress and preservation on the low level, through adequacy lemmas: the translation preserves values, well-formedness, $\mathsf{Dec}\gap\mathrm{Ok}$ and typing, and the two reductions simulate each other.
+Progress and preservation on the high level follow from progress and preservation on the low level, through adequacy lemmas: the translation preserves values, well-formedness, $\mathsf{Dec}\gap\mathrm{Ok}$ and typing, and the two reductions simulate each other up to the names chosen by $\mathsf{fresh}$.
 This is the structure of \leanfile{Proof.lean} now.
 \item \textbf{Translate first, then divide.}
 Type Soundness is stated on the low level and proved there, from progress and preservation on the low level.
@@ -1689,11 +1693,11 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[P1] \texttt{p1}, stated: class \Q@Fixed@ is Ok.
 \item[P2] \texttt{p2}, stated: class \Q@Fixed2@ is Ok: \Q@Holder<X>@ determines \Q@X@.
 \item[P3] \texttt{p3}, stated: class \Q@LeakerF@ is Ok.
-\item[N1] \texttt{n1}, stated: Example~1 is ill typed: rule \textsc{new-local} fails at $\kind{\emptyset}{\QQ{Foo<X>}}$, since \Q@MyFoo@ funnels nothing.
+\item[N1] \texttt{n1}, stated: Example~1 is not Ok: rule \textsc{new-local} fails at $\kind{\emptyset}{\QQ{Foo<X>}}$, since \Q@MyFoo@ funnels nothing.
 \item[N2] \texttt{n2}, stated: in d5, the main expression of Example~1 is ill typed: a \Q@Foo<A<>>@ is passed where a \Q@Foo<B<>>@ is expected.
-\item[N3] \texttt{n3}, stated: Example~2 is ill typed: the method \Q@x@ of \Q@MyFoo2@ returns \Q@X@, which \Q@MyFoo2@ does not funnel.
+\item[N3] \texttt{n3}, stated: Example~2 is not Ok: the method \Q@x@ of \Q@MyFoo2@ returns \Q@X@, which \Q@MyFoo2@ does not funnel.
 \item[N4] \texttt{n4}, stated: class \Q@Fixed2Obj@ is not Ok: \Q@MyFoo4@ funnels \Q@X@, but \Q@Object<>@ does not determine \Q@X@, so the type test is rejected.
-\item[N5] \texttt{n5}, stated: Example~6 is ill typed: \Q@MyFoo6@ mentions \Q@X@ and captures \Q@f@, but funnels nothing.
+\item[N5] \texttt{n5}, stated: Example~6 is not Ok: \Q@MyFoo6@ mentions \Q@X@ and captures \Q@f@, but funnels nothing.
 \item[N6] \texttt{n6}, stated: class \Q@Box7@ is not Ok: \Q@MyFoo7@ does not funnel the class type variable \Q@X@.
 \item[N7] \texttt{n7}, stated: class \Q@Box7F@ is not Ok: \Q@Object<>@ does not determine \Q@X@; javac rejects Counterexample~7 for the same reason.
 \item[N8] \texttt{n8}, stated: in d4F, the main expression of the leak is ill typed: a \Q@MyFoo2F<A<>>@ is passed where a \Q@MyFoo2F<B<>>@ is expected.

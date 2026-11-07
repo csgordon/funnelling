@@ -191,7 +191,7 @@ theorem t1 : Typing d1 [] [] (.field (Value.new (cn "Box") [gA] [vA]) (fn "val")
     (.dec (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl
 
 -- T2: new Box<A<>>(new B<>()) is ill typed: B<> is not a subtype of A<>.
-theorem t2 : Not (Typing d1 [] [] (Value.new (cn "Box") [gA] [vB]) (.cls (cn "Box") [tA])) := by
+theorem t2 : Not (exists T, Typing d1 [] [] (Value.new (cn "Box") [gA] [vB]) T) := by
   sorry
 
 def myFooK : K := .loc (cn "MyFoo") [.funnel (tn "Y")] (cn "Foo") [.var (tn "Y")] [] [myFooMethod]
@@ -239,7 +239,7 @@ theorem w6 : WFDecls d3 /\ WFExpr brokenMain := by decide
 theorem j2 : Steps d3 brokenMain stuckB /\ Stuck d3 stuckB := by
   sorry
 
--- N1: Example 1 is ill typed.
+-- N1: Example 1 is not Ok.
 theorem n1 : Not (ProgOk d3 brokenMain) := by
   sorry
 
@@ -340,7 +340,7 @@ def main2 : Expr :=
 -- W9: Example 2 in the core language is well formed.
 theorem w9 : WFDecls d6 /\ WFExpr main2 := by decide
 
--- N3: Example 2 is ill typed: the method x of MyFoo2 returns X, which MyFoo2 does not funnel.
+-- N3: Example 2 is not Ok: the method x of MyFoo2 returns X, which MyFoo2 does not funnel.
 theorem n3 : Not (ProgOk d6 main2) := by
   sorry
 
@@ -398,7 +398,7 @@ def main6 : Expr :=
 -- W11: Example 6 in the core language is well formed.
 theorem w11 : WFDecls d7 /\ WFExpr main6 := by decide
 
--- N5: Example 6 is ill typed: MyFoo6 mentions X and captures f, but funnels nothing.
+-- N5: Example 6 is not Ok: MyFoo6 mentions X and captures f, but funnels nothing.
 theorem n5 : Not (ProgOk d7 main6) := by
   sorry
 

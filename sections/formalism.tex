@@ -162,7 +162,7 @@ $M\in K$ holds when $M$ is a method of the class declaration $K$, top-level or l
 $M\in C$ holds when $M$ is a method of the declared class $C$, top-level or local.
 For a top-level class $C$ with bounds $\Delta$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$.
 For a local class $C_0$ with funnels $\pl{F}$, $\mathsf{scope}(\gen{C_0}{\pl{T}})=\Delta_0;\pl{T}_0$, where $\Delta_0$ holds, in the order of $\mathrm{dom}(\pl{F})$, the bound of each $X\in\mathrm{dom}(\pl{F})$ in scope in the body of the method $m$ declaring $C_0$; note that $m$ could be a method of either a top-level or local class.
-$\pl{T}_0$ is the subsequence of $\pl{T}$, of the same size as $\mathrm{dom}(\pl{F})$, holding the type argument of each funnelled $X$.
+By A11, every funnel of $\pl{F}$ is of the form $\funnel{X}$, so $\pl{T}_0$ is $\pl{T}$.
 For a top-level class, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$ can return $\Delta$ and $\pl{T}$ of different lengths.
 The usage points of $\mathsf{scope}$ use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length; in the same way, $\tsubst{T}{\pl{F}}{\pl{T}}$ is defined only when $\pl{F}$ and $\pl{T}$ have the same length.
 A simultaneous substitution, of types or of values, is defined only when the names in its domain are distinct.
@@ -520,8 +520,8 @@ A substitution can place a value at several positions, so several occurrences of
 \par}
 
 The rule \textsc{new-local} is the heart of funnelling, including subtle management of type environments.
-The rule constructs restricted bounds and a restricted type environment, reflecting only the explicitly-funnelled type variables:
-$\Delta'$ includes only the explicitly-funnelled type variables, and $\Gamma|_{\ftv{|\pl{F}|}}\setminus\this$ keeps only the variables of $\Gamma$, other than \Q@this@, whose types mention only type variables of the result type $\gen{C}{|\pl{F}|}$ (which must be well-kinded under $\Delta'$).
+The rule constructs restricted bounds and a restricted type environment, reflecting only the funnelled type variables:
+$\Delta'$ includes only the funnelled type variables, and $\Gamma|_{\ftv{|\pl{F}|}}\setminus\this$ keeps only the variables of $\Gamma$, other than \Q@this@, whose types mention only type variables of the result type $\gen{C}{|\pl{F}|}$ (which must be well-kinded under $\Delta'$).
 The bounds $\Delta'$ are computed by $\pairing{\Delta}{\pl{F}}{|\pl{F}|}$, which is undefined when a funnelled type variable is not in $\Delta$.
 However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., in the type arguments of a method call), but will reduce to a value which no longer depends on such type variables.
 This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ ensures the resulting type of that
@@ -544,7 +544,7 @@ Rule \textsc{cast-up} accepts a target $T'$ that is a supertype of the source $T
 Rule \textsc{cast-var} replaces a source type variable $X$ with the bound of $X$.
 Rule \textsc{cast-down} accepts a target $\gen{C}{\pl{T}}$ that is a subtype of the source $\gen{C'}{\pl{T}_0}$, when the source determines the type arguments $\pl{T}$.
 $\generic{C}=\gen{C}{\pl{X}}$ is the class $C$ instantiated with its own type variables $\pl{X}$, and $\gen{C'}{\pl{T}'}$ is the supertype of $\gen{C}{\pl{X}}$ with class $C'$.
-The premise $\subtype{\emptyset}{\gen{C}{\pl{X}}}{\gen{C'}{\pl{T}'}}$ of rule \textsc{cast-down} is correctly called with $\emptyset$ as the bounds: a subtyping derivation between class types uses only rules \textsc{sub-refl}, \textsc{sub-inherit} and \textsc{sub-inherit-local}, which do not read $\Delta$.
+The premise $\subtype{\emptyset}{\gen{C}{\pl{X}}}{\gen{C'}{\pl{T}'}}$ of rule \textsc{cast-down} uses the bounds $\emptyset$: a subtyping derivation between class types uses only rules \textsc{sub-refl}, \textsc{sub-inherit} and \textsc{sub-inherit-local}, which do not read $\Delta$.
 Every type variable of $\pl{X}$ occurs in $\pl{T}'$, thus the type arguments $\pl{T}_0$ of the source fix the type arguments $\pl{T}$ of the target.
 Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is a subclass of $C$ has type $\gen{C}{\pl{T}}$, and rule \textsc{ifThen} compares only class names.
 
