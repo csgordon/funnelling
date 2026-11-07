@@ -82,7 +82,7 @@ theorem r4 : Reduces d1 (.superCall (Value.new (cn "C2") [] []) (.cls (cn "C1") 
     (Step.simpleFound (D := decC1) (M := .mk [] tA (mn "m") [] vA) (Gs := []) (Gs' := []) (vs := [])
       (Delta' := []) (T0 := tA) (ps := []) (e0 := vA)
       (.dec (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))) (.head _)
-      (.mk (Xs' := []) (xs' := []) rfl rfl (.new .nil)) rfl rfl (by decide) (by decide) rfl)
+      (And.intro (.mk (Xs' := []) (xs' := []) rfl rfl (.new .nil)) (.mk (Xs' := []) (xs' := []) rfl rfl (.new .nil))) rfl rfl (by decide) (by decide) rfl (by decide) (by decide) rfl)
     (by decide)
 
 -- R5: rule ctx, inside the receiver of a call.
@@ -98,7 +98,7 @@ theorem r5 : Reduces d1 (.call (.field (Value.new (cn "Box") [gA] [vA]) (fn "val
 theorem r6Then : Reduces d1 (.ifInst vA tA (vn "x") (.var (vn "x")) vB) vA :=
   And.intro
     (Step.ifThen (v := vA) (C' := cn "A") (Ts := []) (Ts' := []) (x := vn "x") (e1 := .var (vn "x"))
-      (e1' := .var (vn "x")) (e2 := vB) .subRefl .var (by decide))
+      (e1' := .var (vn "x")) (e2 := vB) .subRefl (And.intro .var .var) (by decide))
     (by decide)
 
 theorem r6Else : Reduces d1 (.ifInst vA tB (vn "x") (.var (vn "x")) vB) vB := by
@@ -135,9 +135,12 @@ theorem r7 : Reduces d2
       (e0 := .newLocal (cn "MyFoo") [.funnel (tn "Y1")] (cn "Foo") [.var (tn "Y1")] []
         [.mk [] (.var (tn "Y1")) (mn "x") [] (.var (vn "y1"))])
       (.dec (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))) (.head _)
-      (.mk (Xs' := [tn "Y1"]) (xs' := [vn "y1"]) rfl rfl
-        (.newLocal .nil (.cons (.mk (Xs' := []) (xs' := []) rfl rfl .var) .nil)))
-      rfl rfl (by decide) (by decide) rfl)
+      (And.intro
+        (.mk (Xs' := [tn "Y1"]) (xs' := [vn "y1"]) rfl rfl
+          (.newLocal .nil (.cons (.mk (Xs' := []) (xs' := []) rfl rfl .var) .nil)))
+        (.mk (Xs' := [tn "Y"]) (xs' := [vn "y"]) rfl rfl
+          (.newLocal .nil (.cons (.mk (Xs' := []) (xs' := []) rfl rfl .var) .nil))))
+      rfl rfl (by decide) (by decide) rfl (by decide) (by decide) rfl)
     (by decide)
 
 -- R8: rule innerFound.
@@ -145,7 +148,7 @@ theorem r8 : Reduces d2 (.call vLocal [] (mn "x") []) vA :=
   And.intro
     (Step.innerFound (v0 := vLocal) (M := .mk [] tA (mn "x") [] vA) (Gs' := []) (vs := [])
       (Delta' := []) (T0 := tA) (ps := []) (e0 := vA) rfl (.head _)
-      (.mk (Xs' := []) (xs' := []) rfl rfl (.new .nil)) rfl rfl (by decide) (by decide) rfl)
+      (And.intro (.mk (Xs' := []) (xs' := []) rfl rfl (.new .nil)) (.mk (Xs' := []) (xs' := []) rfl rfl (.new .nil))) rfl rfl (by decide) (by decide) (by decide) (by decide) rfl)
     (by decide)
 
 -- R9: rule innerSuper.
@@ -578,7 +581,7 @@ theorem w17 : WFDecls d11 := by decide
 -- O1: P2 overrides id with its type variable renamed: Z for X.
 theorem o1 : OverrideOkM d11 (.cls (cn "P1") []) p2Id :=
   OverrideOkM.dec (D := decP1) (Delta'' := [bnd "X" obj]) (T0 := tv "X") (ps := [par (tv "X") "x"]) (e := ev "x")
-    (.dec (.tail _ (.tail _ (.head _)))) (.head _) rfl rfl rfl
+    (.dec (.tail _ (.tail _ (.head _)))) (.head _) rfl rfl rfl rfl
 
 -- O2: P3 changes the return type of id.
 theorem o2 : Not (OverrideOkM d11 (.cls (cn "P1") []) p3Id) := by
@@ -721,7 +724,7 @@ def nestedIf' : Expr := .ifInst (ev "x") tA (vn "y1") (ev "y1") (ev "x")
 theorem r21 : Reduces d1 (.ifInst vA tA (vn "x") nestedIf vB) (.ifInst vA tA (vn "y1") (ev "y1") vA) :=
   And.intro
     (Step.ifThen (v := vA) (C' := cn "A") (Ts := []) (Ts' := []) (x := vn "x") (e1 := nestedIf) (e1' := nestedIf')
-      (e2 := vB) .subRefl (RenE.ifInst .var .var .var) (by decide))
+      (e2 := vB) .subRefl (And.intro (RenE.ifInst .var .var .var) (RenE.ifInst .var .var .var)) (by decide))
     (by decide)
 
 -- The example of Section 4.4: a local class L whose method m calls m on a captured value y of class L.
@@ -751,9 +754,12 @@ theorem r22 : Steps d13 (call0 (Value.new (cn "K") [] []) "k" [vL]) kResult :=
           (Gs := []) (Gs' := []) (vs := [vL]) (Delta' := []) (T0 := obj) (ps := [par (.cls (cn "L") []) "y1"])
           (e0 := .newLocal (cn "L") [] Object [] [] [meth [] obj "m" [par obj "x1"] (call0 (ev "y1") "m" [ev "x1"])])
           (.dec (.tail _ (.head _))) (.head _)
-          (.mk (Xs' := []) (xs' := [vn "y1"]) rfl rfl
-            (.newLocal .nil (.cons (.mk (Xs' := []) (xs' := [vn "x1"]) rfl rfl (.call .var (.cons .var .nil))) .nil)))
-          rfl rfl (by decide) (by decide) rfl)
+          (And.intro
+            (.mk (Xs' := []) (xs' := [vn "y1"]) rfl rfl
+              (.newLocal .nil (.cons (.mk (Xs' := []) (xs' := [vn "x1"]) rfl rfl (.call .var (.cons .var .nil))) .nil)))
+            (.mk (Xs' := []) (xs' := [vn "y"]) rfl rfl
+              (.newLocal .nil (.cons (.mk (Xs' := []) (xs' := [vn "x"]) rfl rfl (.call .var (.cons .var .nil))) .nil))))
+          rfl rfl (by decide) (by decide) rfl (by decide) (by decide) rfl)
         (by decide))
       Steps.refl)
 
@@ -774,14 +780,15 @@ theorem r23 : Steps d1 outerIf vB :=
   Steps.step
     (And.intro
       (Step.ifThen (v := vA) (C' := cn "A") (Ts := []) (Ts' := []) (x := vn "x") (e1 := innerIf "y")
-        (e1' := innerIf "y1") (e2 := vB) .subRefl (RenE.ifInst (.new .nil) (.call .var .nil) (.new .nil))
+        (e1' := innerIf "y1") (e2 := vB) .subRefl
+        (And.intro (RenE.ifInst (.new .nil) (.call .var .nil) (.new .nil)) (RenE.ifInst (.new .nil) (.call .var .nil) (.new .nil)))
         (by decide))
       (by decide))
     (Steps.step
       (And.intro
         (Step.ifThen (v := vB) (C' := cn "B") (Ts := []) (Ts' := []) (x := vn "y1")
           (e1 := call0 (ev "y1") "onlyB" []) (e1' := call0 (ev "y1") "onlyB" []) (e2 := vB) .subRefl
-          (.call .var .nil) (by decide))
+          (And.intro (.call .var .nil) (.call .var .nil)) (by decide))
         (by decide))
       (Steps.step
         (And.intro (Step.simpleAddSuper (Gs' := []) (vs := []) rfl) (by decide))
@@ -790,7 +797,9 @@ theorem r23 : Steps d1 outerIf vB :=
             (Step.simpleFound (D := decB) (M := meth [] tB "onlyB" [] vB) (Gs := []) (Gs' := []) (vs := [])
               (Delta' := []) (T0 := tB) (ps := []) (e0 := vB)
               (.dec (.tail _ (.tail _ (.head _)))) (.head _)
-              (.mk (Xs' := []) (xs' := []) rfl rfl (.new .nil)) rfl rfl (by decide) (by decide) rfl)
+              (And.intro (.mk (Xs' := []) (xs' := []) rfl rfl (.new .nil)) (.mk (Xs' := []) (xs' := []) rfl rfl (.new .nil)))
+              rfl rfl (by decide) (by decide) rfl (by decide) (by decide) rfl)
             (by decide))
           Steps.refl)))
+
 end Funnelling.Examples

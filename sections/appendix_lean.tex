@@ -17,7 +17,7 @@
 \newcommand{\nomapping}{\par\smallskip\hrule}
 
 This appendix relates the formalism of Section~\ref{sec:core} to a Lean~4 formalization in the folder \texttt{lean} of the paper repository.
-Rule \textsc{new-local-java} of Section~\ref{sec:java} is not formalized: Type Soundness concerns only the type system with rule \textsc{new-local}.
+Rule \textsc{new-local-java}, shown in Section~\ref{sec:funnelling} and used in Section~\ref{sec:java}, is not formalized: Type Soundness concerns only the type system with rule \textsc{new-local}.
 The Lean formalization is set up, but the proofs of the soundness theorems are not done yet.
 
 \subsection{Request}
@@ -71,8 +71,6 @@ The fixed statements are \texttt{typeSoundness} and \texttt{determinism} in \lea
 Everything else is a component of their proofs, and can change: the low level, the translation, the adequacy lemmas and \leanfile{Proof.lean}.
 \leanfile{Proof.lean} proves \texttt{typeSoundness} from progress and preservation on the high level, each proved through the low level; the low-level progress and preservation and the six adequacy lemmas are stated with \texttt{sorry}.
 Section~\ref{app:lean:examples} lists which validation examples are proved and which are stated with \texttt{sorry}.
-The mini proof that checked the installation is not in the repository:
-it proved $a+b=b+a$ with \texttt{omega}, $\mathsf{Even}\ 4$ for an inductive predicate $\mathsf{Even}$, $\neg\mathsf{Even}\ 1$ by \texttt{cases}, and evaluated an expression with \texttt{\#eval}.
 \\[1ex]
 The Lean code is written in ASCII:
 \texttt{->} is $\rightarrow$, \texttt{/\char`\\} is $\wedge$, \texttt{\char`\\/} is $\vee$, \texttt{List.Mem x xs} is $x\in xs$, and \texttt{Delta}, \texttt{gamma}, \texttt{sigma} are $\Delta$, $\Gamma$, $\sigma$.
@@ -97,7 +95,9 @@ A step $\step{e}{e'}$ of the paper is \texttt{Reduces d e e'}: a \texttt{Step} w
 A judgement on sequences has its own name: $\kind{\Delta}{\pl{T}}$ is \texttt{KindSeq d Delta Ts}, $\subtype{\Delta}{\pl{T}}{\pl{T}'}$ is \texttt{SubSeq d Delta Ts Ts'}, and $\typing{\Delta}{\Gamma}{\pl{e}}{\pl{T}}$ is \texttt{TypingSeq d Delta gamma es Ts}; $\mok{\Delta}{\Gamma}{\pl{M}}$ is a premise for every method.
 \item \textbf{Substitution and lengths.}
 The paper defines $\tsubst{T}{\Delta}{\pl{T}}$ only when $\Delta$ and $\pl{T}$ have the same length.
-$\tsubst{T}{\Delta}{\pl{T}}$ is \texttt{T.subst (bind Delta Ts)}, and the rule has the premise that the lengths are the same; $\tsubst{T}{\pl{F}}{\pl{T}}$ is \texttt{T.subst (bindF Fs Ts)}.
+$\tsubst{T}{\Delta}{\pl{T}}$ is \texttt{T.subst (bind Delta Ts)} and $\tsubst{T}{\pl{F}}{\pl{T}}$ is \texttt{T.subst (bindF Fs Ts)}; the rule has the premise that the lengths are the same.
+The paper defines a simultaneous substitution only when the names in its domain are distinct.
+Rules \textsc{simpleFound} and \textsc{innerFound} have this as premises (\texttt{Nodup}), since their domains hold the names chosen by $\mathsf{fresh}$; in the other rules the domain is distinct by A5 and A7.
 \item \textbf{Definitions.}
 A \textbf{Define} box of the paper with \emph{where} clauses ($\mathsf{declared}$, $M\in C$, $\mathrm{generic}$, $\mathsf{scope}$, the pairing, $\mathsf{overrideOk}(T,M)$) is an inductive relation, one constructor per clause.
 A \textbf{Define} box that defines a function ($\mathrm{dom}$, $\mathrm{cod}$, $|F|$, $\mathsf{typeOf}$, the substitutions) is a function.
@@ -355,10 +355,6 @@ abbrev A9 (d : Decls) : Prop :=
   forall D, List.Mem D d -> exists D', List.Mem D' (superChain d (d.length + 1) D.C) /\ D'.C = Object
 abbrev A10 (d : Decls) : Prop := forall k, List.Mem k (classes d) -> (findDec d k.sup).isSome
 abbrev A11 (d : Decls) : Prop := forall k, List.Mem k (classes d) -> forall F, List.Mem F k.Fs -> F.isFunnel
-abbrev WFDecls (d : Decls) : Prop :=
-  A1 d /\ A2 d /\ A3 (classes d) /\ A4 d.methods /\
-  A5 (d.map Dec.bounds ++ d.methods.map Method.bounds) /\ A6 (classes d) /\ A7Decls d /\
-  A8 d.methods (d.flatMap fun D => Method.ifVarsList D.Ms) /\ A9 d /\ A10 d /\ A11 d
 \end{lstlisting}
 \end{leanside}
 \mapping{\texttt{ifVars} lists the variables of all the \Q@if@.}
@@ -480,9 +476,9 @@ def abs (Fs : List Funnel) : List Ty := Fs.map Funnel.abs
 \begin{paperside}
 \fit{$\begin{array}{@{}l@{}}
 \pairing{\Delta}{\emptyset}{\emptyset} = \emptyset;\emptyset\\
-\pairing{\Delta}{\funnel{X},\pl{F}}{T,\pl{T}} = (\ext{X}{\Delta(X)};T)\cdot(\pairing{\Delta}{\pl{F}}{\pl{T}})\\
-\pairing{\Delta}{G,\pl{F}}{G,\pl{T}} = \pairing{\Delta}{\pl{F}}{\pl{T}}\\[1ex]
-(\Delta;\pl{T})\cdot(\Delta';\pl{T}') = \Delta,\Delta';\pl{T},\pl{T}'
+\pairing{\Delta}{\funnel{X},\pl{F}}{T,\pl{T}} = \ext{X}{\Delta(X)},\Delta';T,\pl{T}'\\
+\quad\textrm{where }\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'\\
+\pairing{\Delta}{G,\pl{F}}{G,\pl{T}} = \pairing{\Delta}{\pl{F}}{\pl{T}}
 \end{array}$}
 \end{paperside}
 \begin{leanside}
@@ -639,11 +635,11 @@ inductive RenM : VRen -> TRen -> Method -> Method -> Prop
       Xs'.length = Delta.length -> xs'.length = ps.length ->
       RenE ((ps.map VarDecl.x).zip xs' ++ rv) ((dom Delta).zip Xs' ++ rt) e e' ->
       RenM rv rt (.mk Delta T0 m ps e) (.mk ... (renamed by Xs' and xs') ... e')
-def Fresh (e e' : Expr) : Prop := RenE [] [] e e'
-def FreshM (M M' : Method) : Prop := RenM [] [] M M'
+def Fresh (e e' : Expr) : Prop := RenE [] [] e e' /\ RenE [] [] e' e
+def FreshM (M M' : Method) : Prop := RenM [] [] M M' /\ RenM [] [] M' M
 \end{lstlisting}
 \end{leanside}
-\mapping{\texttt{RenE rv rt e e'}: $e'$ is $e$ with every binder renamed to any name, and its bound occurrences renamed with it; \texttt{rv} and \texttt{rt} are the renamings of variables and type variables in scope.}
+\mapping{\texttt{RenE rv rt e e'}: $e'$ is $e$ with every binder renamed to any name, and its bound occurrences renamed with it; \texttt{rv} and \texttt{rt} are the renamings of variables and type variables in scope. \texttt{RenE} alone allows a renaming that captures a free name, or that gives two nested binders the same name; requiring the renaming in both directions excludes both, so \texttt{Fresh} is equality up to the names of binders, as in the paper.}
 \end{cmp}
 
 \subsubsection{Reduction}
@@ -784,7 +780,9 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       Declared d (.dec D) ->
       List.Mem M D.Ms ->
       FreshM M (.mk Delta' T0 m ps e0) ->
-      (Gs ++ Gs').length = (D.bounds ++ Delta').length ->
+      Gs.length = D.bounds.length -> Gs'.length = Delta'.length ->
+      (dom D.bounds ++ dom Delta').Nodup ->
+      (this :: ps.map VarDecl.x).Nodup ->
       ps.length = vs.length ->
       GSubstDefined (dom D.bounds ++ dom Delta') e0 ->
       VSubstDefined (this :: ps.map VarDecl.x) e0 ->
@@ -815,6 +813,8 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       FreshM M (.mk Delta' T0 m ps e0) ->
       Gs'.length = Delta'.length ->
       ps.length = vs.length ->
+      (dom Delta').Nodup ->
+      (this :: ps.map VarDecl.x).Nodup ->
       GSubstDefined (dom Delta') e0 ->
       VSubstDefined (this :: ps.map VarDecl.x) e0 ->
       e = (e0.gsubst (bind Delta' Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
@@ -1112,7 +1112,7 @@ inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
       Typing d Delta gamma e0 (.cls C0 Ts0) ->
       Scope d (.cls C0 Ts0) Delta0 Ts2 ->
       MethodIn d (.mk Delta1 T0 m ps body) C0 ->
-      (Ts2 ++ Ts1).length = (Delta0 ++ Delta1).length ->
+      Ts2.length = Delta0.length -> Ts1.length = Delta1.length ->
       T0' :: Ts' = Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ Ts1))
         (T0 :: ps.map VarDecl.T) ->
       KindSeq d Delta Ts1 ->
@@ -1149,7 +1149,7 @@ inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
       Sub d Delta (.cls D.C Ts) (.cls D0.C Ts0) ->
       Declared d (.dec D0) ->
       MethodIn d (.mk Delta1 T0 m ps body) D0.C ->
-      (Ts0 ++ Ts1).length = (D0.bounds ++ Delta1).length ->
+      Ts0.length = D0.bounds.length -> Ts1.length = Delta1.length ->
       T0' :: Ts' = Ty.substList (bind (D0.bounds ++ Delta1) (Ts0 ++ Ts1))
         (T0 :: ps.map VarDecl.T) ->
       Declared d (.dec D) ->
@@ -1329,8 +1329,9 @@ def OverrideOk (d : Decls) (Delta : Bounds) (T : Ty) (Ms : List Method) : Prop :
 \begin{cmp}{$\mathsf{overrideOk}(T,M)$}
 \begin{paperside}
 \fit{$\begin{array}{@{}l@{}}
-\mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\_}{\_}{m}{\_}{\_})\textrm{ iff }m\not\in\pl{M}\\
-\quad\textrm{where }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\[1ex]
+\mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\_}{\_}{m}{\_}{\_})\\
+\quad\textrm{where }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\
+\quad\phantom{\textrm{where }}m\not\in\pl{M}\\[1ex]
 \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_n\gap x_n}{\_})\\
 \quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\
 \quad\phantom{\textrm{where }}\method{\Delta''}{T_0}{m}{T_1\gap x'_1,\ldots,T_n\gap x'_n}{\_}\in\pl{M}\\
@@ -1353,7 +1354,7 @@ inductive OverrideOkM (d : Decls) : Ty -> Method -> Prop
   | dec {D Ts Delta' T0' m ps' e' Delta'' T0 ps e} :
       Declared d (.dec D) ->
       List.Mem (Method.mk Delta'' T0 m ps e) D.Ms ->
-      (Ts ++ vars (dom Delta')).length = (D.bounds ++ Delta'').length ->
+      Ts.length = D.bounds.length -> Delta'.length = Delta''.length ->
       Ty.substList (bind (D.bounds ++ Delta'') (Ts ++ vars (dom Delta')))
         (cod Delta'') = cod Delta' ->
       Ty.substList (bind (D.bounds ++ Delta'') (Ts ++ vars (dom Delta')))
@@ -1475,7 +1476,7 @@ theorem declsOk_tr {d : High.Decls} (hwf : High.WFDecls d) (hok : High.DeclsOk d
     Low.DeclsOk (trDecls d)
 theorem typing_tr {d : High.Decls} {e : High.Expr} {T : High.Ty} (hwf : High.WFDecls d) :
     High.Typing d [] [] e T <->
-      Low.Typing (trDecls d) false [] [] (trExpr e) (trTy T)
+      Low.Typing (trDecls d) [] [] (trExpr e) (trTy T)
 theorem step_tr {d : High.Decls} {e e' : High.Expr} (hwf : High.WFDecls d) (he : High.WFExpr e)
     (hs : High.Reduces d e e') : Low.Step (trDecls d) (trExpr e) (trExpr e')
 theorem step_back {d : High.Decls} {e : High.Expr} {e'' : Low.Expr} (hwf : High.WFDecls d)
@@ -1506,7 +1507,7 @@ The proof uses that the chain of superclasses is unique and that $\pl{X}\subsete
 \subsection{Validation Examples}
 \label{app:lean:examples}
 \leanfile{Examples.lean} defines the class tables below and the examples, on the high level.
-A Lean theorem marked \emph{proved} is accepted by Lean, with no axiom other than the standard ones; a theorem marked \emph{stated} has \texttt{sorry}, and needs the inversion lemmas of Section~\ref{app:lean:statements}.
+A Lean theorem marked \emph{proved} is accepted by Lean, with no axiom other than the standard ones; a theorem marked \emph{stated} has \texttt{sorry}: a positive one needs a derivation, and a negative one needs the inversion lemmas of Section~\ref{app:lean:statements}.
 The core language has no strings, no lambdas, no \Q@switch@ and no casts.
 The examples of Section~2 use \Q@Fun<X,Y>@ for \Q@Function<X,Y>@, and its subclasses \Q@AToB@ and \Q@AsB@ for the lambdas of the two calls of \Q@m@.
 \Q@AsB@ plays the lambda \Q@s->s@: its method \Q@apply@ uses its argument as a \Q@B<>@, so a failing cast to \Q@String@ becomes the call \Q@new A<>().onlyB()@, which is stuck.
@@ -1596,17 +1597,17 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[W3] \texttt{w3}, proved: an \Q@if@ binding the parameter \Q@x@ again violates A7.
 \item[W4] \texttt{w4}, proved: an undeclared superclass violates A9 and A10.
 \item[W5] \texttt{w5}, proved: d2 satisfies A1-A11.
-\item[W6] \texttt{w6}, proved: d3 and the main expression of Example~1 satisfy A1-A11.
+\item[W6] \texttt{w6}, proved: d3 satisfies A1-A11, and the main expression of Example~1 satisfies A3-A8.
 \item[W7] \texttt{w7}, proved: d4 satisfies A1-A11.
 \item[W8] \texttt{w8}, proved: d5 satisfies A1-A11.
-\item[W9] \texttt{w9}, proved: d6 and the main expression of Example~2 satisfy A1-A11.
+\item[W9] \texttt{w9}, proved: d6 satisfies A1-A11, and the main expression of Example~2 satisfies A3-A8.
 \item[W10] \texttt{w10}, proved: d6F satisfies A1-A11.
-\item[W11] \texttt{w11}, proved: d7 and the main expression of Example~6 satisfy A1-A11.
-\item[W12] \texttt{w12}, proved: d8 and the main expression of Counterexample~7 satisfy A1-A11.
+\item[W11] \texttt{w11}, proved: d7 satisfies A1-A11, and the main expression of Example~6 satisfies A3-A8.
+\item[W12] \texttt{w12}, proved: d8 satisfies A1-A11, and the main expression of Counterexample~7 satisfies A3-A8.
 \item[W13] \texttt{w13}, proved: d4F satisfies A1-A11.
 \item[W14] \texttt{w14}, proved: d9, with \Q@Inner@ written in a method of \Q@Outer@, satisfies A1-A11.
 \item[W15] \texttt{w15}, proved: d10 satisfies A1-A11.
-\item[W16] \texttt{w16}, proved: the value \Q@new Outer2<A<>> extends Foo<A<>>(){..}@, whose method \Q@g@ holds \Q@Inner2<Y funnel>@, satisfies A1-A11: a ground funnel and a funnel in the same main expression.
+\item[W16] \texttt{w16}, proved: the value \Q@new Outer2<A<>> extends Foo<A<>>(){..}@, whose method \Q@g@ holds \Q@Inner2<Y funnel>@, satisfies A3-A8: a ground funnel and a funnel in the same main expression.
 \item[W17] \texttt{w17}, proved: d11 satisfies A1-A11.
 \item[W18] \texttt{w18}, proved: a field \Q@f@ declared again in a subclass violates A2.
 \item[W19] \texttt{w19}, proved: a local class named \Q@A@, as a top-level class, violates A1.
@@ -1614,8 +1615,8 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[W21] \texttt{w21}, proved: \Q@X funnel, X funnel@ violates A6.
 \item[W22] \texttt{w22}, proved: a parameter named \Q@this@ violates A8.
 \item[W23] \texttt{w23}, proved: two classes extending each other violate A9.
-\item[W25] \texttt{w25}, proved: in \Q@if (new A<>() instanceof A<> x){ if (new B<>() instanceof B<> y){ y.onlyB() } else { new B<>() } } else { new B<>() }@, renaming \Q@y@ into \Q@x@ makes the substitution \Q@[x=new A<>()]@ of rule \textsc{ifThen} undefined, so rule \textsc{ifThen} has no instance with that renaming.
 \item[W24] \texttt{w24}, proved: the result of the call of \Q@k@ of Section~4.4 without renaming, a method \Q@m(x)@ holding a value whose method \Q@m@ binds \Q@x@ again, violates A7.
+\item[W25] \texttt{w25}, proved: in \Q@if (new A<>() instanceof A<> x){ if (new B<>() instanceof B<> y){ y.onlyB() } else { new B<>() } } else { new B<>() }@, renaming \Q@y@ into \Q@x@ makes the substitution \Q@[x=new A<>()]@ of rule \textsc{ifThen} undefined, so rule \textsc{ifThen} has no instance with that renaming.
 \item[R1] \texttt{r1}, proved: \Q@new Box<A<>>(new A<>()).val@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFieldFound}.
 \item[R2] \texttt{r2}, proved: \Q@new C2<>().m()@ $\rightarrow$ \Q@new C2<>().[C2<>]m()@ by \textsc{simpleAddSuper}.
 \item[R3] \texttt{r3}, proved: \Q@new C2<>().[C2<>]m()@ $\rightarrow$ \Q@new C2<>().[C1<>]m()@ by \textsc{searchSuper}.

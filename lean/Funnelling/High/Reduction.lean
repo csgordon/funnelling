@@ -59,7 +59,9 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       Declared d (.dec D) ->
       List.Mem M D.Ms ->
       FreshM M (.mk Delta' T0 m ps e0) ->
-      (Gs ++ Gs').length = (D.bounds ++ Delta').length ->
+      Gs.length = D.bounds.length -> Gs'.length = Delta'.length ->
+      (dom D.bounds ++ dom Delta').Nodup ->
+      (this :: ps.map VarDecl.x).Nodup ->
       ps.length = vs.length ->
       GSubstDefined (dom D.bounds ++ dom Delta') e0 ->
       VSubstDefined (this :: ps.map VarDecl.x) e0 ->
@@ -72,6 +74,8 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       FreshM M (.mk Delta' T0 m ps e0) ->
       Gs'.length = Delta'.length ->
       ps.length = vs.length ->
+      (dom Delta').Nodup ->
+      (this :: ps.map VarDecl.x).Nodup ->
       GSubstDefined (dom Delta') e0 ->
       VSubstDefined (this :: ps.map VarDecl.x) e0 ->
       e = (e0.gsubst (bind Delta' Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
