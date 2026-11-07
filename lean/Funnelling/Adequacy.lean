@@ -34,13 +34,13 @@ theorem isValue_tr {e : High.Expr} : High.IsValue e <-> (trExpr e).isValue = tru
 theorem wfExpr_tr {e : High.Expr} (he : High.WFExpr e) : Low.wfExpr (trExpr e) = true := by
   sorry
 
-theorem declsOk_tr {d : High.Decls} (hwf : High.WFDecls d) (hok : High.DeclsOk d .funnelled) :
+theorem declsOk_tr {d : High.Decls} (hwf : High.WFDecls d) (hok : High.DeclsOk d) :
     Low.DeclsOk (trDecls d) := by
   sorry
 
 theorem typing_tr {d : High.Decls} {e : High.Expr} {T : High.Ty} (hwf : High.WFDecls d) :
-    High.Typing d .funnelled [] [] e T <->
-      Low.Typing (trDecls d) false [] [] (trExpr e) (trTy T) := by
+    High.Typing d [] [] e T <->
+      Low.Typing (trDecls d) [] [] (trExpr e) (trTy T) := by
   sorry
 
 theorem step_tr {d : High.Decls} {e e' : High.Expr} (hwf : High.WFDecls d) (he : High.WFExpr e)

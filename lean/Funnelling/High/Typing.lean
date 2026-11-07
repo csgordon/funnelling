@@ -83,35 +83,32 @@ def restrict (gamma : Gamma) (Xs : List TVarName) : Gamma :=
 
 def withoutThis (gamma : Gamma) : Gamma := gamma.filter fun d => d.x != this
 
-inductive Variant where
-  | funnelled
-  | java
 
 mutual
-inductive Typing (d : Decls) (z : Variant) : Bounds -> Gamma -> Expr -> Ty -> Prop
+inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
   | subs {Delta gamma e T1 T2} :
-      Typing d z Delta gamma e T1 -> Kind d Delta T2 -> Sub d Delta T1 T2 ->
-      Typing d z Delta gamma e T2
+      Typing d Delta gamma e T1 -> Kind d Delta T2 -> Sub d Delta T1 T2 ->
+      Typing d Delta gamma e T2
   | var {Delta gamma x T} :
-      gamma.lookup x = some T -> Typing d z Delta gamma (.var x) T
+      gamma.lookup x = some T -> Typing d Delta gamma (.var x) T
   | newObject {Delta gamma} :
-      Typing d z Delta gamma (.new Object [] []) (.cls Object [])
+      Typing d Delta gamma (.new Object [] []) (.cls Object [])
   | declField {Delta gamma e D Ts' T f} :
-      Typing d z Delta gamma e (.cls D.C Ts') ->
+      Typing d Delta gamma e (.cls D.C Ts') ->
       Declared d (.dec D) ->
       List.Mem { T := T, f := f } D.Ss ->
       Ts'.length = D.bounds.length ->
-      Typing d z Delta gamma (.field e f) (T.subst ((dom D.bounds).zip Ts'))
+      Typing d Delta gamma (.field e f) (T.subst ((dom D.bounds).zip Ts'))
   | call {Delta gamma e0 C0 Ts0 Delta0 Ts2 Delta1 T0 m ps body Ts1 es T0' Ts'} :
-      Typing d z Delta gamma e0 (.cls C0 Ts0) ->
+      Typing d Delta gamma e0 (.cls C0 Ts0) ->
       Scope d (.cls C0 Ts0) Delta0 Ts2 ->
       MethodIn d (.mk Delta1 T0 m ps body) C0 ->
       (Ts2 ++ Ts1).length = (Delta0 ++ Delta1).length ->
       T0' :: Ts' = Ty.substList ((dom Delta0 ++ dom Delta1).zip (Ts2 ++ Ts1)) (T0 :: ps.map VarDecl.T) ->
       (forall T, List.Mem T Ts1 -> Kind d Delta T) ->
       Seq2 (Sub d Delta) Ts1 (Ty.substList ((dom Delta0 ++ dom Delta1).zip (Ts2 ++ Ts1)) (cod Delta1)) ->
-      TypingSeq d z Delta gamma es Ts' ->
-      Typing d z Delta gamma (.call e0 Ts1 m es) T0'
+      TypingSeq d Delta gamma es Ts' ->
+      Typing d Delta gamma (.call e0 Ts1 m es) T0'
   | superCall {Delta gamma e0 D Ts D0 Ts0 Delta1 T0 m ps body Ts1 es T0' Ts'} :
       Sub d Delta (.cls D.C Ts) (.cls D0.C Ts0) ->
       Declared d (.dec D0) ->
@@ -122,66 +119,57 @@ inductive Typing (d : Decls) (z : Variant) : Bounds -> Gamma -> Expr -> Ty -> Pr
       Kind d Delta (.cls D.C Ts) ->
       (forall T, List.Mem T Ts1 -> Kind d Delta T) ->
       Seq2 (Sub d Delta) Ts1 (Ty.substList ((dom D0.bounds ++ dom Delta1).zip (Ts0 ++ Ts1)) (cod Delta1)) ->
-      TypingSeq d z Delta gamma (e0 :: es) (.cls D.C Ts :: Ts') ->
-      Typing d z Delta gamma (.superCall e0 (.cls D.C Ts) Ts1 m es) T0'
+      TypingSeq d Delta gamma (e0 :: es) (.cls D.C Ts :: Ts') ->
+      Typing d Delta gamma (.superCall e0 (.cls D.C Ts) Ts1 m es) T0'
   | newTop {Delta gamma D Ts' es1 es2 T''} :
       Declared d (.dec D) ->
       Kind d Delta (.cls D.C Ts') ->
       Ts'.length = D.bounds.length ->
-      TypingSeq d z Delta gamma es1 (Ty.substList ((dom D.bounds).zip Ts') (D.Ss.map Slot.T)) ->
-      Typing d z Delta gamma (.new D.C' (Ty.substList ((dom D.bounds).zip Ts') D.Ts) es2) T'' ->
-      Typing d z Delta gamma (.new D.C Ts' (es1 ++ es2)) (.cls D.C Ts')
+      TypingSeq d Delta gamma es1 (Ty.substList ((dom D.bounds).zip Ts') (D.Ss.map Slot.T)) ->
+      Typing d Delta gamma (.new D.C' (Ty.substList ((dom D.bounds).zip Ts') D.Ts) es2) T'' ->
+      Typing d Delta gamma (.new D.C Ts' (es1 ++ es2)) (.cls D.C Ts')
   | newLocal {Delta gamma C Fs C0 Ts es Ms Delta' Ts'' T''} :
-      z = .funnelled ->
       Consistent d (.loc C Fs C0 Ts es Ms) ->
       Pairing Delta Fs (abs Fs) Delta' Ts'' ->
       (forall X, List.Mem X (Ty.ftvList (cod Delta')) -> List.Mem X (dom Delta')) ->
       Kind d Delta' (.cls C (abs Fs)) ->
       Kind d Delta' (.cls C0 Ts) ->
-      Typing d z Delta gamma (.new C0 Ts es) T'' ->
+      Typing d Delta gamma (.new C0 Ts es) T'' ->
       (forall M, List.Mem M Ms ->
-        MethodOk d z Delta'
+        MethodOk d Delta'
           (withoutThis (restrict gamma (Ty.ftvList (abs Fs))) ++ [{ T := .cls C (abs Fs), x := this }]) M) ->
       OverrideOk d Delta' (.cls C0 Ts) Ms ->
-      Typing d z Delta gamma (.newLocal C Fs C0 Ts es Ms) (.cls C (abs Fs))
-  | newLocalJava {Delta gamma C C0 Ts es Ms T''} :
-      z = .java ->
-      Kind d Delta (.cls C0 Ts) ->
-      Typing d z Delta gamma (.new C0 Ts es) T'' ->
-      (forall M, List.Mem M Ms ->
-        MethodOk d z Delta (withoutThis gamma ++ [{ T := .cls C [], x := this }]) M) ->
-      OverrideOk d Delta (.cls C0 Ts) Ms ->
-      Typing d z Delta gamma (.newLocal C [] C0 Ts es Ms) (.cls C [])
+      Typing d Delta gamma (.newLocal C Fs C0 Ts es Ms) (.cls C (abs Fs))
   | ifInst {Delta gamma e0 T0 T x e1 e2 T'} :
-      Typing d z Delta gamma e0 T0 ->
+      Typing d Delta gamma e0 T0 ->
       Kind d Delta T ->
       Cast d Delta T0 T ->
-      Typing d z Delta (gamma ++ [{ T := T, x := x }]) e1 T' ->
-      Typing d z Delta gamma e2 T' ->
-      Typing d z Delta gamma (.ifInst e0 T x e1 e2) T'
-inductive TypingSeq (d : Decls) (z : Variant) : Bounds -> Gamma -> List Expr -> List Ty -> Prop
-  | nil {Delta gamma} : TypingSeq d z Delta gamma [] []
+      Typing d Delta (gamma ++ [{ T := T, x := x }]) e1 T' ->
+      Typing d Delta gamma e2 T' ->
+      Typing d Delta gamma (.ifInst e0 T x e1 e2) T'
+inductive TypingSeq (d : Decls) : Bounds -> Gamma -> List Expr -> List Ty -> Prop
+  | nil {Delta gamma} : TypingSeq d Delta gamma [] []
   | cons {Delta gamma e es T Ts} :
-      Typing d z Delta gamma e T -> TypingSeq d z Delta gamma es Ts ->
-      TypingSeq d z Delta gamma (e :: es) (T :: Ts)
-inductive MethodOk (d : Decls) (z : Variant) : Bounds -> Gamma -> Method -> Prop
+      Typing d Delta gamma e T -> TypingSeq d Delta gamma es Ts ->
+      TypingSeq d Delta gamma (e :: es) (T :: Ts)
+inductive MethodOk (d : Decls) : Bounds -> Gamma -> Method -> Prop
   | mk {Delta gamma Delta' T0 m ps e} :
       (forall T, List.Mem T (cod Delta') -> Kind d (Delta ++ Delta') T) ->
       (forall T, List.Mem T (T0 :: ps.map VarDecl.T) -> Kind d (Delta ++ Delta') T) ->
-      Typing d z (Delta ++ Delta') (gamma ++ ps) e T0 ->
-      MethodOk d z Delta gamma (.mk Delta' T0 m ps e)
+      Typing d (Delta ++ Delta') (gamma ++ ps) e T0 ->
+      MethodOk d Delta gamma (.mk Delta' T0 m ps e)
 end
 
-def ClassOk (d : Decls) (z : Variant) (D : Dec) : Prop :=
+def ClassOk (d : Decls) (D : Dec) : Prop :=
   (forall T, List.Mem T (cod D.bounds) -> Kind d D.bounds T) /\
   (forall T, List.Mem T (Ty.cls D.C' D.Ts :: D.Ss.map Slot.T) -> Kind d D.bounds T) /\
   (forall M, List.Mem M D.Ms ->
-    MethodOk d z D.bounds [{ T := .cls D.C (vars (dom D.bounds)), x := this }] M) /\
+    MethodOk d D.bounds [{ T := .cls D.C (vars (dom D.bounds)), x := this }] M) /\
   OverrideOk d D.bounds (.cls D.C' D.Ts) D.Ms
 
-def DeclsOk (d : Decls) (z : Variant) : Prop := forall D, List.Mem D d -> ClassOk d z D
+def DeclsOk (d : Decls) : Prop := forall D, List.Mem D d -> ClassOk d D
 
-def ProgOk (d : Decls) (z : Variant) (e : Expr) : Prop :=
-  DeclsOk d z /\ exists T, Typing d z [] [] e T
+def ProgOk (d : Decls) (e : Expr) : Prop :=
+  DeclsOk d /\ exists T, Typing d [] [] e T
 
 end Funnelling.High

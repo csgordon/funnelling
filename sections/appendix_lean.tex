@@ -15,7 +15,8 @@
 \newenvironment{leanside}{\begin{minipage}[t]{0.53\textwidth}\vspace{0pt}}{\end{minipage}}
 \newcommand{\mapping}[1]{\par\smallskip\noindent{\scriptsize\textit{Mapping.} #1}\par\smallskip\hrule}
 
-This appendix relates the formalism of Section~\ref{sec:core} and Section~\ref{sec:java} to a Lean~4 formalization in the folder \texttt{lean} of the paper repository.
+This appendix relates the formalism of Section~\ref{sec:core} to a Lean~4 formalization in the folder \texttt{lean} of the paper repository.
+Rule \textsc{new-local-java} of Section~\ref{sec:java} is not formalized: Type Soundness concerns only the type system with rule \textsc{new-local}.
 The Lean formalization is set up, but the proofs of the soundness theorems are not done yet.
 
 \subsection{Request}
@@ -1046,25 +1047,21 @@ inductive Cast (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
 \fit{$\inferrule{ }{\typing{\Delta}{\Gamma}{x}{\Gamma(x)}}$}\qquad
 \fit{$\inferrule{ }{
   \typing{\Delta}{\Gamma}{\obj{\Object}{}{}}{\gen{\Object}{}}
-}$}\\[1ex]
-$\zeta(\mathsf{funnelled})$ types local classes with rule \textsc{new-local}; $\zeta(\mathsf{Java})$ with rule \textsc{new-local-java}.
+}$}
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-inductive Variant where
-  | funnelled
-  | java
-inductive Typing (d : Decls) (z : Variant) : Bounds -> Gamma -> Expr -> Ty -> Prop
+inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
   | subs {Delta gamma e T1 T2} :
-      Typing d z Delta gamma e T1 -> Kind d Delta T2 -> Sub d Delta T1 T2 ->
-      Typing d z Delta gamma e T2
+      Typing d Delta gamma e T1 -> Kind d Delta T2 -> Sub d Delta T1 T2 ->
+      Typing d Delta gamma e T2
   | var {Delta gamma x T} :
-      gamma.lookup x = some T -> Typing d z Delta gamma (.var x) T
+      gamma.lookup x = some T -> Typing d Delta gamma (.var x) T
   | newObject {Delta gamma} :
-      Typing d z Delta gamma (.new Object [] []) (.cls Object [])
+      Typing d Delta gamma (.new Object [] []) (.cls Object [])
 \end{lstlisting}
 \end{leanside}
-\mapping{$\typing{\Delta}{\Gamma}{e}{T}$ in $\zeta(\mathsf{funnelled})$ is \texttt{Typing d .funnelled Delta gamma e T}, and in $\zeta(\mathsf{Java})$ it is \texttt{Typing d .java Delta gamma e T}.}
+\mapping{$\typing{\Delta}{\Gamma}{e}{T}$ is \texttt{Typing d Delta gamma e T}.}
 \end{cmp}
 
 \begin{cmp}{\textsc{declField}}
@@ -1080,11 +1077,11 @@ inductive Typing (d : Decls) (z : Variant) : Bounds -> Gamma -> Expr -> Ty -> Pr
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
   | declField {Delta gamma e D Ts' T f} :
-      Typing d z Delta gamma e (.cls D.C Ts') ->
+      Typing d Delta gamma e (.cls D.C Ts') ->
       Declared d (.dec D) ->
       List.Mem { T := T, f := f } D.Ss ->
       Ts'.length = D.bounds.length ->
-      Typing d z Delta gamma (.field e f) (T.subst ((dom D.bounds).zip Ts'))
+      Typing d Delta gamma (.field e f) (T.subst ((dom D.bounds).zip Ts'))
 \end{lstlisting}
 \end{leanside}
 \mapping{$\Delta'$ is \texttt{D.bounds}; $\pl{S}$ is \texttt{D.Ss}.}
@@ -1107,7 +1104,7 @@ inductive Typing (d : Decls) (z : Variant) : Bounds -> Gamma -> Expr -> Ty -> Pr
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
   | call {Delta gamma e0 C0 Ts0 Delta0 Ts2 Delta1 T0 m ps body Ts1 es T0' Ts'} :
-      Typing d z Delta gamma e0 (.cls C0 Ts0) ->
+      Typing d Delta gamma e0 (.cls C0 Ts0) ->
       Scope d (.cls C0 Ts0) Delta0 Ts2 ->
       MethodIn d (.mk Delta1 T0 m ps body) C0 ->
       (Ts2 ++ Ts1).length = (Delta0 ++ Delta1).length ->
@@ -1116,8 +1113,8 @@ inductive Typing (d : Decls) (z : Variant) : Bounds -> Gamma -> Expr -> Ty -> Pr
       (forall T, List.Mem T Ts1 -> Kind d Delta T) ->
       Seq2 (Sub d Delta) Ts1
         (Ty.substList ((dom Delta0 ++ dom Delta1).zip (Ts2 ++ Ts1)) (cod Delta1)) ->
-      TypingSeq d z Delta gamma es Ts' ->
-      Typing d z Delta gamma (.call e0 Ts1 m es) T0'
+      TypingSeq d Delta gamma es Ts' ->
+      Typing d Delta gamma (.call e0 Ts1 m es) T0'
 \end{lstlisting}
 \end{leanside}
 \mapping{$T'_0,\ldots,T'_n$ is \texttt{T0' :: Ts'}; $\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T'_1,\ldots,T'_n}$ is \texttt{TypingSeq}.}
@@ -1155,8 +1152,8 @@ inductive Typing (d : Decls) (z : Variant) : Bounds -> Gamma -> Expr -> Ty -> Pr
       (forall T, List.Mem T Ts1 -> Kind d Delta T) ->
       Seq2 (Sub d Delta) Ts1
         (Ty.substList ((dom D0.bounds ++ dom Delta1).zip (Ts0 ++ Ts1)) (cod Delta1)) ->
-      TypingSeq d z Delta gamma (e0 :: es) (.cls D.C Ts :: Ts') ->
-      Typing d z Delta gamma (.superCall e0 (.cls D.C Ts) Ts1 m es) T0'
+      TypingSeq d Delta gamma (e0 :: es) (.cls D.C Ts :: Ts') ->
+      Typing d Delta gamma (.superCall e0 (.cls D.C Ts) Ts1 m es) T0'
 \end{lstlisting}
 \end{leanside}
 \mapping{$C$ is \texttt{D.C} and $C_0$ is \texttt{D0.C}.}
@@ -1179,9 +1176,9 @@ inductive Typing (d : Decls) (z : Variant) : Bounds -> Gamma -> Expr -> Ty -> Pr
       Declared d (.dec D) ->
       Kind d Delta (.cls D.C Ts') ->
       Ts'.length = D.bounds.length ->
-      TypingSeq d z Delta gamma es1 (Ty.substList ((dom D.bounds).zip Ts') (D.Ss.map Slot.T)) ->
-      Typing d z Delta gamma (.new D.C' (Ty.substList ((dom D.bounds).zip Ts') D.Ts) es2) T'' ->
-      Typing d z Delta gamma (.new D.C Ts' (es1 ++ es2)) (.cls D.C Ts')
+      TypingSeq d Delta gamma es1 (Ty.substList ((dom D.bounds).zip Ts') (D.Ss.map Slot.T)) ->
+      Typing d Delta gamma (.new D.C' (Ty.substList ((dom D.bounds).zip Ts') D.Ts) es2) T'' ->
+      Typing d Delta gamma (.new D.C Ts' (es1 ++ es2)) (.cls D.C Ts')
 \end{lstlisting}
 \end{leanside}
 \mapping{$e_1,\ldots,e_n$ is \texttt{es1}; $\pl{e}$ is \texttt{es2}; the $\_$ type is \texttt{T''}.}
@@ -1209,53 +1206,24 @@ $\Gamma\setminus x$ is $\Gamma$ without the variable $x$.
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
   | newLocal {Delta gamma C Fs C0 Ts es Ms Delta' Ts'' T''} :
-      z = .funnelled ->
       Consistent d (.loc C Fs C0 Ts es Ms) ->
       Pairing Delta Fs (abs Fs) Delta' Ts'' ->
       (forall X, List.Mem X (Ty.ftvList (cod Delta')) -> List.Mem X (dom Delta')) ->
       Kind d Delta' (.cls C (abs Fs)) ->
       Kind d Delta' (.cls C0 Ts) ->
-      Typing d z Delta gamma (.new C0 Ts es) T'' ->
+      Typing d Delta gamma (.new C0 Ts es) T'' ->
       (forall M, List.Mem M Ms ->
-        MethodOk d z Delta'
+        MethodOk d Delta'
           (withoutThis (restrict gamma (Ty.ftvList (abs Fs))) ++
             [{ T := .cls C (abs Fs), x := this }]) M) ->
       OverrideOk d Delta' (.cls C0 Ts) Ms ->
-      Typing d z Delta gamma (.newLocal C Fs C0 Ts es Ms) (.cls C (abs Fs))
+      Typing d Delta gamma (.newLocal C Fs C0 Ts es Ms) (.cls C (abs Fs))
 def restrict (gamma : Gamma) (Xs : List TVarName) : Gamma :=
   gamma.filter fun d => (Ty.ftv d.T).all fun X => Xs.contains X
 def withoutThis (gamma : Gamma) : Gamma := gamma.filter fun d => d.x != this
 \end{lstlisting}
 \end{leanside}
 \mapping{$\Gamma|_{\pl{X}}$ is \texttt{restrict gamma Xs}; $\Gamma\setminus\this$ is \texttt{withoutThis gamma}; $\mok{\Delta'}{\ldots}{\pl{M}}$ on the sequence $\pl{M}$ is one \texttt{MethodOk} per method.}
-\end{cmp}
-
-\begin{cmp}{\textsc{new-local-java}}
-\begin{paperside}
-\fit{$\inferrule{
-  \kind{\Delta}{\gen{C'}{\pl{T}}}\\
-  \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\\\
-  \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\gap\this}{\pl{M}}\\\\
-  \mathsf{overrideOk}(\Delta,\gen{C'}{\pl{T}},\pl{M})
-}{
-  \typing{\Delta}{\Gamma}{
-    \innerobj{C}{}{C'}{\pl{T}}{\pl{e}}{\pl{M}}
-  }{\gen{C}{}}
-}$}
-\end{paperside}
-\begin{leanside}
-\begin{lstlisting}[style=leanside]
-  | newLocalJava {Delta gamma C C0 Ts es Ms T''} :
-      z = .java ->
-      Kind d Delta (.cls C0 Ts) ->
-      Typing d z Delta gamma (.new C0 Ts es) T'' ->
-      (forall M, List.Mem M Ms ->
-        MethodOk d z Delta (withoutThis gamma ++ [{ T := .cls C [], x := this }]) M) ->
-      OverrideOk d Delta (.cls C0 Ts) Ms ->
-      Typing d z Delta gamma (.newLocal C [] C0 Ts es Ms) (.cls C [])
-\end{lstlisting}
-\end{leanside}
-\mapping{$C'$ of the paper is \texttt{C0} in Lean.}
 \end{cmp}
 
 \begin{cmp}{\textsc{if-instanceof}}
@@ -1273,12 +1241,12 @@ def withoutThis (gamma : Gamma) : Gamma := gamma.filter fun d => d.x != this
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
   | ifInst {Delta gamma e0 T0 T x e1 e2 T'} :
-      Typing d z Delta gamma e0 T0 ->
+      Typing d Delta gamma e0 T0 ->
       Kind d Delta T ->
       Cast d Delta T0 T ->
-      Typing d z Delta (gamma ++ [{ T := T, x := x }]) e1 T' ->
-      Typing d z Delta gamma e2 T' ->
-      Typing d z Delta gamma (.ifInst e0 T x e1 e2) T'
+      Typing d Delta (gamma ++ [{ T := T, x := x }]) e1 T' ->
+      Typing d Delta gamma e2 T' ->
+      Typing d Delta gamma (.ifInst e0 T x e1 e2) T'
 \end{lstlisting}
 \end{leanside}
 \mapping{$\Gamma,T\gap x$ is \texttt{gamma ++ [\{ T := T, x := x \}]}.}
@@ -1291,11 +1259,11 @@ $\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T_1,\ldots,T_n}$ is $\typing{\Delta}{\G
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-inductive TypingSeq (d : Decls) (z : Variant) : Bounds -> Gamma -> List Expr -> List Ty -> Prop
-  | nil {Delta gamma} : TypingSeq d z Delta gamma [] []
+inductive TypingSeq (d : Decls) : Bounds -> Gamma -> List Expr -> List Ty -> Prop
+  | nil {Delta gamma} : TypingSeq d Delta gamma [] []
   | cons {Delta gamma e es T Ts} :
-      Typing d z Delta gamma e T -> TypingSeq d z Delta gamma es Ts ->
-      TypingSeq d z Delta gamma (e :: es) (T :: Ts)
+      Typing d Delta gamma e T -> TypingSeq d Delta gamma es Ts ->
+      TypingSeq d Delta gamma (e :: es) (T :: Ts)
 inductive Seq2 {A B : Type} (R : A -> B -> Prop) : List A -> List B -> Prop
   | nil : Seq2 R [] []
   | cons {a b as bs} : R a b -> Seq2 R as bs -> Seq2 R (a :: as) (b :: bs)
@@ -1410,12 +1378,12 @@ inductive OverrideOk1 (d : Decls) : Ty -> Method -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-inductive MethodOk (d : Decls) (z : Variant) : Bounds -> Gamma -> Method -> Prop
+inductive MethodOk (d : Decls) : Bounds -> Gamma -> Method -> Prop
   | mk {Delta gamma Delta' T0 m ps e} :
       (forall T, List.Mem T (cod Delta') -> Kind d (Delta ++ Delta') T) ->
       (forall T, List.Mem T (T0 :: ps.map VarDecl.T) -> Kind d (Delta ++ Delta') T) ->
-      Typing d z (Delta ++ Delta') (gamma ++ ps) e T0 ->
-      MethodOk d z Delta gamma (.mk Delta' T0 m ps e)
+      Typing d (Delta ++ Delta') (gamma ++ ps) e T0 ->
+      MethodOk d Delta gamma (.mk Delta' T0 m ps e)
 \end{lstlisting}
 \end{leanside}
 \mapping{The parameters $T_1\gap x_1,\ldots,T_n\gap x_n$ are a \texttt{Gamma}, so $\Gamma,T_1\gap x_1,\ldots$ is \texttt{gamma ++ ps}.}
@@ -1434,11 +1402,11 @@ inductive MethodOk (d : Decls) (z : Variant) : Bounds -> Gamma -> Method -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-def ClassOk (d : Decls) (z : Variant) (D : Dec) : Prop :=
+def ClassOk (d : Decls) (D : Dec) : Prop :=
   (forall T, List.Mem T (cod D.bounds) -> Kind d D.bounds T) /\
   (forall T, List.Mem T (Ty.cls D.C' D.Ts :: D.Ss.map Slot.T) -> Kind d D.bounds T) /\
   (forall M, List.Mem M D.Ms ->
-    MethodOk d z D.bounds [{ T := .cls D.C (vars (dom D.bounds)), x := this }] M) /\
+    MethodOk d D.bounds [{ T := .cls D.C (vars (dom D.bounds)), x := this }] M) /\
   OverrideOk d D.bounds (.cls D.C' D.Ts) D.Ms
 \end{lstlisting}
 \end{leanside}
@@ -1456,21 +1424,21 @@ def ClassOk (d : Decls) (z : Variant) (D : Dec) : Prop :=
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-def DeclsOk (d : Decls) (z : Variant) : Prop := forall D, List.Mem D d -> ClassOk d z D
-def ProgOk (d : Decls) (z : Variant) (e : Expr) : Prop :=
-  DeclsOk d z /\ exists T, Typing d z [] [] e T
+def DeclsOk (d : Decls) : Prop := forall D, List.Mem D d -> ClassOk d D
+def ProgOk (d : Decls) (e : Expr) : Prop :=
+  DeclsOk d /\ exists T, Typing d [] [] e T
 \end{lstlisting}
 \end{leanside}
-\mapping{\texttt{DeclsOk d z} is the first premise; it is also the hypothesis of Type Soundness.}
+\mapping{\texttt{DeclsOk d} is the first premise; it is also the hypothesis of Type Soundness.}
 \end{cmp}
 
 \subsection{Statements and High Level Proofs}
 \label{app:lean:statements}
 The only fixed statement is Type Soundness, on the high level:
 \begin{lstlisting}[language=lean,basicstyle=\scriptsize\ttfamily]
-theorem typeSoundness {d e0 e T} (hwf : WFDecls d) (hok : DeclsOk d .funnelled) (he0 : WFExpr e0)
-    (ht : Typing d .funnelled [] [] e0 T) (hs : Steps d e0 e) :
-    Typing d .funnelled [] [] e T /\ (IsValue e \/ exists e', Reduces d e e')
+theorem typeSoundness {d e0 e T} (hwf : WFDecls d) (hok : DeclsOk d) (he0 : WFExpr e0)
+    (ht : Typing d [] [] e0 T) (hs : Steps d e0 e) :
+    Typing d [] [] e T /\ (IsValue e \/ exists e', Reduces d e e')
 \end{lstlisting}
 It is the Type Soundness theorem of the section on the (un)soundness of method local classes.
 \texttt{hok} is the global \decls such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$; \texttt{hwf} and \texttt{he0} say that the initial program satisfies A1-A11, as every program of the paper does.
@@ -1492,10 +1460,10 @@ In both structures, progress, preservation and the adequacy lemmas are component
 \begin{lstlisting}[language=lean,basicstyle=\scriptsize\ttfamily]
 theorem isValue_tr {e : High.Expr} : High.IsValue e <-> (trExpr e).isValue = true
 theorem wfExpr_tr {e : High.Expr} (he : High.WFExpr e) : Low.wfExpr (trExpr e) = true
-theorem declsOk_tr {d : High.Decls} (hwf : High.WFDecls d) (hok : High.DeclsOk d .funnelled) :
+theorem declsOk_tr {d : High.Decls} (hwf : High.WFDecls d) (hok : High.DeclsOk d) :
     Low.DeclsOk (trDecls d)
 theorem typing_tr {d : High.Decls} {e : High.Expr} {T : High.Ty} (hwf : High.WFDecls d) :
-    High.Typing d .funnelled [] [] e T <->
+    High.Typing d [] [] e T <->
       Low.Typing (trDecls d) false [] [] (trExpr e) (trTy T)
 theorem step_tr {d : High.Decls} {e e' : High.Expr} (hwf : High.WFDecls d) (he : High.WFExpr e)
     (hs : High.Reduces d e e') : Low.Step (trDecls d) (trExpr e) (trExpr e')
@@ -1527,24 +1495,90 @@ The proof uses that the chain of superclasses is unique and that $\pl{X}\subsete
 \subsection{Validation Examples}
 \label{app:lean:examples}
 \leanfile{Examples.lean} defines the class tables below and the examples, on the high level.
-A Lean theorem marked \emph{proved} is accepted by Lean without \texttt{sorry}; a theorem marked \emph{stated} has \texttt{sorry}, and needs the inversion lemmas of Section~\ref{app:lean:statements}.
+A Lean theorem marked \emph{proved} is accepted by Lean, with no axiom other than the standard ones; a theorem marked \emph{stated} has \texttt{sorry}, and needs the inversion lemmas of Section~\ref{app:lean:statements}.
+The core language has no strings, no lambdas, no \Q@switch@ and no casts.
+The examples of Section~2 use \Q@Fun<X,Y>@ for \Q@Function<X,Y>@, and its subclasses \Q@AToB@ and \Q@AsB@ for the lambdas of the two calls of \Q@m@.
+\Q@AsB@ plays the lambda \Q@s->s@: its method \Q@apply@ uses its argument as a \Q@B<>@, so a failing cast to \Q@String@ becomes the call \Q@new A<>().onlyB()@, which is stuck.
+Examples~2 and~3 differ only in the cast, so in the core language they are one program; Examples~4 and~5 differ from Example~3 only in \Q@switch@ and in the bytecode, so they have no counterpart.
 \begin{lstlisting}
 class Object<> extends Object<>{}
 class A<> extends Object<>{}
 class B<> extends Object<>{ B<> onlyB(){ return new B<>(); } }
+class Foo<X extends Object<>> extends Object<>{ X x(){ return this.x(); } }
+class Fun<X extends Object<>,Y extends Object<>> extends Object<>{ Y apply(X x){ return this.apply(x); } }
+class AToB<> extends Fun<A<>,B<>>{ B<> apply(A<> a){ return new B<>(); } }
+class AsB<> extends Fun<B<>,B<>>{ B<> apply(B<> b){ return b.onlyB(); } }
+// d1: Object, A, B, and
 class Box<X extends Object<>> extends Object<>{ X val; X get(){ return this.val; } }
 class C1<> extends Object<>{ A<> m(){ return new A<>(); } }
-class C2<> extends C1<>{}                                         // d1: the classes above
-class Foo<X extends Object<>> extends Object<>{ X x(){ return this.x(); } }
+class C2<> extends C1<>{}
+// d2: Object, A, B, Foo, and
 class Maker<> extends Object<>{ <Y extends Object<>> Foo<Y> mk(Y y){ return
-  new MyFoo<Y funnel> extends Foo<Y>(){ Y x(){ return y; } }; } }  // d2: Object, A, B, Foo, Maker
+  new MyFoo<Y funnel> extends Foo<Y>(){ Y x(){ return y; } }; } }
+// d3, Example 1: Object, A, B, Foo, and
 class Broken<> extends Object<>{ <X extends Object<>> Foo<X> m(Object<> other, X x){ return
   if (other instanceof MyFoo<> w){ w }
-  else { new MyFoo<> extends Foo<X>(){ X x(){ return x; } } }; } }  // d3: Object, A, B, Foo, Broken
+  else { new MyFoo<> extends Foo<X>(){ X x(){ return x; } } }; } }
+// d4: Object, A, B, Foo, and
 class Leaker<> extends Object<>{
   <Y extends Object<>> MyFoo2<> mk2(Y y){ return new MyFoo2<> extends Foo<Y>(){ Y x(){ return y; } }; }
-  <Y extends Object<>> Foo<Y> leak(MyFoo2<> z){ return z; } }     // d4: Object, A, B, Foo, Leaker
+  <Y extends Object<>> Foo<Y> leak(MyFoo2<> z){ return z; } }
+// d4F: Object, A, B, Foo, and
+class LeakerF<> extends Object<>{
+  <Y extends Object<>> MyFoo2F<Y> mk2(Y y){ return new MyFoo2F<Y funnel> extends Foo<Y>(){ Y x(){ return y; } }; }
+  <Y extends Object<>> Foo<Y> leak(MyFoo2F<Y> z){ return z; } }
+// d5, Example 1 funnelled: Object, A, B, Foo, and
+class Fixed<> extends Object<>{ <X extends Object<>> Foo<X> mk(Foo<X> other, X x){ return
+  if (other instanceof MyFoo<X> w){ w }
+  else { new MyFoo<X funnel> extends Foo<X>(){ X x(){ return x; } } }; } }
+// d6, Examples 2 and 3: Object, A, B, Fun, AToB, AsB, and
+class Broken2<> extends Object<>{ <X extends Object<>> Object<> m(Object<> other, X x, Fun<X,B<>> f){ return
+  if (other instanceof MyFoo2<> local){ f.apply(local.x()) }
+  else { new MyFoo2<> extends Object<>(){ X x(){ return x; } } }; } }
+// d6F: Object, A, B, Fun, AToB, AsB, and
+class Holder<X extends Object<>> extends Object<>{}
+class Fixed2<> extends Object<>{ <X extends Object<>> Object<> m(Holder<X> other, X x, Fun<X,B<>> f){ return
+  if (other instanceof MyFoo3<X> local){ f.apply(local.x()) }
+  else { new MyFoo3<X funnel> extends Holder<X>(){ X x(){ return x; } } }; } }
+class Fixed2Obj<> extends Object<>{ <X extends Object<>> Object<> m(Object<> other, X x, Fun<X,B<>> f){ return
+  if (other instanceof MyFoo4<X> local){ f.apply(local.x()) }
+  else { new MyFoo4<X funnel> extends Object<>(){ X x(){ return x; } } }; } }
+// d7, Example 6: Object, A, B, Fun, AToB, AsB, and
+class Broken6<> extends Object<>{
+  <X extends Object<>> Object<> m(Object<> other, X x, Fun<X,B<>> f){ return
+    this.check(new MyFoo6<> extends Object<>(){ X v(){ return x; } B<> show(MyFoo6<> o){ return f.apply(o.v()); } },
+      other); }
+  Object<> check(MyFoo6<> mine, Object<> other){ return
+    if (other instanceof MyFoo6<> local){ mine.show(local) } else { mine }; } }
+// d8, Counterexample 7: Object, A, B, Fun, AToB, AsB, and
+class Box7<X extends Object<>> extends Object<>{ Object<> m(Object<> other, X x, Fun<X,B<>> f){ return
+  if (other instanceof MyFoo7<> local){ f.apply(local.x()) }
+  else { new MyFoo7<> extends Object<>(){ X x(){ return x; } } }; } }
+class Box7F<X extends Object<>> extends Object<>{ Object<> m(Object<> other, X x, Fun<X,B<>> f){ return
+  if (other instanceof MyFoo7F<X> local){ f.apply(local.x()) }
+  else { new MyFoo7F<X funnel> extends Object<>(){ X x(){ return x; } } }; } }
+// d9, nested local classes: Object, A, B, Foo, and
+class Nest<> extends Object<>{ <X extends Object<>> Foo<X> mk(X x){ return
+  new Outer<X funnel> extends Foo<X>(){
+    X x(){ return new Inner<X funnel> extends Foo<X>(){ X x(){ return x; } }.x(); } }; } }
+// d10, ground funnels and funnels together: Object, A, B, Foo, and
+class Mix<> extends Object<>{ <X extends Object<>> Foo<X> mk(X x){ return
+  new Outer2<X funnel> extends Foo<X>(){ X x(){ return x; }
+    <Y extends Object<>> Foo<Y> g(Y y){ return new Inner2<Y funnel> extends Foo<Y>(){ Y x(){ return y; } }; } }; } }
+// d11, overriding: Object, A, and
+class P1<> extends Object<>{ <X extends Object<>> X id(X x){ return x; } }
+class P2<> extends P1<>{ <Z extends Object<>> Z id(Z z){ return z; } }
+class P3<> extends P1<>{ <Z extends Object<>> Object<> id(Z z){ return z; } }
+class P4<> extends P1<>{ <Z extends A<>> Z id(Z z){ return z; } }
+// d12, fields of a superclass: Object, A, B, and
+class Base<X extends Object<>> extends Object<>{ X f; }
+class Derived<> extends Base<A<>>{ B<> g; }
+// d13, the example of Section 4.4: Object, and
+class K<> extends Object<>{ Object<> k(L<> y){ return
+  new L<> extends Object<>(){ Object<> m(Object<> x){ return y.m(x); } }; } }
 \end{lstlisting}
+In the list, the paper verdict follows from the rule or the requirement named in the item.
+A program that is \emph{ill typed} has no type under the rules of Section~\ref{sec:core}, as Lean states it; a program that is \emph{stuck} is not a value and has no reduction step.
 \begin{description}
 \item[W1] \texttt{w1}, proved: d1 satisfies A1-A11.
 \item[W2] \texttt{w2}, proved: a method with two parameters \Q@x@ violates A4.
@@ -1553,6 +1587,23 @@ class Leaker<> extends Object<>{
 \item[W5] \texttt{w5}, proved: d2 satisfies A1-A11.
 \item[W6] \texttt{w6}, proved: d3 and the main expression of Example~1 satisfy A1-A11.
 \item[W7] \texttt{w7}, proved: d4 satisfies A1-A11.
+\item[W8] \texttt{w8}, proved: d5 satisfies A1-A11.
+\item[W9] \texttt{w9}, proved: d6 and the main expression of Example~2 satisfy A1-A11.
+\item[W10] \texttt{w10}, proved: d6F satisfies A1-A11.
+\item[W11] \texttt{w11}, proved: d7 and the main expression of Example~6 satisfy A1-A11.
+\item[W12] \texttt{w12}, proved: d8 and the main expression of Counterexample~7 satisfy A1-A11.
+\item[W13] \texttt{w13}, proved: d4F satisfies A1-A11.
+\item[W14] \texttt{w14}, proved: d9, with \Q@Inner@ written in a method of \Q@Outer@, satisfies A1-A11.
+\item[W15] \texttt{w15}, proved: d10 satisfies A1-A11.
+\item[W16] \texttt{w16}, proved: the value \Q@new Outer2<A<>> extends Foo<A<>>(){..}@, whose method \Q@g@ holds \Q@Inner2<Y funnel>@, satisfies A1-A11: a ground funnel and a funnel in the same main expression.
+\item[W17] \texttt{w17}, proved: d11 satisfies A1-A11.
+\item[W18] \texttt{w18}, proved: a field \Q@f@ declared again in a subclass violates A2.
+\item[W19] \texttt{w19}, proved: a local class named \Q@A@, as a top-level class, violates A1.
+\item[W20] \texttt{w20}, proved: a ground funnel in \decls violates A11.
+\item[W21] \texttt{w21}, proved: \Q@X funnel, X funnel@ violates A6.
+\item[W22] \texttt{w22}, proved: a parameter named \Q@this@ violates A8.
+\item[W23] \texttt{w23}, proved: two classes extending each other violate A9.
+\item[W24] \texttt{w24}, proved: the result of the call of \Q@k@ of Section~4.4 without renaming, a method \Q@m(x)@ holding a value whose method \Q@m@ binds \Q@x@ again, violates A7.
 \item[R1] \texttt{r1}, proved: \Q@new Box<A<>>(new A<>()).val@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFieldFound}.
 \item[R2] \texttt{r2}, proved: \Q@new C2<>().m()@ $\rightarrow$ \Q@new C2<>().[C2<>]m()@ by \textsc{simpleAddSuper}.
 \item[R3] \texttt{r3}, proved: \Q@new C2<>().[C2<>]m()@ $\rightarrow$ \Q@new C2<>().[C1<>]m()@ by \textsc{searchSuper}.
@@ -1565,22 +1616,45 @@ class Leaker<> extends Object<>{
 \item[R9] \texttt{r9}, proved: the value of R7 \Q@.other()@ $\rightarrow$ \Q@.[Foo<A<>>]other()@ by \textsc{innerSuper}.
 \item[R10] \texttt{r10}, proved: the value of R7 \Q@.f@ $\rightarrow$ \Q@new Foo<A<>>().f@ by \textsc{innerFieldSuper}.
 \item[R11] \texttt{r11}, proved: R2, R3, R4 in sequence.
+\item[R12] \texttt{r12}, stated: in d5, \Q@new Fixed<>().<A<>>mk(new Foo<A<>>(), new A<>())@ $\rightarrow^*$ \Q@new MyFoo<A<>> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }@: the type test fails by \textsc{ifElse}.
+\item[R13] \texttt{r13}, stated: in d5, \Q@mk@ given that value of \Q@MyFoo<A<>>@ returns it: the type test succeeds by \textsc{ifThen}.
+\item[R14] \texttt{r14}, stated: Example~2 reduces to \Q@new A<>().onlyB()@, which is stuck: the second call finds the \Q@MyFoo2@ of the first call, and \Q@AsB@ receives the \Q@A<>@ of the first call.
+\item[R15] \texttt{r15}, stated: Example~6 reduces to \Q@new A<>().onlyB()@, which is stuck: \Q@mine.show(local)@ applies the \Q@f@ of the second call to the \Q@v()@ of the first call.
+\item[R16] \texttt{r16}, stated: Counterexample~7 reduces as Example~2, to \Q@new A<>().onlyB()@, which is stuck.
+\item[R17] \texttt{r17}, stated: \Q@new Leaker<>().<B<>>leak(new Leaker<>().<A<>>mk2(new A<>())).x().onlyB()@ reduces to \Q@new A<>().onlyB()@, which is stuck.
+\item[R18] \texttt{r18}, stated: \Q@new Nest<>().<A<>>mk(new A<>()).x()@ $\rightarrow^*$ \Q@new A<>()@, through a value of \Q@Outer@ and a value of \Q@Inner@.
+\item[R19] \texttt{r19}, stated: calling \Q@g<B<>>@ on the value of W16 gives \Q@new Inner2<B<>> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }@.
+\item[R20] \texttt{r20}, proved: \Q@new Derived<>(new B<>(), new A<>()).f@ $\rightarrow$ \Q@new Base<A<>>(new A<>()).f@ $\rightarrow$ \Q@new A<>()@, by \textsc{simpleFieldSuper} and \textsc{simpleFieldFound}.
+\item[R21] \texttt{r21}, proved: \Q@if (new A<>() instanceof A<> x){ if (x instanceof A<> y){ y } else { x } } else { new B<>() }@ $\rightarrow$ \Q@if (new A<>() instanceof A<> y1){ y1 } else { new A<>() }@: \textsc{ifThen} renames the inner \Q@y@.
+\item[R22] \texttt{r22}, proved: \Q@new K<>().k(vL)@ $\rightarrow^*$ \Q@new L<> extends Object<>(){ Object<> m(Object<> x1){ return vL.m(x1); } }@, where \Q@vL@ is a value of \Q@L@ whose method \Q@m@ binds \Q@x@: \textsc{simpleFound} renames \Q@y@ and \Q@x@, so the result satisfies A7 (compare W24).
 \item[T1] \texttt{t1}, proved: \Q@new Box<A<>>(new A<>()).val : A<>@.
 \item[T2] \texttt{t2}, stated: \Q@new Box<A<>>(new B<>())@ is ill typed: \Q@B<>@ is not a subtype of \Q@A<>@.
-\item[C1] \texttt{c1}, proved: $\cast{\QQ{X extends Object<>}}{\QQ{Foo<X>}}{\QQ{MyFoo<X>}}$ in d2.
-\item[C2] \texttt{c2}, stated: not $\cast{\QQ{X extends Object<>}}{\QQ{Object<>}}{\QQ{MyFoo<X>}}$ in d2.
-\item[M1] \texttt{m1}, stated: class \Q@Maker@ is Ok under funnelled typing.
-\item[J1] \texttt{j1}, stated: Example~1 (d3) is well typed under Java typing.
+\item[T3] \texttt{t3}, stated: in d5, \Q@new Fixed<>().<A<>>mk(new Foo<A<>>(), new A<>()) : Foo<A<>>@.
+\item[T4] \texttt{t4}, proved: \Q@new Derived<>(new B<>(), new A<>()).f : A<>@, by \textsc{subs} to \Q@Base<A<>>@ and then \textsc{declField}.
+\item[C1] \texttt{c1}, proved: $\cast{\QQ{X extends Object<>}}{\QQ{Foo<X>}}{\QQ{MyFoo<X>}}$ in d2, by \textsc{cast-down}.
+\item[C2] \texttt{c2}, stated: not $\cast{\QQ{X extends Object<>}}{\QQ{Object<>}}{\QQ{MyFoo<X>}}$ in d2: \textsc{cast-down} needs $\QQ{X}\in\ftv{\emptyset}$, since \Q@MyFoo<Y>@ has the supertype \Q@Object<>@ with no type arguments.
+\item[C3] \texttt{c3}, proved: $\cast{\QQ{X extends Foo<A<>>}}{\QQ{X}}{\QQ{MyFoo<A<>>}}$ in d2, by \textsc{cast-var} and then \textsc{cast-down}.
+\item[C4] \texttt{c4}, proved: $\cast{\emptyset}{\QQ{B<>}}{\QQ{Object<>}}$, by \textsc{cast-up}.
+\item[C5] \texttt{c5}, stated: not $\cast{\emptyset}{\QQ{A<>}}{\QQ{B<>}}$: the classes are unrelated.
+\item[D1] \texttt{d1Inner}, proved: \Q@Inner@ is declared: it occurs in the method \Q@x@ of \Q@Outer@, which occurs in the method \Q@mk@ of \Q@Nest@.
+\item[K1] \texttt{k1}, proved: $\kind{\emptyset}{\QQ{Inner<A<>>}}$: the scope of \Q@Inner@ goes through the scope of \Q@Outer<X>@.
+\item[O1] \texttt{o1}, proved: $\mathsf{overrideOk}(\QQ{P1<>},M)$ for the method \Q@id@ of \Q@P2@, whose type variable is \Q@Z@ instead of \Q@X@.
+\item[O2] \texttt{o2}, stated: not $\mathsf{overrideOk}(\QQ{P1<>},M)$ for the method \Q@id@ of \Q@P3@, which returns \Q@Object<>@.
+\item[O3] \texttt{o3}, stated: class \Q@P2@ is Ok.
+\item[O4] \texttt{o4}, stated: classes \Q@P3@ and \Q@P4@ are not Ok: \Q@P3@ changes the return type, \Q@P4@ changes the bound of the type variable.
+\item[M1] \texttt{m1}, stated: class \Q@Maker@ is Ok.
+\item[P1] \texttt{p1}, stated: class \Q@Fixed@ is Ok.
+\item[P2] \texttt{p2}, stated: class \Q@Fixed2@ is Ok: \Q@Holder<X>@ determines \Q@X@.
+\item[P3] \texttt{p3}, stated: class \Q@LeakerF@ is Ok.
+\item[N1] \texttt{n1}, stated: Example~1 is ill typed: rule \textsc{new-local} fails at $\kind{\emptyset}{\QQ{Foo<X>}}$, since \Q@MyFoo@ funnels nothing.
+\item[N2] \texttt{n2}, stated: in d5, the main expression of Example~1 is ill typed: a \Q@Foo<A<>>@ is passed where a \Q@Foo<B<>>@ is expected.
+\item[N3] \texttt{n3}, stated: Example~2 is ill typed: the method \Q@x@ of \Q@MyFoo2@ returns \Q@X@, which \Q@MyFoo2@ does not funnel.
+\item[N4] \texttt{n4}, stated: class \Q@Fixed2Obj@ is not Ok: \Q@MyFoo4@ funnels \Q@X@, but \Q@Object<>@ does not determine \Q@X@, so the type test is rejected.
+\item[N5] \texttt{n5}, stated: Example~6 is ill typed: \Q@MyFoo6@ mentions \Q@X@ and captures \Q@f@, but funnels nothing.
+\item[N6] \texttt{n6}, stated: class \Q@Box7@ is not Ok: \Q@MyFoo7@ does not funnel the class type variable \Q@X@.
+\item[N7] \texttt{n7}, stated: class \Q@Box7F@ is not Ok: \Q@Object<>@ does not determine \Q@X@; javac rejects Counterexample~7 for the same reason.
+\item[N8] \texttt{n8}, stated: in d4F, the main expression of the leak is ill typed: a \Q@MyFoo2F<A<>>@ is passed where a \Q@MyFoo2F<B<>>@ is expected.
 \item[J2] \texttt{j2}, stated: Example~1 reduces to \Q@new A<>().onlyB()@, which is stuck.
-\item[N1] \texttt{n1}, stated: Example~1 is ill typed under funnelled typing.
-\item[L1] \texttt{l1}, stated: class \Q@Leaker@ is Ok under Java typing.
-\item[L2] \texttt{l2}, stated: class \Q@Leaker@ is not Ok under funnelled typing.
+\item[L2] \texttt{l2}, stated: class \Q@Leaker@ is not Ok: the local class in \Q@mk2@ funnels nothing, as in N1.
+\item[S1] \texttt{s1}, stated: \Q@new Object<>().f@ is stuck.
 \end{description}
-\smallskip
-
-\noindent In the paper, the verdict of each example follows from the rule named in the list, or, for W1-W7, from the requirements named in the list.
-For R7, the paper renames with $\mathsf{fresh}$ the type variable \Q@Y@ and the parameter \Q@y@ of \Q@mk@, and then substitutes \Q@A<>@ and \Q@new A<>()@; the method \Q@x@ of the local class binds no names.
-For T2, rule \textsc{new-top} needs \Q@new B<>() : A<>@, and no rule gives it.
-For C2, rule \textsc{cast-down} needs $\QQ{X}\in\ftv{\emptyset}$, since \Q@MyFoo<Y>@ has the supertype \Q@Object<>@ with no type arguments.
-For J1, J2 and N1, Section~\ref{sec:java} gives the derivation; N1 fails at $\kind{\emptyset}{\QQ{Foo<X>}}$ in rule \textsc{new-local}, since \Q@MyFoo@ funnels nothing.
-For L1 and L2, Section~\ref{sec:java} discusses the method \Q@leak@; L2 fails at the local class in \Q@mk2@, as N1 does.
