@@ -1,0 +1,14 @@
+\section{Technical Clarifications}
+\label{sec:clarifications}
+The well-formedness requirements A1-A11 of Section~\ref{sec:core} are part of the grammar.
+A metavariable ranges only over the syntactic forms that satisfy them.
+For example, by requirement A4, the grammar of $M$ does not generate a sequence of symbols with the shape of a method declaring two parameters named \Q@x@, so no metavariable $M$ stands for that sequence of symbols.
+Thus every program $\decls\gap e$ satisfies the well-formedness requirements.
+\\[1ex]
+The type rules and the reduction rules are metarules.
+An instance of a metarule replaces every metavariable of the metarule, consistently, with a syntactic form of the grammar of that metavariable.
+A judgement holds when it is the conclusion of a derivation built from instances of the metarules.
+In particular, an instance of a reduction rule $\step{e}{e'}$ exists only when the right side $e'$ is an expression.
+Thus a reduction step never produces a sequence of symbols that the grammar does not generate.
+When the substitutions of a reduction rule would produce such a sequence of symbols for a redex, that reduction rule has no instance for that redex.
+The proof of Progress shows that, for every well-typed expression that is not a value, some reduction rule has an instance.

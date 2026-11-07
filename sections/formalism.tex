@@ -94,7 +94,6 @@ We require the following well-formedness conditions:
     \item[(A10)] In \decls, the superclass of every class, top-level or local, is a top-level class.
     \item[(A11)] In \decls, every funnel is of the form $\funnel{X}$.
 \end{enumerate}
-The well-formedness requirements restrict the grammar: a term that violates them is not a term.
 Well-formedness requirements A1-A10 are common requirements, such as uniqueness of names.
 To simplify scoping, no shadowing is allowed.
 A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ of the enclosing method; this is the only form of shadowing.
@@ -349,7 +348,7 @@ Object<> k(L<> y){ return
 \end{lstlisting}
 In a call of \Q@k@ with a value \Q@v@ of class \Q@L@, the body of \Q@m@ becomes \Q@v.m(x)@, and \Q@v@ contains a copy of the method \Q@m@ binding \Q@x@ again.
 Without renaming, rule \textsc{innerFound} would replace \Q@x@ also in the method \Q@m@ of \Q@v@.
-Without renaming, for some redexes rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} would have no instance: the expression on the right of the arrow would violate requirement A7.
+Without renaming, for some redexes rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} would have no instance: the substitution would place a binder of a name under a binder of the same name, and requirement A7 excludes this shadowing.
 Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} place values under the binders of the expression they substitute into.
 Those binders are fresh, so the values do not bind the same names.
 A substitution can copy a value, so several copies of a value can bind the same names; those copies are never nested, so they do not shadow each other.

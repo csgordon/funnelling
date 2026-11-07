@@ -9,17 +9,19 @@ Both variants use the type test of Java:
 rule \textsc{if-instanceof} accepts only checked casts, and at run time rules \textsc{ifThen} and \textsc{ifElse} compare class names only.
 As shown in Section~\ref{sec:core}, $\zeta(\mathsf{Java})$ is unsound.
 We now show that $\zeta(\mathsf{funnelled})$ is sound.
-In the statements below, $\mathsf{Dec}\gap\mathrm{Ok}$ holds for every $\mathsf{Dec}\in\decls$.
 
 \begin{theorem}[Progress]
-If $\typing{\emptyset}{\emptyset}{e}{T}$, then either $e$ is a value $v$, or there is an $e'$ such that $\step{e}{e'}$.
+Under a global $\decls$ such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$:
+if $\typing{\emptyset}{\emptyset}{e}{T}$, then either $e$ is a value $v$, or there is an $e'$ such that $\step{e}{e'}$.
 \end{theorem}
 
 \begin{theorem}[Preservation]
-If $\typing{\emptyset}{\emptyset}{e}{T}$ and $\step{e}{e'}$, then $\typing{\emptyset}{\emptyset}{e'}{T}$.
+Under a global $\decls$ such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$:
+if $\typing{\emptyset}{\emptyset}{e}{T}$ and $\step{e}{e'}$, then $\typing{\emptyset}{\emptyset}{e'}{T}$.
 \end{theorem}
 
 \begin{corollary}[Type Soundness]
-If $\vdash\decls\gap e_0\gap\mathrm{Ok}$ with $\typing{\emptyset}{\emptyset}{e_0}{T}$, and $e_0\rightarrow^* e$ with no $e'$ such that $\step{e}{e'}$, then $e$ is a value $v$ and $\typing{\emptyset}{\emptyset}{v}{T}$.
+Under a global $\decls$ such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$:
+if $\typing{\emptyset}{\emptyset}{e_0}{T}$, and $e_0\rightarrow^* e$ with no $e'$ such that $\step{e}{e'}$, then $e$ is a value $v$ and $\typing{\emptyset}{\emptyset}{v}{T}$.
 \end{corollary}
 % Reified type tests are left out of the formal model on purpose; see Section 2 and the comment after rule ifElse in Figure fig:opsem.
