@@ -1512,21 +1512,30 @@ theorem step_back {d : High.Decls} {e : High.Expr} {e'' : Low.Expr} (hwf : High.
 The low level, the translation and these lemmas can change together; what must not change is the high level and the statements of \texttt{typeSoundness} and \texttt{determinism}.
 The planned proofs of progress and preservation, on whichever level they are proved, are:
 \begin{enumerate}
-\item \textbf{Basic lemmas.} \texttt{lookup} on a substitution built by \texttt{zip}; by A1, $\mathsf{declared}$, $\mathsf{scope}$ and $\mathrm{generic}$ have one result per class name.
+\item \textbf{Basic lemmas.} \texttt{lookup} on a substitution built by \texttt{zip}; by A1, A5 and A7, $\mathsf{declared}$, $\mathsf{scope}$ and $\mathrm{generic}$ have one result per class name; subtyping is transitive; $\subtype{\emptyset}{T_0}{\gen{C}{\pl{T}}}$ and $\subtype{\emptyset}{T_0}{\gen{C}{\pl{T}'}}$ imply $\pl{T}=\pl{T}'$.
 \item \textbf{Renaming.} A renaming by \texttt{Fresh} keeps typing and kinding under $\Delta;\Gamma$ when the renamed expression binds no name of $\mathrm{dom}(\Delta)$ or $\mathrm{dom}(\Gamma)$ and satisfies A7 and A8; in the rules, \texttt{VSubstDefined}, \texttt{GSubstDefined} and \texttt{Nodup} give the first condition; \texttt{Fresh} alone does not keep A7 and A8 (W26, W27).
+For \texttt{FreshM}: if $\typing{\Delta,\Delta_m}{\Gamma,\pl{T}\gap\pl{x}}{e}{T_0}$ and \texttt{FreshM} renames $\Delta_m$, $\pl{x}$ and $e$ into $\Delta''$, $\pl{x}'$ and $e_0$, then $\typing{\Delta,\Delta''}{\Gamma,\pl{T}\sigma\gap\pl{x}'}{e_0}{T_0\sigma}$, with $\sigma=[\Delta_m=\mathrm{dom}(\Delta'')]$, when $\mathrm{dom}(\Delta'')$ and $\pl{x}'$ are disjoint from $\mathrm{dom}(\Delta)$ and $\mathrm{dom}(\Gamma)$.
 \item \textbf{Weakening} of $\Gamma$ and $\Delta$, for typing, kinding and subtyping.
-\item \textbf{Substitution of type variables.} If $\Delta,\Delta'$ types $e$, and ground types $\pl{G}$ satisfy the bounds $\Delta'$, then $e[\Delta'=\pl{G}]$ is typed under $\Delta$ with the substituted type.
+\item \textbf{Substitution of type variables.} If $\Delta,\Delta'$ types $e$, and ground types $\pl{G}$, well kinded under $\emptyset$, satisfy the bounds $\Delta'$, then $e[\Delta'=\pl{G}]$ is typed under $\Delta$ with the substituted type.
 Kinding and subtyping are preserved, but the checked cast is not: in rule \textsc{cast-var}, after $X$ becomes $G$, the source $G$ may not reach the target through \textsc{cast-up} or \textsc{cast-down}.
-For the typing of rule \textsc{if-instanceof} the lemma uses rule \textsc{subs} to lift $e_0$ from $G$ to the substituted bound of $X$, and applies there the substituted premise $\cast{\Delta}{T}{T'}$ of rule \textsc{cast-var}, which ends in \textsc{cast-up}, \textsc{cast-var} or \textsc{cast-down}.
+For rule \textsc{if-instanceof} the lemma uses, by induction on the checked cast: if $\cast{\Delta,\Delta'}{T_0}{T}$, then there is $T_1$, either $T_0\sigma$ or the substituted bound of a type variable, with $\subtype{\Delta}{T_0\sigma}{T_1}$ and $\cast{\Delta}{T_1}{T\sigma}$, where $\sigma$ is $[\Delta'=\pl{G}]$.
+In case \textsc{cast-var}, $T_1$ comes from the induction hypothesis, and $\subtype{\Delta}{X\sigma}{T_1}$ follows from the bound of $X$ (rule \textsc{sub-var} when $X$ stays, the premise on $\pl{G}$ when $X$ is replaced) and transitivity.
+Rule \textsc{subs} lifts the tested expression from $T_0\sigma$ to $T_1$.
+$T_0\sigma$ is a type variable when $T_0$ is a type variable of a method of a local class whose bound mentions $\mathrm{dom}(\Delta')$.
 \item \textbf{Substitution of variables.} Values are closed and typed under $\emptyset;\emptyset$, so substituting values for variables of the same types preserves typing; \Q@this@ is not substituted into the methods of a local class.
 \item \textbf{Inversion} of typing for each form of expression, through rule \textsc{subs}.
-\item \textbf{Canonical forms.} A value of type $\gen{C}{\pl{T}}$ has a class that is a subclass of $C$.
-\item \textbf{Copies of a local class.} By $\mathsf{consistent}$, the methods of a copy have the signatures of the declaration with the funnelled type variables substituted; so rules \textsc{call} and \textsc{sub-inherit-local}, which read the declaration, agree with rule \textsc{innerFound}, which runs the copy.
-\item \textbf{Checked cast.} If $\emptyset\vdash\mathsf{typeOf}(v)<:\gen{C}{\_}$, $v$ has type $T_0$ and $\cast{\emptyset}{T_0}{\gen{C}{\pl{T}}}$, then $v$ has type $\gen{C}{\pl{T}}$.
+\item \textbf{Canonical forms.} If $\typing{\emptyset}{\emptyset}{v}{T}$ then $\subtype{\emptyset}{\mathsf{typeOf}(v)}{T}$.
+\item \textbf{Copies of a local class.} By $\mathsf{consistent}$, the methods of a copy have the signatures of the declaration with the funnelled type variables substituted; so rule \textsc{call} agrees with rule \textsc{innerFound}; by $\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}$, rule \textsc{sub-inherit-local} agrees with rules \textsc{innerSuper} and \textsc{innerFieldSuper}.
+\item \textbf{Overriding.} By $\mathsf{overrideOk}$ in rules \textsc{class-ok} and \textsc{new-local}, the first class declaring $m$ above the class of the receiver gives $m$ the signature, substituted, of $m$ in every supertype.
+\item \textbf{Checked cast.} If $\emptyset\vdash\mathsf{typeOf}(v)<:\gen{C}{\_}$, $v$ has type $T_0$, $\cast{\emptyset}{T_0}{\gen{C}{\pl{T}}}$ and $\kind{\emptyset}{\gen{C}{\pl{T}}}$, then $v$ has type $\gen{C}{\pl{T}}$.
 The proof uses that the chain of superclasses is unique and that $\pl{X}\subseteq\ftv{\pl{T}'}$ fixes $\pl{T}$.
-\item \textbf{Well-formedness of the result.} A step whose $\mathsf{fresh}$ names avoid the names of the program keeps A7; by $\mathsf{Dec}\gap\mathrm{Ok}$, every variable and every type variable of a method body is bound, so a step keeps A12; the other requirements are local; progress needs it, since a step of the paper reduces to a well-formed expression.
+\item \textbf{Well-formedness of the result.} A step whose $\mathsf{fresh}$ names avoid the names of the program keeps A7; by $\mathsf{Dec}\gap\mathrm{Ok}$ for \textsc{simpleFound}, and by A12 of the left side for \textsc{innerFound} and \textsc{ifThen}, every variable and every type variable of a method body is bound, so a step keeps A12; the other requirements are local; progress needs it, since a step of the paper reduces to a well-formed expression.
 \item \textbf{Progress} by induction on typing, with canonical forms; a call terminates its search at a class declaring the method, before \Q@Object@, since typing found the method in a superclass.
 \item \textbf{Preservation} by induction on the reduction, with the lemmas above.
+\item \textbf{Determinism.} An expression that is not a value decomposes in at most one way as $\ctx{e}$ with $e$ a redex, and no value reduces.
+The rules on one redex exclude each other, and by A1, A2 and A3 the class, the field and the method are unique.
+If \texttt{Fresh} relates $e$ to $e'$ and to $e''$, and $e'$ and $e''$ satisfy A7 and A8, then \texttt{Fresh} relates $e'$ and $e''$, and the same for \texttt{FreshM}; \texttt{RenE} alone does not compose.
+Replacing related names with the same ground types and closed values keeps \texttt{Fresh}.
 \end{enumerate}
 
 
