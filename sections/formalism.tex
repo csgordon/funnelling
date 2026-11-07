@@ -49,7 +49,7 @@ An expression is a variable $x$, a method call $\call{e}{\pl{T}}{m}{\pl{e}}$, a 
 As in FJ, \Q@this@ is just a special case of a variable $x$.
 A method call $\call{e}{\pl{T}}{m}{\pl{e}}$ calls the method $m$ on the receiver $e$, with type arguments $\pl{T}$ and arguments $\pl{e}$.
 A super call $\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}$ searches the method $m$ starting from the class of the type $T$, instead of from the class of the receiver $e$.
-That is, a super call works as a flexible kind of super call, attempting to call the method $m$ as if the receiver were of the supertype $T$.
+That is, a super call works as a flexible kind of Java \Q@super@ call, attempting to call the method $m$ as if the receiver were of the supertype $T$.
 An object creation $\obj{C}{\pl{T}}{\pl{e}}$ creates an instance of the top-level class $\gen{C}{\pl{T}}$.
 The arguments $\pl{e}$ are the values of the fields of $C$, followed by the arguments of the object creation of the superclass of $C$.
 A local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ declares the local class $C$ and creates an instance of $C$.
@@ -523,7 +523,7 @@ The rule \textsc{new-local} is the heart of funnelling, including subtle managem
 The rule constructs a restricted set of type bounds and variable bindings reflecting only the explicitly-funnelled type variables:
 $\Delta'$ includes only the explicitly-funnelled type variables, and $\Gamma|_{\ftv{|\pl{F}|}}\setminus\this$ keeps only the variables of $\Gamma$, other than \Q@this@, whose types mention only type variables of the result type $\gen{C}{|\pl{F}|}$ (which must be well-kinded under $\Delta'$).
 The bounds $\Delta'$ are computed by $\pairing{\Delta}{\pl{F}}{|\pl{F}|}$, which is undefined when a funnelled type variable is not in $\Delta$.
-However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., an explicit call), but will reduce to a value which no longer depends on such type variables.
+However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., in the type arguments of a method call), but will reduce to a value which no longer depends on such type variables.
 This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ checks the effective supertype instance under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ ensures the resulting type of that
 expression satisfies the funnelling constraints by checking kinding under the more restrictive $\Delta'$.
 \\[1ex]
