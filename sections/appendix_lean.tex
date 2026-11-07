@@ -1316,10 +1316,10 @@ inductive Seq2 {A B : Type} (R : A -> B -> Prop) : List A -> List B -> Prop
 \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
 \quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C_0}{\pl{T}'}{\_}{\pl{M}'}}\\
 \quad\phantom{\textrm{where }}\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\
-\quad\phantom{\textrm{where }}\mathrm{dom}(\pl{M}')=\mathrm{dom}(\pl{M})\\
+\quad\phantom{\textrm{where }}\mathrm{names}(\pl{M}')=\mathrm{names}(\pl{M})\\
 \quad\phantom{\textrm{where }}\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})
 \end{array}$}\\[1ex]
-$\mathrm{dom}(\pl{M})$ is the set of the names of the methods in $\pl{M}$.
+$\mathrm{names}(\pl{M})$ is the set of the names of the methods in $\pl{M}$.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]

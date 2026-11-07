@@ -55,6 +55,7 @@ The first arguments of $\pl{e}$ initialize the fields of $C$; the other argument
 A local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ declares the local class $C$ and creates an instance of $C$.
 \end{sloppypar}
 
+A program is a class table \decls and a main expression $e$.
 The funnels $\pl{F}$ serve a double role.
 From the perspective of the inside of the local class (the methods $\pl{M}$), the funnels $\pl{F}$ select the type variables in scope that are visible in the local class.
 From the perspective of the \Q@new@ expression itself, the funnels $\pl{F}$ instantiate those type variables, forming the actual type of the created instance.
@@ -78,7 +79,6 @@ A method $\method{\Delta}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e}}$ has 
 Every method has a body; for simplicity, as in FJ, there are no abstract methods.
 A class declaration $K$ is either a top-level declaration $\mathsf{Dec}$ or a local class.
 \\[1ex]
-A program is a class table \decls and a main expression $e$.
 We require the following well-formedness conditions:
 \begin{enumerate}
     \item[(A1)] In \decls, class names are unique across top-level and local classes.
@@ -182,7 +182,7 @@ $\ftv{T_1,\ldots,T_n}$ is $\ftv{T_1}\cup\ldots\cup\ftv{T_n}$;
 $\kind{\Delta}{T_1,\ldots,T_n}$ is $\kind{\Delta}{T_1}\quad\ldots\quad\kind{\Delta}{T_n}$;
 $\subtype{\Delta}{T_1,\ldots,T_n}{T'_1,\ldots,T'_n}$ is $\subtype{\Delta}{T_1}{T'_1}\quad\ldots\quad\subtype{\Delta}{T_n}{T'_n}$;
 $\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T_1,\ldots,T_n}$ is $\typing{\Delta}{\Gamma}{e_1}{T_1}\quad\ldots\quad\typing{\Delta}{\Gamma}{e_n}{T_n}$.
-Finally, $m\not\in\pl{M}$ holds when no method in $\pl{M}$ has name $m$, and $\mathrm{dom}(\pl{M})$ is the set of the names of the methods in $\pl{M}$.
+Finally, $m\not\in\pl{M}$ holds when no method in $\pl{M}$ has name $m$, and $\mathrm{names}(\pl{M})$ is the set of the names of the methods in $\pl{M}$.
 $\Gamma\setminus x$ is $\Gamma$ without the variable $x$.
 For a set of type variables $\pl{X}$, $\Gamma|_{\pl{X}}$ keeps the variables $T\gap x$ of $\Gamma$ such that $\ftv{T}\subseteq\pl{X}$.
 \\[1ex]
@@ -515,7 +515,7 @@ A substitution can place a value at several positions, so several occurrences of
 \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
 \quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C_0}{\pl{T}'}{\_}{\pl{M}'}}\\
 \quad\phantom{\textrm{where }}\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\
-\quad\phantom{\textrm{where }}\mathrm{dom}(\pl{M}')=\mathrm{dom}(\pl{M})\\
+\quad\phantom{\textrm{where }}\mathrm{names}(\pl{M}')=\mathrm{names}(\pl{M})\\
 \quad\phantom{\textrm{where }}\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})
 \end{Define}
 \par}
@@ -539,7 +539,7 @@ The bodies of the methods of $K$ are not required to be those of the declaration
 Rules \textsc{call}, \textsc{sub-inherit-local}, \textsc{wf-class} and \textsc{cast-down}, the relation $\mathsf{consistent}$ and the last case of $\mathsf{overrideOk}(T,M)$ read the declaration, while the reduction runs the methods of the copy.
 
 The relation $\cast{\Delta}{T}{T'}$ is the \emph{checked cast}: a type test against $T'$ on a value of static type $T$ is decided by the class of the value alone.
-Rule \textsc{if-instanceof} accepts the type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ only when $\cast{\Delta}{T_0}{T}$, where $T_0$ is the type of $e_0$.
+Rule \textsc{if-instanceof} accepts the type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ only when $\cast{\Delta}{T_0}{T}$, where $T_0$ is a type of $e_0$.
 Rule \textsc{cast-up} accepts a target $T'$ that is a supertype of the source $T$.
 Rule \textsc{cast-var} replaces a source type variable $X$ with the bound of $X$.
 Rule \textsc{cast-down} accepts a target $\gen{C}{\pl{T}}$ that is a subtype of the source $\gen{C'}{\pl{T}_0}$, when the source determines the type arguments $\pl{T}$.
