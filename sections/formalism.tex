@@ -576,12 +576,11 @@ Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is a subclass of $C$ has t
 \inferrule[class-ok]{
   \declared{\subclass{C'}{\_}{\_}{\_}{\_}{\_}}\\
   \kind{\Delta}{\mathrm{cod}(\Delta)}\\\\
-  \kind{\Delta}{\gen{C'}{\pl{T}}}\\
-  \forall T\gap f\semi\in\pl{S}\ldotp\kind{\Delta}{T}\\\\
+  \kind{\Delta}{\gen{C'}{\pl{T}},T_1,\ldots,T_n}\\\\
   \mok{\Delta}{\gen{C}{\mathrm{dom}(\Delta)}\gap\this}{\pl{M}}\\\\
   \mathsf{overrideOk}(\Delta,\gen{C'}{\pl{T}},\pl{M})
 }{
-  \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}\gap\mathrm{Ok}
+  \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}\gap\mathrm{Ok}
 }
 %
 %  Bs,Bs';G,x1:T1,..xn:Tn |- e : T0
