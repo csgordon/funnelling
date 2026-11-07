@@ -56,7 +56,7 @@ The files are:
 \item \leanfile{High/Syntax.lean}: names, types, ground types, funnels, expressions, methods, values, declarations, class declarations $K$.
 \item \leanfile{High/Substitution.lean}: substitution of type variables and of variables, and $\mathsf{fresh}$.
 \item \leanfile{High/Declarations.lean}: expression contexts, $\mathsf{declared}$, $M\in C$, $\mathrm{generic}$, the pairing, $\mathsf{scope}$, $\mathsf{typeOf}$.
-\item \leanfile{High/WellFormed.lean}: the well-formedness requirements A1-A11.
+\item \leanfile{High/WellFormed.lean}: the well-formedness requirements A1-A12.
 \item \leanfile{High/Typing.lean}: subtyping, kinding, checked casts, $\mathsf{overrideOk}$, $\mathsf{consistent}$, typing, method, class and program typing.
 \item \leanfile{High/Reduction.lean}: evaluation contexts and the reduction.
 \item \leanfile{Low/*.lean}: the low level, and \leanfile{Low/Soundness.lean}, progress and preservation of the low level.
@@ -86,7 +86,7 @@ A rule written with $G$ or $v$ in the paper is written with a \texttt{GTy} or a 
 A Lean constructor has the name of the rule of the paper: \texttt{subInherit} is \textsc{sub-inherit}, \texttt{callLbRuntime} is \textsc{call-lb-runtime}.
 \item \textbf{Grammar and well-formedness.}
 In the paper, the well-formedness requirements restrict the grammar (Section~\ref{sec:clarifications}).
-Lean defines the syntax as inductive types, and A1-A11 as the propositions \texttt{WFDecls} and \texttt{WFExpr}.
+Lean defines the syntax as inductive types, and A1-A12 as the propositions \texttt{WFDecls} and \texttt{WFExpr}.
 Type Soundness assumes them for the initial program.
 A step $\step{e}{e'}$ of the paper is \texttt{Reduces d e e'}: a \texttt{Step} whose result satisfies \texttt{WFExpr}, since an instance of a rule of the paper exists only when its result is an expression.
 The premise of \texttt{Step.ctx} is a \texttt{Step}: an evaluation context binds no name, so \texttt{WFExpr (E.plug e')} implies \texttt{WFExpr e'}.
@@ -361,10 +361,28 @@ abbrev A11 (d : Decls) : Prop := forall k, List.Mem k (classes d) -> forall F, L
 \mapping{\texttt{ifVars} lists the variables of all the \Q@if@.}
 \end{cmp}
 
+\begin{cmp}{A12}
+\begin{paperside}
+(A12) The main expression has no free variable.
+\end{paperside}
+\begin{leanside}
+\begin{lstlisting}[style=leanside]
+def Expr.closed (xs : List VarName) : Expr -> Bool
+  | .var x => xs.contains x
+  | .newLocal _ _ _ _ es Ms => Expr.closedList xs es && Method.closedList xs Ms
+  | .ifInst e0 _ x e1 e2 => e0.closed xs && e1.closed (x :: xs) && e2.closed xs
+  | ...
+def Method.closed (xs : List VarName) : Method -> Bool
+  | .mk _ _ _ ps e => e.closed (this :: xs ++ ps.map VarDecl.x)
+\end{lstlisting}
+\end{leanside}
+\mapping{\texttt{xs} are the variables in scope; the cases written \texttt{...} go into the subexpressions.}
+\end{cmp}
+
 \begin{cmp}{All the requirements}
 \begin{paperside}
-We require the well-formedness conditions A1-A11.\\[1ex]
-The well-formedness requirements A1-A11 are part of the grammar (Section~\ref{sec:clarifications}).
+We require the well-formedness conditions A1-A12.\\[1ex]
+The well-formedness requirements A1-A12 are part of the grammar (Section~\ref{sec:clarifications}).
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
@@ -375,10 +393,10 @@ abbrev WFDecls (d : Decls) : Prop :=
   A9 d /\ A10 d /\ A11 d
 abbrev WFExpr (e : Expr) : Prop :=
   A3 e.locals /\ A4 e.methods /\ A5 (e.methods.map Method.bounds) /\ A6 e.locals /\
-  e.noShadow [] [] = true /\ A8 e.methods e.ifVars
+  e.noShadow [] [] = true /\ A8 e.methods e.ifVars /\ e.closed [] = true
 \end{lstlisting}
 \end{leanside}
-\mapping{\texttt{WFExpr} applies to the main expression the requirements that restrict it, A3-A8.}
+\mapping{\texttt{WFExpr} applies to the main expression the requirements that restrict it, A3-A8 and A12.}
 \end{cmp}
 
 \subsubsection{Declarations}
@@ -1453,7 +1471,7 @@ theorem typeSoundness {d e0 e T} (hwf : WFDecls d) (hok : DeclsOk d) (he0 : WFEx
 theorem determinism {d e e1 e2} (hwf : WFDecls d) (he : WFExpr e) (h1 : Reduces d e e1)
     (h2 : Reduces d e e2) : Fresh e1 e2
 \end{lstlisting}
-\texttt{hok} says that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$; \texttt{hwf} says that \decls satisfies A1-A11, and \texttt{he0} says that the initial expression satisfies A3-A8, as every program of the paper does.
+\texttt{hok} says that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$; \texttt{hwf} says that \decls satisfies A1-A11, and \texttt{he0} says that the initial expression satisfies A3-A8 and A12, as every program of the paper does.
 \\[1ex]
 The proofs are in \leanfile{Proof.lean}, and they can take any structure; \texttt{determinism} is stated there with \texttt{sorry}.
 For \texttt{typeSoundness}, the two structures below are both acceptable:
@@ -1498,7 +1516,7 @@ For the typing of rule \textsc{if-instanceof} the lemma uses rule \textsc{subs} 
 \item \textbf{Copies of a local class.} By $\mathsf{consistent}$, the methods of a copy have the signatures of the declaration with the funnelled type variables substituted; so rules \textsc{call} and \textsc{sub-inherit-local}, which read the declaration, agree with rule \textsc{innerFound}, which runs the copy.
 \item \textbf{Checked cast.} If $\emptyset\vdash\mathsf{typeOf}(v)<:\gen{C}{\_}$, $v$ has type $T_0$ and $\cast{\emptyset}{T_0}{\gen{C}{\pl{T}}}$, then $v$ has type $\gen{C}{\pl{T}}$.
 The proof uses that the chain of superclasses is unique and that $\pl{X}\subseteq\ftv{\pl{T}'}$ fixes $\pl{T}$.
-\item \textbf{Well-formedness of the result.} A step whose $\mathsf{fresh}$ names avoid the names of the program keeps A7, and the other requirements are local; progress needs it, since a step of the paper reduces to a well-formed expression.
+\item \textbf{Well-formedness of the result.} A step whose $\mathsf{fresh}$ names avoid the names of the program keeps A7; by $\mathsf{Dec}\gap\mathrm{Ok}$, every variable of a method body is bound, so a step keeps A12; the other requirements are local; progress needs it, since a step of the paper reduces to a well-formed expression.
 \item \textbf{Progress} by induction on typing, with canonical forms; a call terminates its search at a class declaring the method, before \Q@Object@, since typing found the method in a superclass.
 \item \textbf{Preservation} by induction on the reduction, with the lemmas above.
 \end{enumerate}
@@ -1597,17 +1615,17 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[W3] \texttt{w3}, proved: an \Q@if@ binding the parameter \Q@x@ again violates A7.
 \item[W4] \texttt{w4}, proved: an undeclared superclass violates A9 and A10.
 \item[W5] \texttt{w5}, proved: d2 satisfies A1-A11.
-\item[W6] \texttt{w6}, proved: d3 satisfies A1-A11, and the main expression of Example~1 satisfies A3-A8.
+\item[W6] \texttt{w6}, proved: d3 satisfies A1-A11, and the main expression of Example~1 satisfies A3-A8 and A12.
 \item[W7] \texttt{w7}, proved: d4 satisfies A1-A11.
 \item[W8] \texttt{w8}, proved: d5 satisfies A1-A11.
-\item[W9] \texttt{w9}, proved: d6 satisfies A1-A11, and the main expression of Example~2 satisfies A3-A8.
+\item[W9] \texttt{w9}, proved: d6 satisfies A1-A11, and the main expression of Example~2 satisfies A3-A8 and A12.
 \item[W10] \texttt{w10}, proved: d6F satisfies A1-A11.
-\item[W11] \texttt{w11}, proved: d7 satisfies A1-A11, and the main expression of Example~6 satisfies A3-A8.
-\item[W12] \texttt{w12}, proved: d8 satisfies A1-A11, and the main expression of Counterexample~7 satisfies A3-A8.
+\item[W11] \texttt{w11}, proved: d7 satisfies A1-A11, and the main expression of Example~6 satisfies A3-A8 and A12.
+\item[W12] \texttt{w12}, proved: d8 satisfies A1-A11, and the main expression of Counterexample~7 satisfies A3-A8 and A12.
 \item[W13] \texttt{w13}, proved: d4F satisfies A1-A11.
 \item[W14] \texttt{w14}, proved: d9, with \Q@Inner@ written in a method of \Q@Outer@, satisfies A1-A11.
 \item[W15] \texttt{w15}, proved: d10 satisfies A1-A11.
-\item[W16] \texttt{w16}, proved: the value \Q@new Outer2<A<>> extends Foo<A<>>(){..}@, whose method \Q@g@ holds \Q@Inner2<Y funnel>@, satisfies A3-A8: a ground funnel and a funnel in the same main expression.
+\item[W16] \texttt{w16}, proved: the value \Q@new Outer2<A<>> extends Foo<A<>>(){..}@, whose method \Q@g@ holds \Q@Inner2<Y funnel>@, satisfies A3-A8 and A12: a ground funnel and a funnel in the same main expression.
 \item[W17] \texttt{w17}, proved: d11 satisfies A1-A11.
 \item[W18] \texttt{w18}, proved: a field \Q@f@ declared again in a subclass violates A2.
 \item[W19] \texttt{w19}, proved: a local class named \Q@A@, as a top-level class, violates A1.
@@ -1619,6 +1637,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[W25] \texttt{w25}, proved: in \Q@if (new A<>() instanceof A<> x){ if (new B<>() instanceof B<> y){ y.onlyB() } else { new B<>() } } else { new B<>() }@, renaming \Q@y@ into \Q@x@ makes the substitution \Q@[x=new A<>()]@ of rule \textsc{ifThen} undefined, so rule \textsc{ifThen} has no instance with that renaming.
 \item[W26] \texttt{w26}, proved: \texttt{Fresh} relates \Q@if (new A<>() instanceof A<> x){ new L<> extends Object<>(){ Object<> m(){ return x; } } } else { new B<>() }@ to the same expression with \Q@x@ renamed into \Q@this@, which the method \Q@m@ captures; the renamed expression violates A8.
 \item[W27] \texttt{w27}, proved: \texttt{Fresh} relates the program of W25 to the same program with \Q@y@ renamed into \Q@x@; the renamed program violates A7.
+\item[W28] \texttt{w28}, proved: \Q@if (vZ instanceof L<> x){ if (new A<>() instanceof A<> y){ x } else { x } } else { new B<>() }@ violates A12, where \Q@vZ@ is \Q@new L<> extends Object<>(){ Object<> m(){ return z; } }@.
 \item[R1] \texttt{r1}, proved: \Q@new Box<A<>>(new A<>()).val@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFieldFound}.
 \item[R2] \texttt{r2}, proved: \Q@new C2<>().m()@ $\rightarrow$ \Q@new C2<>().[C2<>]m()@ by \textsc{simpleAddSuper}.
 \item[R3] \texttt{r3}, proved: \Q@new C2<>().[C2<>]m()@ $\rightarrow$ \Q@new C2<>().[C1<>]m()@ by \textsc{searchSuper}.

@@ -47,6 +47,25 @@ def Method.noShadowList (tvs vs : List Name) : List Method -> Bool
   | m :: ms => m.noShadow tvs vs && Method.noShadowList tvs vs ms
 end
 
+mutual
+def Expr.closed (vs : List Name) : Expr -> Bool
+  | .var x => vs.contains x
+  | .call e _ _ es => e.closed vs && Expr.closedList vs es
+  | .superCall e _ _ _ es => e.closed vs && Expr.closedList vs es
+  | .field e _ => e.closed vs
+  | .new _ _ es => Expr.closedList vs es
+  | .newLocal _ _ _ _ es ms => Expr.closedList vs es && Method.closedList vs ms
+  | .ifInst e0 _ x e1 e2 => e0.closed vs && e1.closed (x :: vs) && e2.closed vs
+def Expr.closedList (vs : List Name) : List Expr -> Bool
+  | [] => true
+  | e :: es => e.closed vs && Expr.closedList vs es
+def Method.closed (vs : List Name) : Method -> Bool
+  | .mk _ _ _ ps e => e.closed (thisName :: vs ++ ps.map Prod.snd)
+def Method.closedList (vs : List Name) : List Method -> Bool
+  | [] => true
+  | m :: ms => m.closed vs && Method.closedList vs ms
+end
+
 def Method.params : Method -> List Name
   | .mk _ _ _ ps _ => ps.map Prod.snd
 
@@ -118,7 +137,7 @@ def wfDecls (d : Decls) : Bool :=
 
 def wfExpr (e : Expr) : Bool :=
   a3 e.locals && a4 e.methods && a5 [] e.methods && a6 e.locals && e.noShadow [] [] &&
-  a8 e.methods e.ifVars && groundFunnels e.locals
+  a8 e.methods e.ifVars && groundFunnels e.locals && e.closed []
 
 def WFProgram (d : Decls) (e : Expr) : Prop := wfDecls d = true /\ wfExpr e = true
 

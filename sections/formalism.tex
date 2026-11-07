@@ -92,8 +92,9 @@ We require the following well-formedness conditions:
     \item[(A9)] \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every other top-level class reaches \Q@Object@.
     \item[(A10)] In \decls, the superclass of every class, top-level or local, is a top-level class.
     \item[(A11)] In \decls, every funnel is of the form $\funnel{X}$.
+    \item[(A12)] The main expression has no free variable.
 \end{enumerate}
-Well-formedness requirements A1-A10 are common requirements, such as uniqueness of names.
+Well-formedness requirements A1-A10 and A12 are common requirements, such as uniqueness of names.
 A11 is the funnel requirement of Section~\ref{sec:syntax}.
 A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ of the enclosing method.
 

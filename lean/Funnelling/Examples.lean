@@ -1284,4 +1284,10 @@ theorem w27 : Fresh outerIf renamedIf /\ WFExpr outerIf /\ Not (WFExpr renamedIf
       (RenE.ifInst (.new .nil) (RenE.ifInst (.new .nil) (.call .var .nil) (.new .nil)) (.new .nil)))
     (And.intro (by decide) (by decide))
 
+def vZ : Value := .newLocal (cn "L") [] Object [] [] [.mk [] obj (mn "m") [] (.var (vn "z"))]
+def eOpen : Expr := .ifInst vZ (.cls (cn "L") []) (vn "x") (.ifInst vA tA (vn "y") (ev "x") (ev "x")) vB
+
+-- W28: a main expression whose value vZ holds the free variable z violates A12.
+theorem w28 : Not (WFExpr eOpen) := by decide
+
 end Funnelling.Examples

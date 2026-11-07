@@ -70,6 +70,25 @@ def Method.noShadowList (Xs : List TVarName) (xs : List VarName) : List Method -
   | M :: Ms => M.noShadow Xs xs && Method.noShadowList Xs xs Ms
 end
 
+mutual
+def Expr.closed (xs : List VarName) : Expr -> Bool
+  | .var x => xs.contains x
+  | .call e _ _ es => e.closed xs && Expr.closedList xs es
+  | .superCall e _ _ _ es => e.closed xs && Expr.closedList xs es
+  | .field e _ => e.closed xs
+  | .new _ _ es => Expr.closedList xs es
+  | .newLocal _ _ _ _ es Ms => Expr.closedList xs es && Method.closedList xs Ms
+  | .ifInst e0 _ x e1 e2 => e0.closed xs && e1.closed (x :: xs) && e2.closed xs
+def Expr.closedList (xs : List VarName) : List Expr -> Bool
+  | [] => true
+  | e :: es => e.closed xs && Expr.closedList xs es
+def Method.closed (xs : List VarName) : Method -> Bool
+  | .mk _ _ _ ps e => e.closed (this :: xs ++ ps.map VarDecl.x)
+def Method.closedList (xs : List VarName) : List Method -> Bool
+  | [] => true
+  | M :: Ms => M.closed xs && Method.closedList xs Ms
+end
+
 def findDec (d : Decls) (C : ClassName) : Option Dec := d.find? fun D => D.C == C
 
 def superChain (d : Decls) : Nat -> ClassName -> List Dec
@@ -113,6 +132,6 @@ abbrev WFDecls (d : Decls) : Prop :=
 
 abbrev WFExpr (e : Expr) : Prop :=
   A3 e.locals /\ A4 e.methods /\ A5 (e.methods.map Method.bounds) /\ A6 e.locals /\
-  e.noShadow [] [] = true /\ A8 e.methods e.ifVars
+  e.noShadow [] [] = true /\ A8 e.methods e.ifVars /\ e.closed [] = true
 
 end Funnelling.High
