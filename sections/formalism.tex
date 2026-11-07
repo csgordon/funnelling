@@ -60,7 +60,7 @@ From the perspective of the inside of the local class (the methods $\pl{M}$), th
 From the perspective of the \Q@new@ expression itself, the funnels $\pl{F}$ instantiate those generic parameters, forming the actual type of the created instance.
 
 To allow a local class instance to exist in the main expression, a funnel is either a ground type $G$ or a funnelled type variable $\funnel{X}$.
-In \decls, all the funnels are of the form $\funnel{X}$, by well-formedness requirement A10.
+In \decls, all the funnels are of the form $\funnel{X}$, by well-formedness requirement A11.
 In the main expression, outside of the methods of local classes, we expect all the funnels to be of the form $G$.
 When a local class is nested in a method of a local class in the main expression, a mixture of funnels $\funnel{X}$ and $G$ can be present.
 
@@ -91,9 +91,10 @@ We require the following well-formedness conditions:
     \item[(A7)] There is no shadowing of $X$ or $x$, except for \Q@this@.
     \item[(A8)] No parameter and no variable of an \Q@if@ is \Q@this@.
     \item[(A9)] \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every other top-level class reaches \Q@Object@.
-    \item[(A10)] In \decls, every funnel is of the form $\funnel{X}$.
+    \item[(A10)] In \decls, the superclass of every class, top-level or local, is a top-level class.
+    \item[(A11)] In \decls, every funnel is of the form $\funnel{X}$.
 \end{enumerate}
-Well-formedness requirements A1-A9 are common requirements, such as uniqueness of names.
+Well-formedness requirements A1-A10 are common requirements, such as uniqueness of names.
 To simplify scoping, no shadowing is allowed.
 A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ of the enclosing method; this is the only form of shadowing.
 
@@ -574,8 +575,7 @@ Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is a subclass of $C$ has t
 \\
 \fbox{$\mathsf{Dec}\gap\mathrm{Ok}$}\\
 \inferrule[class-ok]{
-  \declared{\subclass{C'}{\_}{\_}{\_}{\_}{\_}}\\
-  \kind{\Delta}{\mathrm{cod}(\Delta)}\\\\
+  \kind{\Delta}{\mathrm{cod}(\Delta)}\\
   \kind{\Delta}{\gen{C'}{\pl{T}},T_1,\ldots,T_n}\\\\
   \mok{\Delta}{\gen{C}{\mathrm{dom}(\Delta)}\gap\this}{\pl{M}}\\\\
   \mathsf{overrideOk}(\Delta,\gen{C'}{\pl{T}},\pl{M})
