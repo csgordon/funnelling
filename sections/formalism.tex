@@ -138,6 +138,7 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \begin{Define}{\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'}
 \pairing{\Delta}{\emptyset}{\emptyset} = \emptyset;\emptyset\\
 \pairing{\Delta}{\funnel{X},\pl{F}}{T,\pl{T}} = \ext{X}{\Delta(X)},\Delta';T,\pl{T}'\\
+\quad\textrm{where }\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'\\
 \pairing{\Delta}{G,\pl{F}}{G,\pl{T}} = \pairing{\Delta}{\pl{F}}{\pl{T}}
 \end{Define}
 \begin{Define}{M\in K\qquad M\in C\qquad\generic{C}=T\qquad|F|=T}
@@ -163,6 +164,7 @@ For a local class $C$ with funnels $\pl{F}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\D
 $\pl{T}_0$ is the subsequence of $\pl{T}$, of the same size as $\mathrm{dom}(\pl{F})$, holding the type argument of each funnelled $X$.
 $\mathsf{scope}(\_)=\Delta;\pl{T}$ is expected to always return a $\Delta$ and a $\pl{T}$ of the same length.
 This is enforced at the usage points, where we use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length; in the same way, $\tsubst{T}{\pl{F}}{\pl{T}}$ is defined only when $\pl{F}$ and $\pl{T}$ have the same length.
+A simultaneous substitution, of types or of values, is defined only when the names in its domain are distinct.
 \\[1ex]
 For a type variable $X$, $\Delta(X)$ is the bound of $X$ in $\Delta$.
 $\mathrm{dom}(\Delta)$ is the sequence of the type variables in $\Delta$, and $\mathrm{cod}(\Delta)$ is the sequence of the bounds in $\Delta$.
