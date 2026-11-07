@@ -1,11 +1,10 @@
-import Funnelling.Sound.Chain
+import Funnelling.Sound.ScopeFacts
 
 open Funnelling.SoundSimp
 
 namespace Funnelling.High
 
-theorem declOk {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) : DeclOk d := by
-  sorry
+theorem declOk {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) : DeclOk d := declOk' hwf hok
 
 theorem pres_fieldFound {d : Decls} (hwf : WFDecls d) {D : Dec} {f : FieldName} {Gs : List GTy}
     {vs1 vs : List Value} {v : Value} {T : Ty} (hD : Declared d (.dec D)) (hl : vs1.length = D.Ss.length)
