@@ -1617,6 +1617,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[W23] \texttt{w23}, proved: two classes extending each other violate A9.
 \item[W24] \texttt{w24}, proved: the result of the call of \Q@k@ of Section~\ref{sec:opsem} without renaming, a method \Q@m(x)@ holding a value whose method \Q@m@ binds \Q@x@ again, violates A7.
 \item[W25] \texttt{w25}, proved: in \Q@if (new A<>() instanceof A<> x){ if (new B<>() instanceof B<> y){ y.onlyB() } else { new B<>() } } else { new B<>() }@, renaming \Q@y@ into \Q@x@ makes the substitution \Q@[x=new A<>()]@ of rule \textsc{ifThen} undefined, so rule \textsc{ifThen} has no instance with that renaming.
+\item[W26] \texttt{w26}, proved: \texttt{Fresh} relates \Q@if (new A<>() instanceof A<> x){ new L<> extends Object<>(){ Object<> m(){ return x; } } } else { new B<>() }@ to the same expression with \Q@x@ renamed into \Q@this@, which the method \Q@m@ captures; the renamed expression violates A8.
 \item[R1] \texttt{r1}, proved: \Q@new Box<A<>>(new A<>()).val@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFieldFound}.
 \item[R2] \texttt{r2}, proved: \Q@new C2<>().m()@ $\rightarrow$ \Q@new C2<>().[C2<>]m()@ by \textsc{simpleAddSuper}.
 \item[R3] \texttt{r3}, proved: \Q@new C2<>().[C2<>]m()@ $\rightarrow$ \Q@new C2<>().[C1<>]m()@ by \textsc{searchSuper}.

@@ -1258,4 +1258,20 @@ theorem v2 : WFDecls d2 /\ DeclsOk d2 /\ WFExpr OkD2.mainMk /\ Typing d2 [] [] O
 -- V3: the result of R7, a copy of MyFoo in the main expression, has type Foo<A<>>.
 theorem v3 : Typing d2 [] [] vLocal (tFoo tA) := OkD2.typVLocal
 
+def capL (y : VarName) : Expr :=
+  .newLocal (cn "L") [] Object [] [] [.mk [] obj (mn "m") [] (.var y)]
+def capBefore : Expr := .ifInst vA tA (vn "x") (capL (vn "x")) vB
+def capAfter : Expr := .ifInst vA tA this (capL this) vB
+
+-- W26: Fresh accepts renaming the variable x of an if into this, which the method m of the local class captures;
+-- the result violates A8.
+theorem w26 : Fresh capBefore capAfter /\ Not (WFExpr capAfter) :=
+  And.intro
+    (And.intro
+      (RenE.ifInst (.new .nil)
+        (.newLocal .nil (.cons (.mk (Xs' := []) (xs' := []) rfl rfl .var) .nil)) (.new .nil))
+      (RenE.ifInst (.new .nil)
+        (.newLocal .nil (.cons (.mk (Xs' := []) (xs' := []) rfl rfl .var) .nil)) (.new .nil)))
+    (by decide)
+
 end Funnelling.Examples
