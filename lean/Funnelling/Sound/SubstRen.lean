@@ -1,5 +1,7 @@
 import Funnelling.Sound.ReflS
 
+open Funnelling.SoundSimp
+
 namespace Funnelling.High
 
 theorem rn_zip_indep {A : Type} [DecidableEq A] {xs ys : List A} {r1 r2 : List (Prod A A)} {w : A}

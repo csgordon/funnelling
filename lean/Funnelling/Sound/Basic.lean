@@ -1,8 +1,14 @@
 import Funnelling.High.Reduction
 
-namespace Funnelling.High
+namespace Funnelling.SoundSimp
 
-@[simp] theorem listMem_iff {A : Type} {x : A} {l : List A} : List.Mem x l <-> Membership.mem l x := Iff.rfl
+@[scoped simp] theorem listMem_iff {A : Type} {x : A} {l : List A} : List.Mem x l <-> Membership.mem l x := Iff.rfl
+
+end Funnelling.SoundSimp
+
+open Funnelling.SoundSimp
+
+namespace Funnelling.High
 
 theorem GTy.tys_eq_map : forall Gs : List GTy, GTy.tys Gs = Gs.map GTy.ty
   | [] => rfl

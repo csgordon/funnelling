@@ -1,5 +1,7 @@
 import Funnelling.Sound.Comp
 
+open Funnelling.SoundSimp
+
 namespace Funnelling.High
 
 theorem rn_zip_self {A : Type} [DecidableEq A] : forall {xs : List A} {r : List (Prod A A)} {w : A},

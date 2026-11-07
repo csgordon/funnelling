@@ -1,5 +1,7 @@
 import Funnelling.Sound.GSubstRen
 
+open Funnelling.SoundSimp
+
 namespace Funnelling.High
 
 inductive BaseStep (d : Decls) : Expr -> Expr -> Prop

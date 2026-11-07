@@ -1,5 +1,7 @@
 import Funnelling.Sound.Closed
 
+open Funnelling.SoundSimp
+
 namespace Funnelling.High
 
 theorem mem_localsList {e : Expr} {k : K} : forall {es : List Expr}, List.Mem e es -> List.Mem k e.locals ->

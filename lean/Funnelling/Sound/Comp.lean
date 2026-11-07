@@ -1,5 +1,7 @@
 import Funnelling.Sound.Uniq
 
+open Funnelling.SoundSimp
+
 namespace Funnelling.High
 
 structure CompEnv (rv1 rv2 rv3 : VRen) (rt1 rt2 rt3 : TRen) (Sa Sb : List VarName)

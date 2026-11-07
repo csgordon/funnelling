@@ -1,5 +1,7 @@
 import Funnelling.Sound.Ren
 
+open Funnelling.SoundSimp
+
 namespace Funnelling.High
 
 mutual

@@ -1,5 +1,7 @@
 import Funnelling.Sound.Decomp
 
+open Funnelling.SoundSimp
+
 namespace Funnelling.High
 
 section

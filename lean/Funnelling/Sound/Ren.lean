@@ -1,5 +1,7 @@
 import Funnelling.Sound.Lookup
 
+open Funnelling.SoundSimp
+
 namespace Funnelling.High
 
 theorem all_contains_iff {A : Type} [DecidableEq A] {l xs : List A} :

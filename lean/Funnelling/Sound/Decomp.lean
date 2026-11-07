@@ -1,5 +1,7 @@
 import Funnelling.Sound.Basic
 
+open Funnelling.SoundSimp
+
 namespace Funnelling.High
 
 abbrev NonValue (a : Expr) : Prop := forall v : Value, Not (a = v.expr)

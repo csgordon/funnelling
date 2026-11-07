@@ -1,5 +1,7 @@
 import Funnelling.Sound.BaseStep
 
+open Funnelling.SoundSimp
+
 namespace Funnelling.High
 
 abbrev Sub1 {A : Type} (l l' : List A) : Prop := forall x, List.Mem x l -> List.Mem x l'
