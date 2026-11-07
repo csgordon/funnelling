@@ -77,7 +77,6 @@ A declaration $\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}$ declares the to
 A method $\method{\Delta}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e}}$ has the type variables bounded by $\Delta$, the return type $T_0$, the parameters $x_1,\ldots,x_n$ and the body $e$.
 Every method has a body; for simplicity, as in FJ, there are no abstract methods.
 A class declaration $K$ is either a top-level declaration $\mathsf{Dec}$ or a local class.
-The superclass of every class, top-level or local, is a top-level class: local classes cannot be extended.
 \\[1ex]
 A program is a class table \decls and a main expression $e$.
 We require the following well-formedness conditions:
@@ -136,11 +135,10 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e\\
 \quad\phantom{\textrm{where }}\mathsf{scope}(\generic{C})=\Delta;\_
 \end{Define}
-\begin{Define}{\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'\qquad(\Delta;\pl{T})\cdot(\Delta';\pl{T}')=\Delta'';\pl{T}''}
+\begin{Define}{\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'}
 \pairing{\Delta}{\emptyset}{\emptyset} = \emptyset;\emptyset\\
-\pairing{\Delta}{\funnel{X},\pl{F}}{T,\pl{T}} = (\ext{X}{\Delta(X)};T)\cdot(\pairing{\Delta}{\pl{F}}{\pl{T}})\\
-\pairing{\Delta}{G,\pl{F}}{G,\pl{T}} = \pairing{\Delta}{\pl{F}}{\pl{T}}\\[1ex]
-(\Delta;\pl{T})\cdot(\Delta';\pl{T}') = \Delta,\Delta';\pl{T},\pl{T}'
+\pairing{\Delta}{\funnel{X},\pl{F}}{T,\pl{T}} = \ext{X}{\Delta(X)},\Delta';T,\pl{T}'\\
+\pairing{\Delta}{G,\pl{F}}{G,\pl{T}} = \pairing{\Delta}{\pl{F}}{\pl{T}}
 \end{Define}
 \begin{Define}{M\in K\qquad M\in C\qquad\generic{C}=T\qquad|F|=T}
 M\in K\textrm{ iff }M\in\pl{M}\\
@@ -164,7 +162,7 @@ For a top-level class $C$ with bounds $\Delta$, $\mathsf{scope}(\gen{C}{\pl{T}})
 For a local class $C$ with funnels $\pl{F}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}_0$, where $\Delta_0$ is the subset of the bounds in scope in the body of the method $m$ declaring $C$, restricted to $\mathrm{dom}(\pl{F})$ and in the order of $\mathrm{dom}(\pl{F})$; note that $m$ could be a method of either a top-level or local class.
 $\pl{T}_0$ is the subsequence of $\pl{T}$, of the same size as $\mathrm{dom}(\pl{F})$, holding the type argument of each funnelled $X$.
 $\mathsf{scope}(\_)=\Delta;\pl{T}$ is expected to always return a $\Delta$ and a $\pl{T}$ of the same length.
-This is enforced at the usage points, where we use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length.
+This is enforced at the usage points, where we use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length; in the same way, $\tsubst{T}{\pl{F}}{\pl{T}}$ is defined only when $\pl{F}$ and $\pl{T}$ have the same length.
 \\[1ex]
 For a type variable $X$, $\Delta(X)$ is the bound of $X$ in $\Delta$.
 $\mathrm{dom}(\Delta)$ is the sequence of the type variables in $\Delta$, and $\mathrm{cod}(\Delta)$ is the sequence of the bounds in $\Delta$.
@@ -185,7 +183,6 @@ For a set of type variables $\pl{X}$, $\Gamma|_{\pl{X}}$ keeps the variables $T\
 The pairing $\pairing{\Delta}{\pl{F}}{\pl{T}}$ goes through the funnels $\pl{F}$ and the arguments $\pl{T}$ together, one position at a time, where $\emptyset$ is the empty sequence.
 At the position of a funnel $\funnel{X}$, it adds $\ext{X}{\Delta(X)}$ to the bounds and the argument to the types.
 At the position of a ground funnel $G$, the argument must be $G$ itself, and nothing is added.
-The operator $(\Delta;\pl{T})\cdot(\Delta';\pl{T}')$ concatenates two results of a pairing, component by component.
 An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for an expression context $\mathcal{C}$.
 Expression contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
 
@@ -346,7 +343,6 @@ Object<> k(L<> y){ return
   new L<> extends Object<>(){ Object<> m(Object<> x){ return y.m(x); } }; }
 \end{lstlisting}
 In a call of \Q@k@ with a value \Q@v@ of class \Q@L@, the body of \Q@m@ becomes \Q@v.m(x)@, and \Q@v@ contains a copy of the method \Q@m@ binding \Q@x@ again.
-Without renaming, rule \textsc{innerFound} would replace \Q@x@ also in the method \Q@m@ of \Q@v@.
 Without $\mathsf{fresh}$, the substitution would attempt to place a binder of a name under a binder of the same name, breaking well-formedness requirement A7.
 Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} place values under the binders of the expression they substitute into.
 Requirement A7 on the result requires those binders to differ from the names bound in the values.
@@ -588,8 +584,9 @@ Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is a subclass of $C$ has t
     \end{mathpar}
 \begin{Define}{\mathsf{overrideOk}(\Delta,T,\pl{M})\qquad\mathsf{overrideOk}(T,M)}
 \mathsf{overrideOk}(\Delta,T,\pl{M})\textrm{ iff }\mathsf{overrideOk}(\gen{C}{\pl{T}},M)\textrm{ for every }M\in\pl{M}\textrm{ and every }\gen{C}{\pl{T}}\textrm{ such that }\subtype{\Delta}{T}{\gen{C}{\pl{T}}}\\[1ex]
-\mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\_}{\_}{m}{\_}{\_})\textrm{ iff }m\not\in\pl{M}\\
-\quad\textrm{where }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\[1ex]
+\mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\_}{\_}{m}{\_}{\_})\\
+\quad\textrm{where }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\
+\quad\phantom{\textrm{where }}m\not\in\pl{M}\\[1ex]
 \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_n\gap x_n}{\_})\\
 \quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\
 \quad\phantom{\textrm{where }}\method{\Delta''}{T_0}{m}{T_1\gap x'_1,\ldots,T_n\gap x'_n}{\_}\in\pl{M}\\

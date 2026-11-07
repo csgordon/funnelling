@@ -182,9 +182,9 @@ def Method.tbindersList : List Method -> List TVarName
   | M :: Ms => M.tbinders ++ Method.tbindersList Ms
 end
 
-def Fresh (e e' : Expr) : Prop := RenE [] [] e e'
+def Fresh (e e' : Expr) : Prop := RenE [] [] e e' /\ RenE [] [] e' e
 
-def FreshM (M M' : Method) : Prop := RenM [] [] M M'
+def FreshM (M M' : Method) : Prop := RenM [] [] M M' /\ RenM [] [] M' M
 
 abbrev VSubstDefined (xs : List VarName) (e : Expr) : Prop :=
   forall x, List.Mem x e.vbinders -> Not (List.Mem x xs)

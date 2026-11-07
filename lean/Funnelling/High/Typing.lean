@@ -53,7 +53,7 @@ inductive OverrideOkM (d : Decls) : Ty -> Method -> Prop
   | dec {D Ts Delta' T0' m ps' e' Delta'' T0 ps e} :
       Declared d (.dec D) ->
       List.Mem (Method.mk Delta'' T0 m ps e) D.Ms ->
-      (Ts ++ vars (dom Delta')).length = (D.bounds ++ Delta'').length ->
+      Ts.length = D.bounds.length -> Delta'.length = Delta''.length ->
       Ty.substList (bind (D.bounds ++ Delta'') (Ts ++ vars (dom Delta'))) (cod Delta'')
         = cod Delta' ->
       Ty.substList (bind (D.bounds ++ Delta'') (Ts ++ vars (dom Delta')))
@@ -106,7 +106,7 @@ inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
       Typing d Delta gamma e0 (.cls C0 Ts0) ->
       Scope d (.cls C0 Ts0) Delta0 Ts2 ->
       MethodIn d (.mk Delta1 T0 m ps body) C0 ->
-      (Ts2 ++ Ts1).length = (Delta0 ++ Delta1).length ->
+      Ts2.length = Delta0.length -> Ts1.length = Delta1.length ->
       T0' :: Ts' = Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ Ts1)) (T0 :: ps.map VarDecl.T) ->
       KindSeq d Delta Ts1 ->
       SubSeq d Delta Ts1 (Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ Ts1)) (cod Delta1)) ->
@@ -116,7 +116,7 @@ inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
       Sub d Delta (.cls D.C Ts) (.cls D0.C Ts0) ->
       Declared d (.dec D0) ->
       MethodIn d (.mk Delta1 T0 m ps body) D0.C ->
-      (Ts0 ++ Ts1).length = (D0.bounds ++ Delta1).length ->
+      Ts0.length = D0.bounds.length -> Ts1.length = Delta1.length ->
       T0' :: Ts' = Ty.substList (bind (D0.bounds ++ Delta1) (Ts0 ++ Ts1)) (T0 :: ps.map VarDecl.T) ->
       Declared d (.dec D) ->
       Kind d Delta (.cls D.C Ts) ->
