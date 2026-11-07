@@ -163,7 +163,7 @@ def Gamma.lookup (gamma : Gamma) (x : VarName) : Option Ty :=
   (gamma.find? fun d => d.x == x).map VarDecl.T
 \end{lstlisting}
 \end{leanside}
-\mapping{$\ext{X}{T}$ is \texttt{\{ X := X, T := T \}}; $T\gap x$ is \texttt{\{ T := T, x := x \}}; $\Gamma(x)$ is \texttt{gamma.lookup x}.}
+\mapping{$\ext{X}{T}$ is \texttt{\{ X := X, T := T \}}; $T\gap x$ is \texttt{\{ T := T, x := x \}}; $\Gamma(x)$ is \texttt{gamma.lookup x}, the first $T\gap x$ of $\Gamma$; $\Gamma$ has one $T\gap x$ per $x$, by A4, A7, A8 and $\Gamma\setminus\this$ in rule \textsc{new-local}.}
 \end{cmp}
 
 \begin{cmp}{Expressions and methods}

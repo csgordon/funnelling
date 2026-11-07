@@ -56,7 +56,7 @@ A local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ declares the lo
 \end{sloppypar}
 
 The funnels $\pl{F}$ serve a double role.
-From the perspective of the inside of the local class (the methods $\pl{M}$), the funnels $\pl{F}$ declare the type variables visible in the local class.
+From the perspective of the inside of the local class (the methods $\pl{M}$), the funnels $\pl{F}$ select the type variables in scope that are visible in the local class.
 From the perspective of the \Q@new@ expression itself, the funnels $\pl{F}$ instantiate those type variables, forming the actual type of the created instance.
 
 To allow a local class instance to exist in the main expression, a funnel is either a ground type $G$ or a funnelled type variable $\funnel{X}$.
@@ -161,7 +161,7 @@ By well-formedness requirement A1, a class name $C$ identifies at most one $K$ w
 $M\in K$ holds when $M$ is a method of the class declaration $K$, top-level or local.
 $M\in C$ holds when $M$ is a method of the declared class $C$, top-level or local.
 For a top-level class $C$ with bounds $\Delta$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$.
-For a local class $C$ with funnels $\pl{F}$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}_0$, where $\Delta_0$ is the subset of the bounds in scope in the body of the method $m$ declaring $C$, restricted to $\mathrm{dom}(\pl{F})$ and in the order of $\mathrm{dom}(\pl{F})$; note that $m$ could be a method of either a top-level or local class.
+For a local class $C_0$ with funnels $\pl{F}$, $\mathsf{scope}(\gen{C_0}{\pl{T}})=\Delta_0;\pl{T}_0$, where $\Delta_0$ holds, in the order of $\mathrm{dom}(\pl{F})$, the bound of each $X\in\mathrm{dom}(\pl{F})$ in scope in the body of the method $m$ declaring $C_0$; note that $m$ could be a method of either a top-level or local class.
 $\pl{T}_0$ is the subsequence of $\pl{T}$, of the same size as $\mathrm{dom}(\pl{F})$, holding the type argument of each funnelled $X$.
 For a top-level class, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$ can return $\Delta$ and $\pl{T}$ of different lengths.
 The usage points of $\mathsf{scope}$ use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length; in the same way, $\tsubst{T}{\pl{F}}{\pl{T}}$ is defined only when $\pl{F}$ and $\pl{T}$ have the same length.
@@ -189,7 +189,7 @@ The pairing $\pairing{\Delta}{\pl{F}}{\pl{T}}$ goes through the funnels $\pl{F}$
 At the position of a funnel $\funnel{X}$, it adds $\ext{X}{\Delta(X)}$ to the bounds and the argument to the types.
 At the position of a ground funnel $G$, the argument must be $G$ itself, and nothing is added.
 An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for an expression context $\mathcal{C}$.
-Expression contexts $\mathcal{C}$ do not enter the methods of a local class; thus $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
+Expression contexts $\mathcal{C}$ do not enter the methods of a local class; thus, by A1, A5 and A7, $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
 
 \subsection{Operational Semantics}
 \label{sec:opsem}
@@ -332,7 +332,7 @@ Rules \textsc{simpleAddSuper}, \textsc{simpleFound}, \textsc{innerFound}, \texts
 Rule \textsc{simpleAddSuper} turns a call on an object of a top-level class into a super call starting from the class of the object.
 Rule \textsc{simpleFound} runs the method $m$ found in the class of a super call, replacing the type variables of the class and of the method, \Q@this@ and the parameters.
 Rule \textsc{innerFound} runs the method $m$ found in a value of a local class; the funnelled type variables are already replaced in that value, so only the type variables of the method are replaced.
-Rule \textsc{innerSuper} turns a call on a value of a local class without the method $m$ into a super call starting from its superclass.
+Rule \textsc{innerSuper} turns a call on a value of a local class without the method $m$ into a super call starting from the superclass of the local class.
 Rule \textsc{searchSuper} moves a super call to the superclass when the class does not declare $m$.
 Rule \textsc{ctx} reduces inside an evaluation context.
 
