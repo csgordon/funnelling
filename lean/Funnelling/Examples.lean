@@ -1290,4 +1290,12 @@ def eOpen : Expr := .ifInst vZ (.cls (cn "L") []) (vn "x") (.ifInst vA tA (vn "y
 -- W28: a main expression whose value vZ holds the free variable z violates A12.
 theorem w28 : Not (WFExpr eOpen) := by decide
 
+def vT : Value := .newLocal (cn "L") [] Object [] [] [.mk [] (tv "Z") (mn "m") [] thisE]
+def eT : Expr :=
+  .ifInst vT (.cls (cn "L") []) (vn "x")
+    (.newLocal (cn "L2") [] Object [] [] [.mk [bnd "Y" obj] obj (mn "k") [] (ev "x")]) vB
+
+-- W29: a main expression whose value vT holds the free type variable Z violates A12.
+theorem w29 : Not (WFExpr eT) := by decide
+
 end Funnelling.Examples

@@ -87,8 +87,8 @@ A Lean constructor has the name of the rule of the paper: \texttt{subInherit} is
 \item \textbf{Grammar and well-formedness.}
 In the paper, the well-formedness requirements restrict the grammar (Section~\ref{sec:clarifications}).
 Lean defines the syntax as inductive types, and A1-A12 as the propositions \texttt{WFDecls} and \texttt{WFExpr}.
-Type Soundness assumes them for the initial program.
-A step $\step{e}{e'}$ of the paper is \texttt{Reduces d e e'}: a \texttt{Step} whose result satisfies \texttt{WFExpr}, since an instance of a rule of the paper exists only when its result is an expression.
+Type Soundness assumes them for the initial program, and Determinism for the expression that reduces.
+A step $\step{e}{e'}$ of the paper is \texttt{Reduces d e e'}: a \texttt{Step} whose result satisfies \texttt{WFExpr}, since an instance of a rule of the paper exists only when its result is an expression, and the result of a step is the new main expression (A12).
 The premise of \texttt{Step.ctx} is a \texttt{Step}: an evaluation context binds no name, so \texttt{WFExpr (E.plug e')} implies \texttt{WFExpr e'}.
 \item \textbf{The class table.}
 \decls is an explicit argument \texttt{d} of every judgement.
@@ -363,20 +363,24 @@ abbrev A11 (d : Decls) : Prop := forall k, List.Mem k (classes d) -> forall F, L
 
 \begin{cmp}{A12}
 \begin{paperside}
-(A12) The main expression has no free variable.
+(A12) The main expression has no free variable and no free type variable.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-def Expr.closed (xs : List VarName) : Expr -> Bool
+def Expr.closed (Xs : List TVarName) (xs : List VarName) : Expr -> Bool
   | .var x => xs.contains x
-  | .newLocal _ _ _ _ es Ms => Expr.closedList xs es && Method.closedList xs Ms
-  | .ifInst e0 _ x e1 e2 => e0.closed xs && e1.closed (x :: xs) && e2.closed xs
+  | .newLocal _ Fs _ Ts es Ms =>
+    (domF Fs ++ Ty.ftvList Ts).all Xs.contains && Expr.closedList Xs xs es && Method.closedList Xs xs Ms
+  | .ifInst e0 T x e1 e2 =>
+    e0.closed Xs xs && T.ftv.all Xs.contains && e1.closed Xs (x :: xs) && e2.closed Xs xs
   | ...
-def Method.closed (xs : List VarName) : Method -> Bool
-  | .mk _ _ _ ps e => e.closed (this :: xs ++ ps.map VarDecl.x)
+def Method.closed (Xs : List TVarName) (xs : List VarName) : Method -> Bool
+  | .mk Delta T0 _ ps e =>
+    (Ty.ftvList (T0 :: cod Delta ++ ps.map VarDecl.T)).all (Xs ++ dom Delta).contains &&
+    e.closed (Xs ++ dom Delta) (this :: xs ++ ps.map VarDecl.x)
 \end{lstlisting}
 \end{leanside}
-\mapping{\texttt{xs} are the variables in scope; the cases written \texttt{...} go into the subexpressions.}
+\mapping{\texttt{Xs} and \texttt{xs} are the type variables and the variables in scope; the cases written \texttt{...} check the types they hold and go into the subexpressions.}
 \end{cmp}
 
 \begin{cmp}{All the requirements}
@@ -393,7 +397,7 @@ abbrev WFDecls (d : Decls) : Prop :=
   A9 d /\ A10 d /\ A11 d
 abbrev WFExpr (e : Expr) : Prop :=
   A3 e.locals /\ A4 e.methods /\ A5 (e.methods.map Method.bounds) /\ A6 e.locals /\
-  e.noShadow [] [] = true /\ A8 e.methods e.ifVars /\ e.closed [] = true
+  e.noShadow [] [] = true /\ A8 e.methods e.ifVars /\ e.closed [] [] = true
 \end{lstlisting}
 \end{leanside}
 \mapping{\texttt{WFExpr} applies to the main expression the requirements that restrict it, A3-A8 and A12.}
@@ -1471,7 +1475,7 @@ theorem typeSoundness {d e0 e T} (hwf : WFDecls d) (hok : DeclsOk d) (he0 : WFEx
 theorem determinism {d e e1 e2} (hwf : WFDecls d) (he : WFExpr e) (h1 : Reduces d e e1)
     (h2 : Reduces d e e2) : Fresh e1 e2
 \end{lstlisting}
-\texttt{hok} says that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$; \texttt{hwf} says that \decls satisfies A1-A11, and \texttt{he0} says that the initial expression satisfies A3-A8 and A12, as every program of the paper does.
+\texttt{hok} says that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$; \texttt{hwf} says that \decls satisfies A1-A11, and \texttt{he0} says that the initial expression satisfies A3-A8 and A12, as every program of the paper does; in \texttt{determinism}, \texttt{he} says that the expression that reduces satisfies A3-A8 and A12.
 \\[1ex]
 The proofs are in \leanfile{Proof.lean}, and they can take any structure; \texttt{determinism} is stated there with \texttt{sorry}.
 For \texttt{typeSoundness}, the two structures below are both acceptable:
@@ -1516,7 +1520,7 @@ For the typing of rule \textsc{if-instanceof} the lemma uses rule \textsc{subs} 
 \item \textbf{Copies of a local class.} By $\mathsf{consistent}$, the methods of a copy have the signatures of the declaration with the funnelled type variables substituted; so rules \textsc{call} and \textsc{sub-inherit-local}, which read the declaration, agree with rule \textsc{innerFound}, which runs the copy.
 \item \textbf{Checked cast.} If $\emptyset\vdash\mathsf{typeOf}(v)<:\gen{C}{\_}$, $v$ has type $T_0$ and $\cast{\emptyset}{T_0}{\gen{C}{\pl{T}}}$, then $v$ has type $\gen{C}{\pl{T}}$.
 The proof uses that the chain of superclasses is unique and that $\pl{X}\subseteq\ftv{\pl{T}'}$ fixes $\pl{T}$.
-\item \textbf{Well-formedness of the result.} A step whose $\mathsf{fresh}$ names avoid the names of the program keeps A7; by $\mathsf{Dec}\gap\mathrm{Ok}$, every variable of a method body is bound, so a step keeps A12; the other requirements are local; progress needs it, since a step of the paper reduces to a well-formed expression.
+\item \textbf{Well-formedness of the result.} A step whose $\mathsf{fresh}$ names avoid the names of the program keeps A7; by $\mathsf{Dec}\gap\mathrm{Ok}$, every variable and every type variable of a method body is bound, so a step keeps A12; the other requirements are local; progress needs it, since a step of the paper reduces to a well-formed expression.
 \item \textbf{Progress} by induction on typing, with canonical forms; a call terminates its search at a class declaring the method, before \Q@Object@, since typing found the method in a superclass.
 \item \textbf{Preservation} by induction on the reduction, with the lemmas above.
 \end{enumerate}
@@ -1638,6 +1642,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[W26] \texttt{w26}, proved: \texttt{Fresh} relates \Q@if (new A<>() instanceof A<> x){ new L<> extends Object<>(){ Object<> m(){ return x; } } } else { new B<>() }@ to the same expression with \Q@x@ renamed into \Q@this@, which the method \Q@m@ captures; the renamed expression violates A8.
 \item[W27] \texttt{w27}, proved: \texttt{Fresh} relates the program of W25 to the same program with \Q@y@ renamed into \Q@x@; the renamed program violates A7.
 \item[W28] \texttt{w28}, proved: \Q@if (vZ instanceof L<> x){ if (new A<>() instanceof A<> y){ x } else { x } } else { new B<>() }@ violates A12, where \Q@vZ@ is \Q@new L<> extends Object<>(){ Object<> m(){ return z; } }@.
+\item[W29] \texttt{w29}, proved: \Q@if (vT instanceof L<> x){ new L2<> extends Object<>(){ <Y extends Object<>> Object<> k(){ return x; } } } else { new B<>() }@ violates A12, where \Q@vT@ is \Q@new L<> extends Object<>(){ Z m(){ return this; } }@.
 \item[R1] \texttt{r1}, proved: \Q@new Box<A<>>(new A<>()).val@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFieldFound}.
 \item[R2] \texttt{r2}, proved: \Q@new C2<>().m()@ $\rightarrow$ \Q@new C2<>().[C2<>]m()@ by \textsc{simpleAddSuper}.
 \item[R3] \texttt{r3}, proved: \Q@new C2<>().[C2<>]m()@ $\rightarrow$ \Q@new C2<>().[C1<>]m()@ by \textsc{searchSuper}.
