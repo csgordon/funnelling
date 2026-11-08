@@ -1,4 +1,4 @@
-import Funnelling.Sound.ScopeFacts
+import Funnelling.Sound.IfThen
 
 open Funnelling.SoundSimp
 
@@ -16,8 +16,8 @@ theorem pres_ifThen {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {C' : ClassN
     {x : VarName} {e1 e1' e2 : Expr} {v : Value} {T : Ty} (hs : Sub d [] (typeOf v) (.cls C' Ts'))
     (hf : Fresh e1 e1') (hd : VSubstDefined [x] e1') (ha : WFExpr (.ifInst v.expr (.cls C' Ts) x e1 e2))
     (ha' : WFExpr (e1'.vsubst [(x, v)])) (h : Typing d [] [] (.ifInst v.expr (.cls C' Ts) x e1 e2) T) :
-    Typing d [] [] (e1'.vsubst [(x, v)]) T := by
-  sorry
+    Typing d [] [] (e1'.vsubst [(x, v)]) T :=
+  pres_ifThen' hwf hok (declOk hwf hok) hs hf hd ha ha' h
 
 theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec} {M : Method} {m : MethName}
     {Delta' : Bounds} {T0 : Ty} {ps : List VarDecl} {e0 : Expr} {v0 : Value} {Gs Gs' : List GTy}
