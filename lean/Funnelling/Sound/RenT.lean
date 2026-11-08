@@ -292,20 +292,8 @@ theorem REnv.ext {rv : VRen} {rt : TRen} {Delta Delta' : Bounds} {gamma gamma' :
     . exact env.gT w hw
     . rw [hw]; exact hT
   gN := by rw [gdom_append_single]; exact nodup_snoc env.gN (fun h => hx (env.gx _ h))
-  gx := by
-    rw [gdom_append_single]
-    intro z hz
-    simp only [listMem_iff, List.mem_append, List.mem_singleton] at hz
-    rcases hz with hz | hz
-    . exact List.Mem.tail _ (env.gx z hz)
-    . rw [hz]; exact List.Mem.head _
-  gx' := by
-    rw [gdom_append_single]
-    intro z hz
-    simp only [listMem_iff, List.mem_append, List.mem_singleton] at hz
-    rcases hz with hz | hz
-    . exact List.Mem.tail _ (env.gx' z hz)
-    . rw [hz]; exact List.Mem.head _
+  gx := scope_snoc env.gx
+  gx' := scope_snoc env.gx'
   kv := by
     intro p hp
     cases hp with
@@ -317,7 +305,7 @@ theorem REnv.meth {rv : VRen} {rt : TRen} {Delta Delta' : Bounds} {gamma gamma' 
     {Dm : Bounds} {ps : List VarDecl} {Ys : List TVarName} {ys : List VarName}
     (hL : Ys.length = Dm.length) (hl : ys.length = ps.length)
     (hdis : forall X, List.Mem X (dom Dm) -> Not (List.Mem X Xs))
-    (hpx : forall x, List.Mem x (ps.map VarDecl.x) -> Not (List.Mem x xs))
+    (hpx : (ps.map VarDecl.x).all (fun x => !(xs.contains x)) = true)
     (hpt : Not (List.Mem this (ps.map VarDecl.x)))
     (hyx : forall x, List.Mem x ys -> Not (List.Mem x xs'))
     (hyt : Not (List.Mem this ys))
@@ -369,7 +357,7 @@ theorem REnv.meth {rv : VRen} {rt : TRen} {Delta Delta' : Bounds} {gamma gamma' 
         have := env.gx z (List.mem_map_of_mem (f := VarDecl.x) (lookup_mem_g hg))
         cases this with
         | head => exact hpt hm
-        | tail _ h => exact hpx z hm h
+        | tail _ h => exact not_mem_of_all_not_contains hpx hm h
       rw [rn_zip_not_mem hz, Ty.ren_congr (r1 := (dom Dm).zip Ys ++ rt) (r2 := rt)
         (fun X hX => rn_zip_not_mem (fun h => hdis X h (env.gT _ (lookup_mem_g hg) X hX)))]
       exact Gamma.lookup_append_left (env.g z _ hg)
@@ -396,34 +384,12 @@ theorem REnv.meth {rv : VRen} {rt : TRen} {Delta Delta' : Bounds} {gamma gamma' 
     rcases hy with hy | hy
     . exact List.mem_append_left _ (env.gT y hy X hX)
     . exact hc2 y hy X hX
-  gN := by
-    simp only [gdom, List.map_append]
-    apply List.nodup_append.mpr
-    refine And.intro env.gN (And.intro hnp ?_)
-    intro a ha b hb' e
-    subst e
-    cases env.gx a ha with
-    | head => exact hpt hb'
-    | tail _ h => exact hpx a hb' h
-  gx := by
-    intro z hz
-    simp only [gdom, List.map_append, listMem_iff, List.mem_append] at hz
-    simp only [listMem_iff, List.mem_append, List.mem_cons]
-    rcases hz with hz | hz
-    . cases env.gx z hz with
-      | head => exact Or.inl (Or.inl rfl)
-      | tail _ h => exact Or.inl (Or.inr h)
-    . exact Or.inr hz
+  gN := nodup_params env.gN env.gx hnp hpt hpx
+  gx := scope_params env.gx
   gx' := by
-    intro z hz
-    simp only [gdom, List.map_append, listMem_iff, List.mem_append] at hz
-    rw [names_renParams hl] at hz
-    simp only [listMem_iff, List.mem_append, List.mem_cons]
-    rcases hz with hz | hz
-    . cases env.gx' z hz with
-      | head => exact Or.inl (Or.inl rfl)
-      | tail _ h => exact Or.inl (Or.inr h)
-    . exact Or.inr hz
+    have := scope_params (ps := (ps.zip ys).map fun p => ({ T := p.1.T.ren ((dom Dm).zip Ys ++ rt), x := p.2 } : VarDecl))
+      env.gx'
+    rwa [names_renParams hl] at this
   kv := by
     intro p hp
     simp only [listMem_iff, List.mem_append] at hp

@@ -91,13 +91,7 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
     have ih0 := Typing.gsub hwf hok hd h0 hg (fun X hX => hdis X (Or.inl (Or.inl hX))) n1 sc hn.1.1.1 ht.1.1.2 hu.1
     have ih1 := Typing.gsub hwf hok hd h1 (xs := x :: xs) hg (fun X hX => hdis X (Or.inl (Or.inr hX)))
       (by rw [gdom_append_single]; exact nodup_snoc n1 (fun h => hxs (sc _ h)))
-      (by
-        rw [gdom_append_single]
-        intro z hz
-        simp only [listMem_iff, List.mem_append, List.mem_singleton] at hz
-        rcases hz with hz | hz
-        . exact List.Mem.tail _ (sc z hz)
-        . rw [hz]; exact List.Mem.head _)
+      (scope_snoc sc)
       hn.1.2 ht.1.2 hu.2.1
     have ih2 := Typing.gsub hwf hok hd h2 hg (fun X hX => hdis X (Or.inr hX)) n1 sc hn.2 ht.2 hu.2.2
     simp only [gsubG, List.map_append, List.map_cons, List.map_nil, VarDecl.subst] at ih1
@@ -132,34 +126,11 @@ theorem MethodOk.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Decl
       Method.vbinders, not_or, Method.uniq] at hn hdis ht hu
     have hdm : forall b, List.Mem b Dm -> Not (List.Mem b.X (s.map Prod.fst)) :=
       fun b hb => hdis b.X (Or.inl (List.mem_map_of_mem (f := Bound.X) hb))
-    have hpx : forall p, List.Mem p (ps.map VarDecl.x) -> Not (List.Mem p xs) :=
-      fun p hp => not_mem_of_all_not_contains hn.1.2 hp
-    have hnod : (gdom (gamma ++ ps)).Nodup := by
-      simp only [gdom, List.map_append]
-      apply List.nodup_append.mpr
-      refine And.intro n1 (And.intro hu.2.1 ?_)
-      intro a ha b hb' e
-      subst e
-      have := sc a ha
-      cases this with
-      | head => exact ht.1 hb'
-      | tail _ h => exact hpx a hb' h
     have hg2 := hg.append hdm
     have hc2 := hg2.substCtx
     rw [gsubB_append hdm] at hc2
     have hb := Typing.gsub hwf hok hd h3 (xs := this :: xs ++ ps.map VarDecl.x) hg2 (fun X hX => hdis X (Or.inr hX))
-      hnod
-      (by
-        intro z hz
-        simp only [gdom, List.map_append, listMem_iff, List.mem_append] at hz
-        simp only [listMem_iff, List.mem_append, List.mem_cons]
-        rcases hz with hz | hz
-        . have := sc z hz
-          cases this with
-          | head => exact Or.inl (Or.inl rfl)
-          | tail _ h => exact Or.inl (Or.inr h)
-        . exact Or.inr hz)
-      hn.2 ht.2 hu.2.2
+      (nodup_params n1 sc hu.2.1 ht.1 hn.1.2) (scope_params sc) hn.2 ht.2 hu.2.2
     rw [gsubB_append hdm] at hb
     simp only [gsubG, List.map_append] at hb
     simp only [Method.gsubst]

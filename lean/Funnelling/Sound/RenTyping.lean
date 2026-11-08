@@ -181,7 +181,7 @@ theorem MethodOk.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclO
         . exact Or.inl (env.dX X h)
         . exact Or.inr h
       have env2 := env.meth hL hl (fun X hX => not_mem_of_all_not_contains hn.1.1 hX)
-        (fun x hx => not_mem_of_all_not_contains hn.1.2 hx) ht.1
+        hn.1.2 ht.1
         (fun x hx => not_mem_of_all_not_contains hn'.1.2 hx) ht'.1 hu.1 hu.2.1 hu'.2.1 hc1 hc2
       have ih := Typing.ren hwf hok hd h3 hb env2 hn.2 hn'.2 ht.2 ht'.2 hu.2.2 hu'.2.2
       refine MethodOk.methodOk ?_ ?_ ih
