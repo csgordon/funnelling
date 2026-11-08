@@ -583,47 +583,59 @@ theorem found_tail {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
     (by simpa [NoThis, Expr.vbinders_gsubst] using ht0) (by rw [Expr.uniq_gsubst]; exact hu0)
   rwa [eG] at hres
 
-theorem found_body {e0 : Expr} {s : GSubst} {n : VSubst} {Xs : List TVarName} {Delta' : Bounds} {T0 : Ty}
-    {m : MethName} {ps : List VarDecl} (ha' : WFExpr ((e0.gsubst s).vsubst n))
-    (hvs : VSubstDefined (this :: ps.map VarDecl.x) e0) (hgs : GSubstDefined (Xs ++ dom Delta') e0)
-    (hN : (dom Delta').Nodup) (hN' : (this :: ps.map VarDecl.x).Nodup) :
-    e0.noShadow [] (this :: ps.map VarDecl.x) = true /\ NoThis e0 /\ e0.uniq /\
-    (Method.mk Delta' T0 m ps e0).noShadow [] [] = true /\ NoThisM (Method.mk Delta' T0 m ps e0) /\
-    (Method.mk Delta' T0 m ps e0).uniq := by
-  have hn0 := (Expr.vsubst_back _ _).2.2 _ _ ha'.2.2.2.2.1
+structure Found (M : Method) (B0 Delta' : Bounds) (T0 : Ty) (m : MethName) (ps : List VarDecl) (e0 : Expr)
+    (Gs Gs' : List GTy) (v0 : Value) (vs : List Value) : Prop where
+  fresh : FreshM M (.mk Delta' T0 m ps e0)
+  lenT : Gs'.length = Delta'.length
+  lenV : ps.length = vs.length
+  nodupT : (dom B0 ++ dom Delta').Nodup
+  nodupV : (this :: ps.map VarDecl.x).Nodup
+  gdef : GSubstDefined (dom B0 ++ dom Delta') e0
+  vdef : VSubstDefined (this :: ps.map VarDecl.x) e0
+  wf : WFExpr ((e0.gsubst (bind (B0 ++ Delta') (Gs ++ Gs'))).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)))
+
+namespace Found
+
+variable {M : Method} {B0 Delta' : Bounds} {T0 : Ty} {m : MethName} {ps : List VarDecl} {e0 : Expr}
+  {Gs Gs' : List GTy} {v0 : Value} {vs : List Value} (f : Found M B0 Delta' T0 m ps e0 Gs Gs' v0 vs)
+include f
+
+theorem noShadow : e0.noShadow [] (this :: ps.map VarDecl.x) = true := by
+  have hn0 := (Expr.vsubst_back _ _).2.2 _ _ f.wf.2.2.2.2.1
   rw [Expr.noShadow_gsubst] at hn0
-  have hnx : e0.noShadow [] (this :: ps.map VarDecl.x) = true :=
-    Expr.noShadow_scope hn0 (fun y hy hm => absurd hm (hvs y hy))
-  have ht0 : NoThis e0 := by
-    have := noThis_of_vsubst (WFExpr.noThis ha')
-    simpa [NoThis, Expr.vbinders_gsubst] using this
-  have hu0 : e0.uniq := by
-    have := (Expr.vsubst_back _ _).2.1 (WFExpr.uniq ha')
-    rwa [Expr.uniq_gsubst] at this
-  have hnD : e0.noShadow (dom Delta') (this :: ps.map VarDecl.x) = true :=
-    Expr.noShadow_tscope hnx (fun X hX hm => absurd (by simp only [listMem_iff, List.mem_append] at hm |-; exact Or.inr hm)
-      (hgs X hX))
-  refine ⟨hnx, ht0, hu0, ?_, ?_, And.intro hN (And.intro (List.nodup_cons.mp hN').2 hu0)⟩
-  . simp only [Method.noShadow, List.nil_append, List.cons_append, Bool.and_eq_true]
-    exact And.intro (And.intro (by simp) (by simp)) hnD
-  . simp only [NoThisM, Method.vbinders, listMem_iff, List.mem_append, not_or]
-    exact And.intro (List.nodup_cons.mp hN').1 ht0
+  exact Expr.noShadow_scope hn0 (fun y hy hm => absurd hm (f.vdef y hy))
+
+theorem noThis : NoThis e0 := by
+  have := noThis_of_vsubst (WFExpr.noThis f.wf)
+  simpa [NoThis, Expr.vbinders_gsubst] using this
+
+theorem uniq : e0.uniq := by
+  have := (Expr.vsubst_back _ _).2.1 (WFExpr.uniq f.wf)
+  rwa [Expr.uniq_gsubst] at this
+
+theorem methNoShadow : (Method.mk Delta' T0 m ps e0).noShadow [] [] = true := by
+  simp only [Method.noShadow, List.nil_append, List.cons_append, Bool.and_eq_true]
+  refine And.intro (And.intro (by simp) (by simp)) (Expr.noShadow_tscope f.noShadow (fun X hX hm => ?_))
+  exact absurd (by simp only [listMem_iff, List.mem_append] at hm |-; exact Or.inr hm) (f.gdef X hX)
+
+theorem methNoThis : NoThisM (Method.mk Delta' T0 m ps e0) := by
+  simp only [NoThisM, Method.vbinders, listMem_iff, List.mem_append, not_or]
+  exact And.intro (List.nodup_cons.mp f.nodupV).1 f.noThis
+
+theorem methUniq : (Method.mk Delta' T0 m ps e0).uniq :=
+  And.intro (nodup_append_right f.nodupT) (And.intro (List.nodup_cons.mp f.nodupV).2 f.uniq)
+
+end Found
 
 theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {D : Dec} {M : Method}
     {m : MethName} {Delta' : Bounds} {T0 : Ty} {ps : List VarDecl} {e0 : Expr} {v0 : Value} {Gs Gs' : List GTy}
-    {vs : List Value} {T : Ty} (hD : Declared d (.dec D)) (hM : List.Mem M D.Ms)
-    (hF : FreshM M (.mk Delta' T0 m ps e0)) (hG : Gs.length = D.bounds.length) (hG' : Gs'.length = Delta'.length)
-    (hN : (dom D.bounds ++ dom Delta').Nodup) (hN' : (this :: ps.map VarDecl.x).Nodup)
-    (hp : ps.length = vs.length) (hgs : GSubstDefined (dom D.bounds ++ dom Delta') e0)
-    (hvs : VSubstDefined (this :: ps.map VarDecl.x) e0)
+    {vs : List Value} {T : Ty} (hD : Declared d (.dec D)) (hM : List.Mem M D.Ms) (hG : Gs.length = D.bounds.length)
+    (f : Found M D.bounds Delta' T0 m ps e0 Gs Gs' v0 vs)
     (ha : WFExpr (.superCall v0.expr (.cls D.C (GTy.tys Gs)) (GTy.tys Gs') m (Value.exprs vs)))
-    (ha' : WFExpr ((e0.gsubst (bind (D.bounds ++ Delta') (Gs ++ Gs'))).vsubst
-      ((this :: ps.map VarDecl.x).zip (v0 :: vs))))
     (h : Typing d [] [] (.superCall v0.expr (.cls D.C (GTy.tys Gs)) (GTy.tys Gs') m (Value.exprs vs)) T) :
     Typing d [] [] ((e0.gsubst (bind (D.bounds ++ Delta') (Gs ++ Gs'))).vsubst
       ((this :: ps.map VarDecl.x).zip (v0 :: vs))) T := by
   have hwm := WFDecls.method hwf hD.dec_mem hM
-  rcases found_body (T0 := T0) (m := m) ha' hvs hgs (nodup_append_right hN) hN' with ⟨hnx, ht0, hu0, hnM', htM', huM'⟩
   rcases inv_super h rfl with ⟨⟨D1, Ts, D0, Ts0, Delta1, T0o, pso, body, T0', Ts'⟩, hw⟩
   have ann := hw.ann
   simp only [Ty.cls.injEq] at ann
@@ -637,7 +649,7 @@ theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
   have ek := Declared.unique hwf hk hw.decl0 hkn
   subst ek
   rcases dec_override hwf hok hd hD hM hw.decl0 (by rw [gtys_length]; exact hG) hw.sub with ⟨Us, hUs, hO, hUf⟩
-  have hO' := OverrideOkM.ren (rv := []) (rt := []) hwf hok hO hF.1
+  have hO' := OverrideOkM.ren (rv := []) (rt := []) hwf hok hO f.fresh.1
     (fun X hX hm => Method.noShadow_dom hwm.2.2 X hm (hUf X hX)) hwm.1
   rw [Ty.renList_id (fun _ _ => rn_nil)] at hO'
   generalize hTT : Ty.cls D0.C Us = TT at hO'
@@ -665,8 +677,8 @@ theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
       rw [gsubst_ty_bind, GTy.tys_eq_map, GTy.tys_eq_map, GTy.tys_eq_map, List.map_append]
       simp only [bind, dom_append]
     have hlenF : (GTy.tys Gs ++ GTy.tys Gs').length = (dom D.bounds ++ dom Delta').length := by
-      simp [gtys_length, hG, hG', dom]
-    have hvF := vars_subst hN hlenF
+      simp [gtys_length, hG, f.lenT, dom]
+    have hvF := vars_subst f.nodupT hlenF
     rw [<- hsg, vars_append, substList_app] at hvF
     have hv1 := List.append_inj hvF (by simp [substList_length, vars, dom, gtys_length, hG])
     have hcomp1 : forall L, (forall X, List.Mem X (Ty.ftvList L) -> List.Mem X (dom D.bounds)) ->
@@ -707,14 +719,14 @@ theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
         gx := fun y hy => hy
         gx' := fun y hy => hy
         kv := fun _ h => by cases h }
-    have hmo' := MethodOk.ren hwf hok hd hmo hF.1 env hwm.2.2 hnM' hwm.2.1 htM' hwm.1 huM'
+    have hmo' := MethodOk.ren hwf hok hd hmo f.fresh.1 env hwm.2.2 f.methNoShadow hwm.2.1 f.methNoThis hwm.1 f.methUniq
     have hmi := methodOk_inv hmo'
     have hlook : forall b, List.Mem b (D.bounds ++ Delta') -> forall U,
         List.Mem (b.X, U) ((dom D.bounds ++ dom Delta').zip (GTy.tys Gs ++ GTy.tys Gs')) ->
         (Ty.var b.X).subst (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs'))) = U := by
       intro b _ U hm
       rw [hsg]
-      simp only [Ty.subst, lookup_zip_nodup hN hm, Option.getD_some]
+      simp only [Ty.subst, lookup_zip_nodup f.nodupT hm, Option.getD_some]
     have hbF : forall b, List.Mem b (D.bounds ++ Delta') ->
         Sub d [] ((Ty.var b.X).subst (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs'))))
           (b.T.subst (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs')))) /\
@@ -740,7 +752,7 @@ theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
         exact hka
       . have hss := hw.subs
         rw [<- hcod] at hss
-        rcases bounds_sat_aux (by rw [gtys_length]; exact hG') hss hw.kinds b hb1 with ⟨U, hU⟩
+        rcases bounds_sat_aux (by rw [gtys_length]; exact f.lenT) hss hw.kinds b hb1 with ⟨U, hU⟩
         have hm : List.Mem (b.X, U) ((dom D.bounds ++ dom Delta').zip (GTy.tys Gs ++ GTy.tys Gs')) := by
           rw [List.zip_append (by simp [gtys_length, hG, dom])]
           simp only [listMem_iff, List.mem_append]
@@ -761,26 +773,23 @@ theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
         . exact hmi.1 b.T (List.mem_map_of_mem (f := Bound.T) hb)
       exact Kind.subst hd (fun b hb => (hbF b hb).1) (fun b hb => (hbF b hb).2) hKb
     have hfst : (bind (D.bounds ++ Delta') (Gs ++ Gs')).map Prod.fst = dom (D.bounds ++ Delta') :=
-      bind_fst (by simp [hG, hG'])
+      bind_fst (by simp [hG, f.lenT])
     have hs2 := hsig
     simp only [Ty.substList, List.cons.injEq] at hs2
-    have hres := found_tail hwf hok hd hmi.2.2 hgok hfst hN' hp (by rw [dom_append]; exact hgs) hvs hnx ht0 hu0 ha'
-      (by simp only [Ty.substList, Ty.subst]; rw [hv1.1, hs2.2]; exact hw.args) ha.2.2.2.2.1 (WFExpr.noThis ha)
-      (WFExpr.uniq ha)
+    have hres := found_tail hwf hok hd hmi.2.2 hgok hfst f.nodupV f.lenV (by rw [dom_append]; exact f.gdef) f.vdef
+      f.noShadow f.noThis f.uniq f.wf (by simp only [Ty.substList, Ty.subst]; rw [hv1.1, hs2.2]; exact hw.args)
+      ha.2.2.2.2.1 (WFExpr.noThis ha) (WFExpr.uniq ha)
     rw [hs2.1] at hres
     exact hw.up.typing hres
 
 theorem pres_innerFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {C C' : ClassName}
     {Ms : List Method} {M : Method} {m : MethName} {Delta' : Bounds} {T0 : Ty} {ps : List VarDecl} {e0 : Expr}
     {v0 : Value} {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} {T : Ty} (hv : v0 = Value.newLocal C Gs C' Gs'' vs0 Ms)
-    (hM : List.Mem M Ms) (hF : FreshM M (.mk Delta' T0 m ps e0)) (hG' : Gs'.length = Delta'.length)
-    (hp : ps.length = vs.length) (hN : (dom Delta').Nodup) (hN' : (this :: ps.map VarDecl.x).Nodup)
-    (hgs : GSubstDefined (dom Delta') e0) (hvs : VSubstDefined (this :: ps.map VarDecl.x) e0)
+    (hM : List.Mem M Ms) (f : Found M [] Delta' T0 m ps e0 [] Gs' v0 vs)
     (ha : WFExpr (.call v0.expr (GTy.tys Gs') m (Value.exprs vs)))
-    (ha' : WFExpr ((e0.gsubst (bind Delta' Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs))))
     (h : Typing d [] [] (.call v0.expr (GTy.tys Gs') m (Value.exprs vs)) T) :
     Typing d [] [] ((e0.gsubst (bind Delta' Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs))) T := by
-  rcases found_body (Xs := []) (T0 := T0) (m := m) ha' hvs hgs hN hN' with ⟨hnx, ht0, hu0, hnM', htM', huM'⟩
+  have hN : (dom Delta').Nodup := f.nodupT
   have han := ha.2.2.2.2.1
   simp only [Expr.noShadow, Bool.and_eq_true] at han
   have hat := WFExpr.noThis ha
@@ -828,12 +837,12 @@ theorem pres_innerFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
   have hTs0 : forall X, List.Mem X (Ty.ftvList Ts0) -> False := fun X hX => by
     have := Kind.ftv hk0 X (by simpa [Ty.ftv] using hX)
     cases this
-  have hO' := OverrideOkM.ren (rv := []) (rt := []) hwf hok hO hF.1 (fun X hX _ => hTs0 X hX) huM
+  have hO' := OverrideOkM.ren (rv := []) (rt := []) hwf hok hO f.fresh.1 (fun X hX _ => hTs0 X hX) huM
   rw [Ty.renList_id (fun _ _ => rn_nil)] at hO'
   rcases found_sig hwf hw.scope hw.meth hw.len2 hO' with ⟨eT2, h4, h5, h6⟩
   have hsg : GSubst.ty (bind Delta' Gs') = (dom Delta').zip (GTy.tys Gs') := by rw [gsubst_ty_bind]; rfl
   have hv1 : Ty.substList (GSubst.ty (bind Delta' Gs')) (vars (dom Delta')) = GTy.tys Gs' := by
-    rw [hsg]; exact vars_subst hN (by simp [gtys_length, hG', dom])
+    rw [hsg]; exact vars_subst hN (by simp [gtys_length, f.lenT, dom])
   have hT2 : Ty.substList (GSubst.ty (bind Delta' Gs')) Ts2 = Ts2 := by
     apply Ty.substList_id
     intro X hX
@@ -869,7 +878,7 @@ theorem pres_innerFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
       kv := fun _ h => by cases h }
   have hmeth' : MethodOk d [] [{ T := .cls C (GTy.tys Gs), x := this }] M := by
     simpa [withoutThis, restrict] using hmeth
-  have hmo' := MethodOk.ren hwf hok hd hmeth' hF.1 env hnM hnM' htM htM' huM huM'
+  have hmo' := MethodOk.ren hwf hok hd hmeth' f.fresh.1 env hnM f.methNoShadow htM f.methNoThis huM f.methUniq
   have hmi := methodOk_inv hmo'
   simp only [List.nil_append] at hmi
   have hbF : forall b, List.Mem b Delta' ->
@@ -878,7 +887,7 @@ theorem pres_innerFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
     intro b hb
     have hss := hw.subs
     rw [<- hcod] at hss
-    rcases bounds_sat_aux (by rw [gtys_length]; exact hG') hss hw.kinds b hb with ⟨U, hU⟩
+    rcases bounds_sat_aux (by rw [gtys_length]; exact f.lenT) hss hw.kinds b hb with ⟨U, hU⟩
     rw [hsg]
     simp only [Ty.subst, lookup_zip_nodup hN hU.1, Option.getD_some]
     rw [<- hsg]
@@ -890,7 +899,7 @@ theorem pres_innerFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
     rw [e] at hk
     exact And.intro hk.1 (And.intro hk.2 (Kind.subst hd (fun b hb => (hbF b hb).1) (fun b hb => (hbF b hb).2)
       (hmi.1 b.T (List.mem_map_of_mem (f := Bound.T) hb))))
-  have hfst : (bind Delta' Gs').map Prod.fst = dom Delta' := bind_fst hG'
+  have hfst : (bind Delta' Gs').map Prod.fst = dom Delta' := bind_fst f.lenT
   have htv0 : Typing d [] [] v0.expr (.cls C (GTy.tys Gs)) := by
     have := vt.2.1
     rw [hv] at this |-
@@ -899,9 +908,9 @@ theorem pres_innerFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
   simp only [Ty.substList, List.cons.injEq] at hs2
   have eg : (Ty.cls C (GTy.tys Gs)).subst (GSubst.ty (bind Delta' Gs')) = Ty.cls C (GTy.tys Gs) :=
     GTy.subst_ty (GTy.cls C Gs)
-  have hres := found_tail hwf hok hd hmi.2.2 hgok hfst hN' hp hgs hvs hnx ht0 hu0 ha'
-    (by simp only [Ty.substList]; rw [eg, hs2.2]; exact TypingSeq.cons htv0 hw.args) ha.2.2.2.2.1 (WFExpr.noThis ha)
-    (WFExpr.uniq ha)
+  have hres := found_tail hwf hok hd hmi.2.2 hgok hfst f.nodupV f.lenV f.gdef f.vdef f.noShadow f.noThis f.uniq f.wf
+    (by simp only [Ty.substList]; rw [eg, hs2.2]; exact TypingSeq.cons htv0 hw.args) ha.2.2.2.2.1
+    (WFExpr.noThis ha) (WFExpr.uniq ha)
   rw [hs2.1] at hres
   exact hw.up.typing hres
 
@@ -917,10 +926,10 @@ theorem preservationBase {d : Decls} {a a' : Expr} {T : Ty} (hwf : WFDecls d) (h
   | simpleAddSuper h1 => exact pres_addSuper hwf h1 ht
   | simpleFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11 =>
     subst h11
-    exact pres_simpleFound hwf hok hd h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 ha ha' ht
+    exact pres_simpleFound hwf hok hd h1 h2 h4 ⟨h3, h5, h8, h6, h7, h9, h10, ha'⟩ ha ht
   | innerFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 =>
     subst h10
-    exact pres_innerFound hwf hok hd h1 h2 h3 h4 h5 h6 h7 h8 h9 ha ha' ht
+    exact pres_innerFound hwf hok hd h1 h2 ⟨h3, h4, h5, h6, h7, h8, h9, ha'⟩ ha ht
   | innerSuper h1 h2 => exact pres_innerSuper hwf h1 h2 ht
   | searchSuper h1 h2 h3 h4 => exact pres_searchSuper hwf hok hd h1 h2 h4 ht
 
