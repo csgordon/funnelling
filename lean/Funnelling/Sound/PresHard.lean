@@ -1,4 +1,4 @@
-import Funnelling.Sound.SimpleFound
+import Funnelling.Sound.InnerFound
 
 open Funnelling.SoundSimp
 
@@ -43,8 +43,8 @@ theorem pres_innerFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {C C' : 
     (ha : WFExpr (.call v0.expr (GTy.tys Gs') m (Value.exprs vs)))
     (ha' : WFExpr ((e0.gsubst (bind Delta' Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs))))
     (h : Typing d [] [] (.call v0.expr (GTy.tys Gs') m (Value.exprs vs)) T) :
-    Typing d [] [] ((e0.gsubst (bind Delta' Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs))) T := by
-  sorry
+    Typing d [] [] ((e0.gsubst (bind Delta' Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs))) T :=
+  pres_innerFound' hwf hok (declOk hwf hok) hv hM hF hG' hp hN hN' hgs hvs ha ha' h
 
 theorem presBase' {d : Decls} {a a' : Expr} {T : Ty} (hwf : WFDecls d) (hok : DeclsOk d) (ha : WFExpr a)
     (ha' : WFExpr a') (hs : BaseStep d a a') (ht : Typing d [] [] a T) : Typing d [] [] a' T := by
