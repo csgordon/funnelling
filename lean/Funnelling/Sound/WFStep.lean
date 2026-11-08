@@ -1,4 +1,4 @@
-import Funnelling.Sound.Progress
+import Funnelling.Sound.WFSubst
 
 open Funnelling.SoundSimp
 
@@ -22,18 +22,6 @@ theorem closedList_eq {Xs : List TVarName} {xs : List VarName} :
     forall (es : List Expr), Expr.closedList Xs xs es = es.all (Expr.closed Xs xs)
   | [] => rfl
   | e :: es => by simp [Expr.closedList, closedList_eq es]
-
-def KQ' (Ms : List Method) (Fs : List Funnel) : Prop := (Ms.map Method.name).Nodup /\ (domF Fs).Nodup /\
-  forall M, List.Mem M Ms -> (M.params.map VarDecl.x).Nodup /\ (dom M.bounds).Nodup /\
-    Not (List.Mem this (M.params.map VarDecl.x))
-
-abbrev KQ (k : K) : Prop := KQ' k.Ms k.Fs
-
-theorem K.Ms_loc {C : ClassName} {Fs : List Funnel} {C' : ClassName} {Ts : List Ty} {es : List Expr} {Ms : List Method} :
-    (K.loc C Fs C' Ts es Ms).Ms = Ms := rfl
-
-theorem K.Fs_loc {C : ClassName} {Fs : List Funnel} {C' : ClassName} {Ts : List Ty} {es : List Expr} {Ms : List Method} :
-    (K.loc C Fs C' Ts es Ms).Fs = Fs := rfl
 
 theorem ECtx.kq_replace {a a' : Expr} (h' : forall k, List.Mem k a'.locals -> KQ k) :
     forall (E : ECtx), (forall k, List.Mem k (E.plug a).locals -> KQ k) ->
@@ -339,10 +327,72 @@ theorem RenM.lens {rv : VRen} {rt : TRen} {M M' : Method} (h : RenM rv rt M M') 
   cases h with
   | mk h1 h2 _ => simp [Method.bounds, Method.params, Method.name, h1, h2]
 
+theorem wf_vsubst {e : Expr} {n : VSubst} (hk : forall k, List.Mem k e.locals -> KQ k)
+    (hn : e.noShadow [] [] = true) (hi : Not (List.Mem this e.ifVars)) (hc : e.closed [] (n.map Prod.fst) = true)
+    (hv : forall p, List.Mem p n -> WFExpr p.2.expr)
+    (hd : forall p, List.Mem p n -> (forall y, List.Mem y p.2.expr.vbinders -> Not (List.Mem y e.vbinders)) /\
+      (forall X, List.Mem X p.2.expr.tbinders -> Not (List.Mem X e.tbinders))) :
+    WFExpr (e.vsubst n) := by
+  have hthis : Not (List.Mem this (n.flatMap fun p => p.2.expr.vbinders)) := by
+    intro h
+    simp only [listMem_iff, List.mem_flatMap] at h
+    rcases h with ⟨p, hp, h⟩
+    exact WFExpr.noThis (hv p hp) h
+  have hvns : VNS n (n.flatMap fun p => p.2.expr.vbinders) (n.flatMap fun p => p.2.expr.tbinders) := by
+    intro p hp
+    refine ⟨(hv p hp).2.2.2.2.1, fun y hy => ?_, fun X hX => ?_⟩
+    . simp only [listMem_iff, List.mem_flatMap]; exact ⟨p, hp, hy⟩
+    . simp only [listMem_iff, List.mem_flatMap]; exact ⟨p, hp, hX⟩
+  refine WFExpr.of_kq (Expr.kq_vsubst hk (fun p hp => (hv p hp).kq)) ?_
+    (Expr.ifVars_vsubst hi (fun p hp => (hv p hp).2.2.2.2.2.1.2))
+    (Expr.closed_vsubst (S := []) hc (fun p hp => (hv p hp).2.2.2.2.2.2))
+  refine Expr.noShadow_vsubst hthis hn hvns (fun y hy => by cases hy) ?_ (fun X hX => by cases hX) ?_
+  . intro y hy h
+    simp only [listMem_iff, List.mem_flatMap] at h
+    rcases h with ⟨p, hp, h⟩
+    exact (hd p hp).1 y h hy
+  . intro X hX h
+    simp only [listMem_iff, List.mem_flatMap] at h
+    rcases h with ⟨p, hp, h⟩
+    exact (hd p hp).2 X h hX
+
+theorem fresh_avoid (e : Expr) (LV : List VarName) (LT : List TVarName) {Xs : List TVarName} {xs : List VarName}
+    (hk : forall k, List.Mem k e.locals -> KQ k) (hn : e.noShadow Xs xs = true) (hi : Not (List.Mem this e.ifVars))
+    (hc : e.closed Xs xs = true) (ht : NoThis e) :
+    exists e', Fresh e e' /\ (forall y, List.Mem y e'.vbinders -> Not (List.Mem y LV)) /\
+      (forall X, List.Mem X e'.tbinders -> Not (List.Mem X LT)) /\ (forall k, List.Mem k e'.locals -> KQ k) /\
+      e'.noShadow Xs xs = true /\ Not (List.Mem this e'.ifVars) /\ e'.closed Xs xs = true := by
+  sorry
+
 theorem wf_ifThen {C' : ClassName} {Ts : List Ty} {x : VarName} {e1 e2 : Expr} {v : Value}
     (ha : WFExpr (.ifInst v.expr (.cls C' Ts) x e1 e2)) :
     exists e1', Fresh e1 e1' /\ VSubstDefined [x] e1' /\ WFExpr (e1'.vsubst [(x, v)]) := by
-  sorry
+  have hk := ha.kq
+  have hn := ha.2.2.2.2.1
+  have hc := ha.2.2.2.2.2.2
+  have hi := ha.2.2.2.2.2.1.2
+  have ht := WFExpr.noThis ha
+  simp only [Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at hk
+  simp only [Expr.noShadow, Bool.and_eq_true] at hn
+  simp only [Expr.closed, Bool.and_eq_true] at hc
+  simp only [Expr.ifVars, listMem_iff, List.mem_append, List.mem_cons, not_or] at hi
+  simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ht
+  have hv : WFExpr v.expr := by
+    refine WFExpr.sub ha ?_ ?_ hn.1.1.1 hc.1.1.1
+    . intro k hk'; simp only [Expr.locals, listMem_iff, List.mem_append]; exact Or.inl (Or.inl hk')
+    . intro y hy; simp only [Expr.ifVars, listMem_iff, List.mem_append, List.mem_cons]; exact Or.inl (Or.inl (Or.inr hy))
+  rcases fresh_avoid e1 (v.expr.vbinders ++ [x]) v.expr.tbinders hk.1.2 hn.1.2 hi.1.2 hc.1.2 ht.1.2 with
+    ⟨e1', hf, hav, hat, hk', hn', hi', hc'⟩
+  refine ⟨e1', hf, fun y hy hm => hav y hy (List.mem_append_right _ hm), ?_⟩
+  refine wf_vsubst hk' (Expr.noShadow_scope hn' (fun y _ hy => by cases hy)) hi' hc' ?_ ?_
+  . intro p hp
+    cases hp with
+    | head => exact hv
+    | tail _ h => cases h
+  . intro p hp
+    cases hp with
+    | head => exact ⟨fun y hy hm => hav y hm (List.mem_append_left _ hy), fun X hX hm => hat X hm hX⟩
+    | tail _ h => cases h
 
 theorem wf_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec} {M : Method} {m : MethName}
     {v0 : Value} {Gs Gs' : List GTy} {vs : List Value} (hD : Declared d (.dec D)) (hM : List.Mem M D.Ms)
