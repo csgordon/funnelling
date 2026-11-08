@@ -165,29 +165,17 @@ theorem gsubst_ty_bind {Dl : Bounds} {Gs : List GTy} : GSubst.ty (bind Dl Gs) = 
   rfl
 
 theorem exprs_mem {v : Value} : forall {vs : List Value}, List.Mem v vs -> List.Mem v.expr (Value.exprs vs)
-  | [], h => by cases h
-  | _ :: _, h => by
-    simp only [Value.exprs]
-    cases h with
-    | head => exact List.Mem.head _
-    | tail _ h => exact List.Mem.tail _ (exprs_mem h)
+  | _, .head _ => by simp only [Value.exprs]; exact List.Mem.head _
+  | _, .tail _ h => by simp only [Value.exprs]; exact List.Mem.tail _ (exprs_mem h)
 
 theorem uniqList_mem_e {e : Expr} : forall {es : List Expr}, List.Mem e es -> Expr.uniqList es -> e.uniq
-  | [], h, _ => by cases h
-  | _ :: _, h, hu => by
-    simp only [Expr.uniqList] at hu
-    cases h with
-    | head => exact hu.1
-    | tail _ h => exact uniqList_mem_e h hu.2
+  | _, .head _, hu => by simp only [Expr.uniqList] at hu; exact hu.1
+  | _, .tail _ h, hu => by simp only [Expr.uniqList] at hu; exact uniqList_mem_e h hu.2
 
 theorem vbindersList_mem_e {e : Expr} {x : VarName} : forall {es : List Expr}, List.Mem e es ->
     List.Mem x e.vbinders -> List.Mem x (Expr.vbindersList es)
-  | [], h, _ => by cases h
-  | _ :: _, h, hx => by
-    simp only [Expr.vbindersList, listMem_iff, List.mem_append]
-    cases h with
-    | head => exact Or.inl hx
-    | tail _ h => exact Or.inr (vbindersList_mem_e h hx)
+  | _, .head _, hx => by simp only [Expr.vbindersList, listMem_iff, List.mem_append]; exact Or.inl hx
+  | _, .tail _ h, hx => by simp only [Expr.vbindersList, listMem_iff, List.mem_append]; exact Or.inr (vbindersList_mem_e h hx)
 
 
 theorem pres_simpleFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {D : Dec} {M : Method}

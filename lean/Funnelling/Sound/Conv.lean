@@ -156,21 +156,13 @@ theorem WFDecls.locOk {d : Decls} (h : WFDecls d) : LocOk (classes d) := by
 
 theorem mem_ifVarsListM {M : Method} {x : VarName} : forall {Ms : List Method}, List.Mem M Ms ->
     List.Mem x M.ifVars -> List.Mem x (Method.ifVarsList Ms)
-  | [], h, _ => by cases h
-  | M' :: Ms, h, hk => by
-    simp only [Method.ifVarsList, listMem_iff, List.mem_append]
-    cases h with
-    | head => exact Or.inl hk
-    | tail _ h => exact Or.inr (mem_ifVarsListM h hk)
+  | _, .head _, hk => by simp only [Method.ifVarsList, listMem_iff, List.mem_append]; exact Or.inl hk
+  | _, .tail _ h, hk => by simp only [Method.ifVarsList, listMem_iff, List.mem_append]; exact Or.inr (mem_ifVarsListM h hk)
 
 theorem noShadowListM_mem {M : Method} {Xs : List TVarName} {xs : List VarName} : forall {Ms : List Method},
     List.Mem M Ms -> Method.noShadowList Xs xs Ms = true -> M.noShadow Xs xs = true
-  | [], h, _ => by cases h
-  | M' :: Ms, h, hn => by
-    simp only [Method.noShadowList, Bool.and_eq_true] at hn
-    cases h with
-    | head => exact hn.1
-    | tail _ h => exact noShadowListM_mem h hn.2
+  | _, .head _, hn => by simp only [Method.noShadowList, Bool.and_eq_true] at hn; exact hn.1
+  | _, .tail _ h, hn => by simp only [Method.noShadowList, Bool.and_eq_true] at hn; exact noShadowListM_mem h hn.2
 
 theorem WFDecls.method {d : Decls} (h : WFDecls d) {D : Dec} (hD : List.Mem D d) {M : Method}
     (hM : List.Mem M D.Ms) : M.uniq /\ NoThisM M /\ Method.noShadow (dom D.bounds) [] M = true := by

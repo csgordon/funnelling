@@ -81,21 +81,13 @@ theorem FreshM.name {M : Method} {D : Bounds} {T : Ty} {m : MethName} {ps : List
   | mk D' T' m' ps' e' => exact (RenM.body h.1).2.2.2
 
 theorem uniqList_mem {M : Method} : forall {Ms : List Method}, List.Mem M Ms -> Method.uniqList Ms -> M.uniq
-  | [], h, _ => by cases h
-  | M' :: Ms, h, hu => by
-    simp only [Method.uniqList] at hu
-    cases h with
-    | head => exact hu.1
-    | tail _ h => exact uniqList_mem h hu.2
+  | _, .head _, hu => by simp only [Method.uniqList] at hu; exact hu.1
+  | _, .tail _ h, hu => by simp only [Method.uniqList] at hu; exact uniqList_mem h hu.2
 
 theorem vbindersListM_mem {M : Method} {x : VarName} : forall {Ms : List Method}, List.Mem M Ms ->
     List.Mem x M.vbinders -> List.Mem x (Method.vbindersList Ms)
-  | [], h, _ => by cases h
-  | M' :: Ms, h, hx => by
-    simp only [Method.vbindersList, listMem_iff, List.mem_append]
-    cases h with
-    | head => exact Or.inl hx
-    | tail _ h => exact Or.inr (vbindersListM_mem h hx)
+  | _, .head _, hx => by simp only [Method.vbindersList, listMem_iff, List.mem_append]; exact Or.inl hx
+  | _, .tail _ h, hx => by simp only [Method.vbindersList, listMem_iff, List.mem_append]; exact Or.inr (vbindersListM_mem h hx)
 
 theorem closedList_vals {T : List TVarName} {S : List VarName} : forall {vs : List Value},
     Expr.closedList T S (Value.exprs vs) = true -> forall v, List.Mem v vs -> v.expr.closed T S = true

@@ -6,48 +6,28 @@ namespace Funnelling.High
 
 theorem mem_localsList {e : Expr} {k : K} : forall {es : List Expr}, List.Mem e es -> List.Mem k e.locals ->
     List.Mem k (Expr.localsList es)
-  | [], h, _ => by cases h
-  | e' :: es, h, hk => by
-    simp only [Expr.localsList, listMem_iff, List.mem_append]
-    cases h with
-    | head => exact Or.inl hk
-    | tail _ h => exact Or.inr (mem_localsList h hk)
+  | _, .head _, hk => by simp only [Expr.localsList, listMem_iff, List.mem_append]; exact Or.inl hk
+  | _, .tail _ h, hk => by simp only [Expr.localsList, listMem_iff, List.mem_append]; exact Or.inr (mem_localsList h hk)
 
 theorem mem_localsListM {M : Method} {k : K} : forall {Ms : List Method}, List.Mem M Ms -> List.Mem k M.locals ->
     List.Mem k (Method.localsList Ms)
-  | [], h, _ => by cases h
-  | M' :: Ms, h, hk => by
-    simp only [Method.localsList, listMem_iff, List.mem_append]
-    cases h with
-    | head => exact Or.inl hk
-    | tail _ h => exact Or.inr (mem_localsListM h hk)
+  | _, .head _, hk => by simp only [Method.localsList, listMem_iff, List.mem_append]; exact Or.inl hk
+  | _, .tail _ h, hk => by simp only [Method.localsList, listMem_iff, List.mem_append]; exact Or.inr (mem_localsListM h hk)
 
 theorem mem_ifVarsList {e : Expr} {x : VarName} : forall {es : List Expr}, List.Mem e es -> List.Mem x e.ifVars ->
     List.Mem x (Expr.ifVarsList es)
-  | [], h, _ => by cases h
-  | e' :: es, h, hk => by
-    simp only [Expr.ifVarsList, listMem_iff, List.mem_append]
-    cases h with
-    | head => exact Or.inl hk
-    | tail _ h => exact Or.inr (mem_ifVarsList h hk)
+  | _, .head _, hk => by simp only [Expr.ifVarsList, listMem_iff, List.mem_append]; exact Or.inl hk
+  | _, .tail _ h, hk => by simp only [Expr.ifVarsList, listMem_iff, List.mem_append]; exact Or.inr (mem_ifVarsList h hk)
 
 theorem noShadowList_mem {e : Expr} {Xs : List TVarName} {xs : List VarName} : forall {es : List Expr},
     List.Mem e es -> Expr.noShadowList Xs xs es = true -> e.noShadow Xs xs = true
-  | [], h, _ => by cases h
-  | e' :: es, h, hn => by
-    simp only [Expr.noShadowList, Bool.and_eq_true] at hn
-    cases h with
-    | head => exact hn.1
-    | tail _ h => exact noShadowList_mem h hn.2
+  | _, .head _, hn => by simp only [Expr.noShadowList, Bool.and_eq_true] at hn; exact hn.1
+  | _, .tail _ h, hn => by simp only [Expr.noShadowList, Bool.and_eq_true] at hn; exact noShadowList_mem h hn.2
 
 theorem closedList_mem {e : Expr} {Xs : List TVarName} {xs : List VarName} : forall {es : List Expr},
     List.Mem e es -> Expr.closedList Xs xs es = true -> e.closed Xs xs = true
-  | [], h, _ => by cases h
-  | e' :: es, h, hn => by
-    simp only [Expr.closedList, Bool.and_eq_true] at hn
-    cases h with
-    | head => exact hn.1
-    | tail _ h => exact closedList_mem h hn.2
+  | _, .head _, hn => by simp only [Expr.closedList, Bool.and_eq_true] at hn; exact hn.1
+  | _, .tail _ h, hn => by simp only [Expr.closedList, Bool.and_eq_true] at hn; exact closedList_mem h hn.2
 
 theorem mem_mid {A : Type} {l r : List A} {x : A} : List.Mem x (l ++ x :: r) :=
   List.mem_append_right _ (List.Mem.head _)

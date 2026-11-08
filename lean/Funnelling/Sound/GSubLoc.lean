@@ -88,12 +88,8 @@ theorem tbindersList_append : forall {es1 es2 : List Expr},
 
 theorem tbindersListM_mem {M : Method} {X : TVarName} : forall {Ms : List Method}, List.Mem M Ms ->
     List.Mem X M.tbinders -> List.Mem X (Method.tbindersList Ms)
-  | [], h, _ => by cases h
-  | M' :: Ms, h, hx => by
-    simp only [Method.tbindersList, listMem_iff, List.mem_append]
-    cases h with
-    | head => exact Or.inl hx
-    | tail _ h => exact Or.inr (tbindersListM_mem h hx)
+  | _, .head _, hx => by simp only [Method.tbindersList, listMem_iff, List.mem_append]; exact Or.inl hx
+  | _, .tail _ h, hx => by simp only [Method.tbindersList, listMem_iff, List.mem_append]; exact Or.inr (tbindersListM_mem h hx)
 
 theorem substList_app {s : TSubst} {Ts Us : List Ty} :
     Ty.substList s (Ts ++ Us) = Ty.substList s Ts ++ Ty.substList s Us := by

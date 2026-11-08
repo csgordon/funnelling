@@ -244,21 +244,13 @@ theorem wf_ifThen {C' : ClassName} {Ts : List Ty} {x : VarName} {e1 e2 : Expr} {
 
 theorem closedListM_mem {M : Method} {Xs : List TVarName} {xs : List VarName} : forall {Ms : List Method},
     List.Mem M Ms -> Method.closedList Xs xs Ms = true -> M.closed Xs xs = true
-  | [], h, _ => by cases h
-  | _ :: _, h, hc => by
-    simp only [Method.closedList, Bool.and_eq_true] at hc
-    cases h with
-    | head => exact hc.1
-    | tail _ h => exact closedListM_mem h hc.2
+  | _, .head _, hc => by simp only [Method.closedList, Bool.and_eq_true] at hc; exact hc.1
+  | _, .tail _ h, hc => by simp only [Method.closedList, Bool.and_eq_true] at hc; exact closedListM_mem h hc.2
 
 theorem tbindersList_mem_e {e : Expr} {X : TVarName} : forall {es : List Expr}, List.Mem e es ->
     List.Mem X e.tbinders -> List.Mem X (Expr.tbindersList es)
-  | [], h, _ => by cases h
-  | _ :: _, h, hX => by
-    simp only [Expr.tbindersList, listMem_iff, List.mem_append]
-    cases h with
-    | head => exact Or.inl hX
-    | tail _ h => exact Or.inr (tbindersList_mem_e h hX)
+  | _, .head _, hX => by simp only [Expr.tbindersList, listMem_iff, List.mem_append]; exact Or.inl hX
+  | _, .tail _ h, hX => by simp only [Expr.tbindersList, listMem_iff, List.mem_append]; exact Or.inr (tbindersList_mem_e h hX)
 
 theorem wf_call_arg {e0 : Expr} {Ts : List Ty} {m : MethName} {es : List Expr} {e : Expr}
     (h : WFExpr (.call e0 Ts m es)) (he : List.Mem e es) : WFExpr e := by
