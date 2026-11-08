@@ -114,10 +114,7 @@ theorem VSEnv.methExt {rv rvo : VRen} {n1 n2 : VSubst} {S : List VarName} (env :
     . exact env.k p hp
   ko := by
     intro p hp
-    simp only [listMem_iff, List.mem_append] at hp
-    rcases hp with hp | hp
-    . exact fun e => hta (e ▸ (List.of_mem_zip hp).1)
-    . exact env.ko p hp
+    exact (List.mem_append.mp hp).elim (fun hp => fun e => hta (e ▸ (List.of_mem_zip hp).1)) (env.ko p)
   c1 := env.c1
 
 theorem VSEnv.filt {rv rvo : VRen} {n1 n2 : VSubst} {S : List VarName} (env : VSEnv rv rvo n1 n2 S) :

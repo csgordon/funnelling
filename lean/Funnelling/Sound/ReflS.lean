@@ -106,10 +106,7 @@ theorem RenM.reflS {rv : VRen} {rt : TRen} : forall {M : Method} {Ts : List TVar
       intro X hX
       apply rn_zip_self_or
       intro hn
-      simp only [listMem_iff, List.mem_append] at hX
-      rcases hX with hX | hX
-      . exact ht X hX
-      . exact absurd hX hn
+      exact (List.mem_append.mp hX).elim (ht X) (fun hX => absurd hX hn)
     have hv' : forall w, (List.Mem w (this :: xs ++ ps.map VarDecl.x) \/ w = this) ->
         rn ((ps.map VarDecl.x).zip (ps.map VarDecl.x) ++ rv) w = w := by
       intro w hw

@@ -504,10 +504,7 @@ theorem Method.noShadow_vsubst {VB : List VarName} {TB : List TVarName} (hthis :
       . exact hxs y hy
       . exact he y (Or.inl hy)
     . intro X hX
-      simp only [listMem_iff, List.mem_append] at hX
-      rcases hX with hX | hX
-      . exact hXs X hX
-      . exact hE X (Or.inl hX)
+      exact (List.mem_append.mp hX).elim (hXs X) (fun hX => hE X (Or.inl hX))
 theorem Method.noShadowList_vsubst {VB : List VarName} {TB : List TVarName} (hthis : Not (List.Mem this VB)) :
     forall {Ms : List Method} {n : VSubst} {Xs : List TVarName} {xs : List VarName},
     Method.noShadowList Xs xs Ms = true -> VNS n VB TB -> (forall y, List.Mem y xs -> Not (List.Mem y VB)) ->

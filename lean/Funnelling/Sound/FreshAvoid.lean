@@ -123,24 +123,15 @@ theorem Expr.fr_vb {LV : List VarName} {LT : List TVarName} :
     List.Mem y (e.fr LV LT rv rt d).vbinders -> At LV d y
   | .var _, _, _, _, _, h => by simp [Expr.fr, Expr.vbinders] at h
   | .call e _ _ es, _, _, _, _, h => by
-    simp only [Expr.fr, Expr.vbinders, listMem_iff, List.mem_append] at h
-    rcases h with h | h
-    . exact Expr.fr_vb e h
-    . exact Expr.frList_vb es h
+    exact (List.mem_append.mp h).elim (Expr.fr_vb e) (Expr.frList_vb es)
   | .superCall e _ _ _ es, _, _, _, _, h => by
-    simp only [Expr.fr, Expr.vbinders, listMem_iff, List.mem_append] at h
-    rcases h with h | h
-    . exact Expr.fr_vb e h
-    . exact Expr.frList_vb es h
+    exact (List.mem_append.mp h).elim (Expr.fr_vb e) (Expr.frList_vb es)
   | .field e _, _, _, _, _, h => by
     exact Expr.fr_vb e h
   | .new _ _ es, _, _, _, _, h => by
     exact Expr.frList_vb es h
   | .newLocal _ _ _ _ es Ms, _, _, _, _, h => by
-    simp only [Expr.fr, Expr.vbinders, listMem_iff, List.mem_append] at h
-    rcases h with h | h
-    . exact Expr.frList_vb es h
-    . exact Method.frList_vb Ms h
+    exact (List.mem_append.mp h).elim (Expr.frList_vb es) (Method.frList_vb Ms)
   | .ifInst e0 _ _ e1 e2, _, _, d, _, h => by
     simp only [Expr.fr, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons] at h
     rcases h with ((h | h) | h) | h
@@ -153,29 +144,20 @@ theorem Expr.frList_vb {LV : List VarName} {LT : List TVarName} :
     List.Mem y (Expr.vbindersList (Expr.frList LV LT rv rt d es)) -> At LV d y
   | [], _, _, _, _, h => by simp [Expr.frList, Expr.vbindersList] at h
   | e :: es, _, _, _, _, h => by
-    simp only [Expr.frList, Expr.vbindersList, listMem_iff, List.mem_append] at h
-    rcases h with h | h
-    . exact Expr.fr_vb e h
-    . exact Expr.frList_vb es h
+    exact (List.mem_append.mp h).elim (Expr.fr_vb e) (Expr.frList_vb es)
 theorem Method.fr_vb {LV : List VarName} {LT : List TVarName} :
     forall (M : Method) {rv : VRen} {rt : TRen} {d : Nat} {y : VarName},
     List.Mem y (M.fr LV LT rv rt d).vbinders -> At LV d y
   | .mk _ _ _ _ e, _, _, _, _, h => by
     simp only [Method.fr, Method.vbinders] at h
     rw [names_renParams frs_length] at h
-    simp only [listMem_iff, List.mem_append] at h
-    rcases h with h | h
-    . exact frs_at h
-    . exact At.mono (Nat.le_add_right _ _) (Expr.fr_vb e h)
+    exact (List.mem_append.mp h).elim frs_at (fun h => At.mono (Nat.le_add_right _ _) (Expr.fr_vb e h))
 theorem Method.frList_vb {LV : List VarName} {LT : List TVarName} :
     forall (Ms : List Method) {rv : VRen} {rt : TRen} {d : Nat} {y : VarName},
     List.Mem y (Method.vbindersList (Method.frList LV LT rv rt d Ms)) -> At LV d y
   | [], _, _, _, _, h => by simp [Method.frList, Method.vbindersList] at h
   | M :: Ms, _, _, _, _, h => by
-    simp only [Method.frList, Method.vbindersList, listMem_iff, List.mem_append] at h
-    rcases h with h | h
-    . exact Method.fr_vb M h
-    . exact Method.frList_vb Ms h
+    exact (List.mem_append.mp h).elim (Method.fr_vb M) (Method.frList_vb Ms)
 end
 
 mutual
@@ -184,24 +166,15 @@ theorem Expr.fr_tb {LV : List VarName} {LT : List TVarName} :
     List.Mem Y (e.fr LV LT rv rt d).tbinders -> At LT d Y
   | .var _, _, _, _, _, h => by simp [Expr.fr, Expr.tbinders] at h
   | .call e _ _ es, _, _, _, _, h => by
-    simp only [Expr.fr, Expr.tbinders, listMem_iff, List.mem_append] at h
-    rcases h with h | h
-    . exact Expr.fr_tb e h
-    . exact Expr.frList_tb es h
+    exact (List.mem_append.mp h).elim (Expr.fr_tb e) (Expr.frList_tb es)
   | .superCall e _ _ _ es, _, _, _, _, h => by
-    simp only [Expr.fr, Expr.tbinders, listMem_iff, List.mem_append] at h
-    rcases h with h | h
-    . exact Expr.fr_tb e h
-    . exact Expr.frList_tb es h
+    exact (List.mem_append.mp h).elim (Expr.fr_tb e) (Expr.frList_tb es)
   | .field e _, _, _, _, _, h => by
     exact Expr.fr_tb e h
   | .new _ _ es, _, _, _, _, h => by
     exact Expr.frList_tb es h
   | .newLocal _ _ _ _ es Ms, _, _, _, _, h => by
-    simp only [Expr.fr, Expr.tbinders, listMem_iff, List.mem_append] at h
-    rcases h with h | h
-    . exact Expr.frList_tb es h
-    . exact Method.frList_tb Ms h
+    exact (List.mem_append.mp h).elim (Expr.frList_tb es) (Method.frList_tb Ms)
   | .ifInst e0 _ _ e1 e2, _, _, d, _, h => by
     simp only [Expr.fr, Expr.tbinders, listMem_iff, List.mem_append] at h
     rcases h with (h | h) | h
@@ -213,29 +186,20 @@ theorem Expr.frList_tb {LV : List VarName} {LT : List TVarName} :
     List.Mem Y (Expr.tbindersList (Expr.frList LV LT rv rt d es)) -> At LT d Y
   | [], _, _, _, _, h => by simp [Expr.frList, Expr.tbindersList] at h
   | e :: es, _, _, _, _, h => by
-    simp only [Expr.frList, Expr.tbindersList, listMem_iff, List.mem_append] at h
-    rcases h with h | h
-    . exact Expr.fr_tb e h
-    . exact Expr.frList_tb es h
+    exact (List.mem_append.mp h).elim (Expr.fr_tb e) (Expr.frList_tb es)
 theorem Method.fr_tb {LV : List VarName} {LT : List TVarName} :
     forall (M : Method) {rv : VRen} {rt : TRen} {d : Nat} {Y : TVarName},
     List.Mem Y (M.fr LV LT rv rt d).tbinders -> At LT d Y
   | .mk _ _ _ _ e, _, _, _, _, h => by
     simp only [Method.fr, Method.tbinders] at h
     rw [dom_renBounds frs_length] at h
-    simp only [listMem_iff, List.mem_append] at h
-    rcases h with h | h
-    . exact frs_at h
-    . exact At.mono (Nat.le_add_right _ _) (Expr.fr_tb e h)
+    exact (List.mem_append.mp h).elim frs_at (fun h => At.mono (Nat.le_add_right _ _) (Expr.fr_tb e h))
 theorem Method.frList_tb {LV : List VarName} {LT : List TVarName} :
     forall (Ms : List Method) {rv : VRen} {rt : TRen} {d : Nat} {Y : TVarName},
     List.Mem Y (Method.tbindersList (Method.frList LV LT rv rt d Ms)) -> At LT d Y
   | [], _, _, _, _, h => by simp [Method.frList, Method.tbindersList] at h
   | M :: Ms, _, _, _, _, h => by
-    simp only [Method.frList, Method.tbindersList, listMem_iff, List.mem_append] at h
-    rcases h with h | h
-    . exact Method.fr_tb M h
-    . exact Method.frList_tb Ms h
+    exact (List.mem_append.mp h).elim (Method.fr_tb M) (Method.frList_tb Ms)
 end
 
 abbrev Below {A : Type} [Nm A] (L : List A) (d : Nat) (S : List A) : Prop :=

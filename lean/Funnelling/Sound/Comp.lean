@@ -134,16 +134,10 @@ theorem CompEnv.methExt {rv1 rv2 rv3 : VRen} {rt1 rt2 rt3 : TRen} {Sa Sb Ta Tb}
     . exact env.k1 p hp
   k2 := by
     intro p hp
-    simp only [listMem_iff, List.mem_append] at hp
-    rcases hp with hp | hp
-    . exact fun e => htb (e ▸ (List.of_mem_zip hp).1)
-    . exact env.k2 p hp
+    exact (List.mem_append.mp hp).elim (fun hp => fun e => htb (e ▸ (List.of_mem_zip hp).1)) (env.k2 p)
   k3 := by
     intro p hp
-    simp only [listMem_iff, List.mem_append] at hp
-    rcases hp with hp | hp
-    . exact fun e => hta (e ▸ (List.of_mem_zip hp).1)
-    . exact env.k3 p hp
+    exact (List.mem_append.mp hp).elim (fun hp => fun e => hta (e ▸ (List.of_mem_zip hp).1)) (env.k3 p)
 
 theorem dom_renBounds {r : TRen} : forall {Delta : Bounds} {Xs : List TVarName},
     Xs.length = Delta.length ->
