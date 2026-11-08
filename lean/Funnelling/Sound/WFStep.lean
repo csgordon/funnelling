@@ -362,18 +362,16 @@ theorem wf_ifThen {C' : ClassName} {Ts : List Ty} {x : VarName} {e1 e2 : Expr} {
   have hk := ha.kq
   have hn := ha.2.2.2.2.1
   have hc := ha.2.2.2.2.2.2
-  have hi := ha.2.2.2.2.2.1.2
   have ht := WFExpr.noThis ha
   simp only [Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at hk
   simp only [Expr.noShadow, Bool.and_eq_true] at hn
   simp only [Expr.closed, Bool.and_eq_true] at hc
-  simp only [Expr.ifVars, listMem_iff, List.mem_append, List.mem_cons, not_or] at hi
   simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ht
   have hv : WFExpr v.expr := by
     refine WFExpr.sub ha ?_ ?_ hn.1.1.1 hc.1.1.1
     . intro k hk'; simp only [Expr.locals, listMem_iff, List.mem_append]; exact Or.inl (Or.inl hk')
     . intro y hy; simp only [Expr.ifVars, listMem_iff, List.mem_append, List.mem_cons]; exact Or.inl (Or.inl (Or.inr hy))
-  rcases fresh_avoid e1 (v.expr.vbinders ++ [x]) v.expr.tbinders hk.1.2 hn.1.2 hi.1.2 hc.1.2 ht.1.2 with
+  rcases fresh_avoid e1 (v.expr.vbinders ++ [x]) v.expr.tbinders hk.1.2 hc.1.2 ht.1.2 with
     ⟨e1', hf, hav, hat, hk', hn', hi', hc'⟩
   refine ⟨e1', hf, fun y hy hm => hav y hy (List.mem_append_right _ hm), ?_⟩
   refine wf_vsubst hk' (Expr.noShadow_scope hn' (fun y _ hy => by cases hy)) hi' hc' ?_ ?_
@@ -426,29 +424,18 @@ theorem wf_innerFound {C C' : ClassName} {Ms : List Method} {M : Method} {m : Me
     WFExpr.plug (E := .callRecv .hole Gs' m (Value.exprs vs)) ha
   have hvs : forall v, List.Mem v vs -> WFExpr v.expr := fun v hv => wf_call_arg ha (exprs_mem hv)
   have hk0 := hv0.kq
-  have hn0 := hv0.2.2.2.2.1
   have hc0 := hv0.2.2.2.2.2.2
-  have hi0 := hv0.2.2.2.2.2.1.2
   have ht0 := WFExpr.noThis hv0
-  have hu0 := WFExpr.uniq hv0
   simp only [Value.expr, Expr.locals, listMem_iff, List.mem_cons, List.mem_append, or_imp, forall_and,
     forall_eq] at hk0
-  simp only [Value.expr, Expr.noShadow, Bool.and_eq_true] at hn0
   simp only [Value.expr, Expr.closed, Bool.and_eq_true] at hc0
-  simp only [Value.expr, Expr.ifVars, listMem_iff, List.mem_append, not_or] at hi0
   simp only [NoThis, Value.expr, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ht0
-  simp only [Value.expr, Expr.uniq] at hu0
   have hkM : forall k, List.Mem k M.locals -> KQ k := fun k hk => hk0.2.2 k (mem_localsListM hM hk)
-  have hnM : M.noShadow [] [] = true := by
-    have := noShadowListM_all hn0.2 hM
-    simpa using this
-  have hiM : Not (List.Mem this M.ifVars) := fun h => hi0.2 (mem_ifVarsListM hM h)
   have hcM : M.closed [] [] = true := closedListM_mem hM hc0.2
   have htM : NoThisM M := fun h => ht0.2 (vbindersListM_mem hM h)
-  have huM : M.uniq := uniqList_mem hM hu0.2
   rcases freshM_avoid M ((Value.newLocal C Gs C' Gs'' vs0 Ms).expr.vbinders ++ Expr.vbindersList (Value.exprs vs))
     ((Value.newLocal C Gs C' Gs'' vs0 Ms).expr.tbinders ++ Expr.tbindersList (Value.exprs vs))
-    hkM hnM hiM hcM htM huM with ⟨M', hF, hav, hat, hk', hn', hi', hc', ht', hu'⟩
+    hkM hcM htM with ⟨M', hF, hav, hat, hk', hn', hi', hc', ht', hu'⟩
   cases M' with
   | mk Delta' T0 m' ps e0 =>
   have hl := RenM.lens hF.1
@@ -643,16 +630,14 @@ theorem wf_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec}
       WFExpr ((e0.gsubst (bind (D.bounds ++ Delta') (Gs ++ Gs'))).vsubst
         ((this :: ps.map VarDecl.x).zip (v0 :: vs))) := by
   have hd := hD.dec_mem
-  rcases WFDecls.method hwf hd hM with ⟨huM, htM, hnM⟩
+  rcases WFDecls.method hwf hd hM with ⟨-, htM, -⟩
   have hkM : forall k, List.Mem k M.locals -> KQ k :=
     fun k hk => wfdecls_kq hwf k (classes_mem_loc hd (mem_localsListM hM hk))
-  have hiM : Not (List.Mem this M.ifVars) := fun h => hwf.2.2.2.2.2.2.2.1.2 (by
-    simp only [listMem_iff, List.mem_flatMap]; exact ⟨D, hd, mem_ifVarsListM hM h⟩)
   have hcM := dec_method_closed hok hD hM
   have hv0 : WFExpr v0.expr := WFExpr.plug (E := .superRecv .hole (GTy.cls D.C Gs) Gs' m (Value.exprs vs)) ha
   have hvs : forall v, List.Mem v vs -> WFExpr v.expr := fun v hv => wf_super_arg ha (exprs_mem hv)
   rcases freshM_avoid M (v0.expr.vbinders ++ Expr.vbindersList (Value.exprs vs))
-    (v0.expr.tbinders ++ Expr.tbindersList (Value.exprs vs)) hkM hnM hiM hcM htM huM with
+    (v0.expr.tbinders ++ Expr.tbindersList (Value.exprs vs)) hkM hcM htM with
     ⟨M', hF, hav, hat, hk', hn', hi', hc', ht', hu'⟩
   cases M' with
   | mk Delta' T0 m' ps e0 =>

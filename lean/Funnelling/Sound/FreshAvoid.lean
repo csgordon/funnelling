@@ -786,8 +786,7 @@ theorem not_atT_of_mem {L : List TVarName} {d : Nat} {Y : TVarName} (h : List.Me
   fun ⟨k, _, e⟩ => freshT_not_mem L k (e ▸ h)
 
 theorem fresh_avoid (e : Expr) (LV : List VarName) (LT : List TVarName) {Xs : List TVarName} {xs : List VarName}
-    (hk : forall k, List.Mem k e.locals -> KQ k) (_hn : e.noShadow Xs xs = true) (_hi : Not (List.Mem this e.ifVars))
-    (hc : e.closed Xs xs = true) (ht : NoThis e) :
+    (hk : forall k, List.Mem k e.locals -> KQ k) (hc : e.closed Xs xs = true) (ht : NoThis e) :
     exists e', Fresh e e' /\ (forall y, List.Mem y e'.vbinders -> Not (List.Mem y LV)) /\
       (forall X, List.Mem X e'.tbinders -> Not (List.Mem X LT)) /\ (forall k, List.Mem k e'.locals -> KQ k) /\
       e'.noShadow Xs xs = true /\ Not (List.Mem this e'.ifVars) /\ e'.closed Xs xs = true := by
@@ -805,8 +804,7 @@ theorem fresh_avoid (e : Expr) (LV : List VarName) (LT : List TVarName) {Xs : Li
     fun X hX hm => htb X hX (List.mem_append_left _ hm), r.2.2, hns, fun h => hnt (Expr.ifVars_vb _ h), r.2.1⟩
 
 theorem freshM_avoid (M : Method) (LV : List VarName) (LT : List TVarName) {Xs : List TVarName} {xs : List VarName}
-    (hk : forall k, List.Mem k M.locals -> KQ k) (_hn : M.noShadow Xs xs = true) (_hi : Not (List.Mem this M.ifVars))
-    (hc : M.closed Xs xs = true) (ht : NoThisM M) (_hu : M.uniq) :
+    (hk : forall k, List.Mem k M.locals -> KQ k) (hc : M.closed Xs xs = true) (ht : NoThisM M) :
     exists M', FreshM M M' /\ (forall y, List.Mem y M'.vbinders -> Not (List.Mem y LV)) /\
       (forall X, List.Mem X M'.tbinders -> Not (List.Mem X LT)) /\ (forall k, List.Mem k M'.locals -> KQ k) /\
       M'.noShadow Xs xs = true /\ Not (List.Mem this M'.ifVars) /\ M'.closed Xs xs = true /\ NoThisM M' /\
