@@ -56,14 +56,14 @@ The files are:
 \item \leanfile{High/Syntax.lean}: names, types, ground types, funnels, expressions, methods, values, declarations, class declarations $K$.
 \item \leanfile{High/Substitution.lean}: substitution of type variables and of variables, and $\mathsf{fresh}$.
 \item \leanfile{High/Declarations.lean}: expression contexts, $\mathsf{declared}$, $M\in C$, $\mathrm{generic}$, the pairing, $\mathsf{scope}$, $\mathsf{typeOf}$.
-\item \leanfile{High/WellFormed.lean}: the well-formedness requirements A1-A11.
+\item \leanfile{High/WellFormed.lean}: the well-formedness requirements A1-A12.
 \item \leanfile{High/Typing.lean}: subtyping, kinding, checked casts, $\mathsf{overrideOk}$, $\mathsf{consistent}$, typing, method, class and program typing.
 \item \leanfile{High/Reduction.lean}: evaluation contexts and the reduction.
 \item \leanfile{Low/*.lean}: the low level, and \leanfile{Low/Soundness.lean}, progress and preservation of the low level.
 \item \leanfile{Translation.lean}: the translation from the high level to the low level.
 \item \leanfile{Adequacy.lean}: lemmas that relate the two levels through the translation.
-\item \leanfile{Proof.lean}: the proof of Type Soundness.
-\item \leanfile{Soundness.lean}: Type Soundness, on the high level.
+\item \leanfile{Proof.lean}: the proofs of Type Soundness and Determinism.
+\item \leanfile{Soundness.lean}: Type Soundness and Determinism, on the high level.
 \item \leanfile{Examples.lean}: the validation examples, on the high level.
 \end{itemize}
 Lean accepts all the files.
@@ -86,9 +86,9 @@ A rule written with $G$ or $v$ in the paper is written with a \texttt{GTy} or a 
 A Lean constructor has the name of the rule of the paper: \texttt{subInherit} is \textsc{sub-inherit}, \texttt{callLbRuntime} is \textsc{call-lb-runtime}.
 \item \textbf{Grammar and well-formedness.}
 In the paper, the well-formedness requirements restrict the grammar (Section~\ref{sec:clarifications}).
-Lean defines the syntax as inductive types, and A1-A11 as the propositions \texttt{WFDecls} and \texttt{WFExpr}.
-Type Soundness assumes them for the initial program.
-A step $\step{e}{e'}$ of the paper is \texttt{Reduces d e e'}: a \texttt{Step} whose result satisfies \texttt{WFExpr}, since an instance of a rule of the paper exists only when its result is an expression.
+Lean defines the syntax as inductive types, and A1-A12 as the propositions \texttt{WFDecls} and \texttt{WFExpr}.
+Type Soundness assumes them for the initial program, and Determinism for the expression that reduces.
+A step $\step{e}{e'}$ of the paper is \texttt{Reduces d e e'}: a \texttt{Step} whose result satisfies \texttt{WFExpr}, since an instance of a rule of the paper exists only when its result is an expression, and the result of a step is the new main expression (A12).
 The premise of \texttt{Step.ctx} is a \texttt{Step}: an evaluation context binds no name, so \texttt{WFExpr (E.plug e')} implies \texttt{WFExpr e'}.
 \item \textbf{The class table.}
 \decls is an explicit argument \texttt{d} of every judgement.
@@ -100,8 +100,8 @@ $\tsubst{T}{\Delta}{\pl{T}}$ is \texttt{T.subst (bind Delta Ts)} and $\tsubst{T}
 The paper defines a simultaneous substitution only when the names in its domain are distinct.
 Rules \textsc{simpleFound} and \textsc{innerFound} have this as premises (\texttt{Nodup}), since their domains hold the names chosen by $\mathsf{fresh}$; in the other rules the domain is distinct by A5, A6 and A7.
 \item \textbf{Definitions.}
-A \textbf{Define} box of the paper with \emph{where} clauses ($\mathsf{declared}$, $M\in C$, $\mathrm{generic}$, $\mathsf{scope}$, the pairing, $\mathsf{overrideOk}(T,M)$) is an inductive relation, one constructor per clause.
-A \textbf{Define} box that defines a function ($\mathrm{dom}$, $\mathrm{cod}$, $|F|$, $\mathsf{typeOf}$, the substitutions) is a function.
+A \textbf{Define} box of the paper with \emph{where} clauses ($\mathsf{declared}$, $\mathrm{generic}$, $\mathsf{scope}$, the pairing, $\mathsf{overrideOk}(T,M)$) is an inductive relation, one constructor per clause; $M\in C$ and $K\gap\mathsf{consistent}$ are definitions with an existential, \texttt{MethodIn} and \texttt{Consistent}.
+A definition of a function ($\mathrm{dom}$, $\mathrm{cod}$, $|F|$, $\mathsf{typeOf}$, the substitutions) is a function.
 \end{itemize}
 
 \subsection{Side by Side: Paper and Lean}
@@ -163,7 +163,7 @@ def Gamma.lookup (gamma : Gamma) (x : VarName) : Option Ty :=
   (gamma.find? fun d => d.x == x).map VarDecl.T
 \end{lstlisting}
 \end{leanside}
-\mapping{$\ext{X}{T}$ is \texttt{\{ X := X, T := T \}}; $T\gap x$ is \texttt{\{ T := T, x := x \}}; $\Gamma(x)$ is \texttt{gamma.lookup x}.}
+\mapping{$\ext{X}{T}$ is \texttt{\{ X := X, T := T \}}; $T\gap x$ is \texttt{\{ T := T, x := x \}}; $\Gamma(x)$ is \texttt{gamma.lookup x}, the first $T\gap x$ of $\Gamma$; $\Gamma$ has one $T\gap x$ per $x$, by A4, A7, A8 and $\Gamma\setminus\this$ in rule \textsc{new-local}.}
 \end{cmp}
 
 \begin{cmp}{Expressions and methods}
@@ -315,7 +315,7 @@ abbrev A6 (ks : List K) : Prop := forall k, List.Mem k ks -> (domF k.Fs).Nodup
 \begin{cmp}{A7}
 \begin{paperside}
 (A7) There is no shadowing of $X$ or $x$, except for \Q@this@.\\[1ex]
-A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ of the enclosing method; this is the only form of shadowing.
+A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ of the enclosing method.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
@@ -361,10 +361,32 @@ abbrev A11 (d : Decls) : Prop := forall k, List.Mem k (classes d) -> forall F, L
 \mapping{\texttt{ifVars} lists the variables of all the \Q@if@.}
 \end{cmp}
 
+\begin{cmp}{A12}
+\begin{paperside}
+(A12) The main expression has no free variable and no free type variable.
+\end{paperside}
+\begin{leanside}
+\begin{lstlisting}[style=leanside]
+def Expr.closed (Xs : List TVarName) (xs : List VarName) : Expr -> Bool
+  | .var x => xs.contains x
+  | .newLocal _ Fs _ Ts es Ms =>
+    (domF Fs ++ Ty.ftvList Ts).all Xs.contains && Expr.closedList Xs xs es && Method.closedList Xs xs Ms
+  | .ifInst e0 T x e1 e2 =>
+    e0.closed Xs xs && T.ftv.all Xs.contains && e1.closed Xs (x :: xs) && e2.closed Xs xs
+  | ...
+def Method.closed (Xs : List TVarName) (xs : List VarName) : Method -> Bool
+  | .mk Delta T0 _ ps e =>
+    (Ty.ftvList (T0 :: cod Delta ++ ps.map VarDecl.T)).all (Xs ++ dom Delta).contains &&
+    e.closed (Xs ++ dom Delta) (this :: xs ++ ps.map VarDecl.x)
+\end{lstlisting}
+\end{leanside}
+\mapping{\texttt{Xs} and \texttt{xs} are the type variables and the variables in scope; the cases written \texttt{...} check the types they hold and go into the subexpressions.}
+\end{cmp}
+
 \begin{cmp}{All the requirements}
 \begin{paperside}
-We require the well-formedness conditions A1-A11.\\[1ex]
-The well-formedness requirements A1-A11 are part of the grammar (Section~\ref{sec:clarifications}).
+We require the following well-formedness conditions: (A1)-(A12).\\[1ex]
+The well-formedness requirements A1-A12 of Section~\ref{sec:core} are part of the grammar.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
@@ -375,10 +397,10 @@ abbrev WFDecls (d : Decls) : Prop :=
   A9 d /\ A10 d /\ A11 d
 abbrev WFExpr (e : Expr) : Prop :=
   A3 e.locals /\ A4 e.methods /\ A5 (e.methods.map Method.bounds) /\ A6 e.locals /\
-  e.noShadow [] [] = true /\ A8 e.methods e.ifVars
+  e.noShadow [] [] = true /\ A8 e.methods e.ifVars /\ e.closed [] [] = true
 \end{lstlisting}
 \end{leanside}
-\mapping{\texttt{WFExpr} applies to the main expression the requirements that restrict it, A3-A8.}
+\mapping{\texttt{WFExpr} applies to the main expression the requirements that restrict it, A3-A8 and A12.}
 \end{cmp}
 
 \subsubsection{Declarations}
@@ -633,7 +655,11 @@ inductive RenM : VRen -> TRen -> Method -> Method -> Prop
   | mk {rv rt Delta T0 m ps e e' Xs' xs'} :
       Xs'.length = Delta.length -> xs'.length = ps.length ->
       RenE ((ps.map VarDecl.x).zip xs' ++ rv) ((dom Delta).zip Xs' ++ rt) e e' ->
-      RenM rv rt (.mk Delta T0 m ps e) (.mk ... (renamed by Xs' and xs') ... e')
+      RenM rv rt (.mk Delta T0 m ps e)
+        (.mk ((Delta.zip Xs').map fun p =>
+                { X := p.2, T := p.1.T.ren ((dom Delta).zip Xs' ++ rt) })
+          (T0.ren ((dom Delta).zip Xs' ++ rt)) m
+          ((ps.zip xs').map fun p => { T := p.1.T.ren ((dom Delta).zip Xs' ++ rt), x := p.2 }) e')
 def Fresh (e e' : Expr) : Prop := RenE [] [] e e' /\ RenE [] [] e' e
 def FreshM (M M' : Method) : Prop := RenM [] [] M M' /\ RenM [] [] M' M
 \end{lstlisting}
@@ -828,10 +854,10 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
 \begin{cmp}{\textsc{innerSuper}}
 \begin{paperside}
 \fit{$\inferrule{
-    v_0 = \innerobj{\_}{\_}{C}{\pl{G}}{\_}{\pl{M}}\\
+    v_0 = \innerobj{\_}{\_}{C'}{\pl{G}}{\_}{\pl{M}}\\
     m\not\in \pl{M}
 }{
-    \step{\call{v_0}{\pl{G}'}{m}{v_1,\ldots,v_n}}{\explicitcall{v_0}{\gen{C}{\pl{G}}}{\pl{G}'}{m}{v_1,\ldots,v_n}}
+    \step{\call{v_0}{\pl{G}'}{m}{v_1,\ldots,v_n}}{\explicitcall{v_0}{\gen{C'}{\pl{G}}}{\pl{G}'}{m}{v_1,\ldots,v_n}}
 }$}
 \end{paperside}
 \begin{leanside}
@@ -842,7 +868,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       Step d (.call v0 Gs' m vs) (.superCall v0 (.cls C' Gs) Gs' m vs)
 \end{lstlisting}
 \end{leanside}
-\mapping{The superclass $C$ of the paper is \texttt{C'} in Lean.}
+\nomapping
 \end{cmp}
 
 \begin{cmp}{\textsc{searchSuper}}
@@ -877,7 +903,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
     \step{\ctx{e}}{\ctx{e'}}
 }$}\\[1ex]
 An instance of a reduction rule $\step{e}{e'}$ exists only when the right side $e'$ is an expression (Section~\ref{sec:clarifications}).
-$e_0\rightarrow^* e$: zero or more steps.
+$e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
@@ -1260,7 +1286,7 @@ def withoutThis (gamma : Gamma) : Gamma := gamma.filter fun d => d.x != this
 
 \begin{cmp}{Judgements on sequences}
 \begin{paperside}
-A judgement applied to sequences stands for one application at every position, and requires the sequences to have the same length:
+A function or a judgement applied to sequences stands for one application at every position, and requires the sequences to have the same length:
 $\kind{\Delta}{T_1,\ldots,T_n}$ is $\kind{\Delta}{T_1}\quad\ldots\quad\kind{\Delta}{T_n}$;
 $\subtype{\Delta}{T_1,\ldots,T_n}{T'_1,\ldots,T'_n}$ is $\subtype{\Delta}{T_1}{T'_1}\quad\ldots\quad\subtype{\Delta}{T_n}{T'_n}$;
 $\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T_1,\ldots,T_n}$ is $\typing{\Delta}{\Gamma}{e_1}{T_1}\quad\ldots\quad\typing{\Delta}{\Gamma}{e_n}{T_n}$.
@@ -1290,10 +1316,10 @@ inductive Seq2 {A B : Type} (R : A -> B -> Prop) : List A -> List B -> Prop
 \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
 \quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C_0}{\pl{T}'}{\_}{\pl{M}'}}\\
 \quad\phantom{\textrm{where }}\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\
-\quad\phantom{\textrm{where }}\mathrm{dom}(\pl{M}')=\mathrm{dom}(\pl{M})\\
+\quad\phantom{\textrm{where }}\mathrm{names}(\pl{M}')=\mathrm{names}(\pl{M})\\
 \quad\phantom{\textrm{where }}\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})
 \end{array}$}\\[1ex]
-$\mathrm{dom}(\pl{M})$ is the set of the names of the methods in $\pl{M}$.
+$\mathrm{names}(\pl{M})$ is the set of the names of the methods in $\pl{M}$.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
@@ -1453,14 +1479,14 @@ theorem typeSoundness {d e0 e T} (hwf : WFDecls d) (hok : DeclsOk d) (he0 : WFEx
 theorem determinism {d e e1 e2} (hwf : WFDecls d) (he : WFExpr e) (h1 : Reduces d e e1)
     (h2 : Reduces d e e2) : Fresh e1 e2
 \end{lstlisting}
-\texttt{hok} says that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$; \texttt{hwf} says that \decls satisfies A1-A11, and \texttt{he0} says that the initial expression satisfies A3-A8, as every program of the paper does.
+\texttt{hok} says that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$; \texttt{hwf} says that \decls satisfies A1-A11, and \texttt{he0} says that the initial expression satisfies A3-A8 and A12, as every program of the paper does; in \texttt{determinism}, \texttt{he} says that the expression that reduces satisfies A3-A8 and A12.
 \\[1ex]
 The proofs are in \leanfile{Proof.lean}, and they can take any structure; \texttt{determinism} is stated there with \texttt{sorry}.
 For \texttt{typeSoundness}, the two structures below are both acceptable:
 \begin{itemize}
 \item \textbf{Divide first, then translate.}
 Type Soundness follows from progress and preservation on the high level, by induction on \texttt{Steps}.
-Progress and preservation on the high level follow from progress and preservation on the low level, through adequacy lemmas: the translation preserves values, well-formedness, $\mathsf{Dec}\gap\mathrm{Ok}$ and typing, and the two reductions simulate each other.
+Progress and preservation on the high level follow from progress and preservation on the low level, through adequacy lemmas: the translation preserves values, well-formedness, $\mathsf{Dec}\gap\mathrm{Ok}$ and typing, and the two reductions simulate each other up to the names chosen by $\mathsf{fresh}$.
 This is the structure of \leanfile{Proof.lean} now.
 \item \textbf{Translate first, then divide.}
 Type Soundness is stated on the low level and proved there, from progress and preservation on the low level.
@@ -1486,21 +1512,31 @@ theorem step_back {d : High.Decls} {e : High.Expr} {e'' : Low.Expr} (hwf : High.
 The low level, the translation and these lemmas can change together; what must not change is the high level and the statements of \texttt{typeSoundness} and \texttt{determinism}.
 The planned proofs of progress and preservation, on whichever level they are proved, are:
 \begin{enumerate}
-\item \textbf{Basic lemmas.} \texttt{lookup} on a substitution built by \texttt{zip}; by A1, $\mathsf{declared}$, $\mathsf{scope}$ and $\mathrm{generic}$ have one result per class name.
+\item \textbf{Basic lemmas.} \texttt{lookup} on a substitution built by \texttt{zip}; by A1, A5 and A7, $\mathsf{declared}$, $\mathsf{scope}$ and $\mathrm{generic}$ have one result per class name; subtyping is transitive; $\subtype{\emptyset}{T_0}{\gen{C}{\pl{T}}}$ and $\subtype{\emptyset}{T_0}{\gen{C}{\pl{T}'}}$ imply $\pl{T}=\pl{T}'$.
 \item \textbf{Renaming.} A renaming by \texttt{Fresh} keeps typing and kinding under $\Delta;\Gamma$ when the renamed expression binds no name of $\mathrm{dom}(\Delta)$ or $\mathrm{dom}(\Gamma)$ and satisfies A7 and A8; in the rules, \texttt{VSubstDefined}, \texttt{GSubstDefined} and \texttt{Nodup} give the first condition; \texttt{Fresh} alone does not keep A7 and A8 (W26, W27).
-\item \textbf{Weakening} of $\Gamma$ and $\Delta$, for typing, kinding and subtyping.
-\item \textbf{Substitution of type variables.} If $\Delta,\Delta'$ types $e$, and ground types $\pl{G}$ satisfy the bounds $\Delta'$, then $e[\Delta'=\pl{G}]$ is typed under $\Delta$ with the substituted type.
+For \texttt{FreshM}: if $\typing{\Delta,\Delta_m}{\Gamma,\pl{T}\gap\pl{x}}{e}{T_0}$ and \texttt{FreshM} renames $\Delta_m$, $\pl{x}$ and $e$ into $\Delta''$, $\pl{x}'$ and $e_0$, then $\typing{\Delta,\Delta''}{\Gamma,\pl{T}\sigma\gap\pl{x}'}{e_0}{T_0\sigma}$, with $\sigma=[\Delta_m=\mathrm{dom}(\Delta'')]$, when $\mathrm{dom}(\Delta'')$ and $\pl{x}'$ are disjoint from $\mathrm{dom}(\Delta)$ and $\mathrm{dom}(\Gamma)$, and $e_0$ satisfies A7 and A8.
+\item \textbf{Weakening} of $\Gamma$ and $\Delta$, for typing, kinding and subtyping, when the added names are not bound in the expression.
+\item \textbf{Substitution of type variables.} If $\Delta$ types $e$, and ground types $\pl{G}$, well kinded under $\emptyset$, satisfy the bounds in $\Delta$ of the type variables $\pl{X}$, then $e\sigma$ is typed with the substituted type under $\Delta_\sigma$, where $\sigma$ is $[\pl{X}=\pl{G}]$ and $\Delta_\sigma$ is $\Delta$ without $\pl{X}$ and with $\sigma$ applied to the other bounds.
+The type variables $\pl{X}$ can be in any position of $\Delta$: rule \textsc{method-ok} appends the bounds of the method, and the pairing of rule \textsc{new-local} orders the bounds as the funnels.
 Kinding and subtyping are preserved, but the checked cast is not: in rule \textsc{cast-var}, after $X$ becomes $G$, the source $G$ may not reach the target through \textsc{cast-up} or \textsc{cast-down}.
-For the typing of rule \textsc{if-instanceof} the lemma uses rule \textsc{subs} to lift $e_0$ from $G$ to the substituted bound of $X$, and applies there the substituted premise $\cast{\Delta}{T}{T'}$ of rule \textsc{cast-var}, which ends in \textsc{cast-up}, \textsc{cast-var} or \textsc{cast-down}.
-\item \textbf{Substitution of variables.} Values are closed and typed under $\emptyset;\emptyset$, so substituting values for variables of the same types preserves typing; \Q@this@ is not substituted into the methods of a local class.
+For rule \textsc{if-instanceof} the lemma uses, by induction on the checked cast: if $\cast{\Delta}{T_0}{T}$, then there is $T_1$, either $T_0\sigma$ or the substituted bound of a type variable, with $\subtype{\Delta_\sigma}{T_0\sigma}{T_1}$ and $\cast{\Delta_\sigma}{T_1}{T\sigma}$.
+In case \textsc{cast-var}, $T_1$ comes from the induction hypothesis, and $\subtype{\Delta_\sigma}{X\sigma}{T_1}$ follows from the bound of $X$ (rule \textsc{sub-var} when $X$ stays, the premise on $\pl{G}$ when $X$ is replaced) and transitivity.
+Rule \textsc{subs} lifts the tested expression from $T_0\sigma$ to $T_1$.
+$T_0\sigma$ is a type variable when $T_0$ is a type variable of a method of a local class whose bound mentions a type variable of $\pl{X}$.
+\item \textbf{Substitution of variables.} Values are closed and typed under $\emptyset;\emptyset$, so substituting values for variables of the same types preserves typing when the result satisfies A7; \Q@this@ is not substituted into the methods of a local class.
 \item \textbf{Inversion} of typing for each form of expression, through rule \textsc{subs}.
-\item \textbf{Canonical forms.} A value of type $\gen{C}{\pl{T}}$ has a class that is a subclass of $C$.
-\item \textbf{Copies of a local class.} By $\mathsf{consistent}$, the methods of a copy have the signatures of the declaration with the funnelled type variables substituted; so rules \textsc{call} and \textsc{sub-inherit-local}, which read the declaration, agree with rule \textsc{innerFound}, which runs the copy.
-\item \textbf{Checked cast.} If $\emptyset\vdash\mathsf{typeOf}(v)<:\gen{C}{\_}$, $v$ has type $T_0$ and $\cast{\emptyset}{T_0}{\gen{C}{\pl{T}}}$, then $v$ has type $\gen{C}{\pl{T}}$.
+\item \textbf{Canonical forms.} If $\typing{\emptyset}{\emptyset}{v}{T}$ then $\subtype{\emptyset}{\mathsf{typeOf}(v)}{T}$.
+\item \textbf{Copies of a local class.} By $\mathsf{consistent}$, the methods of a copy have the signatures of the declaration with the funnelled type variables substituted; so rule \textsc{call} agrees with rule \textsc{innerFound}; by $\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}$, rule \textsc{sub-inherit-local} agrees with rules \textsc{innerSuper} and \textsc{innerFieldSuper}.
+\item \textbf{Overriding.} By $\mathsf{overrideOk}$ in rules \textsc{class-ok} and \textsc{new-local}, the first class declaring $m$ above the class of the receiver gives $m$ the signature, substituted, of $m$ in every supertype.
+\item \textbf{Checked cast.} If $\emptyset\vdash\mathsf{typeOf}(v)<:\gen{C}{\_}$, $v$ has type $T_0$, $\cast{\emptyset}{T_0}{\gen{C}{\pl{T}}}$ and $\kind{\emptyset}{\gen{C}{\pl{T}}}$, then $v$ has type $\gen{C}{\pl{T}}$.
 The proof uses that the chain of superclasses is unique and that $\pl{X}\subseteq\ftv{\pl{T}'}$ fixes $\pl{T}$.
-\item \textbf{Well-formedness of the result.} A step whose $\mathsf{fresh}$ names avoid the names of the program keeps A7, and the other requirements are local; progress needs it, since a step of the paper reduces to a well-formed expression.
+\item \textbf{Well-formedness of the result.} A step whose $\mathsf{fresh}$ names are distinct, are not \Q@this@ and avoid the names of the program keeps A7 and A8; by $\mathsf{Dec}\gap\mathrm{Ok}$ for \textsc{simpleFound}, and by A12 of the left side for \textsc{innerFound} and \textsc{ifThen}, every variable and every type variable of a method body is bound, so a step keeps A12; the other requirements are local; progress needs it, since a step of the paper reduces to a well-formed expression.
 \item \textbf{Progress} by induction on typing, with canonical forms; a call terminates its search at a class declaring the method, before \Q@Object@, since typing found the method in a superclass.
 \item \textbf{Preservation} by induction on the reduction, with the lemmas above.
+\item \textbf{Determinism.} An expression that is not a value decomposes in at most one way as $\ctx{e}$ with $e$ a redex, and no value reduces.
+The rules on one redex exclude each other, and by A1, A2 and A3 the class, the field and the method are unique.
+If \texttt{Fresh} relates $e$ to $e'$ and to $e''$, and $e'$ and $e''$ satisfy A7 and A8, then \texttt{Fresh} relates $e'$ and $e''$, and the same for \texttt{FreshM}; \texttt{RenE} alone does not compose.
+Replacing related names with the same ground types and closed values keeps \texttt{Fresh}.
 \end{enumerate}
 
 
@@ -1597,17 +1633,17 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[W3] \texttt{w3}, proved: an \Q@if@ binding the parameter \Q@x@ again violates A7.
 \item[W4] \texttt{w4}, proved: an undeclared superclass violates A9 and A10.
 \item[W5] \texttt{w5}, proved: d2 satisfies A1-A11.
-\item[W6] \texttt{w6}, proved: d3 satisfies A1-A11, and the main expression of Example~1 satisfies A3-A8.
+\item[W6] \texttt{w6}, proved: d3 satisfies A1-A11, and the main expression of Example~1 satisfies A3-A8 and A12.
 \item[W7] \texttt{w7}, proved: d4 satisfies A1-A11.
 \item[W8] \texttt{w8}, proved: d5 satisfies A1-A11.
-\item[W9] \texttt{w9}, proved: d6 satisfies A1-A11, and the main expression of Example~2 satisfies A3-A8.
+\item[W9] \texttt{w9}, proved: d6 satisfies A1-A11, and the main expression of Example~2 satisfies A3-A8 and A12.
 \item[W10] \texttt{w10}, proved: d6F satisfies A1-A11.
-\item[W11] \texttt{w11}, proved: d7 satisfies A1-A11, and the main expression of Example~6 satisfies A3-A8.
-\item[W12] \texttt{w12}, proved: d8 satisfies A1-A11, and the main expression of Counterexample~7 satisfies A3-A8.
+\item[W11] \texttt{w11}, proved: d7 satisfies A1-A11, and the main expression of Example~6 satisfies A3-A8 and A12.
+\item[W12] \texttt{w12}, proved: d8 satisfies A1-A11, and the main expression of Counterexample~7 satisfies A3-A8 and A12.
 \item[W13] \texttt{w13}, proved: d4F satisfies A1-A11.
 \item[W14] \texttt{w14}, proved: d9, with \Q@Inner@ written in a method of \Q@Outer@, satisfies A1-A11.
 \item[W15] \texttt{w15}, proved: d10 satisfies A1-A11.
-\item[W16] \texttt{w16}, proved: the value \Q@new Outer2<A<>> extends Foo<A<>>(){..}@, whose method \Q@g@ holds \Q@Inner2<Y funnel>@, satisfies A3-A8: a ground funnel and a funnel in the same main expression.
+\item[W16] \texttt{w16}, proved: the value \Q@new Outer2<A<>> extends Foo<A<>>(){..}@, whose method \Q@g@ holds \Q@Inner2<Y funnel>@, satisfies A3-A8 and A12: a ground funnel and a funnel in the same main expression.
 \item[W17] \texttt{w17}, proved: d11 satisfies A1-A11.
 \item[W18] \texttt{w18}, proved: a field \Q@f@ declared again in a subclass violates A2.
 \item[W19] \texttt{w19}, proved: a local class named \Q@A@, as a top-level class, violates A1.
@@ -1619,13 +1655,15 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[W25] \texttt{w25}, proved: in \Q@if (new A<>() instanceof A<> x){ if (new B<>() instanceof B<> y){ y.onlyB() } else { new B<>() } } else { new B<>() }@, renaming \Q@y@ into \Q@x@ makes the substitution \Q@[x=new A<>()]@ of rule \textsc{ifThen} undefined, so rule \textsc{ifThen} has no instance with that renaming.
 \item[W26] \texttt{w26}, proved: \texttt{Fresh} relates \Q@if (new A<>() instanceof A<> x){ new L<> extends Object<>(){ Object<> m(){ return x; } } } else { new B<>() }@ to the same expression with \Q@x@ renamed into \Q@this@, which the method \Q@m@ captures; the renamed expression violates A8.
 \item[W27] \texttt{w27}, proved: \texttt{Fresh} relates the program of W25 to the same program with \Q@y@ renamed into \Q@x@; the renamed program violates A7.
+\item[W28] \texttt{w28}, proved: \Q@if (vZ instanceof L<> x){ if (new A<>() instanceof A<> y){ x } else { x } } else { new B<>() }@ violates A12, where \Q@vZ@ is \Q@new L<> extends Object<>(){ Object<> m(){ return z; } }@.
+\item[W29] \texttt{w29}, proved: \Q@if (vT instanceof L<> x){ new L2<> extends Object<>(){ <Y extends Object<>> Object<> k(){ return x; } } } else { new B<>() }@ violates A12, where \Q@vT@ is \Q@new L<> extends Object<>(){ Z m(){ return this; } }@.
 \item[R1] \texttt{r1}, proved: \Q@new Box<A<>>(new A<>()).val@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFieldFound}.
 \item[R2] \texttt{r2}, proved: \Q@new C2<>().m()@ $\rightarrow$ \Q@new C2<>().[C2<>]m()@ by \textsc{simpleAddSuper}.
 \item[R3] \texttt{r3}, proved: \Q@new C2<>().[C2<>]m()@ $\rightarrow$ \Q@new C2<>().[C1<>]m()@ by \textsc{searchSuper}.
 \item[R4] \texttt{r4}, proved: \Q@new C2<>().[C1<>]m()@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFound}.
 \item[R5] \texttt{r5}, proved: R1 inside the receiver of a call, by \textsc{ctx}.
 \item[R6] \texttt{r6Then}, proved: \Q@if (new A<>() instanceof A<> x){ x } else { new B<>() }@ $\rightarrow$ \Q@new A<>()@ by \textsc{ifThen}.
-\item[R6] \texttt{r6Else}, stated: the same with \Q@B<>@ as the test $\rightarrow$ \Q@new B<>()@ by \textsc{ifElse}.
+\item[R6] \texttt{r6Else}, proved: the same with \Q@B<>@ as the test $\rightarrow$ \Q@new B<>()@ by \textsc{ifElse}.
 \item[R7] \texttt{r7}, proved: \Q@new Maker<>().[Maker<>]<A<>>mk(new A<>())@ $\rightarrow$ \Q@new MyFoo<A<>> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }@ by \textsc{simpleFound}, renaming \Q@Y@ and \Q@y@ into \Q@Y1@ and \Q@y1@.
 \item[R8] \texttt{r8}, proved: the value of R7 \Q@.x()@ $\rightarrow$ \Q@new A<>()@ by \textsc{innerFound}.
 \item[R9] \texttt{r9}, proved: the value of R7 \Q@.other()@ $\rightarrow$ \Q@.[Foo<A<>>]other()@ by \textsc{innerSuper}.
@@ -1638,7 +1676,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[R16] \texttt{r16}, stated: Counterexample~7 reduces as Example~2, to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
 \item[R17] \texttt{r17}, stated: \Q@new Leaker<>().<B<>>leak(new Leaker<>().<A<>>mk2(new A<>())).x().onlyB()@ reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
 \item[R18] \texttt{r18}, stated: \Q@new Nest<>().<A<>>mk(new A<>()).x()@ $\rightarrow^*$ \Q@new A<>()@, through a value of \Q@Outer@ and a value of \Q@Inner@.
-\item[R19] \texttt{r19}, stated: calling \Q@g<B<>>@ on the value of W16 gives \Q@new Inner2<B<>> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }@.
+\item[R19] \texttt{r19}, stated: calling \Q@g<B<>>(new B<>())@ on the value of W16 gives \Q@new Inner2<B<>> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }@.
 \item[R20] \texttt{r20}, proved: \Q@new Derived<>(new B<>(), new A<>()).f@ $\rightarrow$ \Q@new Base<A<>>(new A<>()).f@ $\rightarrow$ \Q@new A<>()@, by \textsc{simpleFieldSuper} and \textsc{simpleFieldFound}.
 \item[R21] \texttt{r21}, proved: \Q@if (new A<>() instanceof A<> x){ if (x instanceof A<> y){ y } else { x } } else { new B<>() }@ $\rightarrow$ \Q@if (new A<>() instanceof A<> y1){ y1 } else { new A<>() }@: \textsc{ifThen} renames the inner \Q@y@.
 \item[R22] \texttt{r22}, proved: \Q@new K<>().k(vL)@ $\rightarrow^*$ \Q@new L<> extends Object<>(){ Object<> m(Object<> x1){ return vL.m(x1); } }@, where \Q@vL@ is a value of \Q@L@ whose method \Q@m@ binds \Q@x@: \textsc{simpleFound} renames \Q@y@ and \Q@x@, so the result satisfies A7 (compare W24).
@@ -1647,6 +1685,9 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[T2] \texttt{t2}, stated: \Q@new Box<A<>>(new B<>())@ is ill typed: \Q@B<>@ is not a subtype of \Q@A<>@.
 \item[T3] \texttt{t3}, stated: in d5, \Q@new Fixed<>().<A<>>mk(new Foo<A<>>(), new A<>()) : Foo<A<>>@.
 \item[T4] \texttt{t4}, proved: \Q@new Derived<>(new B<>(), new A<>()).f : A<>@, by \textsc{subs} to \Q@Base<A<>>@ and then \textsc{declField}.
+\item[T5] \texttt{t5}, proved: \Q@new C2<>().[C2<>]m() : A<>@ and \Q@new C2<>().[C1<>]m() : A<>@, the results of R2 and R3, by \textsc{call-lb-runtime}.
+\item[T6] \texttt{t6}, proved: \Q@if (new A<>() instanceof A<> x){ x } else { new A<>() } : A<>@, by \textsc{if-instanceof} and \textsc{cast-up}.
+\item[T7] \texttt{t7}, proved: in d2, \Q@if (v instanceof MyFoo<A<>> w){ w } else { v } : Foo<A<>>@, where \Q@v@ is the result of R7, by \textsc{if-instanceof} and \textsc{cast-down}.
 \item[C1] \texttt{c1}, proved: $\cast{\QQ{X extends Object<>}}{\QQ{Foo<X>}}{\QQ{MyFoo<X>}}$ in d2, by \textsc{cast-down}.
 \item[C2] \texttt{c2}, stated: not $\cast{\QQ{X extends Object<>}}{\QQ{Object<>}}{\QQ{MyFoo<X>}}$ in d2: \textsc{cast-down} needs $\QQ{Y}\in\ftv{\emptyset}$, since $\generic{\QQ{MyFoo}}$ is \Q@MyFoo<Y>@, and \Q@MyFoo<Y>@ has the supertype \Q@Object<>@ with no type arguments.
 \item[C3] \texttt{c3}, proved: $\cast{\QQ{X extends Foo<A<>>}}{\QQ{X}}{\QQ{MyFoo<A<>>}}$ in d2, by \textsc{cast-var} and then \textsc{cast-down}.
@@ -1662,14 +1703,15 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[V1] \texttt{v1}, proved: the hypotheses of \texttt{typeSoundness} hold together on d1 and the expression of T1; in particular every class of d1 is Ok.
 \item[V2] \texttt{v2}, proved: the hypotheses of \texttt{typeSoundness} hold together on d2, with the funnelled local class \Q@MyFoo@, and \Q@new Maker<>().<A<>>mk(new A<>()) : Foo<A<>>@.
 \item[V3] \texttt{v3}, proved: the result of R7, a copy of \Q@MyFoo@ in the main expression, has type \Q@Foo<A<>>@.
+\item[V4] \texttt{v4}, proved: d2 with the main expression of V2 is Ok, by \textsc{prog-ok}.
 \item[P1] \texttt{p1}, stated: class \Q@Fixed@ is Ok.
 \item[P2] \texttt{p2}, stated: class \Q@Fixed2@ is Ok: \Q@Holder<X>@ determines \Q@X@.
 \item[P3] \texttt{p3}, stated: class \Q@LeakerF@ is Ok.
-\item[N1] \texttt{n1}, stated: Example~1 is ill typed: rule \textsc{new-local} fails at $\kind{\emptyset}{\QQ{Foo<X>}}$, since \Q@MyFoo@ funnels nothing.
+\item[N1] \texttt{n1}, stated: Example~1 is not Ok: rule \textsc{new-local} fails at $\kind{\emptyset}{\QQ{Foo<X>}}$, since \Q@MyFoo@ funnels nothing.
 \item[N2] \texttt{n2}, stated: in d5, the main expression of Example~1 is ill typed: a \Q@Foo<A<>>@ is passed where a \Q@Foo<B<>>@ is expected.
-\item[N3] \texttt{n3}, stated: Example~2 is ill typed: the method \Q@x@ of \Q@MyFoo2@ returns \Q@X@, which \Q@MyFoo2@ does not funnel.
+\item[N3] \texttt{n3}, stated: Example~2 is not Ok: the method \Q@x@ of \Q@MyFoo2@ returns \Q@X@, which \Q@MyFoo2@ does not funnel.
 \item[N4] \texttt{n4}, stated: class \Q@Fixed2Obj@ is not Ok: \Q@MyFoo4@ funnels \Q@X@, but \Q@Object<>@ does not determine \Q@X@, so the type test is rejected.
-\item[N5] \texttt{n5}, stated: Example~6 is ill typed: \Q@MyFoo6@ mentions \Q@X@ and captures \Q@f@, but funnels nothing.
+\item[N5] \texttt{n5}, stated: Example~6 is not Ok: \Q@MyFoo6@ mentions \Q@X@ and captures \Q@f@, but funnels nothing.
 \item[N6] \texttt{n6}, stated: class \Q@Box7@ is not Ok: \Q@MyFoo7@ does not funnel the class type variable \Q@X@.
 \item[N7] \texttt{n7}, stated: class \Q@Box7F@ is not Ok: \Q@Object<>@ does not determine \Q@X@; javac rejects Counterexample~7 for the same reason.
 \item[N8] \texttt{n8}, stated: in d4F, the main expression of the leak is ill typed: a \Q@MyFoo2F<A<>>@ is passed where a \Q@MyFoo2F<B<>>@ is expected.

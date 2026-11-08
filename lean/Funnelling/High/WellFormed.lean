@@ -70,6 +70,30 @@ def Method.noShadowList (Xs : List TVarName) (xs : List VarName) : List Method -
   | M :: Ms => M.noShadow Xs xs && Method.noShadowList Xs xs Ms
 end
 
+mutual
+def Expr.closed (Xs : List TVarName) (xs : List VarName) : Expr -> Bool
+  | .var x => xs.contains x
+  | .call e Ts _ es => e.closed Xs xs && (Ty.ftvList Ts).all Xs.contains && Expr.closedList Xs xs es
+  | .superCall e T Ts _ es =>
+    e.closed Xs xs && (Ty.ftvList (T :: Ts)).all Xs.contains && Expr.closedList Xs xs es
+  | .field e _ => e.closed Xs xs
+  | .new _ Ts es => (Ty.ftvList Ts).all Xs.contains && Expr.closedList Xs xs es
+  | .newLocal _ Fs _ Ts es Ms =>
+    (domF Fs ++ Ty.ftvList Ts).all Xs.contains && Expr.closedList Xs xs es && Method.closedList Xs xs Ms
+  | .ifInst e0 T x e1 e2 =>
+    e0.closed Xs xs && T.ftv.all Xs.contains && e1.closed Xs (x :: xs) && e2.closed Xs xs
+def Expr.closedList (Xs : List TVarName) (xs : List VarName) : List Expr -> Bool
+  | [] => true
+  | e :: es => e.closed Xs xs && Expr.closedList Xs xs es
+def Method.closed (Xs : List TVarName) (xs : List VarName) : Method -> Bool
+  | .mk Delta T0 _ ps e =>
+    (Ty.ftvList (T0 :: cod Delta ++ ps.map VarDecl.T)).all (Xs ++ dom Delta).contains &&
+    e.closed (Xs ++ dom Delta) (this :: xs ++ ps.map VarDecl.x)
+def Method.closedList (Xs : List TVarName) (xs : List VarName) : List Method -> Bool
+  | [] => true
+  | M :: Ms => M.closed Xs xs && Method.closedList Xs xs Ms
+end
+
 def findDec (d : Decls) (C : ClassName) : Option Dec := d.find? fun D => D.C == C
 
 def superChain (d : Decls) : Nat -> ClassName -> List Dec
@@ -113,6 +137,6 @@ abbrev WFDecls (d : Decls) : Prop :=
 
 abbrev WFExpr (e : Expr) : Prop :=
   A3 e.locals /\ A4 e.methods /\ A5 (e.methods.map Method.bounds) /\ A6 e.locals /\
-  e.noShadow [] [] = true /\ A8 e.methods e.ifVars
+  e.noShadow [] [] = true /\ A8 e.methods e.ifVars /\ e.closed [] [] = true
 
 end Funnelling.High

@@ -1,6 +1,6 @@
 \section{Technical Clarifications}
 \label{sec:clarifications}
-The well-formedness requirements A1-A11 of Section~\ref{sec:core} are part of the grammar.
+The well-formedness requirements A1-A12 of Section~\ref{sec:core} are part of the grammar.
 A metavariable ranges only over the syntactic forms that satisfy them.
 For example, by requirement A4, the grammar of $M$ does not generate a sequence of symbols with the shape of a method declaring two parameters named \Q@x@, so no metavariable $M$ stands for that sequence of symbols.
 Thus every program $\decls\gap e$ satisfies the well-formedness requirements.
@@ -9,6 +9,7 @@ The type rules and the reduction rules are metarules.
 An instance of a metarule replaces every metavariable of the metarule, consistently, with a syntactic form of the grammar of that metavariable.
 A judgement holds when it is the conclusion of a derivation built from instances of the metarules.
 In particular, an instance of a reduction rule $\step{e}{e'}$ exists only when the right side $e'$ is an expression.
+The reduction is the reduction of the main expression, so both sides of a step satisfy A12; an evaluation context binds no name, so the premise of rule \textsc{ctx} satisfies A12 too.
 Thus a reduction step never produces a sequence of symbols that the grammar does not generate.
-When the substitutions of a reduction rule are undefined for a redex, or would produce such a sequence of symbols, that reduction rule has no instance for that redex.
+When the substitutions of an instance of a reduction rule are undefined, or would produce such a sequence of symbols, that instance does not exist; for rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound}, an instance with other names chosen by $\mathsf{fresh}$ can still exist.
 Type Soundness implies that, under a \decls such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$, for every expression $e$ with $\typing{\emptyset}{\emptyset}{e}{T}$ that is not a value, some reduction rule has an instance with left side $e$.

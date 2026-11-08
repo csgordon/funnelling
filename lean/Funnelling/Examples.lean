@@ -41,7 +41,7 @@ def decDup : Dec :=
   { C := cn "Dup", bounds := [], C' := Object, Ts := [],
     Ms := [.mk [] tA (mn "m") [{ T := tA, x := vn "x" }, { T := tA, x := vn "x" }] (.var (vn "x"))],
     Ss := [] }
-theorem w2 : Not (WFDecls [decObject, decA, decDup]) := by decide
+theorem w2 : Not (A4 (Decls.methods [decObject, decA, decDup])) := by decide
 
 -- W3: an if binding the parameter x again violates A7.
 def decShadow : Dec :=
@@ -49,11 +49,11 @@ def decShadow : Dec :=
     Ms := [.mk [] tA (mn "m") [{ T := tA, x := vn "x" }]
       (.ifInst (.var (vn "x")) tA (vn "x") (.var (vn "x")) (.var (vn "x")))],
     Ss := [] }
-theorem w3 : Not (WFDecls [decObject, decA, decShadow]) := by decide
+theorem w3 : Not (A7Decls [decObject, decA, decShadow]) := by decide
 
 -- W4: a superclass that is not declared violates A9 and A10.
 def decOrphan : Dec := { C := cn "Orphan", bounds := [], C' := cn "Missing", Ts := [], Ms := [], Ss := [] }
-theorem w4 : Not (WFDecls [decObject, decOrphan]) := by decide
+theorem w4 : Not (A9 [decObject, decOrphan]) /\ Not (A10 [decObject, decOrphan]) := by decide
 
 -- R1: rule simpleFieldFound.
 theorem r1 : Reduces d1 (.field (Value.new (cn "Box") [gA] [vA]) (fn "val")) vA :=
@@ -100,9 +100,6 @@ theorem r6Then : Reduces d1 (.ifInst vA tA (vn "x") (.var (vn "x")) vB) vA :=
     (Step.ifThen (v := vA) (C' := cn "A") (Ts := []) (Ts' := []) (x := vn "x") (e1 := .var (vn "x"))
       (e1' := .var (vn "x")) (e2 := vB) .subRefl (And.intro .var .var) (by decide))
     (by decide)
-
-theorem r6Else : Reduces d1 (.ifInst vA tB (vn "x") (.var (vn "x")) vB) vB := by
-  sorry
 
 -- R11: three steps, new C2<>().m() reduces to new A<>().
 theorem r11 : Steps d1 (.call (Value.new (cn "C2") [] []) [] (mn "m") []) vA :=
@@ -191,7 +188,7 @@ theorem t1 : Typing d1 [] [] (.field (Value.new (cn "Box") [gA] [vA]) (fn "val")
     (.dec (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl
 
 -- T2: new Box<A<>>(new B<>()) is ill typed: B<> is not a subtype of A<>.
-theorem t2 : Not (Typing d1 [] [] (Value.new (cn "Box") [gA] [vB]) (.cls (cn "Box") [tA])) := by
+theorem t2 : Not (exists T, Typing d1 [] [] (Value.new (cn "Box") [gA] [vB]) T) := by
   sorry
 
 def myFooK : K := .loc (cn "MyFoo") [.funnel (tn "Y")] (cn "Foo") [.var (tn "Y")] [] [myFooMethod]
@@ -239,7 +236,7 @@ theorem w6 : WFDecls d3 /\ WFExpr brokenMain := by decide
 theorem j2 : Steps d3 brokenMain stuckB /\ Stuck d3 stuckB := by
   sorry
 
--- N1: Example 1 is ill typed.
+-- N1: Example 1 is not Ok.
 theorem n1 : Not (ProgOk d3 brokenMain) := by
   sorry
 
@@ -340,7 +337,7 @@ def main2 : Expr :=
 -- W9: Example 2 in the core language is well formed.
 theorem w9 : WFDecls d6 /\ WFExpr main2 := by decide
 
--- N3: Example 2 is ill typed: the method x of MyFoo2 returns X, which MyFoo2 does not funnel.
+-- N3: Example 2 is not Ok: the method x of MyFoo2 returns X, which MyFoo2 does not funnel.
 theorem n3 : Not (ProgOk d6 main2) := by
   sorry
 
@@ -398,7 +395,7 @@ def main6 : Expr :=
 -- W11: Example 6 in the core language is well formed.
 theorem w11 : WFDecls d7 /\ WFExpr main6 := by decide
 
--- N5: Example 6 is ill typed: MyFoo6 mentions X and captures f, but funnels nothing.
+-- N5: Example 6 is not Ok: MyFoo6 mentions X and captures f, but funnels nothing.
 theorem n5 : Not (ProgOk d7 main6) := by
   sorry
 
@@ -678,36 +675,37 @@ theorem t4 : Typing d12 [] [] derivedF tA :=
 -- Well-formedness requirements one by one.
 
 -- W18: A2: a field f in both Derived2 and its superclass Base.
-theorem w18 : Not (WFDecls [decObject, decA, decBase,
+theorem w18 : Not (A2 [decObject, decA, decBase,
     { C := cn "Derived2", bounds := [], C' := cn "Base", Ts := [tA], Ms := [], Ss := [{ T := tB, f := fn "f" }] }]) := by
   decide
 
 -- W19: A1: a local class named A, as the top-level class A.
-theorem w19 : Not (WFDecls [decObject, decA,
+theorem w19 : Not (A1 [decObject, decA,
     { C := cn "Clash", bounds := [], C' := Object, Ts := [],
       Ms := [meth [] obj "m" [] (.newLocal (cn "A") [] Object [] [] [])], Ss := [] }]) := by
   decide
 
 -- W20: A11: a ground funnel in Decls.
-theorem w20 : Not (WFDecls [decObject, decA,
+theorem w20 : Not (A11 [decObject, decA,
     { C := cn "Ground", bounds := [], C' := Object, Ts := [],
       Ms := [meth [] obj "m" [] (.newLocal (cn "L") [.ground gA] Object [] [] [])], Ss := [] }]) := by
   decide
 
 -- W21: A6: the same type variable funnelled twice.
-theorem w21 : Not (WFDecls [decObject,
+theorem w21 : Not (A6 (classes [decObject,
     { C := cn "Twice", bounds := [], C' := Object, Ts := [],
       Ms := [meth [bnd "X" obj] obj "m" [] (.newLocal (cn "L") [.funnel (tn "X"), .funnel (tn "X")] Object [] [] [])],
-      Ss := [] }]) := by
+      Ss := [] }])) := by
   decide
 
 -- W22: A8: a parameter named this.
-theorem w22 : Not (WFDecls [decObject,
-    { C := cn "Self", bounds := [], C' := Object, Ts := [], Ms := [meth [] obj "m" [par obj "this"] thisE], Ss := [] }]) := by
-  decide
+def dSelf : Decls := [decObject,
+    { C := cn "Self", bounds := [], C' := Object, Ts := [], Ms := [meth [] obj "m" [par obj "this"] thisE], Ss := [] }]
+
+theorem w22 : Not (A8 dSelf.methods (dSelf.flatMap fun D => Method.ifVarsList D.Ms)) := by decide
 
 -- W23: A9: a cycle of superclasses.
-theorem w23 : Not (WFDecls [decObject,
+theorem w23 : Not (A9 [decObject,
     { C := cn "C3", bounds := [], C' := cn "C4", Ts := [], Ms := [], Ss := [] },
     { C := cn "C4", bounds := [], C' := cn "C3", Ts := [], Ms := [], Ss := [] }]) := by
   decide
@@ -738,7 +736,7 @@ def vL : Value := .newLocal (cn "L") [] Object [] [] [meth [] obj "m" [par obj "
 def kResult : Value := .newLocal (cn "L") [] Object [] [] [meth [] obj "m" [par obj "x1"] (call0 vL "m" [ev "x1"])]
 
 -- W24: without renaming, the body of k with vL for y would bind x inside a method binding x, against A7.
-theorem w24 : Not (WFExpr (Value.newLocal (cn "L") [] Object [] [] [meth [] obj "m" [par obj "x"] (call0 vL "m" [ev "x"])])) := by
+theorem w24 : Not (Expr.noShadow [] [] (Value.newLocal (cn "L") [] Object [] [] [meth [] obj "m" [par obj "x"] (call0 vL "m" [ev "x"])]) = true) := by
   decide
 
 -- R22: rule simpleFound renames y into y1 and x into x1, so the copy of m binds x1 and the result is well formed.
@@ -959,6 +957,37 @@ theorem declsOk : DeclsOk d1 := by
   simp [d1] at hm
   rcases hm with h | h | h | h | h | h <;> subst h <;>
     first | exact okObject | exact okA | exact okB | exact okBox | exact okC1 | exact okC2
+
+theorem declC1 : Declared d1 (.dec decC1) := .dec (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))
+theorem declC2 : Declared d1 (.dec decC2) := .dec (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))
+
+theorem kC2 : Kind d1 [] (.cls (cn "C2") []) :=
+  Kind.wfClass (Delta0 := []) (Ts0 := []) (Scope.dec (D := decC2) declC2) (by intro T h; cases h) rfl .nil
+
+theorem typC1 : Typing d1 [] [] (Value.new (cn "C1") [] []) (.cls (cn "C1") []) :=
+  Typing.newTop (D := decC1) (es1 := []) (es2 := []) declC1 kC1 rfl .nil Typing.newObject
+
+theorem typC2 : Typing d1 [] [] (Value.new (cn "C2") [] []) (.cls (cn "C2") []) :=
+  Typing.newTop (D := decC2) (es1 := []) (es2 := []) declC2 kC2 rfl .nil typC1
+
+theorem subA {Delta S T} (h : Sub d1 Delta S T) : S = tA -> T = tA \/ T = obj := by
+  cases h with
+  | subRefl => intro hS; exact Or.inl hS
+  | @subInherit D Ts0 T' hD _ hs =>
+    intro hS
+    injection hS with hC hTs
+    cases hD with
+    | dec hmem =>
+      have hm : Membership.mem d1 D := hmem
+      simp [d1] at hm
+      rcases hm with h | h | h | h | h | h <;> subst h <;>
+        simp [decObject, decA, decB, decBox, decC1, decC2, cn, Object] at hC
+      exact Or.inr (subObject hs rfl)
+  | subInheritLocal hD _ _ =>
+    intro _
+    cases declared hD with
+    | intro D h2 => exact absurd h2.1 (fun e => by cases e)
+  | subVar _ _ => intro hS; cases hS
 
 end OkD1
 
@@ -1240,6 +1269,23 @@ theorem typVLocal : Typing d2 [] [] vLocal (tFoo tA) :=
     (kFoo _ _ (kA _) sA)
     (Sub.subInheritLocal myFooDeclared rfl .subRefl)
 
+theorem kMyFooA : Kind d2 [] (.cls (cn "MyFoo") [tA]) :=
+  Kind.wfClass (Delta0 := dY) (Ts0 := [tA])
+    (Scope.loc (C := cn "Maker") (Delta' := dY) (T0 := tFoo (tv "Y")) (m := mn "mk") (ps := [par (tv "Y") "y"])
+      (e := myFooBody) (T := .cls (cn "Maker") []) (Delta := []) (Ts'' := [])
+      (Exists.intro (.dec decMaker) (And.intro declMaker (And.intro rfl (.head _))))
+      (Exists.intro .hole rfl) (Generic.dec declMaker) (Scope.dec declMaker) (Pairing.funnel (.head _) .nil))
+    (by intro T h; rw [one h]; exact kA _) rfl (.cons sA .nil)
+
+theorem castFooMyFoo : Cast d2 [] (tFoo tA) (.cls (cn "MyFoo") [tA]) :=
+  Cast.castDown (Xs := [tn "Y"]) (Ts' := [tv "Y"])
+    (Sub.subInheritLocal myFooDeclared rfl .subRefl)
+    (Generic.loc myFooDeclared)
+    (Sub.subInheritLocal myFooDeclared rfl .subRefl)
+    (by intro X h; cases h with
+      | head => exact .head _
+      | tail _ h => cases h)
+
 end OkD2
 
 -- M1: the class Maker is Ok.
@@ -1258,6 +1304,49 @@ theorem v2 : WFDecls d2 /\ DeclsOk d2 /\ WFExpr OkD2.mainMk /\ Typing d2 [] [] O
 -- V3: the result of R7, a copy of MyFoo in the main expression, has type Foo<A<>>.
 theorem v3 : Typing d2 [] [] vLocal (tFoo tA) := OkD2.typVLocal
 
+-- V4: the program of V2 is Ok.
+theorem v4 : ProgOk d2 OkD2.mainMk := And.intro OkD2.declsOk (Exists.intro _ OkD2.typMain)
+
+-- R6: rule ifElse.
+theorem r6Else : Reduces d1 (.ifInst vA tB (vn "x") (.var (vn "x")) vB) vB :=
+  And.intro
+    (Step.ifElse (v := vA) (C' := cn "B") (Ts := []) (by
+      intro h
+      cases h with
+      | intro Ts' hs =>
+        cases OkD1.subA hs rfl with
+        | inl h => simp [tA, cn] at h
+        | inr h => simp [obj, cn, Object] at h))
+    (by decide)
+
+-- T5: rule call-lb-runtime types the results of R2 and R3.
+theorem t5 : Typing d1 [] [] (.superCall (Value.new (cn "C2") [] []) (.cls (cn "C2") []) [] (mn "m") []) tA /\
+    Typing d1 [] [] (.superCall (Value.new (cn "C2") [] []) (.cls (cn "C1") []) [] (mn "m") []) tA :=
+  And.intro
+    (Typing.callLbRuntime (D := decC2) (Ts := []) (D0 := decC1) (Ts0 := []) (Delta1 := []) (T0 := tA)
+      (ps := []) (body := vA) (Ts' := [])
+      (Sub.subInherit (D := decC2) OkD1.declC2 rfl .subRefl) OkD1.declC1
+      (Exists.intro (.dec decC1) (And.intro OkD1.declC1 (And.intro rfl (.head _)))) rfl rfl rfl
+      OkD1.declC2 OkD1.kC2 (by intro T h; cases h) .nil (.cons OkD1.typC2 .nil))
+    (Typing.callLbRuntime (D := decC1) (Ts := []) (D0 := decC1) (Ts0 := []) (Delta1 := []) (T0 := tA)
+      (ps := []) (body := vA) (Ts' := [])
+      .subRefl OkD1.declC1
+      (Exists.intro (.dec decC1) (And.intro OkD1.declC1 (And.intro rfl (.head _)))) rfl rfl rfl
+      OkD1.declC1 OkD1.kC1 (by intro T h; cases h) .nil
+      (.cons (Typing.subs OkD1.typC2 OkD1.kC1 (Sub.subInherit (D := decC2) OkD1.declC2 rfl .subRefl)) .nil))
+
+-- T6: rule if-instanceof with a checked cast by cast-up.
+theorem t6 : Typing d1 [] [] (.ifInst vA tA (vn "x") (.var (vn "x")) vA) tA :=
+  Typing.ifInstanceof typA kindA (Cast.castUp .subRefl) (Typing.var rfl) typA
+
+-- T7: rule if-instanceof with a checked cast by cast-down, on the copy of MyFoo of R7.
+theorem t7 : Typing d2 [] []
+    (.ifInst vLocal (.cls (cn "MyFoo") [tA]) (vn "w") (.var (vn "w")) vLocal) (tFoo tA) :=
+  Typing.ifInstanceof OkD2.typVLocal OkD2.kMyFooA OkD2.castFooMyFoo
+    (Typing.subs (Typing.var rfl) (OkD2.kFoo _ _ (OkD2.kA _) OkD2.sA)
+      (Sub.subInheritLocal myFooDeclared rfl .subRefl))
+    OkD2.typVLocal
+
 def capL (y : VarName) : Expr :=
   .newLocal (cn "L") [] Object [] [] [.mk [] obj (mn "m") [] (.var y)]
 def capBefore : Expr := .ifInst vA tA (vn "x") (capL (vn "x")) vB
@@ -1265,7 +1354,7 @@ def capAfter : Expr := .ifInst vA tA this (capL this) vB
 
 -- W26: Fresh accepts renaming the variable x of an if into this, which the method m of the local class captures;
 -- the result violates A8.
-theorem w26 : Fresh capBefore capAfter /\ Not (WFExpr capAfter) :=
+theorem w26 : Fresh capBefore capAfter /\ Not (A8 capAfter.methods capAfter.ifVars) :=
   And.intro
     (And.intro
       (RenE.ifInst (.new .nil)
@@ -1277,11 +1366,25 @@ theorem w26 : Fresh capBefore capAfter /\ Not (WFExpr capAfter) :=
 def renamedIf : Expr := .ifInst vA tA (vn "x") (innerIf "x") vB
 
 -- W27: Fresh accepts renaming the inner y of the program of W25 into x; the result violates A7.
-theorem w27 : Fresh outerIf renamedIf /\ WFExpr outerIf /\ Not (WFExpr renamedIf) :=
+theorem w27 : Fresh outerIf renamedIf /\ WFExpr outerIf /\ Not (renamedIf.noShadow [] [] = true) :=
   And.intro
     (And.intro
       (RenE.ifInst (.new .nil) (RenE.ifInst (.new .nil) (.call .var .nil) (.new .nil)) (.new .nil))
       (RenE.ifInst (.new .nil) (RenE.ifInst (.new .nil) (.call .var .nil) (.new .nil)) (.new .nil)))
     (And.intro (by decide) (by decide))
+
+def vZ : Value := .newLocal (cn "L") [] Object [] [] [.mk [] obj (mn "m") [] (.var (vn "z"))]
+def eOpen : Expr := .ifInst vZ (.cls (cn "L") []) (vn "x") (.ifInst vA tA (vn "y") (ev "x") (ev "x")) vB
+
+-- W28: a main expression whose value vZ holds the free variable z violates A12.
+theorem w28 : Not (eOpen.closed [] [] = true) := by decide
+
+def vT : Value := .newLocal (cn "L") [] Object [] [] [.mk [] (tv "Z") (mn "m") [] thisE]
+def eT : Expr :=
+  .ifInst vT (.cls (cn "L") []) (vn "x")
+    (.newLocal (cn "L2") [] Object [] [] [.mk [bnd "Y" obj] obj (mn "k") [] (ev "x")]) vB
+
+-- W29: a main expression whose value vT holds the free type variable Z violates A12.
+theorem w29 : Not (eT.closed [] [] = true) := by decide
 
 end Funnelling.Examples

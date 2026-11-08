@@ -186,7 +186,7 @@ Counterexample~7 moves Example~3 into a generic class:
 
 \noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
-// Example 7
+// Counterexample 7
 class Box<X> {
   final X x;
   Box(X x){ this.x= x; }
@@ -207,19 +207,19 @@ public class Broken {
 \end{lstlisting}
 \end{minipage}
 
-Example~7 marks the boundary of the family: with class generics, javac does flag the fault.
-javac rejects Example~7 at Line~\ref{line:ex7test}, with the error \Q@Object cannot be safely cast to MyFoo@.
+Counterexample~7 marks the boundary of the family: with class generics, javac does flag the fault.
+javac rejects Counterexample~7 at Line~\ref{line:ex7test}, with the error \Q@Object cannot be safely cast to MyFoo@.
 The method \Q@m@ is an instance method of \Q@Box<X>@, so \Q@MyFoo@ is an inner class of \Q@Box<X>@, with an enclosing instance of type \Q@Box<X>@.
 javac types \Q@MyFoo@ as \Q@Box<X>.MyFoo@, as javac types a member class \Q@MyFoo@ of \Q@Box@.
 So \Q@MyFoo@ is generic in \Q@X@, and \Q@other instanceof MyFoo@ is the uncheckable type test \Q@other instanceof Box<X>.MyFoo@.
 
 The cast is flagged too.
-The following method \Q@m@ replaces the method \Q@m@ of Example~7.
+The following method \Q@m@ replaces the method \Q@m@ of Counterexample~7.
 The type test against \Q@String@ replaces the type test against \Q@MyFoo@, which javac rejects, and the cast of Example~2 follows it.
 
 \noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
-// Example 7 with a cast: the method m of Box
+// Counterexample 7 with a cast: the method m of Box
   Object m(Object other, Function<X,String> f){
     class MyFoo{ public X x(){ return x; } }
     if(other instanceof String){ return new MyFoo(); }
@@ -277,7 +277,7 @@ This is sound, but it is stricter than needed to avoid the problem at hand.
 For method generics, the Java type system assumes granularity (1), as the casts do, so javac reports nothing and the program fails at run time.
 If the type of a local class contained the enclosing method and its generic instantiation, as in \Q@Box<T1>.m<T2>.MyFoo@,
 then javac would flag the problem for generic methods too, as it does for generic classes.
-A version of Java with reified generics could solve the mismatch in Example~7, between the granularity (1) of the casts and the granularity (2) of the types.
+A version of Java with reified generics could solve the mismatch in Counterexample~7, between the granularity (1) of the casts and the granularity (2) of the types.
 But reification would not change Examples~1 to~6, unless the types of local classes take the form \Q@A<T1>.m<T2>.MyFoo@.
 
 Granularities (1), (2) and (3) are points in a space of design options,
@@ -295,7 +295,7 @@ A local class is written as an expression, like an anonymous class in Java, but 
 This brings method-local classes into an expression-based calculus, without modelling statements.
 The funnels \Q@Fs@ are the generic parameters of \Q@MyFoo@: a funnel \Q@X funnel@ funnels the type variable \Q@X@ in scope.
 During reduction, \Q@X funnel@ becomes the ground type that instantiates \Q@X@.
-The type test \Q@if (e instanceof T x){ e1 } else { e2 }@ binds \Q@x@ in \Q@e1@; the core language has no casts.
+The type test \Q@if (e instanceof T x){ e1 } else { e2 }@ binds \Q@x@ in \Q@e1@; the core language has no cast expression.
 In the listings, we omit the empty \Q@<>@ of methods and calls, and we write \Q@<X>@ for \Q@<X extends Object<>>@.
 This is Example~1 in the core language, without funnels:
 

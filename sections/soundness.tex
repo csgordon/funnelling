@@ -12,7 +12,7 @@ As shown in Section~\ref{sec:java}, $\zeta(\mathsf{Java})$ is unsound.
 We now show that $\zeta(\mathsf{funnelled})$ is sound.
 
 \begin{theorem}[Type Soundness]
-Under a global $\decls$ such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$:
+Under a class table $\decls$ such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$:
 if $\typing{\emptyset}{\emptyset}{e_0}{T}$, and $e_0\rightarrow^* e$, then $\typing{\emptyset}{\emptyset}{e}{T}$ and either $e$ is of form $v$, or there is an $e'$ such that $\step{e}{e'}$.
 \end{theorem}
 
