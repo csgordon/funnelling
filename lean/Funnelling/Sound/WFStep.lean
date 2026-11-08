@@ -4,9 +4,6 @@ open Funnelling.SoundSimp
 
 namespace Funnelling.High
 
-theorem wf_base {d : Decls} {a a' : Expr} (hwf : WFDecls d) (hok : DeclsOk d) (ha : WFExpr a)
-    (hs : BaseStep d a a') : exists a'', BaseStep d a a'' /\ WFExpr a'' := by
-  sorry
 
 theorem localsList_eq : forall (es : List Expr), Expr.localsList es = es.flatMap Expr.locals
   | [] => rfl
@@ -262,6 +259,162 @@ theorem WFExpr.replace {E : ECtx} {a a' : Expr} (h : WFExpr (E.plug a)) (h' : WF
   WFExpr.of_kq (ECtx.kq_replace h'.kq E h.kq) (ECtx.noShadow_replace h'.2.2.2.2.1 E h.2.2.2.2.1)
     (ECtx.ifVars_replace h'.2.2.2.2.2.1.2 E h.2.2.2.2.2.1.2)
     (ECtx.closed_replace h'.2.2.2.2.2.2 E h.2.2.2.2.2.2)
+
+theorem super_ground {d : Decls} (hok : DeclsOk d) {D : Dec} (hD : Declared d (.dec D)) {Gs : List GTy}
+    (hl : Gs.length = D.bounds.length) :
+    Ty.ftvList (Ty.substList (bind D.bounds (GTy.tys Gs)) D.Ts) = [] := by
+  apply List.eq_nil_iff_forall_not_mem.mpr
+  intro X hX
+  rw [<- gsubst_ty_bind] at hX
+  have h := Ty.ftvList_gsubst hX
+  apply h.2
+  rw [bind_fst hl]
+  exact Kind.ftv ((hok D hD.dec_mem).2.1 _ (List.Mem.head _)) X h.1
+
+theorem wf_field {e : Expr} {f : FieldName} : WFExpr (.field e f) <-> WFExpr e := Iff.rfl
+
+theorem wf_new_mem {C : ClassName} {Ts : List Ty} {es : List Expr} {e : Expr} (h : WFExpr (.new C Ts es))
+    (he : List.Mem e es) : WFExpr e := by
+  have hn := h.2.2.2.2.1
+  have hc := h.2.2.2.2.2.2
+  simp only [Expr.noShadow] at hn
+  simp only [Expr.closed, Bool.and_eq_true] at hc
+  exact WFExpr.sub h (fun _ hk => mem_localsList he hk) (fun _ hx => mem_ifVarsList he hx)
+    (noShadowList_mem he hn) (closedList_mem he hc.2)
+
+theorem wf_new_suffix {C C' : ClassName} {Ts Ts' : List Ty} {l r : List Expr} (h : WFExpr (.new C Ts (l ++ r)))
+    (hT : Ty.ftvList Ts' = []) : WFExpr (.new C' Ts' r) := by
+  have hn := h.2.2.2.2.1
+  have hc := h.2.2.2.2.2.2
+  simp only [Expr.noShadow, noShadowList_eq, List.all_append, Bool.and_eq_true] at hn
+  simp only [Expr.closed, closedList_eq, List.all_append, Bool.and_eq_true] at hc
+  refine WFExpr.sub h ?_ ?_ ?_ ?_
+  . intro k hk
+    simp only [Expr.locals, localsList_eq, List.flatMap_append, listMem_iff, List.mem_append] at hk ⊢
+    exact Or.inr hk
+  . intro x hx
+    simp only [Expr.ifVars, ifVarsList_eq, List.flatMap_append, listMem_iff, List.mem_append] at hx ⊢
+    exact Or.inr hx
+  . simp only [Expr.noShadow, noShadowList_eq]; exact hn.2
+  . simp only [Expr.closed, closedList_eq, hT, List.all_nil, Bool.true_and]; exact hc.2.2
+
+theorem wf_local_new {C C' : ClassName} {Fs : List Funnel} {Ts : List Ty} {es : List Expr} {Ms : List Method}
+    (h : WFExpr (.newLocal C Fs C' Ts es Ms)) : WFExpr (.new C' Ts es) := by
+  have hn := h.2.2.2.2.1
+  have hc := h.2.2.2.2.2.2
+  simp only [Expr.noShadow, Bool.and_eq_true] at hn
+  simp only [Expr.closed, List.all_append, Bool.and_eq_true] at hc
+  refine WFExpr.sub h ?_ ?_ ?_ ?_
+  . intro k hk; simp only [Expr.locals, Expr.ifVars, listMem_iff, List.mem_cons, List.mem_append, or_assoc]; exact Or.inr (Or.inl hk)
+  . intro x hx; simp only [Expr.locals, Expr.ifVars, listMem_iff, List.mem_cons, List.mem_append, or_assoc]; exact Or.inl hx
+  . exact hn.1
+  . simp only [Expr.closed, Bool.and_eq_true]; exact ⟨hc.1.1.2, hc.1.2⟩
+
+theorem wf_if_else {e0 : Expr} {T : Ty} {x : VarName} {e1 e2 : Expr} (h : WFExpr (.ifInst e0 T x e1 e2)) :
+    WFExpr e2 := by
+  have hn := h.2.2.2.2.1
+  have hc := h.2.2.2.2.2.2
+  simp only [Expr.noShadow, Bool.and_eq_true] at hn
+  simp only [Expr.closed, Bool.and_eq_true] at hc
+  refine WFExpr.sub h ?_ ?_ hn.2 hc.2
+  . intro k hk; simp only [Expr.locals, Expr.ifVars, listMem_iff, List.mem_cons, List.mem_append, or_assoc]; exact Or.inr (Or.inr hk)
+  . intro y hy; simp only [Expr.locals, Expr.ifVars, listMem_iff, List.mem_cons, List.mem_append, or_assoc]; exact Or.inr (Or.inr (Or.inr hy))
+
+theorem wf_call_super {e : Expr} {T : Ty} {Ts : List Ty} {m : MethName} {es : List Expr}
+    (h : WFExpr (.call e Ts m es)) (hT : T.ftv = []) : WFExpr (.superCall e T Ts m es) := by
+  have hc := h.2.2.2.2.2.2
+  refine WFExpr.sub h (fun _ hk => hk) (fun _ hx => hx) h.2.2.2.2.1 ?_
+  simp only [Expr.closed, Ty.ftvList, hT, List.nil_append] at hc ⊢
+  exact hc
+
+theorem wf_super_retype {e : Expr} {T T' : Ty} {Ts : List Ty} {m : MethName} {es : List Expr}
+    (h : WFExpr (.superCall e T Ts m es)) (hT : T'.ftv = []) : WFExpr (.superCall e T' Ts m es) := by
+  have hc := h.2.2.2.2.2.2
+  refine WFExpr.sub h (fun _ hk => hk) (fun _ hx => hx) h.2.2.2.2.1 ?_
+  simp only [Expr.closed, Ty.ftvList, hT, List.nil_append, List.all_append, Bool.and_eq_true] at hc ⊢
+  exact ⟨⟨hc.1.1, hc.1.2.2⟩, hc.2⟩
+
+theorem RenM.lens {rv : VRen} {rt : TRen} {M M' : Method} (h : RenM rv rt M M') :
+    M'.bounds.length = M.bounds.length /\ M'.params.length = M.params.length /\ M'.name = M.name := by
+  cases h with
+  | mk h1 h2 _ => simp [Method.bounds, Method.params, Method.name, h1, h2]
+
+theorem wf_ifThen {C' : ClassName} {Ts : List Ty} {x : VarName} {e1 e2 : Expr} {v : Value}
+    (ha : WFExpr (.ifInst v.expr (.cls C' Ts) x e1 e2)) :
+    exists e1', Fresh e1 e1' /\ VSubstDefined [x] e1' /\ WFExpr (e1'.vsubst [(x, v)]) := by
+  sorry
+
+theorem wf_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec} {M : Method} {m : MethName}
+    {v0 : Value} {Gs Gs' : List GTy} {vs : List Value} (hD : Declared d (.dec D)) (hM : List.Mem M D.Ms)
+    (hm : M.name = m) (hG : Gs.length = D.bounds.length) (hG' : Gs'.length = M.bounds.length)
+    (hp : M.params.length = vs.length)
+    (ha : WFExpr (.superCall v0.expr (.cls D.C (GTy.tys Gs)) (GTy.tys Gs') m (Value.exprs vs))) :
+    exists Delta' T0 ps e0, FreshM M (.mk Delta' T0 m ps e0) /\ (dom D.bounds ++ dom Delta').Nodup /\
+      (this :: ps.map VarDecl.x).Nodup /\ GSubstDefined (dom D.bounds ++ dom Delta') e0 /\
+      VSubstDefined (this :: ps.map VarDecl.x) e0 /\
+      WFExpr ((e0.gsubst (bind (D.bounds ++ Delta') (Gs ++ Gs'))).vsubst
+        ((this :: ps.map VarDecl.x).zip (v0 :: vs))) := by
+  sorry
+
+theorem wf_innerFound {C C' : ClassName} {Ms : List Method} {M : Method} {m : MethName}
+    {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} (hM : List.Mem M Ms) (hm : M.name = m)
+    (hG' : Gs'.length = M.bounds.length) (hp : M.params.length = vs.length)
+    (ha : WFExpr (.call (Value.newLocal C Gs C' Gs'' vs0 Ms).expr (GTy.tys Gs') m (Value.exprs vs))) :
+    exists Delta' T0 ps e0, FreshM M (.mk Delta' T0 m ps e0) /\ (dom Delta').Nodup /\
+      (this :: ps.map VarDecl.x).Nodup /\ GSubstDefined (dom Delta') e0 /\
+      VSubstDefined (this :: ps.map VarDecl.x) e0 /\
+      WFExpr ((e0.gsubst (bind Delta' Gs')).vsubst
+        ((this :: ps.map VarDecl.x).zip (Value.newLocal C Gs C' Gs'' vs0 Ms :: vs))) := by
+  sorry
+
+theorem wf_base {d : Decls} {a a' : Expr} (hwf : WFDecls d) (hok : DeclsOk d) (ha : WFExpr a)
+    (hs : BaseStep d a a') : exists a'', BaseStep d a a'' /\ WFExpr a'' := by
+  cases hs with
+  | simpleFieldFound h1 h2 h3 =>
+    exact ⟨_, BaseStep.simpleFieldFound h1 h2 h3,
+      wf_new_mem (wf_field.mp ha) (exprs_mem (List.mem_append_left _ (List.of_mem_zip h3).2))⟩
+  | simpleFieldSuper h1 h2 h3 h4 h5 =>
+    refine ⟨_, BaseStep.simpleFieldSuper h1 h2 h3 h4 h5, ?_⟩
+    have hw := wf_field.mp ha
+    simp only [Value.expr, exprs_append] at hw
+    exact wf_field.mpr (wf_new_suffix hw (super_ground hok h1 h5))
+  | innerFieldSuper =>
+    refine ⟨_, BaseStep.innerFieldSuper, ?_⟩
+    have hw := wf_field.mp ha
+    simp only [Value.expr] at hw ⊢
+    exact wf_field.mpr (wf_local_new hw)
+  | ifThen h1 _ _ =>
+    rcases wf_ifThen ha with ⟨e1', hf, hd, hw⟩
+    exact ⟨_, BaseStep.ifThen h1 hf hd, hw⟩
+  | ifElse h1 => exact ⟨_, BaseStep.ifElse h1, wf_if_else ha⟩
+  | simpleAddSuper h1 =>
+    subst h1
+    exact ⟨_, BaseStep.simpleAddSuper rfl, wf_call_super ha (by simp only [Ty.ftv]; exact GTy.ftv_tys _)⟩
+  | @simpleFound D M m Delta' T0 ps e0 e v0 Gs Gs' vs h1 h2 h3 h4 h5 _ _ h8 _ _ _ =>
+    have hb : Delta'.length = M.bounds.length := (RenM.lens h3.1).1
+    have hq : ps.length = M.params.length := (RenM.lens h3.1).2.1
+    have hn : m = M.name := (RenM.lens h3.1).2.2
+    rcases wf_simpleFound hwf hok h1 h2 hn.symm h4 (by omega) (by omega) ha with
+      ⟨D2, T2, ps2, e2, hF, hN, hN', hgs, hvs, hw⟩
+    have hb2 : D2.length = M.bounds.length := (RenM.lens hF.1).1
+    have hq2 : ps2.length = M.params.length := (RenM.lens hF.1).2.1
+    exact ⟨_, BaseStep.simpleFound h1 h2 hF h4 (by omega) hN hN' (by omega) hgs hvs rfl, hw⟩
+  | @innerFound C C' Ms M m Delta' T0 ps e0 e v0 Gs Gs'' Gs' vs0 vs h1 h2 h3 h4 h5 _ _ _ _ _ =>
+    subst h1
+    have hb : Delta'.length = M.bounds.length := (RenM.lens h3.1).1
+    have hq : ps.length = M.params.length := (RenM.lens h3.1).2.1
+    have hn : m = M.name := (RenM.lens h3.1).2.2
+    rcases wf_innerFound h2 hn.symm (by omega) (by omega) ha with
+      ⟨D2, T2, ps2, e2, hF, hN, hN', hgs, hvs, hw⟩
+    have hb2 : D2.length = M.bounds.length := (RenM.lens hF.1).1
+    have hq2 : ps2.length = M.params.length := (RenM.lens hF.1).2.1
+    exact ⟨_, BaseStep.innerFound rfl h2 hF (by omega) (by omega) hN hN' hgs hvs rfl, hw⟩
+  | innerSuper h1 h2 =>
+    subst h1
+    exact ⟨_, BaseStep.innerSuper rfl h2, wf_call_super ha (by simp only [Ty.ftv]; exact GTy.ftv_tys _)⟩
+  | searchSuper h1 h2 h3 h4 =>
+    exact ⟨_, BaseStep.searchSuper h1 h2 h3 h4,
+      wf_super_retype ha (by simp only [Ty.ftv]; exact super_ground hok h1 h4)⟩
 
 theorem wf_step {d : Decls} {e e' : Expr} (hwf : WFDecls d) (hok : DeclsOk d) (he : WFExpr e)
     (hs : Step d e e') : exists e'', Reduces d e e'' := by
