@@ -79,16 +79,7 @@ theorem pres_innerFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
     (ha' : WFExpr ((e0.gsubst (bind Delta' Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs))))
     (h : Typing d [] [] (.call v0.expr (GTy.tys Gs') m (Value.exprs vs)) T) :
     Typing d [] [] ((e0.gsubst (bind Delta' Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs))) T := by
-  have hn0 := (Expr.vsubst_back _ _).2.2 _ _ ha'.2.2.2.2.1
-  rw [Expr.noShadow_gsubst] at hn0
-  have hnx : e0.noShadow [] (this :: ps.map VarDecl.x) = true :=
-    Expr.noShadow_scope hn0 (fun y hy hm => absurd hm (hvs y hy))
-  have ht0 : NoThis e0 := by
-    have := noThis_of_vsubst (WFExpr.noThis ha')
-    simpa [NoThis, Expr.vbinders_gsubst] using this
-  have hu0 : e0.uniq := by
-    have := (Expr.vsubst_back _ _).2.1 (WFExpr.uniq ha')
-    rwa [Expr.uniq_gsubst] at this
+  rcases found_body (Xs := []) (T0 := T0) (m := m) ha' hvs hgs hN hN' with ⟨hnx, ht0, hu0, hnM', htM', huM'⟩
   have han := ha.2.2.2.2.1
   simp only [Expr.noShadow, Bool.and_eq_true] at han
   have hat := WFExpr.noThis ha
@@ -175,15 +166,6 @@ theorem pres_innerFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
       gx := fun y hy => hy
       gx' := fun y hy => hy
       kv := fun _ h => by cases h }
-  have hnD : e0.noShadow (dom Delta') (this :: ps.map VarDecl.x) = true :=
-    Expr.noShadow_tscope hnx (fun X hX hm => absurd hm (hgs X hX))
-  have hnM' : (Method.mk Delta' T0 m ps e0).noShadow [] [] = true := by
-    simp only [Method.noShadow, List.nil_append, List.cons_append, Bool.and_eq_true]
-    exact And.intro (And.intro (by simp) (by simp)) hnD
-  have htM' : NoThisM (Method.mk Delta' T0 m ps e0) := by
-    simp only [NoThisM, Method.vbinders, listMem_iff, List.mem_append, not_or]
-    exact And.intro (List.nodup_cons.mp hN').1 ht0
-  have huM' : (Method.mk Delta' T0 m ps e0).uniq := And.intro hN (And.intro (List.nodup_cons.mp hN').2 hu0)
   have hmeth' : MethodOk d [] [{ T := .cls C (GTy.tys Gs), x := this }] M := by
     simpa [withoutThis, restrict] using hmeth
   have hmo' := MethodOk.ren hwf hok hd hmeth' hF.1 env hnM hnM' htM htM' huM huM'
