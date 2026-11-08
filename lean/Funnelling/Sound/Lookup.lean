@@ -53,14 +53,6 @@ theorem lookup_append_left {x : A} : forall {r1 r2 : List (Prod A B)}, List.Mem 
       | head => exact absurd rfl hx
       | tail _ h => exact lookup_append_left h
 
-theorem lookup_append_right {x : A} : forall {r1 r2 : List (Prod A B)}, Not (List.Mem x (r1.map Prod.fst)) ->
-    List.lookup x (r1 ++ r2) = List.lookup x r2
-  | [], _, _ => rfl
-  | (a, b) :: r1, r2, h => by
-    have hx : Not (x = a) := fun e => h (by rw [e]; exact List.Mem.head _)
-    rw [List.cons_append, lookup_cons_ne hx]
-    exact lookup_append_right (fun h' => h (List.Mem.tail _ h'))
-
 theorem zip_map_fst : forall {xs : List A} {ys : List B}, xs.length = ys.length -> (xs.zip ys).map Prod.fst = xs
   | [], [], _ => rfl
   | [], _ :: _, h => by simp at h
@@ -68,14 +60,6 @@ theorem zip_map_fst : forall {xs : List A} {ys : List B}, xs.length = ys.length 
   | x :: xs, y :: ys, h => by
     simp only [List.zip_cons_cons, List.map_cons, List.cons.injEq, true_and]
     exact zip_map_fst (by simpa using h)
-
-theorem zip_map_snd : forall {xs : List A} {ys : List B}, xs.length = ys.length -> (xs.zip ys).map Prod.snd = ys
-  | [], [], _ => rfl
-  | [], _ :: _, h => by simp at h
-  | _ :: _, [], h => by simp at h
-  | x :: xs, y :: ys, h => by
-    simp only [List.zip_cons_cons, List.map_cons, List.cons.injEq, true_and]
-    exact zip_map_snd (by simpa using h)
 
 end
 

@@ -10,12 +10,6 @@ def KQ' (Ms : List Method) (Fs : List Funnel) : Prop := (Ms.map Method.name).Nod
 
 abbrev KQ (k : K) : Prop := KQ' k.Ms k.Fs
 
-theorem K.Ms_loc {C : ClassName} {Fs : List Funnel} {C' : ClassName} {Ts : List Ty} {es : List Expr} {Ms : List Method} :
-    (K.loc C Fs C' Ts es Ms).Ms = Ms := rfl
-
-theorem K.Fs_loc {C : ClassName} {Fs : List Funnel} {C' : ClassName} {Ts : List Ty} {es : List Expr} {Ms : List Method} :
-    (K.loc C Fs C' Ts es Ms).Fs = Fs := rfl
-
 theorem KQ'.vsubst {n : VSubst} {Ms : List Method} {Fs : List Funnel} (h : KQ' Ms Fs) :
     KQ' (Method.vsubstList n Ms) Fs := by
   unfold KQ' at h ⊢
@@ -120,54 +114,6 @@ theorem Method.ifVarsList_vsubst {z : VarName} : forall {Ms : List Method} {n : 
   | _ :: _, _, h, hn => by
     simp only [Method.vsubstList, Method.ifVarsList, listMem_iff, List.mem_append, not_or] at h ⊢
     exact ⟨Method.ifVars_vsubst h.1 hn, Method.ifVarsList_vsubst h.2 hn⟩
-end
-
-mutual
-theorem Expr.vbinders_vsubst_not {z : VarName} : forall {e : Expr} {n : VSubst}, Not (List.Mem z e.vbinders) ->
-    (forall p, List.Mem p n -> Not (List.Mem z p.2.expr.vbinders)) -> Not (List.Mem z (e.vsubst n).vbinders)
-  | .var x, n, _, hn => by
-    cases hl : List.lookup x n with
-    | none => simp [Expr.vsubst, hl, Expr.vbinders]
-    | some v => simp only [Expr.vsubst, hl]; exact hn (x, v) (lookup_mem hl)
-  | .call _ _ _ _, _, h, hn => by
-    simp only [Expr.vsubst, Expr.vbinders, listMem_iff, List.mem_append, not_or] at h ⊢
-    exact ⟨Expr.vbinders_vsubst_not h.1 hn, Expr.vbindersList_vsubst_not h.2 hn⟩
-  | .superCall _ _ _ _ _, _, h, hn => by
-    simp only [Expr.vsubst, Expr.vbinders, listMem_iff, List.mem_append, not_or] at h ⊢
-    exact ⟨Expr.vbinders_vsubst_not h.1 hn, Expr.vbindersList_vsubst_not h.2 hn⟩
-  | .field _ _, _, h, hn => by
-    simp only [Expr.vsubst, Expr.vbinders] at h ⊢
-    exact Expr.vbinders_vsubst_not h hn
-  | .new _ _ _, _, h, hn => by
-    simp only [Expr.vsubst, Expr.vbinders] at h ⊢
-    exact Expr.vbindersList_vsubst_not h hn
-  | .newLocal _ _ _ _ _ _, _, h, hn => by
-    simp only [Expr.vsubst, Expr.vbinders, listMem_iff, List.mem_append, not_or] at h ⊢
-    exact ⟨Expr.vbindersList_vsubst_not h.1 hn,
-      Method.vbindersList_vsubst_not h.2 (fun p hp => hn p (List.mem_filter.mp hp).1)⟩
-  | .ifInst _ _ _ _ _, _, h, hn => by
-    simp only [Expr.vsubst, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at h ⊢
-    exact ⟨⟨⟨h.1.1.1, Expr.vbinders_vsubst_not h.1.1.2 hn⟩, Expr.vbinders_vsubst_not h.1.2 hn⟩,
-      Expr.vbinders_vsubst_not h.2 hn⟩
-theorem Expr.vbindersList_vsubst_not {z : VarName} : forall {es : List Expr} {n : VSubst},
-    Not (List.Mem z (Expr.vbindersList es)) -> (forall p, List.Mem p n -> Not (List.Mem z p.2.expr.vbinders)) ->
-    Not (List.Mem z (Expr.vbindersList (Expr.vsubstList n es)))
-  | [], _, _, _ => by simp [Expr.vsubstList, Expr.vbindersList]
-  | _ :: _, _, h, hn => by
-    simp only [Expr.vsubstList, Expr.vbindersList, listMem_iff, List.mem_append, not_or] at h ⊢
-    exact ⟨Expr.vbinders_vsubst_not h.1 hn, Expr.vbindersList_vsubst_not h.2 hn⟩
-theorem Method.vbinders_vsubst_not {z : VarName} : forall {M : Method} {n : VSubst}, Not (List.Mem z M.vbinders) ->
-    (forall p, List.Mem p n -> Not (List.Mem z p.2.expr.vbinders)) -> Not (List.Mem z (M.vsubst n).vbinders)
-  | .mk _ _ _ _ _, _, h, hn => by
-    simp only [Method.vsubst, Method.vbinders, listMem_iff, List.mem_append, not_or] at h ⊢
-    exact ⟨h.1, Expr.vbinders_vsubst_not h.2 hn⟩
-theorem Method.vbindersList_vsubst_not {z : VarName} : forall {Ms : List Method} {n : VSubst},
-    Not (List.Mem z (Method.vbindersList Ms)) -> (forall p, List.Mem p n -> Not (List.Mem z p.2.expr.vbinders)) ->
-    Not (List.Mem z (Method.vbindersList (Method.vsubstList n Ms)))
-  | [], _, _, _ => by simp [Method.vsubstList, Method.vbindersList]
-  | _ :: _, _, h, hn => by
-    simp only [Method.vsubstList, Method.vbindersList, listMem_iff, List.mem_append, not_or] at h ⊢
-    exact ⟨Method.vbinders_vsubst_not h.1 hn, Method.vbindersList_vsubst_not h.2 hn⟩
 end
 
 mutual

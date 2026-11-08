@@ -36,20 +36,6 @@ theorem Up.sub {d : Decls} {Delta : Bounds} {T1 T : Ty} (h : Up d Delta T1 T) : 
   . subst e; exact Sub.subRefl
   . exact h.1
 
-theorem inv_var {d Delta gamma x} : forall {e T}, Typing d Delta gamma e T -> e = .var x ->
-    exists T1, gamma.lookup x = some T1 /\ Up d Delta T1 T
-  | _, _, .subs h hk hs, he => by
-    cases inv_var h he with
-    | intro T1 h1 => exact Exists.intro T1 (And.intro h1.1 (h1.2.trans (Or.inr (And.intro hs hk))))
-  | _, _, .var hl, he => by cases he; exact Exists.intro _ (And.intro hl Up.refl)
-  | _, _, .newObject, he => by cases he
-  | _, _, .declField .., he => by cases he
-  | _, _, .call .., he => by cases he
-  | _, _, .callLbRuntime .., he => by cases he
-  | _, _, .newTop .., he => by cases he
-  | _, _, .newLocal .., he => by cases he
-  | _, _, .ifInstanceof .., he => by cases he
-
 structure FieldW where
   D : Dec
   Ts' : List Ty

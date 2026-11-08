@@ -123,12 +123,6 @@ theorem mem_gsub {n : VSubst} {gamma : Gamma} {y : VarDecl} (h : List.Mem y gamm
   simp only [gsub, listMem_iff, List.mem_filter]
   exact And.intro h (by simpa using hy)
 
-theorem gdom_gsub_sub {n : VSubst} {gamma : Gamma} : Sub1 (gdom (gsub n gamma)) (gdom gamma) := by
-  intro y hy
-  simp only [gdom, gsub, listMem_iff, List.mem_map, List.mem_filter] at hy |-
-  cases hy with
-  | intro z hz => exact Exists.intro z (And.intro hz.1.1 hz.2)
-
 abbrev VOk (n : VSubst) : Prop :=
   forall p, List.Mem p n -> p.2.expr.noShadow [] [] = true /\ NoThis p.2.expr /\ p.2.expr.uniq
 

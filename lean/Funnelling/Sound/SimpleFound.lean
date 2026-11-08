@@ -142,11 +142,6 @@ theorem Method.noShadowList_tscope : forall {Ms : List Method} {Xs Xs2 : List TV
       (Method.noShadowList_tscope h.2 (fun y hy => hs y (Or.inr hy)))
 end
 
-theorem seq2_append {A B : Type} {R : A -> B -> Prop} : forall {a1 a2 : List A} {b1 b2 : List B},
-    Seq2 R a1 b1 -> Seq2 R a2 b2 -> Seq2 R (a1 ++ a2) (b1 ++ b2)
-  | _, _, _, _, .nil, h => h
-  | _, _, _, _, .cons h1 h2, h => Seq2.cons h1 (seq2_append h2 h)
-
 theorem typingSeq_lookup {d : Decls} : forall {g : Gamma} {vs : List Value},
     (gdom g).Nodup -> TypingSeq d [] [] (Value.exprs vs) (g.map VarDecl.T) ->
     forall x v U, List.lookup x ((gdom g).zip vs) = some v -> g.lookup x = some U -> Typing d [] [] v.expr U
