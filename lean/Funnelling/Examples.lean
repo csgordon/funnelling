@@ -1,6 +1,9 @@
 import Funnelling.Soundness
+import Funnelling.ExampleFacts
 
 namespace Funnelling.Examples
+
+open Funnelling.ExampleFacts
 
 def cn (s : String) : ClassName := { name := s }
 def mn (s : String) : MethName := { name := s }
@@ -231,12 +234,26 @@ def stuckB : Expr := .superCall vA obj [] (mn "onlyB") []
 theorem w6 : WFDecls d3 /\ WFExpr brokenMain := by decide
 
 -- J2: Example 1 reduces to new A<>().onlyB(), then to new A<>().[Object<>]onlyB(), which is stuck.
-theorem j2 : Steps d3 brokenMain stuckB /\ Stuck d3 stuckB := by
-  sorry
+theorem j2 : Steps d3 brokenMain stuckB /\ Stuck d3 stuckB :=
+  And.intro
+    (Steps.step (red (cRecv (cRecv (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) rfl) rfl) (by decide))
+    (Steps.step (red (cRecv (cRecv (cArg0 (sFound (D := decBroken) (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))
+      (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) rfl) rfl) (by decide))
+    (Steps.step (red (cRecv (cRecv (cArg0 (sElse rfl (noSubEx [cn "Foo", Object] (by decide) (.head _) (by decide)))
+      rfl rfl) rfl) rfl) (by decide))
+    (Steps.step (red (cRecv (cRecv (sAdd rfl rfl rfl rfl) rfl) rfl) (by decide))
+    (Steps.step (red (cRecv (cRecv (sFound (D := decBroken) (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))
+      (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl) rfl) (by decide))
+    (Steps.step (red (cRecv (cRecv (sThen rfl .subRefl (by decide)) rfl) rfl) (by decide))
+    (Steps.step (red (cRecv (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl) (by decide))
+    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (Steps.step (red (sSearch (D := decA) (.tail _ (.head _)) (by decide) (by decide) rfl rfl rfl rfl rfl) (by decide))
+      Steps.refl)))))))))
+    (stuckS (by decide))
 
 -- N1: Example 1 is not Ok.
-theorem n1 : Not (ProgOk d3 brokenMain) := by
-  sorry
+theorem n1 : Not (ProgOk d3 brokenMain) := fun h =>
+  h.2.elim fun _ ht => (typeSoundness w6.1 h.1 w6.2 ht j2.1).2.elim j2.2.1 fun h' => h'.elim j2.2.2
 
 def decLeaker : Dec :=
   { C := cn "Leaker", bounds := [], C' := Object, Ts := [],
@@ -292,12 +309,20 @@ theorem t3 : Typing d5 [] [] fixedCallA (tFoo tA) := by
   sorry
 
 -- R12: that call reduces to a MyFoo<A<>> whose method x returns new A<>().
-theorem r12 : Steps d5 fixedCallA vMyFooA := by
-  sorry
+theorem r12 : Steps d5 fixedCallA vMyFooA :=
+  Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
+  (Steps.step (red (sFound (D := decFixed) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide))
+    (by decide))
+  (Steps.step (red (sElse rfl (noSubEx [cn "Foo", Object] (by decide) (.head _) (by decide))) (by decide))
+    Steps.refl))
 
 -- R13: given a MyFoo<A<>>, the type test succeeds and mk returns it.
-theorem r13 : Steps d5 (.call (Value.new (cn "Fixed") [] []) [tA] (mn "mk") [vMyFooA, vA]) vMyFooA := by
-  sorry
+theorem r13 : Steps d5 (.call (Value.new (cn "Fixed") [] []) [tA] (mn "mk") [vMyFooA, vA]) vMyFooA :=
+  Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
+  (Steps.step (red (sFound (D := decFixed) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide))
+    (by decide))
+  (Steps.step (red (sThen rfl .subRefl (by decide)) (by decide))
+    Steps.refl))
 
 -- N2: the main expression of Example 1, with Fixed, is ill typed: a Foo<A<>> is passed where a Foo<B<>> is expected.
 theorem n2 : Not (exists T, Typing d5 [] []
@@ -335,13 +360,31 @@ def main2 : Expr :=
 -- W9: Example 2 in the core language is well formed.
 theorem w9 : WFDecls d6 /\ WFExpr main2 := by decide
 
+theorem r14p : Steps d6 main2 stuckB /\ Stuck d6 stuckB :=
+  And.intro
+    (Steps.step (red (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) (by decide))
+    (Steps.step (red (cArg0 (sFound (D := decBroken2) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))))
+      (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
+    (Steps.step (red (cArg0 (sElse rfl (noSubEx [cn "A", Object] (by decide) (.head _) (by decide))) rfl rfl) (by decide))
+    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (Steps.step (red (sFound (D := decBroken2) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))))
+      (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    (Steps.step (red (sThen rfl .subRefl (by decide)) (by decide))
+    (Steps.step (red (cArg0 (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
+    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (Steps.step (red (sFound (D := decAsB) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))
+      (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (Steps.step (red (sSearch (D := decA) (.tail _ (.head _)) (by decide) (by decide) rfl rfl rfl rfl rfl) (by decide))
+      Steps.refl)))))))))))
+    (stuckS (by decide))
+
 -- N3: Example 2 is not Ok: the method x of MyFoo2 returns X, which MyFoo2 does not funnel.
-theorem n3 : Not (ProgOk d6 main2) := by
-  sorry
+theorem n3 : Not (ProgOk d6 main2) := fun h =>
+  h.2.elim fun _ ht => (typeSoundness w9.1 h.1 w9.2 ht r14p.1).2.elim r14p.2.1 fun h' => h'.elim r14p.2.2
 
 -- R14: Example 2 reduces to new A<>().[Object<>]onlyB(), which is stuck: AsB uses an A<> as a B<>.
-theorem r14 : Steps d6 main2 stuckB /\ Stuck d6 stuckB := by
-  sorry
+theorem r14 : Steps d6 main2 stuckB /\ Stuck d6 stuckB := r14p
 
 def decHolder : Dec := { C := cn "Holder", bounds := [bnd "X" obj], C' := Object, Ts := [], Ms := [], Ss := [] }
 def decFixed2 : Dec :=
@@ -393,13 +436,33 @@ def main6 : Expr :=
 -- W11: Example 6 in the core language is well formed.
 theorem w11 : WFDecls d7 /\ WFExpr main6 := by decide
 
+theorem r15p : Steps d7 main6 stuckB /\ Stuck d7 stuckB :=
+  And.intro
+    (Steps.step (red (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) (by decide))
+    (Steps.step (red (cArg0 (sFound (D := decBroken6) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
+    (Steps.step (red (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) (by decide))
+    (Steps.step (red (cArg0 (sFound (D := decBroken6) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.tail _ (.head _)) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
+    (Steps.step (red (cArg0 (sElse rfl (noSubEx [cn "A", Object] (by decide) (.head _) (by decide))) rfl rfl) (by decide))
+    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (Steps.step (red (sFound (D := decBroken6) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (Steps.step (red (sFound (D := decBroken6) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.tail _ (.head _)) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    (Steps.step (red (sThen rfl .subRefl (by decide)) (by decide))
+    (Steps.step (red (sInner (.tail _ (.head _)) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    (Steps.step (red (cArg0 (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
+    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (Steps.step (red (sFound (D := decAsB) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (Steps.step (red (sSearch (D := decA) (.tail _ (.head _)) (by decide) (by decide) rfl rfl rfl rfl rfl) (by decide))
+      Steps.refl))))))))))))))))
+    (stuckS (by decide))
+
 -- N5: Example 6 is not Ok: MyFoo6 mentions X and captures f, but funnels nothing.
-theorem n5 : Not (ProgOk d7 main6) := by
-  sorry
+theorem n5 : Not (ProgOk d7 main6) := fun h =>
+  h.2.elim fun _ ht => (typeSoundness w11.1 h.1 w11.2 ht r15p.1).2.elim r15p.2.1 fun h' => h'.elim r15p.2.2
 
 -- R15: Example 6 reduces to new A<>().[Object<>]onlyB(), which is stuck.
-theorem r15 : Steps d7 main6 stuckB /\ Stuck d7 stuckB := by
-  sorry
+theorem r15 : Steps d7 main6 stuckB /\ Stuck d7 stuckB := r15p
 
 -- Counterexample 7: class generics; javac rejects it, and so does funnelling.
 
@@ -434,8 +497,21 @@ theorem n7 : Not (ClassOk d8 decBox7F) := by
   sorry
 
 -- R16: Counterexample 7 reduces as Example 2: to new A<>().[Object<>]onlyB(), which is stuck.
-theorem r16 : Steps d8 main7 stuckB /\ Stuck d8 stuckB := by
-  sorry
+theorem r16 : Steps d8 main7 stuckB /\ Stuck d8 stuckB :=
+  And.intro
+    (Steps.step (red (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) (by decide))
+    (Steps.step (red (cArg0 (sFound (D := decBox7) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
+    (Steps.step (red (cArg0 (sElse rfl (noSubEx [cn "A", Object] (by decide) (.head _) (by decide))) rfl rfl) (by decide))
+    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (Steps.step (red (sFound (D := decBox7) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    (Steps.step (red (sThen rfl .subRefl (by decide)) (by decide))
+    (Steps.step (red (cArg0 (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
+    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (Steps.step (red (sFound (D := decAsB) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (Steps.step (red (sSearch (D := decA) (.tail _ (.head _)) (by decide) (by decide) rfl rfl rfl rfl rfl) (by decide))
+      Steps.refl)))))))))))
+    (stuckS (by decide))
 
 -- The method leak of Section 4.10.
 
@@ -444,8 +520,17 @@ def leakMain : Expr :=
     [.call (Value.new (cn "Leaker") [] []) [tA] (mn "mk2") [vA]]) "x" [])
 
 -- R17: leak returns a MyFoo2 built with A<> as a Foo<B<>>; the program reduces to new A<>().[Object<>]onlyB(), which is stuck.
-theorem r17 : Steps d4 leakMain stuckB /\ Stuck d4 stuckB := by
-  sorry
+theorem r17 : Steps d4 leakMain stuckB /\ Stuck d4 stuckB :=
+  And.intro
+    (Steps.step (red (cRecv (cRecv (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) rfl) rfl) (by decide))
+    (Steps.step (red (cRecv (cRecv (cArg0 (sFound (D := decLeaker) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) rfl) rfl) (by decide))
+    (Steps.step (red (cRecv (cRecv (sAdd rfl rfl rfl rfl) rfl) rfl) (by decide))
+    (Steps.step (red (cRecv (cRecv (sFound (D := decLeaker) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.tail _ (.head _)) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl) rfl) (by decide))
+    (Steps.step (red (cRecv (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl) (by decide))
+    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (Steps.step (red (sSearch (D := decA) (.tail _ (.head _)) (by decide) (by decide) rfl rfl rfl rfl rfl) (by decide))
+      Steps.refl)))))))
+    (stuckS (by decide))
 
 def decLeakerF : Dec :=
   { C := cn "LeakerF", bounds := [], C' := Object, Ts := [],
@@ -522,8 +607,12 @@ theorem k1 : Kind d9 [] (.cls (cn "Inner") [tA]) :=
     rfl (.cons subAObj9 .nil)
 
 -- R18: new Nest<>().<A<>>mk(new A<>()).x() reduces to new A<>().
-theorem r18 : Steps d9 (call0 (.call (Value.new (cn "Nest") [] []) [tA] (mn "mk") [vA]) "x" []) vA := by
-  sorry
+theorem r18 : Steps d9 (call0 (.call (Value.new (cn "Nest") [] []) [tA] (mn "mk") [vA]) "x" []) vA :=
+  (Steps.step (red (cRecv (sAdd rfl rfl rfl rfl) rfl) (by decide))
+  (Steps.step (red (cRecv (sFound (D := decNest) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl) (by decide))
+  (Steps.step (red (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+  (Steps.step (red (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    Steps.refl))))
 
 -- Funnels of both forms: after mk<A<>>, the value of Outer2 holds Inner2<Y funnel>, with Y a type variable of g.
 
@@ -551,8 +640,9 @@ theorem w16 : WFExpr vOuter2A := by decide
 
 -- R19: calling g<B<>> on the value of Outer2<A<>> gives an Inner2<B<>> whose method x returns new B<>().
 theorem r19 : Steps d10 (.call vOuter2A [tB] (mn "g") [vB])
-    (Value.newLocal (cn "Inner2") [gB] (cn "Foo") [gB] [] [meth [] tB "x" [] vB]) := by
-  sorry
+    (Value.newLocal (cn "Inner2") [gB] (cn "Foo") [gB] [] [meth [] tB "x" [] vB]) :=
+  (Steps.step (red (sInner (.tail _ (.head _)) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    Steps.refl)
 
 -- Overriding.
 
@@ -757,8 +847,8 @@ theorem r22 : Steps d13 (call0 (Value.new (cn "K") [] []) "k" [vL]) kResult :=
       Steps.refl)
 
 -- S1: field access on new Object<>() is stuck.
-theorem s1 : Stuck d1 (.field (Value.new Object [] []) (fn "f")) := by
-  sorry
+theorem s1 : Stuck d1 (.field (Value.new Object [] []) (fn "f")) :=
+  And.intro noValField (fun _ h => noStepField h.1 rfl)
 
 -- The bug of plain alpha-renaming with a substitution that enters a binder of x.
 
