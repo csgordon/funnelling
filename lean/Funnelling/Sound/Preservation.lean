@@ -269,85 +269,6 @@ theorem pres_fieldFound {d : Decls} (hwf : WFDecls d) {D : Dec} {f : FieldName} 
     rw [<- ev] at hfs
     exact hup.typing (field_typing hfs hm hmem (fields_nodup hwf hD.dec_mem))
 
-theorem all_not_contains_of {A : Type} [DecidableEq A] {l xs : List A} (h : forall x, List.Mem x l -> Not (List.Mem x xs)) :
-    l.all (fun x => !(xs.contains x)) = true := by
-  rw [List.all_eq_true]
-  intro x hx
-  simpa using h x hx
-
-mutual
-theorem Expr.noShadow_scope : forall {e : Expr} {Xs : List TVarName} {xs xs2 : List VarName},
-    e.noShadow Xs xs = true -> (forall y, List.Mem y e.vbinders -> List.Mem y xs2 -> List.Mem y xs) ->
-    e.noShadow Xs xs2 = true
-  | .var _, _, _, _, _, _ => rfl
-  | .call e _ _ es, _, _, _, h, hs => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at h |-
-    simp only [Expr.vbinders, listMem_iff, List.mem_append] at hs
-    exact And.intro (Expr.noShadow_scope h.1 (fun y hy => hs y (Or.inl hy)))
-      (Expr.noShadowList_scope h.2 (fun y hy => hs y (Or.inr hy)))
-  | .superCall e _ _ _ es, _, _, _, h, hs => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at h |-
-    simp only [Expr.vbinders, listMem_iff, List.mem_append] at hs
-    exact And.intro (Expr.noShadow_scope h.1 (fun y hy => hs y (Or.inl hy)))
-      (Expr.noShadowList_scope h.2 (fun y hy => hs y (Or.inr hy)))
-  | .field e _, _, _, _, h, hs => by
-    simp only [Expr.noShadow] at h |-
-    exact Expr.noShadow_scope h hs
-  | .new _ _ es, _, _, _, h, hs => Expr.noShadowList_scope h hs
-  | .newLocal _ _ _ _ es Ms, _, _, _, h, hs => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at h |-
-    simp only [Expr.vbinders, listMem_iff, List.mem_append] at hs
-    refine And.intro (Expr.noShadowList_scope h.1 (fun y hy => hs y (Or.inl hy))) ?_
-    refine Method.noShadowList_scope h.2 (fun y hy hm => ?_)
-    simp only [listMem_iff, List.mem_filter] at hm |-
-    exact And.intro (hs y (Or.inr hy) hm.1) hm.2
-  | .ifInst e0 _ x e1 e2, _, xs, xs2, h, hs => by
-    simp only [Expr.noShadow, Bool.and_eq_true, Bool.not_eq_true'] at h |-
-    simp only [Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons] at hs
-    have hx : Not (List.Mem x xs) := by have := h.1.1.2; simp at this; exact this
-    refine And.intro (And.intro (And.intro (Expr.noShadow_scope h.1.1.1 (fun y hy => hs y (Or.inl (Or.inl (Or.inr hy)))))
-      ?_) ?_) (Expr.noShadow_scope h.2 (fun y hy => hs y (Or.inr hy)))
-    . have : Not (List.Mem x xs2) := fun hm => hx (hs x (Or.inl (Or.inl (Or.inl rfl))) hm)
-      simpa using this
-    . refine Expr.noShadow_scope h.1.2 (fun y hy hm => ?_)
-      cases hm with
-      | head => exact List.Mem.head _
-      | tail _ hm => exact List.Mem.tail _ (hs y (Or.inl (Or.inr hy)) hm)
-theorem Expr.noShadowList_scope : forall {es : List Expr} {Xs : List TVarName} {xs xs2 : List VarName},
-    Expr.noShadowList Xs xs es = true -> (forall y, List.Mem y (Expr.vbindersList es) -> List.Mem y xs2 -> List.Mem y xs) ->
-    Expr.noShadowList Xs xs2 es = true
-  | [], _, _, _, _, _ => rfl
-  | e :: es, _, _, _, h, hs => by
-    simp only [Expr.noShadowList, Bool.and_eq_true] at h |-
-    simp only [Expr.vbindersList, listMem_iff, List.mem_append] at hs
-    exact And.intro (Expr.noShadow_scope h.1 (fun y hy => hs y (Or.inl hy)))
-      (Expr.noShadowList_scope h.2 (fun y hy => hs y (Or.inr hy)))
-theorem Method.noShadow_scope : forall {M : Method} {Xs : List TVarName} {xs xs2 : List VarName},
-    M.noShadow Xs xs = true -> (forall y, List.Mem y M.vbinders -> List.Mem y xs2 -> List.Mem y xs) ->
-    M.noShadow Xs xs2 = true
-  | .mk _ _ _ ps e, _, xs, xs2, h, hs => by
-    simp only [Method.noShadow, Bool.and_eq_true] at h |-
-    simp only [Method.vbinders, listMem_iff, List.mem_append] at hs
-    refine And.intro (And.intro h.1.1 (all_not_contains_of (fun p hp hm =>
-      not_mem_of_all_not_contains h.1.2 hp (hs p (Or.inl hp) hm)))) ?_
-    refine Expr.noShadow_scope h.2 (fun y hy hm => ?_)
-    simp only [listMem_iff, List.mem_append, List.mem_cons] at hm |-
-    rcases hm with (hm | hm) | hm
-    . exact Or.inl (Or.inl hm)
-    . exact Or.inl (Or.inr (hs y (Or.inr hy) hm))
-    . exact Or.inr hm
-theorem Method.noShadowList_scope : forall {Ms : List Method} {Xs : List TVarName} {xs xs2 : List VarName},
-    Method.noShadowList Xs xs Ms = true ->
-    (forall y, List.Mem y (Method.vbindersList Ms) -> List.Mem y xs2 -> List.Mem y xs) ->
-    Method.noShadowList Xs xs2 Ms = true
-  | [], _, _, _, _, _ => rfl
-  | M :: Ms, _, _, _, h, hs => by
-    simp only [Method.noShadowList, Bool.and_eq_true] at h |-
-    simp only [Method.vbindersList, listMem_iff, List.mem_append] at hs
-    exact And.intro (Method.noShadow_scope h.1 (fun y hy => hs y (Or.inl hy)))
-      (Method.noShadowList_scope h.2 (fun y hy => hs y (Or.inr hy)))
-end
-
 theorem value_declared {d : Decls} (hwf : WFDecls d) {v : Value} {T : Ty} (h : Typing d [] [] v.expr T) :
     exists k U, Declared d k /\ typeOf v = .cls k.name U := by
   cases v with
@@ -382,7 +303,7 @@ theorem pres_ifThen {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
   have ht := WFExpr.noThis ha
   simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ht
   have hn' : e1'.noShadow [] [x] = true :=
-    Expr.noShadow_scope ((Expr.vsubst_back _ _).2.2 _ _ ha'.2.2.2.2.1)
+    Expr.noShadow_mono ((Expr.vsubst_back _ _).2.2 _ _ ha'.2.2.2.2.1) (fun _ _ hX => hX)
       (fun y hy hm => absurd hm (hdf y hy))
   have ht' : NoThis e1' := noThis_of_vsubst (WFExpr.noThis ha')
   have hu' : e1'.uniq := (Expr.vsubst_back _ _).2.1 (WFExpr.uniq ha')
@@ -422,70 +343,6 @@ theorem pres_ifThen {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
   have eg : gsub [(x, v)] [{ T := .cls C' Ts, x := x }] = [] := by simp [gsub]
   rw [eg] at hsub
   exact hw.up.typing hsub
-
-mutual
-theorem Expr.noShadow_tscope : forall {e : Expr} {Xs Xs2 : List TVarName} {xs : List VarName},
-    e.noShadow Xs xs = true -> (forall X, List.Mem X e.tbinders -> List.Mem X Xs2 -> List.Mem X Xs) ->
-    e.noShadow Xs2 xs = true
-  | .var _, _, _, _, _, _ => rfl
-  | .call e _ _ es, _, _, _, h, hs => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at h |-
-    simp only [Expr.tbinders, listMem_iff, List.mem_append] at hs
-    exact And.intro (Expr.noShadow_tscope h.1 (fun y hy => hs y (Or.inl hy)))
-      (Expr.noShadowList_tscope h.2 (fun y hy => hs y (Or.inr hy)))
-  | .superCall e _ _ _ es, _, _, _, h, hs => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at h |-
-    simp only [Expr.tbinders, listMem_iff, List.mem_append] at hs
-    exact And.intro (Expr.noShadow_tscope h.1 (fun y hy => hs y (Or.inl hy)))
-      (Expr.noShadowList_tscope h.2 (fun y hy => hs y (Or.inr hy)))
-  | .field e _, _, _, _, h, hs => by
-    simp only [Expr.noShadow] at h |-
-    exact Expr.noShadow_tscope h hs
-  | .new _ _ es, _, _, _, h, hs => Expr.noShadowList_tscope h hs
-  | .newLocal _ _ _ _ es Ms, _, _, _, h, hs => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at h |-
-    simp only [Expr.tbinders, listMem_iff, List.mem_append] at hs
-    exact And.intro (Expr.noShadowList_tscope h.1 (fun y hy => hs y (Or.inl hy)))
-      (Method.noShadowList_tscope h.2 (fun y hy => hs y (Or.inr hy)))
-  | .ifInst e0 _ _ e1 e2, _, _, _, h, hs => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at h |-
-    simp only [Expr.tbinders, listMem_iff, List.mem_append] at hs
-    exact And.intro (And.intro (And.intro (Expr.noShadow_tscope h.1.1.1 (fun y hy => hs y (Or.inl (Or.inl hy))))
-      h.1.1.2) (Expr.noShadow_tscope h.1.2 (fun y hy => hs y (Or.inl (Or.inr hy)))))
-      (Expr.noShadow_tscope h.2 (fun y hy => hs y (Or.inr hy)))
-theorem Expr.noShadowList_tscope : forall {es : List Expr} {Xs Xs2 : List TVarName} {xs : List VarName},
-    Expr.noShadowList Xs xs es = true -> (forall X, List.Mem X (Expr.tbindersList es) -> List.Mem X Xs2 -> List.Mem X Xs) ->
-    Expr.noShadowList Xs2 xs es = true
-  | [], _, _, _, _, _ => rfl
-  | e :: es, _, _, _, h, hs => by
-    simp only [Expr.noShadowList, Bool.and_eq_true] at h |-
-    simp only [Expr.tbindersList, listMem_iff, List.mem_append] at hs
-    exact And.intro (Expr.noShadow_tscope h.1 (fun y hy => hs y (Or.inl hy)))
-      (Expr.noShadowList_tscope h.2 (fun y hy => hs y (Or.inr hy)))
-theorem Method.noShadow_tscope : forall {M : Method} {Xs Xs2 : List TVarName} {xs : List VarName},
-    M.noShadow Xs xs = true -> (forall X, List.Mem X M.tbinders -> List.Mem X Xs2 -> List.Mem X Xs) ->
-    M.noShadow Xs2 xs = true
-  | .mk Dl _ _ ps e, Xs, Xs2, _, h, hs => by
-    simp only [Method.noShadow, Bool.and_eq_true] at h |-
-    simp only [Method.tbinders, listMem_iff, List.mem_append] at hs
-    refine And.intro (And.intro (all_not_contains_of (fun X hX hm =>
-      not_mem_of_all_not_contains h.1.1 hX (hs X (Or.inl hX) hm))) h.1.2) ?_
-    refine Expr.noShadow_tscope h.2 (fun y hy hm => ?_)
-    simp only [listMem_iff, List.mem_append] at hm |-
-    rcases hm with hm | hm
-    . exact Or.inl (hs y (Or.inr hy) hm)
-    . exact Or.inr hm
-theorem Method.noShadowList_tscope : forall {Ms : List Method} {Xs Xs2 : List TVarName} {xs : List VarName},
-    Method.noShadowList Xs xs Ms = true ->
-    (forall X, List.Mem X (Method.tbindersList Ms) -> List.Mem X Xs2 -> List.Mem X Xs) ->
-    Method.noShadowList Xs2 xs Ms = true
-  | [], _, _, _, _, _ => rfl
-  | M :: Ms, _, _, _, h, hs => by
-    simp only [Method.noShadowList, Bool.and_eq_true] at h |-
-    simp only [Method.tbindersList, listMem_iff, List.mem_append] at hs
-    exact And.intro (Method.noShadow_tscope h.1 (fun y hy => hs y (Or.inl hy)))
-      (Method.noShadowList_tscope h.2 (fun y hy => hs y (Or.inr hy)))
-end
 
 theorem typingSeq_lookup {d : Decls} : forall {g : Gamma} {vs : List Value},
     (gdom g).Nodup -> TypingSeq d [] [] (Value.exprs vs) (g.map VarDecl.T) ->
@@ -590,7 +447,7 @@ include f
 theorem noShadow : e0.noShadow [] (this :: ps.map VarDecl.x) = true := by
   have hn0 := (Expr.vsubst_back _ _).2.2 _ _ f.wf.2.2.2.2.1
   rw [Expr.noShadow_gsubst] at hn0
-  exact Expr.noShadow_scope hn0 (fun y hy hm => absurd hm (f.vdef y hy))
+  exact Expr.noShadow_mono hn0 (fun _ _ hX => hX) (fun y hy hm => absurd hm (f.vdef y hy))
 
 theorem noThis : NoThis e0 := by
   have := noThis_of_vsubst (WFExpr.noThis f.wf)
@@ -602,7 +459,7 @@ theorem uniq : e0.uniq := by
 
 theorem methNoShadow : (Method.mk Delta' T0 m ps e0).noShadow [] [] = true := by
   simp only [Method.noShadow, List.nil_append, List.cons_append, Bool.and_eq_true]
-  refine And.intro (And.intro (by simp) (by simp)) (Expr.noShadow_tscope f.noShadow (fun X hX hm => ?_))
+  refine And.intro (And.intro (by simp) (by simp)) (Expr.noShadow_mono f.noShadow (fun X hX hm => ?_) (fun _ _ hy => hy))
   exact absurd (by simp only [listMem_iff, List.mem_append] at hm |-; exact Or.inr hm) (f.gdef X hX)
 
 theorem methNoThis : NoThisM (Method.mk Delta' T0 m ps e0) := by

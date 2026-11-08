@@ -225,7 +225,7 @@ theorem wf_ifThen {C' : ClassName} {Ts : List Ty} {x : VarName} {e1 e2 : Expr} {
   rcases fresh_avoid e1 (v.expr.vbinders ++ [x]) v.expr.tbinders hk.1.2 hc.1.2 ht.1.2 with
     ⟨e1', hf, hav, hat, hk', hn', hi', hc'⟩
   refine ⟨e1', hf, fun y hy hm => hav y hy (List.mem_append_right _ hm), ?_⟩
-  refine wf_vsubst hk' (Expr.noShadow_scope hn' (fun y _ hy => by cases hy)) hi' hc' ?_ ?_
+  refine wf_vsubst hk' (Expr.noShadow_mono hn' (fun _ _ hX => hX) (fun y _ hy => by cases hy)) hi' hc' ?_ ?_
   . intro p hp
     cases hp with
     | head => exact hv
@@ -282,7 +282,7 @@ theorem wf_found {M : Method} {m : MethName} {B0 Delta' : Bounds} {T0 : Ty} {ps 
     rw [bind_fst (by simp [hG, hlen])]; exact dom_append
   refine wf_vsubst (Expr.nodup_gsubst hk') ?_ ?_ ?_ ?_ ?_
   . rw [Expr.noShadow_gsubst]
-    exact Expr.noShadow_scope (Expr.noShadow_tscope hn'.2 (fun X _ h => by cases h)) (fun y _ h => by cases h)
+    exact Expr.noShadow_mono hn'.2 (fun X _ h => by cases h) (fun y _ h => by cases h)
   . rw [Expr.ifVars_gsubst]; exact hi'
   . rw [hz]; exact Expr.closed_gsubst (T := []) (by rw [List.nil_append, hfst]; exact hc'.2)
   . intro p hp

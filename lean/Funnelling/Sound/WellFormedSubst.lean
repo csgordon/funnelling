@@ -373,8 +373,8 @@ theorem Expr.noShadow_vsubst {VB : List VarName} {TB : List TVarName} (hthis : N
     | some v =>
       simp only [Expr.vsubst, hl]
       have hv := hn (x, v) (lookup_mem hl)
-      have h1 := Expr.noShadow_tscope (Xs2 := Xs) hv.1 (fun X hX hm => absurd (hv.2.2 X hX) (hXs X hm))
-      exact Expr.noShadow_scope h1 (fun y hy hm => absurd (hv.2.1 y hy) (hxs y hm))
+      exact Expr.noShadow_mono hv.1 (fun X hX hm => absurd (hv.2.2 X hX) (hXs X hm))
+        (fun y hy hm => absurd (hv.2.1 y hy) (hxs y hm))
   | .call _ _ _ _, _, _, _, h, hn, hxs, he, hXs, hE => by
     simp only [Expr.noShadow, Bool.and_eq_true, Expr.vbinders, listMem_iff, List.mem_append, Expr.tbinders] at h he hE
     simp only [Expr.vsubst, Expr.noShadow, Bool.and_eq_true]

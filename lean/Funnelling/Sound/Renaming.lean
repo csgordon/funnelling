@@ -283,6 +283,12 @@ theorem not_mem_of_all_not_contains {A : Type} [DecidableEq A] {l xs : List A}
   simp at h2
   exact h2
 
+theorem all_not_contains_of {A : Type} [DecidableEq A] {l xs : List A} (h : forall x, List.Mem x l -> Not (List.Mem x xs)) :
+    l.all (fun x => !(xs.contains x)) = true := by
+  rw [List.all_eq_true]
+  intro x hx
+  simpa using h x hx
+
 theorem CompEnv.methExt {rv1 rv2 rv3 : VRen} {rt1 rt2 rt3 : TRen} {Sa Sb Ta Tb}
     (env : CompEnv rv1 rv2 rv3 rt1 rt2 rt3 Sa Sb Ta Tb) {xa xb xc : List VarName}
     {Xa Xb Xc : List TVarName}

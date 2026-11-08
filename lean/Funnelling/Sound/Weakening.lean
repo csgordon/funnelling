@@ -119,6 +119,88 @@ theorem Method.noShadowList_binders : forall {Ms : List Method} {Xs : List TVarN
     . exact Method.noShadowList_binders hn.2 ht.2 y hy
 end
 
+mutual
+theorem Expr.noShadow_mono : forall {e : Expr} {Xs Xs2 : List TVarName} {xs xs2 : List VarName},
+    e.noShadow Xs xs = true -> (forall X, List.Mem X e.tbinders -> List.Mem X Xs2 -> List.Mem X Xs) ->
+    (forall y, List.Mem y e.vbinders -> List.Mem y xs2 -> List.Mem y xs) -> e.noShadow Xs2 xs2 = true
+  | .var _, _, _, _, _, _, _, _ => rfl
+  | .call e _ _ es, _, _, _, _, h, hT, hs => by
+    simp only [Expr.noShadow, Bool.and_eq_true] at h |-
+    simp only [Expr.tbinders, Expr.vbinders, listMem_iff, List.mem_append] at hT hs
+    exact And.intro (Expr.noShadow_mono h.1 (fun X hX => hT X (Or.inl hX)) (fun y hy => hs y (Or.inl hy)))
+      (Expr.noShadowList_mono h.2 (fun X hX => hT X (Or.inr hX)) (fun y hy => hs y (Or.inr hy)))
+  | .superCall e _ _ _ es, _, _, _, _, h, hT, hs => by
+    simp only [Expr.noShadow, Bool.and_eq_true] at h |-
+    simp only [Expr.tbinders, Expr.vbinders, listMem_iff, List.mem_append] at hT hs
+    exact And.intro (Expr.noShadow_mono h.1 (fun X hX => hT X (Or.inl hX)) (fun y hy => hs y (Or.inl hy)))
+      (Expr.noShadowList_mono h.2 (fun X hX => hT X (Or.inr hX)) (fun y hy => hs y (Or.inr hy)))
+  | .field e _, _, _, _, _, h, hT, hs => by
+    simp only [Expr.noShadow] at h |-
+    exact Expr.noShadow_mono h hT hs
+  | .new _ _ es, _, _, _, _, h, hT, hs => Expr.noShadowList_mono h hT hs
+  | .newLocal _ _ _ _ es Ms, _, _, _, _, h, hT, hs => by
+    simp only [Expr.noShadow, Bool.and_eq_true] at h |-
+    simp only [Expr.tbinders, Expr.vbinders, listMem_iff, List.mem_append] at hT hs
+    refine And.intro (Expr.noShadowList_mono h.1 (fun X hX => hT X (Or.inl hX)) (fun y hy => hs y (Or.inl hy))) ?_
+    refine Method.noShadowList_mono h.2 (fun X hX => hT X (Or.inr hX)) (fun y hy hm => ?_)
+    simp only [listMem_iff, List.mem_filter] at hm |-
+    exact And.intro (hs y (Or.inr hy) hm.1) hm.2
+  | .ifInst e0 _ x e1 e2, _, _, xs, xs2, h, hT, hs => by
+    simp only [Expr.noShadow, Bool.and_eq_true, Bool.not_eq_true'] at h |-
+    simp only [Expr.tbinders, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons] at hT hs
+    have hx : Not (List.Mem x xs) := by have := h.1.1.2; simp at this; exact this
+    refine And.intro (And.intro (And.intro (Expr.noShadow_mono h.1.1.1 (fun X hX => hT X (Or.inl (Or.inl hX)))
+      (fun y hy => hs y (Or.inl (Or.inl (Or.inr hy))))) ?_) ?_)
+      (Expr.noShadow_mono h.2 (fun X hX => hT X (Or.inr hX)) (fun y hy => hs y (Or.inr hy)))
+    . have : Not (List.Mem x xs2) := fun hm => hx (hs x (Or.inl (Or.inl (Or.inl rfl))) hm)
+      simpa using this
+    . refine Expr.noShadow_mono h.1.2 (fun X hX => hT X (Or.inl (Or.inr hX))) (fun y hy hm => ?_)
+      cases hm with
+      | head => exact List.Mem.head _
+      | tail _ hm => exact List.Mem.tail _ (hs y (Or.inl (Or.inr hy)) hm)
+theorem Expr.noShadowList_mono : forall {es : List Expr} {Xs Xs2 : List TVarName} {xs xs2 : List VarName},
+    Expr.noShadowList Xs xs es = true ->
+    (forall X, List.Mem X (Expr.tbindersList es) -> List.Mem X Xs2 -> List.Mem X Xs) ->
+    (forall y, List.Mem y (Expr.vbindersList es) -> List.Mem y xs2 -> List.Mem y xs) ->
+    Expr.noShadowList Xs2 xs2 es = true
+  | [], _, _, _, _, _, _, _ => rfl
+  | e :: es, _, _, _, _, h, hT, hs => by
+    simp only [Expr.noShadowList, Bool.and_eq_true] at h |-
+    simp only [Expr.tbindersList, Expr.vbindersList, listMem_iff, List.mem_append] at hT hs
+    exact And.intro (Expr.noShadow_mono h.1 (fun X hX => hT X (Or.inl hX)) (fun y hy => hs y (Or.inl hy)))
+      (Expr.noShadowList_mono h.2 (fun X hX => hT X (Or.inr hX)) (fun y hy => hs y (Or.inr hy)))
+theorem Method.noShadow_mono : forall {M : Method} {Xs Xs2 : List TVarName} {xs xs2 : List VarName},
+    M.noShadow Xs xs = true -> (forall X, List.Mem X M.tbinders -> List.Mem X Xs2 -> List.Mem X Xs) ->
+    (forall y, List.Mem y M.vbinders -> List.Mem y xs2 -> List.Mem y xs) -> M.noShadow Xs2 xs2 = true
+  | .mk Dl _ _ ps e, Xs, Xs2, xs, xs2, h, hT, hs => by
+    simp only [Method.noShadow, Bool.and_eq_true] at h |-
+    simp only [Method.tbinders, Method.vbinders, listMem_iff, List.mem_append] at hT hs
+    refine And.intro (And.intro (all_not_contains_of (fun X hX hm =>
+      not_mem_of_all_not_contains h.1.1 hX (hT X (Or.inl hX) hm))) (all_not_contains_of (fun p hp hm =>
+      not_mem_of_all_not_contains h.1.2 hp (hs p (Or.inl hp) hm)))) ?_
+    refine Expr.noShadow_mono h.2 (fun X hX hm => ?_) (fun y hy hm => ?_)
+    . simp only [listMem_iff, List.mem_append] at hm |-
+      rcases hm with hm | hm
+      . exact Or.inl (hT X (Or.inr hX) hm)
+      . exact Or.inr hm
+    . simp only [listMem_iff, List.mem_append, List.mem_cons] at hm |-
+      rcases hm with (hm | hm) | hm
+      . exact Or.inl (Or.inl hm)
+      . exact Or.inl (Or.inr (hs y (Or.inr hy) hm))
+      . exact Or.inr hm
+theorem Method.noShadowList_mono : forall {Ms : List Method} {Xs Xs2 : List TVarName} {xs xs2 : List VarName},
+    Method.noShadowList Xs xs Ms = true ->
+    (forall X, List.Mem X (Method.tbindersList Ms) -> List.Mem X Xs2 -> List.Mem X Xs) ->
+    (forall y, List.Mem y (Method.vbindersList Ms) -> List.Mem y xs2 -> List.Mem y xs) ->
+    Method.noShadowList Xs2 xs2 Ms = true
+  | [], _, _, _, _, _, _, _ => rfl
+  | M :: Ms, _, _, _, _, h, hT, hs => by
+    simp only [Method.noShadowList, Bool.and_eq_true] at h |-
+    simp only [Method.tbindersList, Method.vbindersList, listMem_iff, List.mem_append] at hT hs
+    exact And.intro (Method.noShadow_mono h.1 (fun X hX => hT X (Or.inl hX)) (fun y hy => hs y (Or.inl hy)))
+      (Method.noShadowList_mono h.2 (fun X hX => hT X (Or.inr hX)) (fun y hy => hs y (Or.inr hy)))
+end
+
 theorem Pairing.mono {Delta Delta2 : Bounds} (hs : Sub1 Delta Delta2) {Fs : List Funnel} {Ts : List Ty}
     {D0 : Bounds} {T0 : List Ty} (h : Pairing Delta Fs Ts D0 T0) : Pairing Delta2 Fs Ts D0 T0 := by
   induction h with
