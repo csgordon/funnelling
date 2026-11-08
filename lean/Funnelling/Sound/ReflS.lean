@@ -59,9 +59,7 @@ theorem RenE.reflS {rv : VRen} {rt : TRen} : forall {e : Expr} {Ts : List TVarNa
     have := RenE.superCall (m := m) (T := T) (Ts := Ts') (RenE.reflS hc.1.1 hv ht) (RenEs.reflS hc.2 hv ht)
     rwa [Ty.renList_id (fun X hX => ht X (h2 X (List.mem_append_right _ hX))),
       Ty.ren_id (fun X hX => ht X (h2 X (List.mem_append_left _ hX)))] at this
-  | .field e f, Ts, xs, hc, hv, ht => by
-    simp only [Expr.closed] at hc
-    exact RenE.field (RenE.reflS hc hv ht)
+  | .field e f, Ts, xs, hc, hv, ht => RenE.field (RenE.reflS hc hv ht)
   | .new C Ts' es, Ts, xs, hc, hv, ht => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
     have := RenE.new (C := C) (Ts := Ts') (RenEs.reflS hc.2 hv ht)

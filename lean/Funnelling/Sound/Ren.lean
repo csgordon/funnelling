@@ -117,9 +117,7 @@ theorem IdRen.cons {A : Type} {r : List (Prod A A)} {x : A} (h : IdRen r) : IdRe
 theorem IdRen.zip_append {A : Type} {r : List (Prod A A)} (h : IdRen r) :
     forall (xs : List A), IdRen (xs.zip xs ++ r)
   | [] => h
-  | x :: xs => by
-    simp only [List.zip_cons_cons, List.cons_append]
-    exact IdRen.cons (IdRen.zip_append h xs)
+  | _ :: xs => IdRen.cons (IdRen.zip_append h xs)
 
 theorem Ty.ren_idRen {rt : TRen} (h : IdRen rt) (T : Ty) : T.ren rt = T :=
   Ty.ren_id (fun X _ => rn_id h X)
