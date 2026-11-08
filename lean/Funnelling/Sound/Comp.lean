@@ -211,7 +211,6 @@ theorem ftvList_map_mem {A : Type} {f : A -> Ty} {l : List A} {a : A} (ha : List
   induction l with
   | nil => cases ha
   | cons b l ih =>
-    simp only [List.map_cons, Ty.ftvList]
     cases ha with
     | head => exact List.mem_append_left _ hX
     | tail _ h => exact List.mem_append_right _ (ih h)

@@ -40,7 +40,6 @@ theorem kind_chain {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
     have hcls := (hok D hD.dec_mem).2.1 _ (List.Mem.head _)
     have hK := Kind.subst hd (Delta' := Delta) (s := bind D.bounds Ts0) (fun b hb => (hka.2 b hb).1)
       (fun b hb => (hka.2 b hb).2) hcls
-    simp only [Ty.subst] at hK
     exact ih rfl hK
   | @subInheritLocal C1 Fs C' Ts' es Ms Ts1 T' hD hl _ ih =>
     cases hk with
@@ -117,13 +116,11 @@ theorem sub_unique {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {k : K} (hk : 
   cases k with
   | dec D => exact sub_unique_dec hwf (Exists.intro D (Exists.intro Ts (And.intro hk rfl))) h1 h2
   | loc C Fs C0 Ts0 es Ms =>
-    simp only [K.name] at h1 h2
     rcases Declared.super hwf hk with ⟨D', hD'⟩
     have hsup := hD'.2
     simp only [K.sup] at hsup
     have back : forall {U : List Ty}, Sub d Delta ((Ty.cls C0 Ts0).subst (bindF Fs Ts)) (.cls C U) -> False := by
       intro U hs
-      simp only [Ty.subst] at hs
       rw [<- hsup] at hs
       rcases Sub.top_target hwf hD'.1 hs with ⟨D0, hD0⟩; exact Declared.dec_loc hwf hD0.1 hk hD0.2
     rcases Sub.loc_step hwf hk h1 with e1 | s1
@@ -214,7 +211,6 @@ theorem Generic.nodup {d : Decls} (hwf : WFDecls d) {C : ClassName} {Xs : List T
     simp only [Ty.cls.injEq] at hgT
     have hx : Xs = dom D.bounds := by
       have := hgT.2
-      simp only [vars] at this
       exact vars_inj this
     refine And.intro ?_ (Exists.intro _ (And.intro hD rfl))
     rw [hx]

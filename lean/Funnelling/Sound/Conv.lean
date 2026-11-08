@@ -22,10 +22,8 @@ mutual
 theorem Expr.uniq_of : forall {e : Expr}, LocOk e.locals -> e.uniq
   | .var _, _ => trivial
   | .call e _ _ es, h => by
-    simp only [Expr.locals] at h; simp only [Expr.uniq]
     exact And.intro (Expr.uniq_of h.append_left) (Expr.uniqList_of h.append_right)
   | .superCall e _ _ _ es, h => by
-    simp only [Expr.locals] at h; simp only [Expr.uniq]
     exact And.intro (Expr.uniq_of h.append_left) (Expr.uniqList_of h.append_right)
   | .field e _, h => by
     simp only [Expr.locals] at h; simp only [Expr.uniq]

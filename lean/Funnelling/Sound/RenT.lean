@@ -15,7 +15,6 @@ theorem lookup_tS {X : TVarName} : forall {rt : TRen}, (Ty.var X).subst (tS rt) 
       rw [lookup_cons_eq, rn_cons_eq]
       rfl
     . have ih := @lookup_tS X rt
-      simp only [tS, Ty.subst] at ih
       simp only [tS, List.map_cons, Ty.subst]
       rw [lookup_cons_ne e, rn_cons_ne e]
       exact ih
@@ -23,7 +22,6 @@ theorem lookup_tS {X : TVarName} : forall {rt : TRen}, (Ty.var X).subst (tS rt) 
 mutual
 theorem Ty.ren_subst {rt : TRen} : forall (T : Ty), T.ren rt = T.subst (tS rt)
   | .var X => by
-    simp only [Ty.ren]
     rw [lookup_tS]
     rfl
   | .cls C Ts => by
@@ -40,7 +38,6 @@ mutual
 theorem Ty.ftv_ren {rt : TRen} : forall (T : Ty), (T.ren rt).ftv = T.ftv.map (rn rt)
   | .var X => rfl
   | .cls C Ts => by
-    simp only [Ty.ren, Ty.ftv]
     exact Ty.ftvList_ren Ts
 theorem Ty.ftvList_ren {rt : TRen} : forall (Ts : List Ty), Ty.ftvList (Ty.renList rt Ts) = (Ty.ftvList Ts).map (rn rt)
   | [] => rfl
@@ -104,7 +101,6 @@ theorem KindSeq.renT {d : Decls} (hd : DeclOk d) {rt : TRen} {Delta Delta' : Bou
 theorem Scope.renT {d : Decls} {rt : TRen} {C : ClassName} {Ts : List Ty} {Delta0 : Bounds} {Ts0 : List Ty}
     (h : Scope d (.cls C Ts) Delta0 Ts0) : Scope d (.cls C (Ty.renList rt Ts)) Delta0 (Ty.renList rt Ts0) := by
   have := h.subst (s := tS rt)
-  simp only [Ty.subst] at this
   rw [Ty.renList_subst, Ty.renList_subst]
   exact this
 

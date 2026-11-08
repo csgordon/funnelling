@@ -211,7 +211,6 @@ theorem gsubstList_mem {s : GSubst} {M' : Method} : forall {Ms : List Method}, L
     exists M, List.Mem M Ms /\ M' = M.gsubst s
   | [], h => by cases h
   | M :: Ms, h => by
-    simp only [Method.gsubstList] at h
     cases h with
     | head => exact Exists.intro M (And.intro (List.Mem.head _) rfl)
     | tail _ h =>
@@ -230,7 +229,6 @@ theorem OverrideOkM.gsubst {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {s : 
   cases M with
   | mk Dp T0p m psp ep =>
     simp only [Method.bounds] at hdis
-    simp only [Method.gsubst]
     have hv := vars_gsubst hdis
     cases h with
     | absent h1 h2 => exact OverrideOkM.absent h1 h2
@@ -246,7 +244,6 @@ theorem OverrideOkM.gsubst {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {s : 
         rw [dom_bounds_subst, e, Ty.substList, params_T_subst]
     | @loc C Fs C0 Ts0 es Ms _ _ _ _ _ _ Do T0o pso eo h1 h2 h3 h4 h5 h6 =>
       have hcl := declMeth_closed hwf hok h1 h2
-      simp only [K.gvars] at hcl
       have hfst : forall X, List.Mem X (domF Fs ++ dom Do) ->
           List.Mem X ((bindF Fs Us ++ bind Do (vars (dom Dp))).map Prod.fst) := by
         intro X hX
@@ -354,7 +351,6 @@ theorem Pairing.gsub {s : GSubst} {Delta : Bounds} {Fs : List Funnel} {Ts : List
     intro he
     simp only [abs, List.map_cons, Funnel.abs, List.cons.injEq] at he
     rcases ih he.2 with ⟨Ts3, hp⟩
-    simp only [List.map_cons, Funnel.gsubst, abs, Funnel.abs]
     exact Exists.intro _ (Pairing.ground hp)
 
 theorem innerG_gsub_sub {s : GSubst} {gamma : Gamma} {Fs : List Funnel} {C : ClassName} :
@@ -422,7 +418,6 @@ theorem OverrideOk.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
 
 theorem dom_mem_tbinders {X : TVarName} : forall {M : Method}, List.Mem X (dom M.bounds) -> List.Mem X M.tbinders
   | .mk _ _ _ _ _, h => by
-    simp only [Method.bounds] at h
     simp only [Method.tbinders, listMem_iff, List.mem_append]
     exact Or.inl h
 
@@ -469,11 +464,9 @@ theorem Typing.gsub_newLocal {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd
     show List.Mem (({ X := b.X, T := Ty.subst s.ty b.T } : Bound).X) (dom (gsubB s Delta'))
     exact List.mem_map_of_mem (f := Bound.X) this
   . have := Kind.subst hd sc'.sub sc'.kind h4
-    simp only [Ty.subst] at this
     rw [abs_gsubst]
     exact this
   . have := Kind.subst hd sc'.sub sc'.kind h5
-    simp only [Ty.subst] at this
     exact this
   . intro M' hM'
     rcases gsubstList_mem hM' with ⟨M, hM⟩

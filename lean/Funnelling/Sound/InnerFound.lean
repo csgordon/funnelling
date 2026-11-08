@@ -94,7 +94,6 @@ theorem pres_innerFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
   have hat := WFExpr.noThis ha
   simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at hat
   have hau := WFExpr.uniq ha
-  simp only [Expr.uniq] at hau
   have hv0n := han.1
   have hv0t := hat.1
   have hv0u := hau.1
@@ -115,8 +114,6 @@ theorem pres_innerFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
   have hk0 : Kind d [] (.cls C0 Ts0) := kind_chain hwf hok hd (by rw [hv] at vt; exact vt.2.2) (by rw [hv] at hsv; exact hsv)
   have hty0 := vt.2.1
   rw [hv] at hsv hty0
-  simp only [typeOf] at hsv hty0
-  simp only [Value.expr] at hty0
   rcases inv_local hty0 rfl with ⟨w2, hw2⟩
   have hD2 := pairing_ground_nil hw2.pair
   have hmeth := hw2.meths M hM

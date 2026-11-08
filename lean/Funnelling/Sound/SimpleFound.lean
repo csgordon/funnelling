@@ -86,11 +86,9 @@ theorem Expr.noShadow_tscope : forall {e : Expr} {Xs Xs2 : List TVarName} {xs : 
       (Expr.noShadowList_tscope h.2 (fun y hy => hs y (Or.inr hy)))
   | .field e _, _, _, _, h, hs => by
     simp only [Expr.noShadow] at h |-
-    simp only [Expr.tbinders] at hs
     exact Expr.noShadow_tscope h hs
   | .new _ _ es, _, _, _, h, hs => by
     simp only [Expr.noShadow] at h |-
-    simp only [Expr.tbinders] at hs
     exact Expr.noShadowList_tscope h hs
   | .newLocal _ _ _ _ es Ms, _, _, _, h, hs => by
     simp only [Expr.noShadow, Bool.and_eq_true] at h |-
@@ -143,7 +141,6 @@ theorem typingSeq_lookup {d : Decls} : forall {g : Gamma} {vs : List Value},
   | [], _, _, _, x, v, U, _, h => by simp [Gamma.lookup] at h
   | _ :: _, [], _, h, _, _, _, _, _ => by cases h
   | y :: g, v0 :: vs, hn, h, x, v, U, h1, h2 => by
-    simp only [Value.exprs, List.map_cons] at h
     cases h with
     | cons ht hts =>
       simp only [gdom, List.map_cons, List.zip_cons_cons] at h1 hn
@@ -214,7 +211,6 @@ theorem pres_simpleFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : 
   rcases hw.meth with ⟨k, hk, hkn, hkM⟩
   have ek := Declared.unique hwf hk hw.decl0 hkn
   subst ek
-  simp only [K.Ms] at hkM
   rcases dec_override hwf hok hd hD hM hw.decl0 (by rw [gtys_length]; exact hG) hw.sub with ⟨Us, hUs, hO, hUf⟩
   have hO' := OverrideOkM.ren (rv := []) (rt := []) hwf hok hO hF.1
     (fun X hX hm => Method.noShadow_dom hwm.2.2 X hm (hUf X hX)) hwm.1
@@ -320,7 +316,6 @@ theorem pres_simpleFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : 
           exact Kind.ftv ((hok D hD.dec_mem).1 b.T (List.mem_map_of_mem (f := Bound.T) hb1)) X hX
         have hbX : forall X, List.Mem X (Ty.ftvList [Ty.var b.X]) -> List.Mem X (dom D.bounds) := by
           intro X hX
-          simp only [Ty.ftvList, Ty.ftv, List.append_nil] at hX
           cases hX with
           | head => exact List.mem_map_of_mem (f := Bound.X) hb1
           | tail _ h => cases h
@@ -402,7 +397,6 @@ theorem pres_simpleFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : 
         have ht := WFExpr.noThis ha
         simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ht
         have hu := WFExpr.uniq ha
-        simp only [Expr.uniq] at hu
         cases hv with
         | head => exact And.intro hn.1 (And.intro ht.1 hu.1)
         | tail _ hv =>

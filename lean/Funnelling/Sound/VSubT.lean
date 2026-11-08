@@ -76,7 +76,6 @@ theorem vsubstList_mem {n : VSubst} {M : Method} : forall {Ms : List Method}, Li
     exists M0, List.Mem M0 Ms /\ M = M0.vsubst n
   | [], h => by cases h
   | M' :: Ms, h => by
-    simp only [Method.vsubstList] at h
     cases h with
     | head => exact Exists.intro M' (And.intro (List.Mem.head _) rfl)
     | tail _ h =>
@@ -145,9 +144,7 @@ theorem Typing.vsub {d : Decls} : forall {Delta gamma e T}, Typing d Delta gamma
   | _, _, _, _, .newObject, _, _, _, _, _, _, _, _, _, _, _, _, _, _ => by
     simp only [Expr.vsubst, Expr.vsubstList]; exact Typing.newObject
   | _, _, _, _, .declField h1 h2 h3 h4, _, _, _, _, hv, hw, hdef, n1, sc, sc', hn, hn', ht, hu => by
-    simp only [Expr.noShadow] at hn
     simp only [Expr.vsubst, Expr.noShadow] at hn' |-
-    simp only [Expr.vbinders, NoThis, Expr.uniq] at hdef ht hu
     exact Typing.declField (Typing.vsub h1 hv hw hdef n1 sc sc' hn hn' ht hu) h2 h3 h4
   | _, _, _, _, .call h1 h2 h3 h4 h5 h6 h7 h8 h9, _, _, _, _, hv, hw, hdef, n1, sc, sc', hn, hn', ht, hu => by
     simp only [Expr.noShadow, Bool.and_eq_true] at hn
@@ -156,12 +153,10 @@ theorem Typing.vsub {d : Decls} : forall {Delta gamma e T}, Typing d Delta gamma
     exact Typing.call (Typing.vsub h1 hv hw (fun y hy => hdef y (Or.inl hy)) n1 sc sc' hn.1 hn'.1 ht.1 hu.1) h2 h3 h4 h5 h6 h7 h8
       (TypingSeq.vsub h9 hv hw (fun y hy => hdef y (Or.inr hy)) n1 sc sc' hn.2 hn'.2 ht.2 hu.2)
   | _, _, _, _, .callLbRuntime h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11, _, _, _, _, hv, hw, hdef, n1, sc, sc', hn, hn', ht, hu => by
-    simp only [Expr.vsubst]
     have := TypingSeq.vsub h11 hv hw (fun y hy => hdef y (by simpa [Expr.vbindersList, Expr.vbinders] using hy)) n1 sc sc'
       (by simpa [Expr.noShadowList, Expr.noShadow] using hn)
       (by simp only [Expr.vsubst, Expr.noShadow] at hn'; simpa [Expr.noShadowList, Expr.vsubstList] using hn')
       (by simpa [NoThis, Expr.vbindersList, Expr.vbinders] using ht) (by simpa [Expr.uniqList, Expr.uniq] using hu)
-    simp only [Expr.vsubstList] at this
     exact Typing.callLbRuntime h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 this
   | _, _, _, _, .newTop h1 h2 h3 h4 h5, _, _, _, _, hv, hw, hdef, n1, sc, sc', hn, hn', ht, hu => by
     simp only [Expr.noShadow, noShadowList_append, Bool.and_eq_true] at hn
@@ -171,7 +166,6 @@ theorem Typing.vsub {d : Decls} : forall {Delta gamma e T}, Typing d Delta gamma
     have h5' := Typing.vsub h5 hv hw (fun y hy => hdef y (Or.inr (by simpa [Expr.vbinders] using hy))) n1 sc sc'
       (by simpa [Expr.noShadow] using hn.2) (by simpa [Expr.vsubst, Expr.noShadow] using hn'.2)
       (by simpa [NoThis, Expr.vbinders] using ht.2) (by simpa [Expr.uniq] using hu.2)
-    simp only [Expr.vsubst] at h5'
     exact Typing.newTop h1 h2 h3 (TypingSeq.vsub h4 hv hw (fun y hy => hdef y (Or.inl hy)) n1 sc sc' hn.1 hn'.1 ht.1 hu.1) h5'
   | _, gamma, _, _, .newLocal (Fs := Fs) (C := C) h1 h2 h3 h4 h5 h6 h7 h8, n, _, xs, xs', hv, hw, hdef, n1, sc, sc', hn, hn', ht, hu => by
     simp only [Expr.noShadow, Bool.and_eq_true] at hn
@@ -180,7 +174,6 @@ theorem Typing.vsub {d : Decls} : forall {Delta gamma e T}, Typing d Delta gamma
     have h6' := Typing.vsub h6 hv hw (fun y hy => hdef y (Or.inl (by simpa [Expr.vbinders] using hy))) n1 sc sc'
       (by simpa [Expr.noShadow] using hn.1) (by simpa [Expr.vsubst, Expr.noShadow] using hn'.1)
       (by simpa [NoThis, Expr.vbinders] using ht.1) (by simpa [Expr.uniq] using hu.1)
-    simp only [Expr.vsubst] at h6'
     refine Typing.newLocal h1.vsubst h2 h3 h4 h5 h6' ?_ h8.vsubst
     intro M' hM'
     rcases vsubstList_mem hM' with ⟨M, hM⟩

@@ -53,7 +53,6 @@ theorem fields_nodup {d : Decls} (hwf : WFDecls d) {D : Dec} (h : List.Mem D d) 
   . simp only [ho, ite_true, List.flatMap_cons, List.flatMap_nil, List.append_nil] at h2
     exact h2
   . simp only [ho] at h2
-    simp only [Bool.false_eq_true, ite_false, List.flatMap_cons] at h2
     exact nodup_append_left h2
 
 theorem zip_unique {A B : Type} : forall {xs : List A} {ys : List B} {x : A} {y y' : B}, xs.Nodup ->
@@ -61,7 +60,6 @@ theorem zip_unique {A B : Type} : forall {xs : List A} {ys : List B} {x : A} {y 
   | [], _, _, _, _, _, h, _ => by cases h
   | _ :: _, [], _, _, _, _, h, _ => by cases h
   | a :: xs, b :: ys, x, y, y', hn, h1, h2 => by
-    simp only [List.zip_cons_cons] at h1 h2
     cases h1 with
     | head =>
       cases h2 with
@@ -175,7 +173,6 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
       have hn := ha.2.2.2.2.1
       simp only [Expr.noShadow, Bool.and_eq_true] at hn
       have hu := ha.uniq
-      simp only [Expr.uniq] at hu
       have ht := ha.noThis
       simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ht
       have hc := ha.2.2.2.2.2.2
@@ -251,7 +248,6 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
       have eM : M = M2 := nodup_map_inj hloc hM hM2 (by rw [FreshM.name hF, FreshM.name hF2])
       subst eM
       have hu := ha.uniq
-      simp only [Expr.uniq, Value.expr] at hu
       have hMu := uniqList_mem hM hu.1.2
       have ht := ha.noThis
       simp only [NoThis, Expr.vbinders, Value.expr, listMem_iff, List.mem_append, not_or] at ht

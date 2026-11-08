@@ -289,7 +289,6 @@ theorem wf_innerFound {C C' : ClassName} {Ms : List Method} {M : Method} {m : Me
   simp only [Method.noShadow, Bool.and_eq_true, List.nil_append, List.cons_append] at hn'
   simp only [Method.closed, Bool.and_eq_true, List.nil_append, List.cons_append] at hc'
   simp only [NoThisM, Method.vbinders, listMem_iff, List.mem_append, not_or] at ht'
-  simp only [Method.uniq] at hu'
   simp only [Method.vbinders, listMem_iff, List.mem_append] at hav
   simp only [Method.tbinders, listMem_iff, List.mem_append] at hat
   have hlen : Gs'.length = Delta'.length := by omega
@@ -363,7 +362,6 @@ theorem Typing.closed {d : Decls} : forall {Delta gamma e T}, Typing d Delta gam
     e.closed (dom Delta) (gdom gamma) = true
   | _, _, _, _, .subs h _ _ => Typing.closed h
   | _, _, _, _, .var hl => by
-    simp only [Expr.closed]
     exact List.contains_iff_mem.mpr (List.mem_map_of_mem (f := VarDecl.x) (lookup_mem_g hl))
   | _, _, _, _, .newObject => rfl
   | _, _, _, _, .declField h1 _ _ _ => by
@@ -491,7 +489,6 @@ theorem wf_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec}
   simp only [Method.noShadow, Bool.and_eq_true, List.nil_append, List.cons_append] at hn'
   simp only [Method.closed, Bool.and_eq_true, List.nil_append, List.cons_append] at hc'
   simp only [NoThisM, Method.vbinders, listMem_iff, List.mem_append, not_or] at ht'
-  simp only [Method.uniq] at hu'
   simp only [Method.vbinders, listMem_iff, List.mem_append] at hav
   simp only [Method.tbinders, listMem_iff, List.mem_append] at hat
   have hlen : Gs'.length = Delta'.length := by omega

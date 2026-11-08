@@ -21,11 +21,7 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
   | _, _, _, _, .declField h1 h2 h3 h4, _, _, _, _, _, _, _, _, _, hr, env, hn, hn', ht, ht', hu, hu' => by
     cases hr with
     | field hr1 =>
-      simp only [Expr.noShadow] at hn hn'
-      simp only [NoThis, Expr.vbinders] at ht ht'
-      simp only [Expr.uniq] at hu hu'
       have ih := Typing.ren hwf hok hd h1 hr1 env hn hn' ht ht' hu hu'
-      simp only [Ty.ren] at ih
       rw [ren_bind h4 (field_closed hok h2 h3)]
       exact Typing.declField ih h2 h3 (by rw [renList_length, h4])
   | _, _, _, _, .call (Delta0 := Delta0) (Delta1 := Delta1) (Ts2 := Ts2) (Ts1 := Ts1) h1 h2 h3 h4 h5 h6 h7 h8 h9, _, rt, _, _, _, _, _, _, _,
@@ -34,15 +30,12 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
     | call hr1 hr2 =>
       simp only [Expr.noShadow, Bool.and_eq_true] at hn hn'
       simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ht ht'
-      simp only [Expr.uniq] at hu hu'
       have hcl := methodIn_closed hwf hok h2 h3
       have ih1 := Typing.ren hwf hok hd h1 hr1 env hn.1 hn'.1 ht.1 ht'.1 hu.1 hu'.1
-      simp only [Ty.ren] at ih1
       have ih2 := TypingSeq.ren hwf hok hd h9 hr2 env hn.2 hn'.2 ht.2 ht'.2 hu.2 hu'.2
       have hlen : (Ts2 ++ Ts1).length = (Delta0 ++ Delta1).length := by simp [h4, h5]
       have e6 := congrArg (Ty.renList rt) h6
       rw [renList_bind hlen hcl.1, renList_append] at e6
-      simp only [Ty.renList] at e6
       refine Typing.call ih1 (Scope.renT h2) h3 (by rw [renList_length, h4]) (by rw [renList_length, h5]) e6
         (KindSeq.renT hd env.bD h7) ?_ ih2
       have := SubSeq.renT hd env.bD h8
@@ -57,11 +50,9 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
         (by simpa [NoThis, Expr.vbindersList, Expr.vbinders] using ht)
         (by simpa [NoThis, Expr.vbindersList, Expr.vbinders] using ht')
         (by simpa [Expr.uniqList, Expr.uniq] using hu) (by simpa [Expr.uniqList, Expr.uniq] using hu')
-      simp only [Ty.renList, Ty.ren] at ih
       have hlen : (Ts0 ++ Ts1).length = (D0.bounds ++ Delta1).length := by simp [h4, h5]
       have e6 := congrArg (Ty.renList rt) h6
       rw [renList_bind hlen hcl.1, renList_append] at e6
-      simp only [Ty.renList] at e6
       have hs1 := Sub.renT hd env.bD h1
       have hk8 := Kind.renT hd env.bD h8
       simp only [Ty.ren] at hs1 hk8 |-
@@ -95,7 +86,6 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
     | newLocal hr1 hr2 =>
       simp only [Expr.noShadow, Bool.and_eq_true] at hn hn'
       simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ht ht'
-      simp only [Expr.uniq] at hu hu'
       have hbq : BRen rt Dp (Dp.map fun b => ({ X := rn rt b.X, T := b.T.ren rt } : Bound)) :=
         fun b hb => List.mem_map_of_mem (f := fun b => ({ X := rn rt b.X, T := b.T.ren rt } : Bound)) hb
       have hDX : forall X, List.Mem X (dom Dp) -> List.Mem X Xs := fun X hX => env.dX X (dom_sub1 h2.sub X hX)
@@ -135,7 +125,6 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
     | @ifInst _ _ _ _ _ _ y _ _ _ _ hr0 hr1 hr2 =>
       simp only [Expr.noShadow, Bool.and_eq_true, Bool.not_eq_true'] at hn hn'
       simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ht ht'
-      simp only [Expr.uniq] at hu hu'
       have hxs : Not (List.Mem x xs) := by have := hn.1.1.2; simp at this; exact this
       have hys : Not (List.Mem y xs') := by have := hn'.1.1.2; simp at this; exact this
       have env1 := env.ext hxs hys (fun X hX => env.dX X (Kind.ftv hk X hX)) (fun e => ht.1.1.1 e.symm)
@@ -158,7 +147,6 @@ theorem TypingSeq.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Decl
     | cons hr1 hr2 =>
       simp only [Expr.noShadowList, Bool.and_eq_true] at hn hn'
       simp only [Expr.vbindersList, listMem_iff, List.mem_append, not_or] at ht ht'
-      simp only [Expr.uniqList] at hu hu'
       exact TypingSeq.cons (Typing.ren hwf hok hd h hr1 env hn.1 hn'.1 ht.1 ht'.1 hu.1 hu'.1)
         (TypingSeq.ren hwf hok hd hs hr2 env hn.2 hn'.2 ht.2 ht'.2 hu.2 hu'.2)
 theorem MethodOk.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) :

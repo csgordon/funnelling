@@ -172,43 +172,28 @@ theorem RenE.vsub {rv rt a b} : RenE rv rt a b -> forall {rvo n1 n2 S T}, VSEnv 
       exact RenE.var
   | .call h1 hs1, rvo, n1, n2, S, T, env, hc, hd1, hd2, ha, hb => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
-    simp only [Expr.vbinders] at hd1 hd2
     simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ha hb
-    simp only [Expr.vsubst]
     exact RenE.call (RenE.vsub h1 env hc.1.1 (notDom_append_left hd1) (notDom_append_left hd2) ha.1 hb.1)
       (RenEs.vsub hs1 env hc.2 (notDom_append_right hd1) (notDom_append_right hd2) ha.2 hb.2)
   | .superCall h1 hs1, rvo, n1, n2, S, T, env, hc, hd1, hd2, ha, hb => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
-    simp only [Expr.vbinders] at hd1 hd2
     simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ha hb
-    simp only [Expr.vsubst]
     exact RenE.superCall (RenE.vsub h1 env hc.1.1 (notDom_append_left hd1) (notDom_append_left hd2) ha.1 hb.1)
       (RenEs.vsub hs1 env hc.2 (notDom_append_right hd1) (notDom_append_right hd2) ha.2 hb.2)
   | .field h1, rvo, n1, n2, S, T, env, hc, hd1, hd2, ha, hb => by
-    simp only [Expr.closed] at hc
-    simp only [Expr.vbinders] at hd1 hd2
-    simp only [NoThis, Expr.vbinders] at ha hb
-    simp only [Expr.vsubst]
     exact RenE.field (RenE.vsub h1 env hc hd1 hd2 ha hb)
   | .new hs1, rvo, n1, n2, S, T, env, hc, hd1, hd2, ha, hb => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
-    simp only [Expr.vbinders] at hd1 hd2
-    simp only [NoThis, Expr.vbinders] at ha hb
-    simp only [Expr.vsubst]
     exact RenE.new (RenEs.vsub hs1 env hc.2 hd1 hd2 ha hb)
   | .newLocal hs1 hm1, rvo, n1, n2, S, T, env, hc, hd1, hd2, ha, hb => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
-    simp only [Expr.vbinders] at hd1 hd2
     simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ha hb
-    simp only [Expr.vsubst]
     exact RenE.newLocal (RenEs.vsub hs1 env hc.1.2 (notDom_append_left hd1) (notDom_append_left hd2) ha.1 hb.1)
       (RenMs.vsub hm1 env.filt hc.2 (notDom_filter (notDom_append_right hd1))
         (notDom_filter (notDom_append_right hd2)) ha.2 hb.2 filter_this_no filter_this_no)
   | .ifInst h01 h11 h21, rvo, n1, n2, S, T, env, hc, hd1, hd2, ha, hb => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
-    simp only [Expr.vbinders] at hd1 hd2
     simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ha hb
-    simp only [Expr.vsubst]
     have hd1' : NotDom (_ ++ _ ++ _) n1 := fun x hx => hd1 x (List.Mem.tail _ hx)
     have hd2' : NotDom (_ ++ _ ++ _) n2 := fun x hx => hd2 x (List.Mem.tail _ hx)
     exact RenE.ifInst
@@ -226,7 +211,6 @@ theorem RenEs.vsub {rv rt as bs} : RenEs rv rt as bs -> forall {rvo n1 n2 S T}, 
   | .nil, _, _, _, _, _, _, _, _, _, _, _ => RenEs.nil
   | .cons h1 hs1, rvo, n1, n2, S, T, env, hc, hd1, hd2, ha, hb => by
     simp only [Expr.closedList, Bool.and_eq_true] at hc
-    simp only [Expr.vbindersList] at hd1 hd2
     simp only [Expr.vbindersList, listMem_iff, List.mem_append, not_or] at ha hb
     simp only [Expr.vsubstList]
     exact RenEs.cons (RenE.vsub h1 env hc.1 (notDom_append_left hd1) (notDom_append_left hd2) ha.1 hb.1)

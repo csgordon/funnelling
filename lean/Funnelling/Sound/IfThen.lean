@@ -108,11 +108,9 @@ theorem Expr.noShadow_scope : forall {e : Expr} {Xs : List TVarName} {xs xs2 : L
       (Expr.noShadowList_scope h.2 (fun y hy => hs y (Or.inr hy)))
   | .field e _, _, _, _, h, hs => by
     simp only [Expr.noShadow] at h |-
-    simp only [Expr.vbinders] at hs
     exact Expr.noShadow_scope h hs
   | .new _ _ es, _, _, _, h, hs => by
     simp only [Expr.noShadow] at h |-
-    simp only [Expr.vbinders] at hs
     exact Expr.noShadowList_scope h hs
   | .newLocal _ _ _ _ es Ms, _, _, _, h, hs => by
     simp only [Expr.noShadow, Bool.and_eq_true] at h |-
@@ -175,7 +173,6 @@ theorem value_declared {d : Decls} (hwf : WFDecls d) {v : Value} {T : Ty} (h : T
     cases value_new_declared hwf h with
     | intro D hD => exact Exists.intro (.dec D) (Exists.intro (GTy.tys Gs) (And.intro hD.1 (by simp [typeOf, K.name, hD.2])))
   | newLocal C Gs C' Gs' vs Ms =>
-    simp only [Value.expr] at h
     rcases inv_local h rfl with ⟨w, hw⟩
     rcases consistent_unfold hw.cons with ⟨Fs', h⟩; cases h with
     | intro Ts' h => cases h with
@@ -203,7 +200,6 @@ theorem pres_ifThen' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclO
     have hn := ha.2.2.2.2.1
     simp only [Expr.noShadow, Bool.and_eq_true] at hn
     have hu := WFExpr.uniq ha
-    simp only [Expr.uniq] at hu
     have ht := WFExpr.noThis ha
     simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ht
     have hn' : e1'.noShadow [] [x] = true :=
@@ -227,7 +223,6 @@ theorem pres_ifThen' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclO
         gx' := fun y hy => hy
         kv := fun _ h => by cases h }
     have ty1 := hw.ty1
-    simp only [List.nil_append] at ty1
     have hr := Typing.ren hwf hok hd ty1 hf.1 env hn.1.2 hn' ht.1.2 ht' hu.2.1 hu'
     rw [Ty.ren_id (fun _ _ => rn_nil)] at hr
     have hsub := Typing.vsub hr (n := [(x, v)]) (Xs := []) (xs := [x]) (xs' := [])

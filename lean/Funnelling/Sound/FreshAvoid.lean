@@ -170,10 +170,8 @@ theorem Expr.fr_vb {LV : List VarName} {LT : List TVarName} :
     . exact Expr.fr_vb e h
     . exact Expr.frList_vb es h
   | .field e _, _, _, _, _, h => by
-    simp only [Expr.fr, Expr.vbinders] at h
     exact Expr.fr_vb e h
   | .new _ _ es, _, _, _, _, h => by
-    simp only [Expr.fr, Expr.vbinders] at h
     exact Expr.frList_vb es h
   | .newLocal _ _ _ _ es Ms, _, _, _, _, h => by
     simp only [Expr.fr, Expr.vbinders, listMem_iff, List.mem_append] at h
@@ -233,10 +231,8 @@ theorem Expr.fr_tb {LV : List VarName} {LT : List TVarName} :
     . exact Expr.fr_tb e h
     . exact Expr.frList_tb es h
   | .field e _, _, _, _, _, h => by
-    simp only [Expr.fr, Expr.tbinders] at h
     exact Expr.fr_tb e h
   | .new _ _ es, _, _, _, _, h => by
-    simp only [Expr.fr, Expr.tbinders] at h
     exact Expr.frList_tb es h
   | .newLocal _ _ _ _ es Ms, _, _, _, _, h => by
     simp only [Expr.fr, Expr.tbinders, listMem_iff, List.mem_append] at h
@@ -337,10 +333,8 @@ theorem Expr.fr_noShadow {LV : List VarName} {LT : List TVarName} (ht : List.Mem
     simp only [Expr.fr, Expr.noShadow, Bool.and_eq_true]
     exact ⟨Expr.fr_noShadow ht e hS hT, Expr.frList_noShadow ht es hS hT⟩
   | .field e _, _, _, _, _, _, hS, hT => by
-    simp only [Expr.fr, Expr.noShadow]
     exact Expr.fr_noShadow ht e hS hT
   | .new _ _ es, _, _, _, _, _, hS, hT => by
-    simp only [Expr.fr, Expr.noShadow]
     exact Expr.frList_noShadow ht es hS hT
   | .newLocal _ _ _ _ es Ms, _, _, _, _, _, hS, hT => by
     simp only [Expr.fr, Expr.noShadow, Bool.and_eq_true]
@@ -379,28 +373,21 @@ theorem Expr.fr_uniq {LV : List VarName} {LT : List TVarName} :
     forall (e : Expr) {rv : VRen} {rt : TRen} {d : Nat}, (e.fr LV LT rv rt d).uniq
   | .var _, _, _, _ => by simp only [Expr.fr, Expr.uniq]
   | .call e _ _ es, _, _, _ => by
-    simp only [Expr.fr, Expr.uniq]
     exact ⟨Expr.fr_uniq e, Expr.frList_uniq es⟩
   | .superCall e _ _ _ es, _, _, _ => by
-    simp only [Expr.fr, Expr.uniq]
     exact ⟨Expr.fr_uniq e, Expr.frList_uniq es⟩
   | .field e _, _, _, _ => by
-    simp only [Expr.fr, Expr.uniq]
     exact Expr.fr_uniq e
   | .new _ _ es, _, _, _ => by
-    simp only [Expr.fr, Expr.uniq]
     exact Expr.frList_uniq es
   | .newLocal _ _ _ _ es Ms, _, _, _ => by
-    simp only [Expr.fr, Expr.uniq]
     exact ⟨Expr.frList_uniq es, Method.frList_uniq Ms⟩
   | .ifInst e0 _ _ e1 e2, _, _, _ => by
-    simp only [Expr.fr, Expr.uniq]
     exact ⟨Expr.fr_uniq e0, Expr.fr_uniq e1, Expr.fr_uniq e2⟩
 theorem Expr.frList_uniq {LV : List VarName} {LT : List TVarName} :
     forall (es : List Expr) {rv : VRen} {rt : TRen} {d : Nat}, Expr.uniqList (Expr.frList LV LT rv rt d es)
   | [], _, _, _ => by simp only [Expr.frList, Expr.uniqList]
   | e :: es, _, _, _ => by
-    simp only [Expr.frList, Expr.uniqList]
     exact ⟨Expr.fr_uniq e, Expr.frList_uniq es⟩
 theorem Method.fr_uniq {LV : List VarName} {LT : List TVarName} :
     forall (M : Method) {rv : VRen} {rt : TRen} {d : Nat}, (M.fr LV LT rv rt d).uniq
@@ -412,7 +399,6 @@ theorem Method.frList_uniq {LV : List VarName} {LT : List TVarName} :
     forall (Ms : List Method) {rv : VRen} {rt : TRen} {d : Nat}, Method.uniqList (Method.frList LV LT rv rt d Ms)
   | [], _, _, _ => by simp only [Method.frList, Method.uniqList]
   | M :: Ms, _, _, _ => by
-    simp only [Method.frList, Method.uniqList]
     exact ⟨Method.fr_uniq M, Method.frList_uniq Ms⟩
 end
 
@@ -581,9 +567,6 @@ theorem RenE.inv {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 rv3 rt3 Sa 
     . simp only [Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and]
       exact ⟨r1.2.2, r2.2.2⟩
   | .field (f := f) h1, rv2, rt2, rv3, rt3, Sa, Sb, Ta, Tb, env, h3, h3t, hS, hc, hn, ha, hb, hu, hk => by
-    simp only [Expr.closed, Expr.noShadow] at hc hn
-    simp only [NoThis, Expr.vbinders] at ha hb
-    simp only [Expr.uniq, Expr.locals] at hu hk
     have r1 := RenE.inv h1 env h3 h3t hS hc hn ha hb hu hk
     exact ⟨RenE.field r1.1, r1.2.1, r1.2.2⟩
   | .new (C := C) (Ts := Ts) hs1, rv2, rt2, rv3, rt3, Sa, Sb, Ta, Tb, env, h3, h3t, hS, hc, hn, ha, hb, hu, hk => by

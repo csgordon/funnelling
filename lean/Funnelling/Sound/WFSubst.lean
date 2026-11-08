@@ -140,7 +140,6 @@ theorem Expr.closed_vsubst : forall {e : Expr} {n : VSubst} {T : List TVarName} 
     simp only [Expr.vsubst, Expr.closed, Bool.and_eq_true]
     exact ⟨⟨Expr.closed_vsubst hc.1.1 hn, hc.1.2⟩, Expr.closedList_vsubst hc.2 hn⟩
   | .field _ _, _, _, _, hc, hn => by
-    simp only [Expr.closed] at hc
     simp only [Expr.vsubst, Expr.closed]
     exact Expr.closed_vsubst hc hn
   | .new _ _ _, _, _, _, hc, hn => by
@@ -257,7 +256,6 @@ theorem domF_gsubst_sub {s : GSubst} : forall (Fs : List Funnel),
     rw [List.map_cons, domF_cons, domF_cons (F := F)]
     cases F with
     | ground G =>
-      simp only [Funnel.gsubst]
       simp only [domF, List.filterMap_cons, List.filterMap_nil, List.nil_append] at ih ⊢
       exact ih
     | funnel Y =>
@@ -361,7 +359,6 @@ theorem Expr.closed_gsubst {s : GSubst} : forall {e : Expr} {T : List TVarName} 
     simp only [Expr.gsubst, Expr.closed, Bool.and_eq_true]
     exact ⟨⟨Expr.closed_gsubst hc.1.1, all_subst_fwd (Us := T0 :: Ts) hc.1.2⟩, Expr.closedList_gsubst hc.2⟩
   | .field _ _, _, _, hc => by
-    simp only [Expr.closed] at hc
     simp only [Expr.gsubst, Expr.closed]
     exact Expr.closed_gsubst hc
   | .new _ _ _, _, _, hc => by
@@ -452,12 +449,9 @@ theorem Expr.noShadow_vsubst {VB : List VarName} {TB : List TVarName} (hthis : N
     exact ⟨Expr.noShadow_vsubst hthis h.1 hn hxs (fun y hy => he y (Or.inl hy)) hXs (fun X hX => hE X (Or.inl hX)),
       Expr.noShadowList_vsubst hthis h.2 hn hxs (fun y hy => he y (Or.inr hy)) hXs (fun X hX => hE X (Or.inr hX))⟩
   | .field _ _, _, _, _, h, hn, hxs, he, hXs, hE => by
-    simp only [Expr.noShadow, Expr.vbinders, Expr.tbinders] at h he hE
     simp only [Expr.vsubst, Expr.noShadow]
     exact Expr.noShadow_vsubst hthis h hn hxs he hXs hE
   | .new _ _ _, _, _, _, h, hn, hxs, he, hXs, hE => by
-    simp only [Expr.noShadow, Expr.vbinders, Expr.tbinders] at h he hE
-    simp only [Expr.vsubst, Expr.noShadow]
     exact Expr.noShadowList_vsubst hthis h hn hxs he hXs hE
   | .newLocal _ _ _ _ _ _, _, _, _, h, hn, hxs, he, hXs, hE => by
     simp only [Expr.noShadow, Bool.and_eq_true, Expr.vbinders, listMem_iff, List.mem_append, Expr.tbinders] at h he hE

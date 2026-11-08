@@ -119,11 +119,9 @@ theorem Sub.subst {d : Decls} (hd : DeclOk d) {Delta Delta' : Bounds} {s : TSubs
   | subRefl => exact Sub.subRefl
   | @subInherit D Ts0 T' hD hl _ ih =>
     rw [subst_bind_comp hl (fun X hX => hd.supD D hD X (by simpa [Ty.ftv] using hX))] at ih
-    simp only [Ty.subst]
     exact Sub.subInherit hD (by rw [substList_length, hl]) ih
   | @subInheritLocal C Fs C' Ts' es Ms Ts T' hD hl _ ih =>
     rw [subst_bindF_comp hl (fun X hX => hd.supL C Fs C' Ts' es Ms hD X (by simpa [Ty.ftv] using hX))] at ih
-    simp only [Ty.subst]
     exact Sub.subInheritLocal hD (by rw [substList_length, hl]) ih
   | @subVar X T T' hm _ ih => exact (hb { X := X, T := T } hm).trans ih
 
@@ -190,7 +188,6 @@ theorem Kind.ftv {d : Decls} {Delta : Bounds} {T : Ty} (h : Kind d Delta T) :
     exact List.mem_map_of_mem (f := Bound.X) hm
   | @wfClass C Ts Delta0 Ts0 _ _ _ _ ih =>
     intro Y hY
-    simp only [Ty.ftv] at hY
     rcases (ftvList_mem.mp hY) with ⟨T, hT⟩; exact ih T hT.1 Y hT.2
 
 theorem Kind.mono {d : Decls} {Delta Delta' : Bounds} (hs : Sub1 Delta Delta') {T : Ty}

@@ -21,14 +21,12 @@ theorem Expr.locClosed : forall (e : Expr), LocClosed e.locals
   | .field e _ => by simp only [Expr.locals]; exact Expr.locClosed e
   | .new _ _ es => by simp only [Expr.locals]; exact Expr.locClosedList es
   | .newLocal C Fs C' Ts es Ms => by
-    simp only [Expr.locals]
     intro k hk x hx
     cases hk with
     | head => exact List.Mem.tail _ (List.mem_append_right _ hx)
     | tail _ hk =>
       exact List.Mem.tail _ (((Expr.locClosedList es).append (Method.locClosedList Ms)) k hk x hx)
   | .ifInst e0 _ _ e1 e2 => by
-    simp only [Expr.locals]
     exact ((Expr.locClosed e0).append (Expr.locClosed e1)).append (Expr.locClosed e2)
 theorem Expr.locClosedList : forall (es : List Expr), LocClosed (Expr.localsList es)
   | [] => fun _ h => by cases h

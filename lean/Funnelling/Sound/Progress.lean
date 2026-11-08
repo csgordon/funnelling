@@ -8,7 +8,6 @@ mutual
 theorem Ty.ground_of : forall {T : Ty}, T.ftv = [] -> exists G : GTy, T = G.ty
   | .var _, h => by simp [Ty.ftv] at h
   | .cls C Ts, h => by
-    simp only [Ty.ftv] at h
     rcases Ty.groundList_of h with ⟨Gs, hG⟩; exact Exists.intro (.cls C Gs) (by rw [hG]; rfl)
 theorem Ty.groundList_of : forall {Ts : List Ty}, Ty.ftvList Ts = [] -> exists Gs : List GTy, Ts = GTy.tys Gs
   | [], _ => Exists.intro [] rfl
@@ -129,7 +128,6 @@ theorem Expr.noShadow_tb : forall {e : Expr} {Xs : List TVarName} {xs : List Var
     simp only [Expr.noShadow, Expr.tbinders] at hn hX
     exact Expr.noShadow_tb hn X hX
   | .new _ _ es, _, _, hn, X, hX => by
-    simp only [Expr.noShadow, Expr.tbinders] at hn hX
     exact Expr.noShadowList_tb hn X hX
   | .newLocal _ _ _ _ es Ms, _, _, hn, X, hX => by
     simp only [Expr.noShadow, Bool.and_eq_true, Expr.tbinders, listMem_iff, List.mem_append] at hn hX
@@ -189,8 +187,6 @@ theorem inner_lens {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {Gs Gs'' Gs'
   have vt := value_typing hwf hw.ty0
   have hsv := vt.1.sub
   have hty0 := vt.2.1
-  simp only [typeOf] at hsv hty0
-  simp only [Value.expr] at hty0
   rcases inv_local hty0 rfl with ⟨w2, hw2⟩
   have hD2 := pairing_ground_nil hw2.pair
   have hover := hw2.over
@@ -230,7 +226,6 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
     cases v with
     | newLocal C Gs C' Gs' vs Ms => exact ⟨_, Step.innerFieldSuper⟩
     | new C Gs vs =>
-      simp only [typeOf] at hsv
       have hO : Not (C = Object) := by
         intro hO
         rw [hO] at hsv
@@ -240,7 +235,6 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         rw [(object_eq hwf hw'.decl hU.1).2.2] at hm
         cases hm
       have ht2 := vt.2.1
-      simp only [Value.expr, typeOf] at ht2
       rcases inv_new ht2 rfl with h1 | ⟨w2, hw2⟩
       . exact absurd h1.1 hO
       . have hn := hw2.name
@@ -265,7 +259,6 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
       . rcases List.mem_map.mp hm with ⟨M, hM, hMn⟩
         cases M with
         | mk Delta' T0 m' ps e0 =>
-        simp only [Method.name] at hMn
         subst hMn
         have hl := inner_lens hwf hM ht
         have han := hw.2.2.2.2.1
@@ -273,7 +266,6 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         have hat := WFExpr.noThis hw
         simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at hat
         have hau := WFExpr.uniq hw
-        simp only [Expr.uniq] at hau
         have hv0n := han.1
         have hv0t := hat.1
         have hv0u := hau.1
@@ -307,7 +299,6 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
       . rcases List.mem_map.mp hm with ⟨M, hM, hMn⟩
         cases M with
         | mk Delta' T0 m' ps e0 =>
-        simp only [Method.name] at hMn
         subst hMn
         have hd := declOk hwf hok
         rcases dec_override hwf hok hd hw'.decl hM hw'.decl0 hkd0 hw'.sub with ⟨Us, hUs, hO, _⟩

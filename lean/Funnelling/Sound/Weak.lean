@@ -99,7 +99,6 @@ theorem Typing.weak {d : Decls} : forall {Delta gamma e T}, Typing d Delta gamma
     Typing.var (lookup_of_mem_g n2 (hG _ (lookup_mem_g hl)))
   | _, _, _, _, .newObject, _, _, _, _, _, _, _, _, _, _, _, _, _ => Typing.newObject
   | _, _, _, _, .declField h1 h2 h3 h4, _, _, _, _, hD, hG, n1, n2, sc, hn, hb, ht, hu => by
-    simp only [Expr.noShadow, Expr.vbinders, NoThis, Expr.uniq] at hn hb ht hu
     exact Typing.declField (Typing.weak h1 hD hG n1 n2 sc hn hb ht hu) h2 h3 h4
   | _, _, _, _, .call h1 h2 h3 h4 h5 h6 h7 h8 h9, _, _, _, _, hD, hG, n1, n2, sc, hn, hb, ht, hu => by
     simp only [Expr.noShadow, Bool.and_eq_true, Expr.vbinders, listMem_iff, List.mem_append, NoThis, not_or,

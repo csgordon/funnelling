@@ -14,16 +14,11 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
     Typing.subs (Typing.gsub hwf hok hd h hg hdis n1 sc hn ht hu) (Kind.subst hd hg.substCtx.sub hg.substCtx.kind hk)
       (Sub.subst hd hg.substCtx.sub hs)
   | _, _, _, _, .var hl, _, _, _, _, _, _, _, _, _, _ => by
-    simp only [Expr.gsubst]
     exact Typing.var (Gamma.lookup_gsubG hl)
   | _, _, _, _, .newObject, _, _, _, _, _, _, _, _, _, _ => by
-    simp only [Expr.gsubst, Expr.gsubstList, Ty.substList, Ty.subst]
     exact Typing.newObject
   | _, _, _, _, .declField h1 h2 h3 h4, s, _, _, hg, hdis, n1, sc, hn, ht, hu => by
-    simp only [Expr.noShadow, Expr.tbinders, NoThis, Expr.vbinders, Expr.uniq] at hn hdis ht hu
     have ih := Typing.gsub hwf hok hd h1 hg hdis n1 sc hn ht hu
-    simp only [Ty.subst] at ih
-    simp only [Expr.gsubst]
     rw [subst_bind_comp h4 (field_closed hok h2 h3)]
     exact Typing.declField ih h2 h3 (by rw [substList_length, h4])
   | _, _, _, _, .call (Delta0 := Delta0) (Delta1 := Delta1) (Ts2 := Ts2) (Ts1 := Ts1) h1 h2 h3 h4 h5 h6 h7 h8 h9, s, _, _,
@@ -32,13 +27,10 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
       not_or, Expr.uniq] at hn hdis ht hu
     have hcl := methodIn_closed hwf hok h2 h3
     have ih1 := Typing.gsub hwf hok hd h1 hg (fun X hX => hdis X (Or.inl hX)) n1 sc hn.1 ht.1 hu.1
-    simp only [Ty.subst] at ih1
     have ih2 := TypingSeq.gsub hwf hok hd h9 hg (fun X hX => hdis X (Or.inr hX)) n1 sc hn.2 ht.2 hu.2
     have hlen : (Ts2 ++ Ts1).length = (Delta0 ++ Delta1).length := by simp [h4, h5]
     have e6 := congrArg (Ty.substList s.ty) h6
     rw [substList_bind_comp hlen hcl.1, substList_app] at e6
-    simp only [Ty.substList] at e6
-    simp only [Expr.gsubst]
     refine Typing.call ih1 (by have := Scope.subst (s := s.ty) h2; simpa only [Ty.subst] using this) h3
       (by rw [substList_length, h4]) (by rw [substList_length, h5]) e6
       (KindSeq.substC hd hg.substCtx h7) ?_ ih2
@@ -52,15 +44,11 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
       n1 sc (by simpa [Expr.noShadowList, Expr.noShadow] using hn)
       (by simpa [NoThis, Expr.vbindersList, Expr.vbinders] using ht)
       (by simpa [Expr.uniqList, Expr.uniq] using hu)
-    simp only [Expr.gsubstList, Ty.substList, Ty.subst] at ih
     have hlen : (Ts0 ++ Ts1).length = (D0.bounds ++ Delta1).length := by simp [h4, h5]
     have e6 := congrArg (Ty.substList s.ty) h6
     rw [substList_bind_comp hlen hcl.1, substList_app] at e6
-    simp only [Ty.substList] at e6
     have hs1 := Sub.subst hd hg.substCtx.sub h1
     have hk8 := Kind.subst hd hg.substCtx.sub hg.substCtx.kind h8
-    simp only [Ty.subst] at hs1 hk8
-    simp only [Expr.gsubst, Ty.subst]
     refine Typing.callLbRuntime hs1 h2 h3 (by rw [substList_length, h4]) (by rw [substList_length, h5]) e6 h7 hk8
       (KindSeq.substC hd hg.substCtx h9) ?_ ih
     have := SubSeq.subst hd hg.substCtx.sub h10

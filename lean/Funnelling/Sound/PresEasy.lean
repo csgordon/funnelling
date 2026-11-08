@@ -6,7 +6,6 @@ namespace Funnelling.High
 
 theorem value_new_declared {d : Decls} (hwf : WFDecls d) {C : ClassName} {Gs : List GTy} {vs : List Value} {T : Ty}
     (h : Typing d [] [] (Value.new C Gs vs).expr T) : exists D, Declared d (.dec D) /\ D.C = C := by
-  simp only [Value.expr] at h
   rcases inv_new h rfl with h1 | h1
   . cases object_declared hwf with
     | intro D hD => exact Exists.intro D (And.intro hD.1 (by rw [hD.2.1, h1.1]))
@@ -28,7 +27,6 @@ theorem pres_addSuper {d : Decls} (hwf : WFDecls d) {C : ClassName} {m : MethNam
   have hn := hD.2
   subst hn
   have hsub := vt.1.sub
-  simp only [typeOf] at hsub
   rcases Sub.top_target hwf hD.1 hsub with ⟨D0, hD0⟩
   have hc := hD0.2
   have hscope := hw.scope
@@ -41,7 +39,6 @@ theorem pres_addSuper {d : Decls} (hwf : WFDecls d) {C : ClassName} {m : MethNam
   rw [e.1, e.2] at hsig hsubs hlen2
   have vt2 := vt.2.1
   have vk := vt.2.2
-  simp only [typeOf] at vt2 vk
   exact hw.up.typing (Typing.callLbRuntime hsub hD0.1 hmeth hlen2 hw.len1 hsig hD.1 vk hw.kinds hsubs
     (TypingSeq.cons vt2 hw.args))
 
@@ -75,7 +72,6 @@ theorem pres_searchSuper {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
       have hka := kind_dec_args hwf hD hkind
       have hK := Kind.subst hd (Delta' := []) (s := bind D.bounds (GTy.tys Gs)) (fun b hb => (hka.2 b hb).1)
         (fun b hb => (hka.2 b hb).2) hcls
-      simp only [Ty.subst] at hK hs
       rw [<- hsup] at hK hs |-
       cases hargs with
       | cons hv hrest =>
@@ -102,7 +98,6 @@ theorem pres_innerSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {Ms : L
   have vt := value_typing hwf hw.ty0
   subst hv
   have ty0 := hw.ty0
-  simp only [Value.expr] at ty0
   rcases inv_local ty0 rfl with ⟨w2, hw2⟩
   rcases consistent_unfold hw2.cons with ⟨Fs', h'⟩; cases h' with
   | intro Ts' h' => cases h' with
@@ -144,7 +139,6 @@ theorem pres_innerSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {Ms : L
           rw [pairing_ground_nil hw2.pair] at hK
           rw [<- hsup] at hK
           have hv0 := vt.2.1
-          simp only [typeOf] at hv0
           have hv1 := Typing.subs hv0 hK (Sub.subInheritLocal hDl hs2.1
             (by simp only [Ty.subst]; rw [<- hts, <- hsup]; exact Sub.subRefl))
           have hres := Typing.callLbRuntime hs3 hD0.1 hmeth hlen2 hw.len1 hsig hD'.1 hK hw.kinds hsubs
@@ -174,7 +168,6 @@ theorem pres_innerFieldSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {M
     Typing d [] [] (.field (Value.new C' Gs' vs).expr f) T := by
   rcases inv_field h rfl with ⟨w, hw⟩
   have ty := hw.ty
-  simp only [Value.expr] at ty
   rcases inv_local ty rfl with ⟨w2, hw2⟩
   rcases consistent_unfold hw2.cons with ⟨Fs', h'⟩; cases h' with
   | intro Ts' h' => cases h' with
@@ -194,7 +187,6 @@ theorem pres_innerFieldSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {M
             simp only [Ty.subst] at hs3
             rw [<- hts] at hs3
             have hnew := typing_new_exact hw2.tyNew
-            simp only [Value.expr]
             exact hw.up.typing (Typing.declField (Typing.subs hnew hs.2 hs3) hw.decl hw.mem hw.len)
 
 theorem exprs_append {vs1 vs : List Value} : Value.exprs (vs1 ++ vs) = Value.exprs vs1 ++ Value.exprs vs := by
@@ -220,7 +212,6 @@ theorem pres_simpleFieldSuper {d : Decls} (hwf : WFDecls d) {D : Dec} {f : Field
     . simp only [Ty.cls.injEq] at e
       exact absurd (K.dec.inj (Declared.unique hwf hw.decl hD e.1)) hne
     . have ty := vt.2.1
-      simp only [Value.expr] at ty
       rcases inv_new ty rfl with h1 | h1
       . exact absurd h1.1 hO
       . cases h1 with
@@ -237,7 +228,6 @@ theorem pres_simpleFieldSuper {d : Decls} (hwf : WFDecls d) {D : Dec} {f : Field
           rw [<- ev] at hsup
           have hnew := typing_new_exact hsup
           have hs3 := hs2.2
-          simp only [Ty.subst] at hs3
           exact hw.up.typing (Typing.declField (Typing.subs hnew hs.2 hs3) hw.decl hw.mem hw.len)
 
 end Funnelling.High

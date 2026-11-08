@@ -148,14 +148,12 @@ theorem RenE.gsub {rv rt a b} : RenE rv rt a b -> forall {rto s1 s2 T S}, GSEnv 
   | .var, _, _, _, _, _, _, _, _, _ => by simp only [Expr.gsubst]; exact RenE.var
   | .call h1 hs1, rto, s1, s2, T, S, env, hc, hd1, hd2 => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
-    simp only [Expr.tbinders] at hd1 hd2
     simp only [Expr.gsubst]
     rw [env.tys (all_contains_iff.mp hc.1.2)]
     exact RenE.call (RenE.gsub h1 env hc.1.1 (notDomT_append_left hd1) (notDomT_append_left hd2))
       (RenEs.gsub hs1 env hc.2 (notDomT_append_right hd1) (notDomT_append_right hd2))
   | .superCall h1 hs1, rto, s1, s2, T, S, env, hc, hd1, hd2 => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
-    simp only [Expr.tbinders] at hd1 hd2
     simp only [Expr.gsubst]
     have h2 := all_contains_iff.mp hc.1.2
     rw [env.tys (fun X hX => h2 X (List.mem_append_right _ hX)),
@@ -163,13 +161,9 @@ theorem RenE.gsub {rv rt a b} : RenE rv rt a b -> forall {rto s1 s2 T S}, GSEnv 
     exact RenE.superCall (RenE.gsub h1 env hc.1.1 (notDomT_append_left hd1) (notDomT_append_left hd2))
       (RenEs.gsub hs1 env hc.2 (notDomT_append_right hd1) (notDomT_append_right hd2))
   | .field h1, rto, s1, s2, T, S, env, hc, hd1, hd2 => by
-    simp only [Expr.closed] at hc
-    simp only [Expr.tbinders] at hd1 hd2
-    simp only [Expr.gsubst]
     exact RenE.field (RenE.gsub h1 env hc hd1 hd2)
   | .new hs1, rto, s1, s2, T, S, env, hc, hd1, hd2 => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
-    simp only [Expr.tbinders] at hd1 hd2
     simp only [Expr.gsubst]
     rw [env.tys (all_contains_iff.mp hc.1)]
     exact RenE.new (RenEs.gsub hs1 env hc.2 hd1 hd2)

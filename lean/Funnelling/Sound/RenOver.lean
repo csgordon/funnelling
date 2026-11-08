@@ -10,7 +10,6 @@ theorem Ty.ftv_subst_sub {s : TSubst} {A : List TVarName} : forall {T : Ty},
     forall X, List.Mem X (T.subst s).ftv -> List.Mem X A
   | .var Y, h, X, hX => h Y (List.Mem.head _) X hX
   | .cls C Ts, h, X, hX => by
-    simp only [Ty.subst, Ty.ftv] at hX h
     exact Ty.ftvList_subst_sub h X hX
 theorem Ty.ftvList_subst_sub {s : TSubst} {A : List TVarName} : forall {Ts : List Ty},
     (forall Y, List.Mem Y (Ty.ftvList Ts) -> forall X, List.Mem X ((Ty.var Y).subst s).ftv -> List.Mem X A) ->
@@ -86,7 +85,6 @@ theorem Sub.inv_subst {d : Decls} (hd : DeclOk d) {Delta Delta2 : Bounds} {s : T
         cases h with | intro U hU => exact hA X (ftvList_mem.mpr (Exists.intro U hU))) with
     | intro T0 h0 =>
       refine Exists.intro T0 (And.intro h0.1 (And.intro (Sub.subInherit hD hl' ?_) h0.2.2))
-      simp only [Ty.subst]
       exact h0.2.1
   | @subInheritLocal C0 Fs C' Ts' es Ms Ts0 T' hD hl _ ih =>
     intro C Ts he hA
@@ -108,7 +106,6 @@ theorem Sub.inv_subst {d : Decls} (hd : DeclOk d) {Delta Delta2 : Bounds} {s : T
       exact (subst_bindF_comp hl' (fun X hX => hcl X (ftvList_mem.mpr (Exists.intro T (And.intro hT hX))))).symm
     rcases ih heq (fun X hX => by exact hA X (ftv_bindF_sub hl' hcl X hX)) with ⟨T0, h0⟩
     refine Exists.intro T0 (And.intro h0.1 (And.intro (Sub.subInheritLocal hD hl' ?_) h0.2.2))
-    simp only [Ty.subst]
     exact h0.2.1
   | subVar _ _ _ =>
     intro C Ts he
@@ -213,7 +210,6 @@ theorem OverrideOkM.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {rv : VR
         rw [dom_renBounds hL, e, Ty.renList, Ty.renList_eq_map, hps]
     | @loc C Fs C0 Ts0 es Ms _ _ _ _ _ _ Do T0o pso eo h1 h2 h3 h4 h5 h6 =>
       have hcl := declMeth_closed hwf hok h1 h2
-      simp only [K.gvars] at hcl
       have hfst : forall X, List.Mem X (domF Fs ++ dom Do) ->
           List.Mem X ((bindF Fs Us ++ bind Do (vars (dom Dp))).map Prod.fst) := by
         intro X hX
