@@ -287,7 +287,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
     cases G with
     | cls C Hs =>
       have hG : (GTy.cls C Hs).ty = Ty.cls C (GTy.tys Hs) := rfl
-      rw [hG] at hann ⊢
+      rw [hG] at hann |-
       simp only [Ty.cls.injEq] at hann
       rcases hann with ⟨hC, hHs⟩
       subst hC

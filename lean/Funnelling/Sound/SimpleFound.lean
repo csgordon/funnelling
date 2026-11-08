@@ -306,14 +306,14 @@ theorem pres_simpleFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : 
     simp only [Method.mk.injEq] at eM
     rcases eM with ⟨eM1, eM2, _, eM4, _⟩
     subst eM1 eM2 eM4
-    have hσ : GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs')) =
+    have hsg : GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs')) =
         (dom D.bounds ++ dom Delta').zip (GTy.tys Gs ++ GTy.tys Gs') := by
       rw [gsubst_ty_bind, GTy.tys_eq_map, GTy.tys_eq_map, GTy.tys_eq_map, List.map_append]
       simp only [bind, dom_append]
     have hlenF : (GTy.tys Gs ++ GTy.tys Gs').length = (dom D.bounds ++ dom Delta').length := by
       simp [gtys_length, hG, hG', dom]
     have hvF := vars_subst hN hlenF
-    rw [<- hσ, vars_append, substList_app] at hvF
+    rw [<- hsg, vars_append, substList_app] at hvF
     have hv1 := List.append_inj hvF (by simp [substList_length, vars, dom, gtys_length, hG])
     have hcomp1 : forall L, (forall X, List.Mem X (Ty.ftvList L) -> List.Mem X (dom D.bounds)) ->
         Ty.substList (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs'))) L =
@@ -359,7 +359,7 @@ theorem pres_simpleFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : 
         List.Mem (b.X, U) ((dom D.bounds ++ dom Delta').zip (GTy.tys Gs ++ GTy.tys Gs')) ->
         (Ty.var b.X).subst (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs'))) = U := by
       intro b _ U hm
-      rw [hσ]
+      rw [hsg]
       simp only [Ty.subst, lookup_zip_nodup hN hm, Option.getD_some]
     have hbF : forall b, List.Mem b (D.bounds ++ Delta') ->
         Sub d [] ((Ty.var b.X).subst (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs'))))

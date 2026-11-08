@@ -306,24 +306,24 @@ mutual
 theorem Expr.ifVars_vb : forall (e : Expr) {y : VarName}, List.Mem y e.ifVars -> List.Mem y e.vbinders
   | .var _, _, h => by simp [Expr.ifVars] at h
   | .call e _ _ es, _, h => by
-    simp only [Expr.ifVars, Expr.vbinders, listMem_iff, List.mem_append] at h ⊢
+    simp only [Expr.ifVars, Expr.vbinders, listMem_iff, List.mem_append] at h |-
     rcases h with h | h
     . exact Or.inl (Expr.ifVars_vb e h)
     . exact Or.inr (Expr.ifVarsList_vb es h)
   | .superCall e _ _ _ es, _, h => by
-    simp only [Expr.ifVars, Expr.vbinders, listMem_iff, List.mem_append] at h ⊢
+    simp only [Expr.ifVars, Expr.vbinders, listMem_iff, List.mem_append] at h |-
     rcases h with h | h
     . exact Or.inl (Expr.ifVars_vb e h)
     . exact Or.inr (Expr.ifVarsList_vb es h)
   | .field e _, _, h => Expr.ifVars_vb e h
   | .new _ _ es, _, h => Expr.ifVarsList_vb es h
   | .newLocal _ _ _ _ es Ms, _, h => by
-    simp only [Expr.ifVars, Expr.vbinders, listMem_iff, List.mem_append] at h ⊢
+    simp only [Expr.ifVars, Expr.vbinders, listMem_iff, List.mem_append] at h |-
     rcases h with h | h
     . exact Or.inl (Expr.ifVarsList_vb es h)
     . exact Or.inr (Method.ifVarsList_vb Ms h)
   | .ifInst e0 _ _ e1 e2, _, h => by
-    simp only [Expr.ifVars, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons] at h ⊢
+    simp only [Expr.ifVars, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons] at h |-
     rcases h with ((h | h) | h) | h
     . exact Or.inl (Or.inl (Or.inl h))
     . exact Or.inl (Or.inl (Or.inr (Expr.ifVars_vb e0 h)))
@@ -333,19 +333,19 @@ theorem Expr.ifVarsList_vb : forall (es : List Expr) {y : VarName},
     List.Mem y (Expr.ifVarsList es) -> List.Mem y (Expr.vbindersList es)
   | [], _, h => by simp [Expr.ifVarsList] at h
   | e :: es, _, h => by
-    simp only [Expr.ifVarsList, Expr.vbindersList, listMem_iff, List.mem_append] at h ⊢
+    simp only [Expr.ifVarsList, Expr.vbindersList, listMem_iff, List.mem_append] at h |-
     rcases h with h | h
     . exact Or.inl (Expr.ifVars_vb e h)
     . exact Or.inr (Expr.ifVarsList_vb es h)
 theorem Method.ifVars_vb : forall (M : Method) {y : VarName}, List.Mem y M.ifVars -> List.Mem y M.vbinders
   | .mk _ _ _ _ e, _, h => by
-    simp only [Method.ifVars, Method.vbinders, listMem_iff, List.mem_append] at h ⊢
+    simp only [Method.ifVars, Method.vbinders, listMem_iff, List.mem_append] at h |-
     exact Or.inr (Expr.ifVars_vb e h)
 theorem Method.ifVarsList_vb : forall (Ms : List Method) {y : VarName},
     List.Mem y (Method.ifVarsList Ms) -> List.Mem y (Method.vbindersList Ms)
   | [], _, h => by simp [Method.ifVarsList] at h
   | M :: Ms, _, h => by
-    simp only [Method.ifVarsList, Method.vbindersList, listMem_iff, List.mem_append] at h ⊢
+    simp only [Method.ifVarsList, Method.vbindersList, listMem_iff, List.mem_append] at h |-
     rcases h with h | h
     . exact Or.inl (Method.ifVars_vb M h)
     . exact Or.inr (Method.ifVarsList_vb Ms h)
@@ -390,7 +390,7 @@ theorem meth_tys_ren {r : TRen} {Delta : Bounds} {Xs : List TVarName} {ps : List
 theorem CompEnv.varsIn {rv1 rv2 rv3 : VRen} {rt1 rt2 rt3 : TRen} {Sa Sb Ta Tb}
     (env : CompEnv rv1 rv2 rv3 rt1 rt2 rt3 Sa Sb Ta Tb) {Ys : List TVarName}
     (h : Ys.all Ta.contains = true) : (Ys.map (rn rt1)).all Tb.contains = true := by
-  rw [all_contains_iff] at h ⊢
+  rw [all_contains_iff] at h |-
   intro Y hY
   rcases List.mem_map.mp hY with ⟨X, hX, e⟩
   subst e

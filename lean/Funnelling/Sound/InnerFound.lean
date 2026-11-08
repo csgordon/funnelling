@@ -130,9 +130,9 @@ theorem pres_innerFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
   have hO' := OverrideOkM.ren (rv := []) (rt := []) hwf hok hO hF.1 (fun X hX _ => hTs0 X hX) huM
   rw [Ty.renList_id (fun _ _ => rn_nil)] at hO'
   rcases found_sig hwf hw.scope hw.meth hw.len2 hO' with ⟨eT2, h4, h5, h6⟩
-  have hσ : GSubst.ty (bind Delta' Gs') = (dom Delta').zip (GTy.tys Gs') := by rw [gsubst_ty_bind]; rfl
+  have hsg : GSubst.ty (bind Delta' Gs') = (dom Delta').zip (GTy.tys Gs') := by rw [gsubst_ty_bind]; rfl
   have hv1 : Ty.substList (GSubst.ty (bind Delta' Gs')) (vars (dom Delta')) = GTy.tys Gs' := by
-    rw [hσ]; exact vars_subst hN (by simp [gtys_length, hG', dom])
+    rw [hsg]; exact vars_subst hN (by simp [gtys_length, hG', dom])
   have hT2 : Ty.substList (GSubst.ty (bind Delta' Gs')) Ts2 = Ts2 := by
     apply Ty.substList_id
     intro X hX
@@ -178,9 +178,9 @@ theorem pres_innerFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
     have hss := hw.subs
     rw [<- hcod] at hss
     rcases bounds_sat_aux (by rw [gtys_length]; exact hG') hss hw.kinds b hb with ⟨U, hU⟩
-    rw [hσ]
+    rw [hsg]
     simp only [Ty.subst, lookup_zip_nodup hN hU.1, Option.getD_some]
-    rw [<- hσ]
+    rw [<- hsg]
     exact hU.2
   have hgok : GOk d Delta' (bind Delta' Gs') := by
     intro b hb G hl
