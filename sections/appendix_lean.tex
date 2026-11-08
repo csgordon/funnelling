@@ -43,8 +43,7 @@ The Appendix, for each piece of formalism we report the following:
 
 \subsection{The Lean Project}
 The file \texttt{lean/lean-toolchain} selects Lean 4.35.0: elan runs that version for every command in the folder \texttt{lean}.
-The project depends on Mathlib v4.35.0, which brings Batteries and Aesop; \texttt{lake exe cache get} downloads Mathlib already compiled.
-The files import only the core library of Lean.
+The project has no dependency: the files import only the core library of Lean.
 \texttt{lake build} in the folder \texttt{lean} checks all the files.
 \\[1ex]
 The Lean definitions follow the metarules of the paper as closely as Lean allows; Section~\ref{app:lean:sidebyside} compares them with the paper.
