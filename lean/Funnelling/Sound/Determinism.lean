@@ -231,7 +231,7 @@ theorem renE_if {e1 e1' e1'' : Expr} {x : VarName} {v : Value} (h1 : RenE [] [] 
     (hv : v.expr.closed [] [] = true) :
     RenE [] [] (e1'.vsubst [(x, v)]) (e1''.vsubst [(x, v)]) := by
   have hc1 : e1'.closed [] [x] = true := by
-    have := Expr.closed_of_vsubst hw1.2.2.2.2.2.2
+    have := Expr.closed_of_vsubst hw1.closed
     simpa using this
   have nt1 := noThis_of_vsubst hw1.noThis
   have nt2 := noThis_of_vsubst hw2.noThis
@@ -300,7 +300,7 @@ theorem renE_meth {M : Method} {B : Bounds} {Gs Gs' : List GTy} {v0 : Value} {vs
       rw [bind_fst (by simp [hG, f2.lenT]), dom_append]
     have hndom1 : ((this :: p1.map VarDecl.x).zip (v0 :: vs)).map Prod.fst = this :: p1.map VarDecl.x :=
       zip_map_fst (by simp [f1.lenV])
-    have hcv := Expr.closed_of_vsubst f1.wf.2.2.2.2.2.2
+    have hcv := Expr.closed_of_vsubst f1.wf.closed
     rw [hndom1] at hcv
     have hcg := Expr.closed_of_gsubst hcv
     rw [hdom1] at hcg
@@ -476,10 +476,10 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
     exact zip_unique (fields_nodup hwf (by assumption : Declared d _).dec_mem) hm hm' ▸ Fresh.refl _
   case ifThen.ifThen =>
     rename_i hf2 hd2 hd hf _
-    have hn := ha.2.2.2.2.1
+    have hn := ha.noShadow
     have hu := ha.uniq
     have ht := ha.noThis
-    have hc := ha.2.2.2.2.2.2
+    have hc := ha.closed
     simp only [Expr.noShadow, Expr.closed, Bool.and_eq_true, NoThis, Expr.vbinders, listMem_iff, List.mem_append,
       List.mem_cons, not_or] at hn ht hc
     exact fresh_if hf hf2 hd hd2 hw1 hw2 hn.1.2 hu.2.1 ht.1.2 hc.1.1.1
@@ -488,7 +488,7 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
     obtain rfl := nodup_map_inj (hwf.2.2.1 _ (classes_mem_dec hD.dec_mem)) hM hM2
       (by rw [FreshM.name hF, FreshM.name hF2])
     have hMf := hwf.method hD.dec_mem hM
-    have hc := ha.2.2.2.2.2.2
+    have hc := ha.closed
     simp only [Expr.closed, Bool.and_eq_true] at hc
     have hvals := closed_cons_vals hc.1.1 hc.2
     exact And.intro
@@ -500,7 +500,7 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
     rename_i hN hN' hgs hvs _ _ _ _ _ _ _ _ _ _ _ _ _ _ hM2 hF2 hG2 hp2 hN2 hN2' hgs2 hvs2 hF hG hp hM
     obtain rfl := nodup_map_inj (ha.1 _ (List.mem_append_left _ (List.Mem.head _))) hM hM2
       (by rw [FreshM.name hF, FreshM.name hF2])
-    have hc := ha.2.2.2.2.2.2
+    have hc := ha.closed
     simp only [Expr.closed, Bool.and_eq_true] at hc
     have hvals := closed_cons_vals hc.1.1 hc.2
     rcases WFExpr.local_method (WFExpr.plug (E := .callRecv .hole _ _ _) ha) hM with ⟨hMn, hMt, hMu, -⟩

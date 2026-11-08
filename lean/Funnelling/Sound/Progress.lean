@@ -253,7 +253,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         | mk Delta' T0 m' ps e0 =>
         subst hMn
         have hl := inner_lens hwf hM ht
-        have han := hw.2.2.2.2.1
+        have han := hw.noShadow
         simp only [Expr.noShadow, Bool.and_eq_true] at han
         have hat := WFExpr.noThis hw
         simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at hat
@@ -331,7 +331,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
       rw [hG]
       by_cases hs : exists Ts', Sub d [] (typeOf v) (.cls C' Ts')
       . rcases hs with ⟨Ts', hs⟩
-        have hn := hw.2.2.2.2.1
+        have hn := hw.noShadow
         simp only [Expr.noShadow, Bool.and_eq_true] at hn
         have hth := WFExpr.noThis hw
         simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at hth
@@ -340,7 +340,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
 
 theorem progress_step {d : Decls} {e : Expr} {T : Ty} (hwf : WFDecls d) (hok : DeclsOk d) (he : WFExpr e)
     (ht : Typing d [] [] e T) : IsValue e \/ exists e', Step d e e' := by
-  rcases decomp_closed he.2.2.2.2.2.2 with hv | ⟨E, r, hE, hr⟩
+  rcases decomp_closed he.closed with hv | ⟨E, r, hE, hr⟩
   . exact Or.inl hv
   . subst hE
     rcases typing_plug E ht with ⟨Ta, hTa, _⟩

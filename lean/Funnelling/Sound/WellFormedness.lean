@@ -330,6 +330,10 @@ theorem ECtx.closed_plug {a : Expr} {Xs : List TVarName} {xs : List VarName} :
     first | exact ih h | exact ih h.1.1 | exact ih h.1.1.1 | exact ih (Expr.closedList_mem mem_mid h.2)
           | exact ih (Expr.closedList_mem mem_mid h.1.2)
 
+theorem WFExpr.noShadow {e : Expr} (h : WFExpr e) : e.noShadow [] [] = true := h.2.2.2.2.1
+
+theorem WFExpr.closed {e : Expr} (h : WFExpr e) : e.closed [] [] = true := h.2.2.2.2.2.2
+
 theorem methods_sub {e e' : Expr} (h : forall k, List.Mem k e.locals -> List.Mem k e'.locals) :
     forall M, List.Mem M e.methods -> List.Mem M e'.methods := by
   intro M hM
@@ -350,7 +354,7 @@ theorem WFExpr.sub {e e' : Expr} (h : WFExpr e') (hl : forall k, List.Mem k e.lo
 
 theorem WFExpr.plug {E : ECtx} {a : Expr} (h : WFExpr (E.plug a)) : WFExpr a :=
   WFExpr.sub h (fun _ hk => ECtx.locals_plug hk E) (fun _ hx => ECtx.ifVars_plug hx E)
-    (ECtx.noShadow_plug E h.2.2.2.2.1) (ECtx.closed_plug E h.2.2.2.2.2.2)
+    (ECtx.noShadow_plug E h.noShadow) (ECtx.closed_plug E h.closed)
 
 theorem RenEs.mid {a b : Expr} (h : RenE [] [] a b) : forall (l r : List Expr), RenEs [] [] (l ++ a :: r) (l ++ b :: r)
   | [], r => RenEs.cons h (RenEs.refl (by intro p hp; cases hp) (by intro p hp; cases hp) r)
@@ -511,10 +515,10 @@ theorem WFExpr.noThis {e : Expr} (h : WFExpr e) : NoThis e := Expr.noThis_of h.l
 theorem WFExpr.local_method {C C' : ClassName} {Gs Gs'' : List GTy} {vs0 : List Value} {Ms : List Method} {M : Method}
     (h : WFExpr (Value.newLocal C Gs C' Gs'' vs0 Ms).expr) (hM : List.Mem M Ms) :
     M.noShadow [] [] = true /\ NoThisM M /\ M.uniq /\ M.closed [] [] = true := by
-  have hn := h.2.2.2.2.1
+  have hn := h.noShadow
   have ht := WFExpr.noThis h
   have hu := WFExpr.uniq h
-  have hc := h.2.2.2.2.2.2
+  have hc := h.closed
   simp only [Value.expr, Expr.noShadow, Expr.closed, Bool.and_eq_true, NoThis, Expr.vbinders, listMem_iff,
     List.mem_append, not_or, Expr.uniq] at hn ht hu hc
   exact ⟨by simpa using Method.noShadowList_mem hM hn.2, fun h => ht.2 (Method.mem_vbindersList hM h),

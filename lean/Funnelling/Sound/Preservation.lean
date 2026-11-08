@@ -292,13 +292,13 @@ theorem pres_ifThen {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
   have hc := cast_runtime hwf hok hd hU.1 hw.cast hsv hs hw.kind hk1
   rw [<- hU.2] at hc
   have hvT : Typing d [] [] v.expr (.cls C' Ts) := Typing.subs vt.2.1 hw.kind hc
-  have hn := ha.2.2.2.2.1
+  have hn := ha.noShadow
   simp only [Expr.noShadow, Bool.and_eq_true] at hn
   have hu := WFExpr.uniq ha
   have ht := WFExpr.noThis ha
   simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ht
   have hn' : e1'.noShadow [] [x] = true :=
-    Expr.noShadow_mono ((Expr.vsubst_back _ _).2.2 _ _ ha'.2.2.2.2.1) (fun _ _ hX => hX)
+    Expr.noShadow_mono ((Expr.vsubst_back _ _).2.2 _ _ ha'.noShadow) (fun _ _ hX => hX)
       (fun y hy hm => absurd hm (hdf y hy))
   have ht' : NoThis e1' := noThis_of_vsubst (WFExpr.noThis ha')
   have hu' : e1'.uniq := (Expr.vsubst_back _ _).2.1 (WFExpr.uniq ha')
@@ -321,7 +321,7 @@ theorem pres_ifThen {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
       | head => exact And.intro hn.1.1.1 (And.intro ht.1.1.2 hu.1)
       | tail _ h => cases h)
     (fun y hy => by simpa using hdf y hy) (by simp [gdom]) (fun y hy => hy)
-    (fun y hy => by simp [gsub, gdom] at hy) hn' ha'.2.2.2.2.1 ht' hu'
+    (fun y hy => by simp [gsub, gdom] at hy) hn' ha'.noShadow ht' hu'
   have eg : gsub [(x, v)] [{ T := .cls C' Ts, x := x }] = [] := by simp [gsub]
   rw [eg] at hsub
   exact hw.up.typing hsub

@@ -37,7 +37,7 @@ variable {M : Method} {B0 Delta' : Bounds} {T0 : Ty} {m : MethName} {ps : List V
 include f
 
 theorem noShadow : e0.noShadow [] (this :: ps.map VarDecl.x) = true := by
-  have hn0 := (Expr.vsubst_back _ _).2.2 _ _ f.wf.2.2.2.2.1
+  have hn0 := (Expr.vsubst_back _ _).2.2 _ _ f.wf.noShadow
   rw [Expr.noShadow_gsubst] at hn0
   exact Expr.noShadow_mono hn0 (fun _ _ hX => hX) (fun y hy hm => absurd hm (f.vdef y hy))
 
@@ -157,7 +157,7 @@ theorem typing {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) (
     (by rw [hgd]; exact f.nodupV)
     (by rw [hgd]; exact fun y hy => hy)
     (by rw [eG]; intro y hy; cases hy)
-    (by rw [Expr.noShadow_gsubst]; exact f.noShadow) f.wf.2.2.2.2.1
+    (by rw [Expr.noShadow_gsubst]; exact f.noShadow) f.wf.noShadow
     (by simpa [NoThis, Expr.vbinders_gsubst] using f.noThis) (by rw [Expr.uniq_gsubst]; exact f.uniq)
   rw [eG] at hres
   simp only [Ty.substList, List.cons.injEq] at hsig
@@ -248,7 +248,7 @@ theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
       simp only [Ty.substList, List.cons.injEq] at e1 e2
       rw [e1.1, e2.1]
       exact hka
-    refine hw.up.typing (f.typing (Ts' := Ts') hwf hok hd hG hmo' hb0 (fun b hb => ?_) ?_ ?_ hw.kinds ?_ ha.2.2.2.2.1
+    refine hw.up.typing (f.typing (Ts' := Ts') hwf hok hd hG hmo' hb0 (fun b hb => ?_) ?_ ?_ hw.kinds ?_ ha.noShadow
       (WFExpr.noThis ha) (WFExpr.uniq ha))
     . exact Kind.mono (fun x hx => List.mem_append_left _ hx) ((hok D hD.dec_mem).1 b.T (List.mem_map_of_mem (f := Bound.T) hb))
     . rw [<- h6, f.sig hG hUt h3 h4 hcl0.2]; exact hw.sig.symm
@@ -314,7 +314,7 @@ theorem pres_innerFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
     rw [hv] at this |-
     simpa [typeOf] using this
   refine hw.up.typing (f.typing (Ts' := Ts') hwf hok hd rfl hmo' (fun _ h => by cases h) (fun _ h => by cases h) ?_ ?_ hw.kinds ?_
-    ha.2.2.2.2.1 (WFExpr.noThis ha) (WFExpr.uniq ha))
+    ha.noShadow (WFExpr.noThis ha) (WFExpr.uniq ha))
   . rw [<- h6, f.sig rfl hT2 hw.len2 h4 hcl0.1]; exact hw.sig.symm
   . rw [<- h5, f.sig rfl hT2 hw.len2 h4 hcl0.2]; exact hw.subs
   . have eg : (Ty.cls C (GTy.tys Gs)).subst (GSubst.ty (bind ([] ++ Delta') ([] ++ Gs'))) = Ty.cls C (GTy.tys Gs) :=
