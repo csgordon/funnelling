@@ -1,4 +1,4 @@
-import Funnelling.Sound.PresHard
+import Funnelling.Sound.Preservation
 
 open Funnelling.SoundSimp
 
@@ -165,13 +165,6 @@ theorem Method.noShadowList_tb : forall {Ms : List Method} {Xs : List TVarName} 
     . exact Method.noShadowList_tb hn.2 X hX
 end
 
-theorem object_eq {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : Declared d (.dec D)) (hO : D.C = Object) :
-    D.bounds = [] /\ D.Ms = [] /\ D.Ss = [] := by
-  rcases object_declared hwf with ⟨D0, hD0, h1, h2, _, _, h5, h6⟩
-  have e := K.dec.inj (Declared.unique hwf hD hD0 (by show D.C = D0.C; rw [hO, h1]))
-  subst e
-  exact ⟨h2, h5, h6⟩
-
 theorem idRen_nil {A : Type} : IdRen ([] : List (Prod A A)) := by intro p hp; cases hp
 
 theorem FreshM.refl (M : Method) : FreshM M M :=
@@ -231,7 +224,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         rcases sub_from_object hwf hsv with ⟨U, hU⟩
         simp only [Ty.cls.injEq] at hU
         have hm := hw'.mem
-        rw [(object_eq hwf hw'.decl hU.1).2.2] at hm
+        rw [(Declared.object hwf hw'.decl hU.1).2.2.2.2] at hm
         cases hm
       have ht2 := vt.2.1
       rcases inv_new ht2 rfl with h1 | ⟨w2, hw2⟩
@@ -260,7 +253,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         | mk Delta' T0 m' ps e0 =>
         subst hMn
         have hl := inner_lens hwf hM ht
-        have han := hw.2.2.2.2.1
+        have han := hw.noShadow
         simp only [Expr.noShadow, Bool.and_eq_true] at han
         have hat := WFExpr.noThis hw
         simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at hat
@@ -271,10 +264,10 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         simp only [Value.expr, Expr.noShadow, Bool.and_eq_true, Expr.vbinders, List.mem_append, not_or,
           Expr.uniq] at hv0n hv0t hv0u
         have hnM : (Method.mk Delta' T0 m' ps e0).noShadow [] [] = true := by
-          have := noShadowListM_mem hM hv0n.2
+          have := Method.noShadowList_mem hM hv0n.2
           simpa using this
-        have htM : NoThisM (Method.mk Delta' T0 m' ps e0) := fun h => hv0t.2 (vbindersListM_mem hM h)
-        have huM : (Method.mk Delta' T0 m' ps e0).uniq := uniqList_mem hM hv0u.2
+        have htM : NoThisM (Method.mk Delta' T0 m' ps e0) := fun h => hv0t.2 (Method.mem_vbindersList hM h)
+        have huM : (Method.mk Delta' T0 m' ps e0).uniq := Method.uniqList_mem hM hv0u.2
         simp only [Method.noShadow, Bool.and_eq_true, List.nil_append, List.cons_append, NoThisM, Method.vbinders,
           listMem_iff, List.mem_append, not_or, Method.uniq] at hnM htM huM
         exact ⟨_, Step.innerFound (v0 := Value.newLocal C Gs C' Gs'' vs0 Ms) rfl hM (FreshM.refl _) hl.1 hl.2
@@ -328,7 +321,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
           rcases sub_from_object hwf hs with ⟨U, hU⟩
           simp only [Ty.cls.injEq] at hU
           have hM := MethodIn.dec hwf hw'.decl0 hw'.meth
-          rw [(object_eq hwf hw'.decl0 hU.1).2.1] at hM
+          rw [(Declared.object hwf hw'.decl0 hU.1).2.2.2.1] at hM
           cases hM
         exact ⟨_, Step.searchSuper hw'.decl hm hO hkd⟩
   | ifInst v G x e1 e2 =>
@@ -338,7 +331,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
       rw [hG]
       by_cases hs : exists Ts', Sub d [] (typeOf v) (.cls C' Ts')
       . rcases hs with ⟨Ts', hs⟩
-        have hn := hw.2.2.2.2.1
+        have hn := hw.noShadow
         simp only [Expr.noShadow, Bool.and_eq_true] at hn
         have hth := WFExpr.noThis hw
         simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at hth
@@ -347,7 +340,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
 
 theorem progress_step {d : Decls} {e : Expr} {T : Ty} (hwf : WFDecls d) (hok : DeclsOk d) (he : WFExpr e)
     (ht : Typing d [] [] e T) : IsValue e \/ exists e', Step d e e' := by
-  rcases decomp_closed he.2.2.2.2.2.2 with hv | ⟨E, r, hE, hr⟩
+  rcases decomp_closed he.closed with hv | ⟨E, r, hE, hr⟩
   . exact Or.inl hv
   . subst hE
     rcases typing_plug E ht with ⟨Ta, hTa, _⟩

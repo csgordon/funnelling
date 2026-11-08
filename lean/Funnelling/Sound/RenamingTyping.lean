@@ -1,4 +1,4 @@
-import Funnelling.Sound.RenOver
+import Funnelling.Sound.RenamingEnv
 
 open Funnelling.SoundSimp
 
@@ -92,8 +92,8 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
       have hFs : forall X, List.Mem X (Ty.ftvList (abs Fs)) -> List.Mem X Xs := fun X hX => hDX X (Kind.ftv h4 X hX)
       have hTs : forall X, List.Mem X (Ty.ftvList Ts) -> List.Mem X Xs := fun X hX => hDX X (Kind.ftv h5 X hX)
       have hdisM : forall M, List.Mem M Ms -> forall X, List.Mem X Xs -> Not (List.Mem X (dom M.bounds)) :=
-        fun M hM X hX hm => Method.noShadow_dom (noShadowListM_mem hM hn.2) X hm hX
-      have huM : forall M, List.Mem M Ms -> M.uniq := fun M hM => uniqList_mem hM hu.2
+        fun M hM X hX hm => Method.noShadow_dom (Method.noShadowList_mem hM hn.2) X hm hX
+      have huM : forall M, List.Mem M Ms -> M.uniq := fun M hM => Method.uniqList_mem hM hu.2
       have ih6 := Typing.ren hwf hok hd h6 (RenE.new hr1) env (by simpa [Expr.noShadow] using hn.1)
         (by simpa [Expr.noShadow] using hn'.1) (by simpa [NoThis, Expr.vbinders] using ht.1)
         (by simpa [NoThis, Expr.vbinders] using ht'.1) (by simpa [Expr.uniq] using hu.1)
@@ -116,9 +116,9 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
         rcases List.mem_map.mp hX with ⟨Y, hY⟩; rw [<- hY.2]; exact List.mem_map_of_mem (h3 Y hY.1)
       . intro M' hM'
         rcases RenMs.mem_inv hr2 hM' with ⟨M, hM⟩
-        exact MethodOk.ren hwf hok hd (h7 M hM.1) hM.2 (env.inner h2 hFs C) (noShadowListM_mem hM.1 hn.2)
-          (noShadowListM_mem hM' hn'.2) (fun h => ht.2 (vbindersListM_mem hM.1 h))
-          (fun h => ht'.2 (vbindersListM_mem hM' h)) (huM M hM.1) (uniqList_mem hM' hu'.2)
+        exact MethodOk.ren hwf hok hd (h7 M hM.1) hM.2 (env.inner h2 hFs C) (Method.noShadowList_mem hM.1 hn.2)
+          (Method.noShadowList_mem hM' hn'.2) (fun h => ht.2 (Method.mem_vbindersList hM.1 h))
+          (fun h => ht'.2 (Method.mem_vbindersList hM' h)) (huM M hM.1) (Method.uniqList_mem hM' hu'.2)
   | _, _, _, _, .ifInstanceof (x := x) h0 hk hc h1 h2, _, _, _, _, _, _, xs, _, xs', hr, env, hn, hn', ht, ht', hu,
       hu' => by
     cases hr with

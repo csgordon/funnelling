@@ -7,5 +7,3 @@ import Funnelling.Reduction
 import Funnelling.Soundness
 import Funnelling.ExampleFacts
 import Funnelling.Examples
-import Funnelling.Sound.RenTyping
-import Funnelling.Sound.GSubT

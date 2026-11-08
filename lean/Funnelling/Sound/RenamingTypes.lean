@@ -1,8 +1,128 @@
-import Funnelling.Sound.RenT
+import Funnelling.Sound.VarSubstitution
 
 open Funnelling.SoundSimp
 
 namespace Funnelling
+
+abbrev tS (rt : TRen) : TSubst := rt.map fun p => (p.1, Ty.var p.2)
+
+theorem lookup_tS {X : TVarName} : forall {rt : TRen}, (Ty.var X).subst (tS rt) = Ty.var (rn rt X)
+  | [] => rfl
+  | (a, b) :: rt => by
+    by_cases e : X = a
+    . subst e
+      simp only [tS, List.map_cons, Ty.subst]
+      rw [lookup_cons_eq, rn_cons_eq]
+      rfl
+    . have ih := @lookup_tS X rt
+      simp only [tS, List.map_cons, Ty.subst]
+      rw [lookup_cons_ne e, rn_cons_ne e]
+      exact ih
+
+mutual
+theorem Ty.ren_subst {rt : TRen} : forall (T : Ty), T.ren rt = T.subst (tS rt)
+  | .var X => by
+    rw [lookup_tS]
+    rfl
+  | .cls C Ts => by
+    simp only [Ty.ren, Ty.subst]
+    rw [Ty.renList_subst Ts]
+theorem Ty.renList_subst {rt : TRen} : forall (Ts : List Ty), Ty.renList rt Ts = Ty.substList (tS rt) Ts
+  | [] => rfl
+  | T :: Ts => by
+    simp only [Ty.renList, Ty.substList]
+    rw [Ty.ren_subst T, Ty.renList_subst Ts]
+end
+
+mutual
+theorem Ty.ftv_ren {rt : TRen} : forall (T : Ty), (T.ren rt).ftv = T.ftv.map (rn rt)
+  | .var _ => rfl
+  | .cls _ Ts => Ty.ftvList_ren Ts
+theorem Ty.ftvList_ren {rt : TRen} : forall (Ts : List Ty), Ty.ftvList (Ty.renList rt Ts) = (Ty.ftvList Ts).map (rn rt)
+  | [] => rfl
+  | T :: Ts => by
+    simp only [Ty.renList, Ty.ftvList, List.map_append]
+    rw [Ty.ftv_ren T, Ty.ftvList_ren Ts]
+end
+
+theorem Ty.ren_congr {r1 r2 : TRen} {T : Ty} (h : forall X, List.Mem X T.ftv -> rn r1 X = rn r2 X) :
+    T.ren r1 = T.ren r2 := by
+  have := Ty.ren_comp (rt1 := []) (rt2 := r1) (rt3 := r2) (T := T) (fun X hX => by rw [rn_nil]; exact h X hX)
+  rwa [Ty.ren_idRen (rt := []) (fun p hp => by cases hp)] at this
+
+theorem renList_length {rt : TRen} {Ts : List Ty} : (Ty.renList rt Ts).length = Ts.length := by
+  rw [Ty.renList_eq_map]; simp
+
+theorem renList_append {rt : TRen} {Ts Us : List Ty} :
+    Ty.renList rt (Ts ++ Us) = Ty.renList rt Ts ++ Ty.renList rt Us := by
+  simp [Ty.renList_eq_map]
+
+theorem renList_bind {rt : TRen} {Dl : Bounds} {Us Ts : List Ty} (hl : Us.length = Dl.length)
+    (hT : forall X, List.Mem X (Ty.ftvList Ts) -> List.Mem X (dom Dl)) :
+    Ty.renList rt (Ty.substList (bind Dl Us) Ts) = Ty.substList (bind Dl (Ty.renList rt Us)) Ts := by
+  rw [Ty.renList_subst, Ty.renList_subst]
+  exact substList_bind_comp hl hT
+
+theorem ren_bind {rt : TRen} {Dl : Bounds} {Us : List Ty} {T : Ty} (hl : Us.length = Dl.length)
+    (hT : forall X, List.Mem X T.ftv -> List.Mem X (dom Dl)) :
+    (T.subst (bind Dl Us)).ren rt = T.subst (bind Dl (Ty.renList rt Us)) := by
+  rw [Ty.ren_subst, Ty.renList_subst]
+  exact subst_bind_comp hl hT
+
+abbrev BRen (rt : TRen) (Delta Delta' : Bounds) : Prop :=
+  forall b, List.Mem b Delta -> List.Mem { X := rn rt b.X, T := b.T.ren rt } Delta'
+
+theorem BRen.ctx {rt : TRen} {Delta Delta' : Bounds} (h : BRen rt Delta Delta') : RenCtx Delta Delta' (tS rt) :=
+  fun b hb => Exists.intro (rn rt b.X) (And.intro lookup_tS (by rw [<- Ty.ren_subst]; exact h b hb))
+
+theorem Sub.renT {d : Decls} (hd : DeclOk d) {rt : TRen} {Delta Delta' : Bounds} (hb : BRen rt Delta Delta')
+    {T1 T2 : Ty} (h : Sub d Delta T1 T2) : Sub d Delta' (T1.ren rt) (T2.ren rt) := by
+  rw [Ty.ren_subst, Ty.ren_subst]; exact Sub.subst hd hb.ctx.sub h
+
+theorem Kind.renT {d : Decls} (hd : DeclOk d) {rt : TRen} {Delta Delta' : Bounds} (hb : BRen rt Delta Delta')
+    {T : Ty} (h : Kind d Delta T) : Kind d Delta' (T.ren rt) := by
+  rw [Ty.ren_subst]; exact Kind.subst hd hb.ctx.sub hb.ctx.kind h
+
+theorem Cast.renT {d : Decls} (hd : DeclOk d) {rt : TRen} {Delta Delta' : Bounds} (hb : BRen rt Delta Delta')
+    {T1 T2 : Ty} (h : Cast d Delta T1 T2) : Cast d Delta' (T1.ren rt) (T2.ren rt) := by
+  rw [Ty.ren_subst, Ty.ren_subst]; exact Cast.ren hd hb.ctx h
+
+theorem SubSeq.renT {d : Decls} (hd : DeclOk d) {rt : TRen} {Delta Delta' : Bounds} (hb : BRen rt Delta Delta')
+    {Ts Us : List Ty} (h : SubSeq d Delta Ts Us) : SubSeq d Delta' (Ty.renList rt Ts) (Ty.renList rt Us) := by
+  rw [Ty.renList_subst, Ty.renList_subst]; exact SubSeq.subst hd hb.ctx.sub h
+
+theorem KindSeq.renT {d : Decls} (hd : DeclOk d) {rt : TRen} {Delta Delta' : Bounds} (hb : BRen rt Delta Delta')
+    {Ts : List Ty} (h : KindSeq d Delta Ts) : KindSeq d Delta' (Ty.renList rt Ts) := by
+  intro T hT
+  rw [Ty.renList_eq_map] at hT
+  rcases List.mem_map.mp hT with ⟨U, hU⟩; rw [<- hU.2]; exact Kind.renT hd hb (h U hU.1)
+
+theorem Scope.renT {d : Decls} {rt : TRen} {C : ClassName} {Ts : List Ty} {Delta0 : Bounds} {Ts0 : List Ty}
+    (h : Scope d (.cls C Ts) Delta0 Ts0) : Scope d (.cls C (Ty.renList rt Ts)) Delta0 (Ty.renList rt Ts0) := by
+  have := h.subst (s := tS rt)
+  rw [Ty.renList_subst, Ty.renList_subst]
+  exact this
+
+theorem abs_ren {rt : TRen} : forall {Fs : List Funnel}, abs (Fs.map (Funnel.ren rt)) = Ty.renList rt (abs Fs)
+  | [] => rfl
+  | F :: Fs => by
+    simp only [abs, List.map_cons, Ty.renList] at |-
+    rw [show List.map Funnel.abs (List.map (Funnel.ren rt) Fs) = abs (Fs.map (Funnel.ren rt)) from rfl, abs_ren]
+    cases F with
+    | ground G => simp only [Funnel.ren, Funnel.abs]; rw [GTy.ren_ty]; rfl
+    | funnel X => rfl
+
+theorem Pairing.renT {rt : TRen} {Delta Delta' : Bounds} (hb : BRen rt Delta Delta') {Fs : List Funnel}
+    {Ts : List Ty} {Dp : Bounds} {Tp : List Ty} (h : Pairing Delta Fs Ts Dp Tp) :
+    Pairing Delta' (Fs.map (Funnel.ren rt)) (Ty.renList rt Ts)
+      (Dp.map fun b => ({ X := rn rt b.X, T := b.T.ren rt } : Bound)) (Ty.renList rt Tp) := by
+  induction h with
+  | nil => exact Pairing.nil
+  | funnel hm _ ih => exact Pairing.funnel (hb _ hm) ih
+  | @ground G Fs Ts Delta0 Ts0 _ ih =>
+    simp only [List.map_cons, Funnel.ren, Ty.renList]
+    rw [GTy.ren_ty]
+    exact Pairing.ground ih
 
 mutual
 theorem Ty.ftv_subst_sub {s : TSubst} {A : List TVarName} : forall {T : Ty},
@@ -51,14 +171,14 @@ theorem ftv_bind_sub {Dl : Bounds} {Us : List Ty} {L : List Ty} (hl : Us.length 
     forall X, List.Mem X (Ty.ftvList (Ty.substList (bind Dl Us) L)) -> List.Mem X (Ty.ftvList Us) := by
   refine Ty.ftvList_subst_sub (fun Y hY X hX => ?_)
   cases bind_lookup_some hl (hL Y hY) with
-  | intro U hU => exact ftvList_mem.mpr (Exists.intro U (And.intro (mem_bind_snd (lookup_mem hU)) (ftv_var_subst hU hX)))
+  | intro U hU => exact Ty.mem_ftvList.mpr (Exists.intro U (And.intro (mem_bind_snd (lookup_mem hU)) (ftv_var_subst hU hX)))
 
 theorem ftv_bindF_sub {Fs : List Funnel} {Us : List Ty} {L : List Ty} (hl : Us.length = Fs.length)
     (hL : forall X, List.Mem X (Ty.ftvList L) -> List.Mem X (domF Fs)) :
     forall X, List.Mem X (Ty.ftvList (Ty.substList (bindF Fs Us) L)) -> List.Mem X (Ty.ftvList Us) := by
   refine Ty.ftvList_subst_sub (fun Y hY X hX => ?_)
   cases bindF_lookup_some hl (hL Y hY) with
-  | intro U hU => exact ftvList_mem.mpr (Exists.intro U (And.intro (mem_bindF_snd (lookup_mem hU)) (ftv_var_subst hU hX)))
+  | intro U hU => exact Ty.mem_ftvList.mpr (Exists.intro U (And.intro (mem_bindF_snd (lookup_mem hU)) (ftv_var_subst hU hX)))
 
 theorem Sub.inv_subst {d : Decls} (hd : DeclOk d) {Delta Delta2 : Bounds} {s : TSubst} {A : List TVarName}
     {T1 T' : Ty} (h : Sub d Delta T1 T') : forall {C : ClassName} {Ts : List Ty}, T1 = .cls C (Ty.substList s Ts) ->
@@ -80,8 +200,8 @@ theorem Sub.inv_subst {d : Decls} (hd : DeclOk d) {Delta Delta2 : Bounds} {s : T
         .cls D.C' (Ty.substList s (Ty.substList (bind D.bounds Ts) D.Ts)) := by
       simp only [Ty.subst]
       rw [substList_bind_comp hl' (hd.supD D hD)]
-    cases ih heq (fun X hX => ftv_bind_sub hl' (hd.supD D hD) X hX |> fun h => ftvList_mem.mp h |> fun h => by
-        cases h with | intro U hU => exact hA X (ftvList_mem.mpr (Exists.intro U hU))) with
+    cases ih heq (fun X hX => ftv_bind_sub hl' (hd.supD D hD) X hX |> fun h => Ty.mem_ftvList.mp h |> fun h => by
+        cases h with | intro U hU => exact hA X (Ty.mem_ftvList.mpr (Exists.intro U hU))) with
     | intro T0 h0 =>
       refine Exists.intro T0 (And.intro h0.1 (And.intro (Sub.subInherit hD hl' ?_) h0.2.2))
       exact h0.2.1
@@ -102,7 +222,7 @@ theorem Sub.inv_subst {d : Decls} (hd : DeclOk d) {Delta Delta2 : Bounds} {s : T
       apply List.map_congr_left
       intro T hT
       show _ = (T.subst (bindF Fs Ts)).subst s
-      exact (subst_bindF_comp hl' (fun X hX => hcl X (ftvList_mem.mpr (Exists.intro T (And.intro hT hX))))).symm
+      exact (subst_bindF_comp hl' (fun X hX => hcl X (Ty.mem_ftvList.mpr (Exists.intro T (And.intro hT hX))))).symm
     rcases ih heq (fun X hX => by exact hA X (ftv_bindF_sub hl' hcl X hX)) with ⟨T0, h0⟩
     refine Exists.intro T0 (And.intro h0.1 (And.intro (Sub.subInheritLocal hD hl' ?_) h0.2.2))
     exact h0.2.1
@@ -153,7 +273,7 @@ theorem ren_disj {Xs Ys : List TVarName} {r : TRen} {Ts : List Ty}
   rw [Ty.renList_eq_map]
   apply List.map_congr_left
   intro T hT
-  exact Ty.ren_congr (fun X hX => rn_zip_not_mem (h X (ftvList_mem.mpr (Exists.intro T (And.intro hT hX)))))
+  exact Ty.ren_congr (fun X hX => rn_zip_not_mem (h X (Ty.mem_ftvList.mpr (Exists.intro T (And.intro hT hX)))))
 
 theorem declMeth_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {k : K} (hk : Declared d k)
     {Dl : Bounds} {T0 : Ty} {m : MethName} {ps : List VarDecl} {e : Expr} (hM : List.Mem (Method.mk Dl T0 m ps e) k.Ms) :
@@ -171,99 +291,8 @@ theorem declMeth_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {k : K} 
   rw [<- hk'.2.2.gv, <- dom_append]
   refine And.intro ?_ ?_
   . intro X hX
-    rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.1 T hT.1) X hT.2
+    rcases Ty.mem_ftvList.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.1 T hT.1) X hT.2
   . intro X hX
-    rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.2.1 T hT.1) X hT.2
-
-theorem OverrideOkM.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {rv : VRen} {rt : TRen} {C : ClassName}
-    {Us : List Ty} {M M' : Method} (h : OverrideOkM d (.cls C Us) M) (hr : RenM rv rt M M')
-    (hdis : forall X, List.Mem X (Ty.ftvList Us) -> Not (List.Mem X (dom M.bounds))) (hu : M.uniq) :
-    OverrideOkM d (.cls C (Ty.renList rt Us)) M' := by
-  cases hr with
-  | @mk _ _ Dp T0p m psp ep ep' Xs' xs' hL hl hb =>
-    simp only [Method.bounds, Method.uniq] at hdis hu
-    have hcod : cod ((Dp.zip Xs').map fun p => ({ X := p.2, T := p.1.T.ren ((dom Dp).zip Xs' ++ rt) } : Bound)) =
-        (cod Dp).map (Ty.ren ((dom Dp).zip Xs' ++ rt)) := by
-      simp only [cod, List.map_map]; exact map_zip_fst (f := fun b => b.T.ren ((dom Dp).zip Xs' ++ rt)) hL
-    have hps : ((psp.zip xs').map fun p => ({ T := p.1.T.ren ((dom Dp).zip Xs' ++ rt), x := p.2 } : VarDecl)).map
-        VarDecl.T = (psp.map VarDecl.T).map (Ty.ren ((dom Dp).zip Xs' ++ rt)) := by
-      simp only [List.map_map]; exact map_zip_fst (f := fun p => p.T.ren ((dom Dp).zip Xs' ++ rt)) hl
-    have hlenD : ((Dp.zip Xs').map fun p => ({ X := p.2, T := p.1.T.ren ((dom Dp).zip Xs' ++ rt) } : Bound)).length =
-        Dp.length := by simp [hL]
-    have hvars := ren_vars (r := rt) hu.1 (by rw [hL]; simp [dom])
-    have hdisj := ren_disj (Ys := Xs') (r := rt) hdis
-    cases h with
-    | absent h1 h2 => exact OverrideOkM.absent h1 h2
-    | @dec D _ _ _ _ _ _ Do T0o pso eo h1 h2 h3 h4 h5 h6 =>
-      have hcl := declMeth_closed hwf hok h1 h2
-      simp only [K.gvars, <- dom_append] at hcl
-      have hlen : (Us ++ vars (dom Dp)).length = (D.bounds ++ Do).length := by simp [h3, h4, vars, dom]
-      have hfst := bind_fst (D := D.bounds ++ Do) hlen
-      refine OverrideOkM.dec h1 h2 (by rw [renList_length, h3]) (by rw [hlenD, h4]) ?_ ?_
-      . rw [dom_renBounds hL, hcod, <- h5, <- Ty.renList_eq_map, renList_subst_gen (fun X hX => hfst ▸ hcl.1 X hX),
-          <- bind_map, List.map_append, hvars, hdisj]
-      . have e := congrArg (Ty.renList ((dom Dp).zip Xs' ++ rt)) h6
-        rw [renList_subst_gen (fun X hX => hfst ▸ hcl.2 X hX), <- bind_map, List.map_append, hvars, hdisj] at e
-        rw [dom_renBounds hL, e, Ty.renList, Ty.renList_eq_map, hps]
-    | @loc C Fs C0 Ts0 es Ms _ _ _ _ _ _ Do T0o pso eo h1 h2 h3 h4 h5 h6 =>
-      have hcl := declMeth_closed hwf hok h1 h2
-      have hfst : forall X, List.Mem X (domF Fs ++ dom Do) ->
-          List.Mem X ((bindF Fs Us ++ bind Do (vars (dom Dp))).map Prod.fst) := by
-        intro X hX
-        simp only [listMem_iff, List.mem_append, List.map_append] at hX |-
-        rcases hX with hX | hX
-        . cases bindF_lookup_some h3 hX with
-          | intro U hU => exact Or.inl (lookup_some_mem_dom hU)
-        . exact Or.inr (by rw [bind_fst (by simp [h4, vars, dom])]; exact hX)
-      refine OverrideOkM.loc h1 h2 (by rw [renList_length, h3]) (by rw [hlenD, h4]) ?_ ?_
-      . rw [dom_renBounds hL, hcod, <- h5, <- Ty.renList_eq_map, renList_subst_gen (fun X hX => hfst X (hcl.1 X hX)),
-          List.map_append, <- bindF_map, <- bind_map, hvars, hdisj]
-      . have e := congrArg (Ty.renList ((dom Dp).zip Xs' ++ rt)) h6
-        rw [renList_subst_gen (fun X hX => hfst X (hcl.2 X hX)), List.map_append, <- bindF_map, <- bind_map, hvars,
-          hdisj] at e
-        rw [dom_renBounds hL, e, Ty.renList, Ty.renList_eq_map, hps]
-
-theorem Consistent.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {rv : VRen} {rt : TRen}
-    {C : ClassName} {Fs : List Funnel} {C0 : ClassName} {Ts : List Ty} {es es' : List Expr} {Ms Ms' : List Method}
-    (h : Consistent d (.loc C Fs C0 Ts es Ms)) (hr : RenMs rv rt Ms Ms')
-    (hdis : forall M, List.Mem M Ms -> forall X, List.Mem X (Ty.ftvList (abs Fs)) -> Not (List.Mem X (dom M.bounds)))
-    (hu : forall M, List.Mem M Ms -> M.uniq) :
-    Consistent d (.loc C (Fs.map (Funnel.ren rt)) C0 (Ty.renList rt Ts) es' Ms') := by
-  rcases consistent_unfold h with ⟨Fs', Ts', es'', Ms'', h⟩
-  have hcl := hd.supL _ _ _ _ _ _ h.1
-  refine Exists.intro Fs' (Exists.intro Ts' (Exists.intro es'' (Exists.intro Ms'' (And.intro h.1
-    (And.intro (by simp [h.2.1]) (And.intro ?_ (And.intro ?_ ?_)))))))
-  . rw [abs_ren, h.2.2.1, renList_subst_gen (fun X hX => by
-      cases bindF_lookup_some (Us := abs Fs) (by rw [abs_length]; exact h.2.1) (hcl X hX) with
-      | intro U hU => exact lookup_some_mem_dom hU), <- bindF_map, Ty.renList_eq_map]
-  . intro m; rw [RenMs.names hr]; exact h.2.2.2.1 m
-  . intro M' hM'
-    rw [abs_ren]
-    cases RenMs.mem_inv hr hM' with
-    | intro M hM => exact OverrideOkM.ren hwf hok (h.2.2.2.2 M hM.1) hM.2 (hdis M hM.1) (hu M hM.1)
-
-theorem OverrideOk.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {rv : VRen} {rt : TRen}
-    {Delta Delta' : Bounds} {C0 : ClassName} {Ts : List Ty} {Ms Ms' : List Method}
-    (h : OverrideOk d Delta (.cls C0 Ts) Ms) (hr : RenMs rv rt Ms Ms')
-    (hdis : forall M, List.Mem M Ms -> forall X, List.Mem X (Ty.ftvList Ts) -> Not (List.Mem X (dom M.bounds)))
-    (hu : forall M, List.Mem M Ms -> M.uniq) :
-    OverrideOk d Delta' (.cls C0 (Ty.renList rt Ts)) Ms' := by
-  intro M' C Ts' hM' hs
-  rcases RenMs.mem_inv hr hM' with ⟨M, hM⟩
-  rw [Ty.renList_subst] at hs
-  rcases Sub.inv_subst hd (Delta2 := Delta) (A := Ty.ftvList Ts) hs rfl (fun _ h => h) with ⟨T0, h0⟩
-  cases T0 with
-  | var X =>
-    have e := h0.1
-    rw [lookup_tS] at e
-    cases e
-  | cls C1 Us =>
-    have e := h0.1
-    simp only [Ty.subst, Ty.cls.injEq] at e
-    have e1 := e.1
-    subst e1
-    rw [e.2, <- Ty.renList_subst]
-    exact OverrideOkM.ren hwf hok (h M C Us hM.1 h0.2.1) hM.2
-      (fun X hX => hdis M hM.1 X (h0.2.2 X (by simpa [Ty.ftv] using hX))) (hu M hM.1)
+    rcases Ty.mem_ftvList.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.2.1 T hT.1) X hT.2
 
 end Funnelling

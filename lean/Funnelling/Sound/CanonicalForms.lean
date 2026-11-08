@@ -1,4 +1,4 @@
-import Funnelling.Sound.Facts
+import Funnelling.Sound.SubtypingKinding
 
 open Funnelling.SoundSimp
 
