@@ -10,6 +10,7 @@
 \newsavebox{\fitbox}
 \newcommand{\fit}[1]{\sbox{\fitbox}{#1}\ifdim\wd\fitbox>\linewidth\resizebox{\linewidth}{!}{\usebox{\fitbox}}\else\usebox{\fitbox}\fi}
 \lstdefinestyle{leanside}{language=lean,basicstyle=\scriptsize\ttfamily,breaklines=true,breakindent=1.5em,columns=fullflexible,aboveskip=0pt,belowskip=0pt}
+\DeclareFontShape{T1}{lmr}{bx}{sc}{<->ssub*cmr/bx/sc}{}
 \newenvironment{cmp}[1]{\par\medskip\noindent\begin{minipage}{\textwidth}\textbf{#1}\par\smallskip\noindent}{\end{minipage}\par}
 \newenvironment{paperside}{\begin{minipage}[t]{0.45\textwidth}\vspace{0pt}\scriptsize}{\end{minipage}\hfill}
 \newenvironment{leanside}{\begin{minipage}[t]{0.53\textwidth}\vspace{0pt}}{\end{minipage}}
