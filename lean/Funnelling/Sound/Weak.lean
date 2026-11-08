@@ -58,12 +58,11 @@ theorem innerG_dom {gamma : Gamma} {xs : List VarName} (h : Sub1 (gdom gamma) xs
   simp only [innerG, gdom, withoutThis, restrict, listMem_iff, List.map_append, List.mem_append, List.mem_map,
     List.mem_filter, List.map_cons, List.map_nil, List.mem_cons, List.not_mem_nil, or_false] at hy |-
   rcases hy with hy | hy
-  . cases hy with
-    | intro z hz =>
-      right
-      refine And.intro ?_ ?_
-      . rw [<- hz.2]; exact h _ (List.mem_map_of_mem (f := VarDecl.x) hz.1.1.1)
-      . rw [<- hz.2]; exact hz.1.2
+  . rcases hy with ⟨z, hz⟩
+    right
+    refine And.intro ?_ ?_
+    . rw [<- hz.2]; exact h _ (List.mem_map_of_mem (f := VarDecl.x) hz.1.1.1)
+    . rw [<- hz.2]; exact hz.1.2
   . left; exact hy
 
 theorem gdom_append_single {gamma : Gamma} {T : Ty} {x : VarName} :

@@ -359,19 +359,18 @@ theorem innerG_gsub_sub {s : GSubst} {gamma : Gamma} {Fs : List Funnel} {C : Cla
   simp only [innerG, gsubG, withoutThis, restrict, listMem_iff, List.map_append, List.mem_append, List.mem_map,
     List.mem_filter, List.map_cons, List.map_nil, List.mem_singleton] at hy |-
   rcases hy with hy | hy
-  . cases hy with
-    | intro z hz =>
-      refine Or.inl (And.intro (And.intro (Exists.intro z (And.intro hz.1.1.1 hz.2)) ?_) ?_)
-      . rw [<- hz.2, List.all_eq_true]
-        intro X hX
-        have hA := hz.1.1.2
-        rw [List.all_eq_true] at hA
-        have h1 := Ty.ftv_gsubst (s := s) (T := z.T) (by simpa [VarDecl.subst] using hX)
-        have h2 := hA X h1.1
-        simp only [List.contains_iff_mem] at h2 |-
-        rw [abs_gsubst]
-        exact Ty.ftvList_gsubst_back h2 h1.2
-      . rw [<- hz.2]; simpa [VarDecl.subst] using hz.1.2
+  . rcases hy with ⟨z, hz⟩
+    refine Or.inl (And.intro (And.intro (Exists.intro z (And.intro hz.1.1.1 hz.2)) ?_) ?_)
+    . rw [<- hz.2, List.all_eq_true]
+      intro X hX
+      have hA := hz.1.1.2
+      rw [List.all_eq_true] at hA
+      have h1 := Ty.ftv_gsubst (s := s) (T := z.T) (by simpa [VarDecl.subst] using hX)
+      have h2 := hA X h1.1
+      simp only [List.contains_iff_mem] at h2 |-
+      rw [abs_gsubst]
+      exact Ty.ftvList_gsubst_back h2 h1.2
+    . rw [<- hz.2]; simpa [VarDecl.subst] using hz.1.2
   . refine Or.inr ?_
     rw [hy]
     simp only [VarDecl.subst, Ty.subst, abs_gsubst]
@@ -381,21 +380,18 @@ theorem Consistent.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
     (h : Consistent d (.loc C Fs C0 Ts es Ms))
     (hdis : forall M, List.Mem M Ms -> forall X, List.Mem X (dom M.bounds) -> Not (List.Mem X (s.map Prod.fst))) :
     Consistent d (.loc C (Fs.map (Funnel.gsubst s)) C0 (Ty.substList s.ty Ts) es' (Method.gsubstList s Ms)) := by
-  rcases consistent_unfold h with ⟨Fs', h⟩; cases h with
-  | intro Ts' h => cases h with
-    | intro es'' h => cases h with
-      | intro Ms'' h =>
-        have hcl := hd.supL _ _ _ _ _ _ h.1
-        refine Exists.intro Fs' (Exists.intro Ts' (Exists.intro es'' (Exists.intro Ms'' (And.intro h.1
-          (And.intro (by simp [h.2.1]) (And.intro ?_ (And.intro ?_ ?_)))))))
-        . rw [abs_gsubst, h.2.2.1, substList_subst_gen (fun X hX => by
-            cases bindF_lookup_some (Us := abs Fs) (by rw [abs_length]; exact h.2.1) (hcl X hX) with
-            | intro U hU => exact lookup_some_mem_dom hU), <- bindF_map, <- substList_eq_map]
-        . intro m; rw [names_gsubst]; exact h.2.2.2.1 m
-        . intro M' hM'
-          rw [abs_gsubst]
-          cases gsubstList_mem hM' with
-          | intro M hM => rw [hM.2]; exact OverrideOkM.gsubst hwf hok (h.2.2.2.2 M hM.1) (hdis M hM.1)
+  rcases consistent_unfold h with ⟨Fs', Ts', es'', Ms'', h⟩
+  have hcl := hd.supL _ _ _ _ _ _ h.1
+  refine Exists.intro Fs' (Exists.intro Ts' (Exists.intro es'' (Exists.intro Ms'' (And.intro h.1
+    (And.intro (by simp [h.2.1]) (And.intro ?_ (And.intro ?_ ?_)))))))
+  . rw [abs_gsubst, h.2.2.1, substList_subst_gen (fun X hX => by
+      cases bindF_lookup_some (Us := abs Fs) (by rw [abs_length]; exact h.2.1) (hcl X hX) with
+      | intro U hU => exact lookup_some_mem_dom hU), <- bindF_map, <- substList_eq_map]
+  . intro m; rw [names_gsubst]; exact h.2.2.2.1 m
+  . intro M' hM'
+    rw [abs_gsubst]
+    cases gsubstList_mem hM' with
+    | intro M hM => rw [hM.2]; exact OverrideOkM.gsubst hwf hok (h.2.2.2.2 M hM.1) (hdis M hM.1)
 
 theorem OverrideOk.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {s : GSubst}
     {Delta Delta2 : Bounds} {C0 : ClassName} {Ts : List Ty} {Ms : List Method} (h : OverrideOk d Delta (.cls C0 Ts) Ms)
@@ -405,15 +401,14 @@ theorem OverrideOk.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
   rcases gsubstList_mem hM' with ⟨M, hM⟩
   rw [hM.2]
   rcases Sub.inv_subst hd (Delta2 := Delta) (A := Ty.ftvList Ts) hs rfl (fun _ h => h) with ⟨T0, h0⟩
-  rcases Sub.cls_target h0.2.1 rfl with ⟨C1, h1⟩; cases h1 with
-  | intro U0 e0 =>
-    subst e0
-    have e := h0.1
-    simp only [Ty.subst, Ty.cls.injEq] at e
-    have e1 := e.1
-    subst e1
-    rw [e.2]
-    exact OverrideOkM.gsubst hwf hok (h M C' U0 hM.1 h0.2.1) (hdis M hM.1)
+  rcases Sub.cls_target h0.2.1 rfl with ⟨C1, U0, e0⟩
+  subst e0
+  have e := h0.1
+  simp only [Ty.subst, Ty.cls.injEq] at e
+  have e1 := e.1
+  subst e1
+  rw [e.2]
+  exact OverrideOkM.gsubst hwf hok (h M C' U0 hM.1 h0.2.1) (hdis M hM.1)
 
 
 theorem dom_mem_tbinders {X : TVarName} : forall {M : Method}, List.Mem X (dom M.bounds) -> List.Mem X M.tbinders

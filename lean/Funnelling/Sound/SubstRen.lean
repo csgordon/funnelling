@@ -160,10 +160,9 @@ theorem RenE.vsub {rv rt a b} : RenE rv rt a b -> forall {rvo n1 n2 S T}, VSEnv 
     simp only [Expr.closed] at hc
     have hx : List.Mem x S := by simpa using hc
     rcases env.sv x hx with h | h
-    . cases h with
-      | intro v hv =>
-        simp only [Expr.vsubst, VarName.ren_eq, hv.1, hv.2]
-        exact RenE.value (env.c1 (x, v) (lookup_mem hv.1)) (rn_this env.ko)
+    . rcases h with ⟨v, hv⟩
+      simp only [Expr.vsubst, VarName.ren_eq, hv.1, hv.2]
+      exact RenE.value (env.c1 (x, v) (lookup_mem hv.1)) (rn_this env.ko)
     . simp only [Expr.vsubst, VarName.ren_eq, h.1, h.2.1]
       rw [h.2.2]
       exact RenE.var

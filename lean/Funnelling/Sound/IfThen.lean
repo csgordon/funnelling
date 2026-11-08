@@ -174,10 +174,8 @@ theorem value_declared {d : Decls} (hwf : WFDecls d) {v : Value} {T : Ty} (h : T
     | intro D hD => exact Exists.intro (.dec D) (Exists.intro (GTy.tys Gs) (And.intro hD.1 (by simp [typeOf, K.name, hD.2])))
   | newLocal C Gs C' Gs' vs Ms =>
     rcases inv_local h rfl with ⟨w, hw⟩
-    rcases consistent_unfold hw.cons with ⟨Fs', h⟩; cases h with
-    | intro Ts' h => cases h with
-      | intro es' h => cases h with
-        | intro Ms' h => exact Exists.intro _ (Exists.intro (GTy.tys Gs) (And.intro h.1 (by simp [typeOf, K.name])))
+    rcases consistent_unfold hw.cons with ⟨Fs', Ts', es', Ms', h⟩
+    exact Exists.intro _ (Exists.intro (GTy.tys Gs) (And.intro h.1 (by simp [typeOf, K.name])))
 
 theorem pres_ifThen' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {C' : ClassName}
     {Ts Ts' : List Ty} {x : VarName} {e1 e1' e2 : Expr} {v : Value} {T : Ty} (hs : Sub d [] (typeOf v) (.cls C' Ts'))
@@ -190,58 +188,57 @@ theorem pres_ifThen' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclO
     rcases vt.1 with e | e
     . rw [e]; exact Sub.subRefl
     . exact e.1
-  rcases value_declared hwf vt.2.1 with ⟨k, h⟩; cases h with
-  | intro U hU =>
-    have hk1 := vt.2.2
-    rw [hU.2] at hsv hs hk1
-    have hc := cast_runtime hwf hok hd hU.1 hw.cast hsv hs hw.kind hk1
-    rw [<- hU.2] at hc
-    have hvT : Typing d [] [] v.expr (.cls C' Ts) := Typing.subs vt.2.1 hw.kind hc
-    have hn := ha.2.2.2.2.1
-    simp only [Expr.noShadow, Bool.and_eq_true] at hn
-    have hu := WFExpr.uniq ha
-    have ht := WFExpr.noThis ha
-    simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ht
-    have hn' : e1'.noShadow [] [x] = true :=
-      Expr.noShadow_scope (Expr.noShadow_of_vsubst ha'.2.2.2.2.1)
-        (fun y hy hm => absurd hm (hdf y hy))
-    have ht' : NoThis e1' := noThis_of_vsubst (WFExpr.noThis ha')
-    have hu' : e1'.uniq := Expr.uniq_of_vsubst (WFExpr.uniq ha')
-    have hT : forall X, List.Mem X (Ty.cls C' Ts).ftv -> List.Mem X ([] : List TVarName) :=
-      fun X hX => Kind.ftv hw.kind X hX
-    have env : REnv [] [] [] [] [{ T := .cls C' Ts, x := x }] [{ T := .cls C' Ts, x := x }] [] [x] [x] :=
-      { bD := fun _ h => by cases h
-        dX := fun _ h => by cases h
-        dT := fun _ h => by cases h
-        g := fun z U hl => by rw [rn_nil, Ty.ren_id (fun _ _ => rn_nil)]; exact hl
-        gT := fun y hy X hX => by
-          cases hy with
-          | head => exact hT X hX
-          | tail _ h => cases h
-        gN := by simp [gdom]
-        gx := fun y hy => hy
-        gx' := fun y hy => hy
-        kv := fun _ h => by cases h }
-    have ty1 := hw.ty1
-    have hr := Typing.ren hwf hok hd ty1 hf.1 env hn.1.2 hn' ht.1.2 ht' hu.2.1 hu'
-    rw [Ty.ren_id (fun _ _ => rn_nil)] at hr
-    have hsub := Typing.vsub hr (n := [(x, v)]) (Xs := []) (xs := [x]) (xs' := [])
-      (fun y v' U hy hl => by
-        by_cases hyx : y = x
-        . subst hyx
-          simp [List.lookup] at hy
-          simp [Gamma.lookup] at hl
-          rw [<- hy, <- hl]
-          exact hvT
-        . rw [lookup_cons_ne hyx] at hy; cases hy)
-      (fun p hp => by
-        cases hp with
-        | head => exact And.intro hn.1.1.1 (And.intro ht.1.1.2 hu.1)
-        | tail _ h => cases h)
-      (fun y hy => by simpa using hdf y hy) (by simp [gdom]) (fun y hy => hy)
-      (fun y hy => by simp [gsub, gdom] at hy) hn' ha'.2.2.2.2.1 ht' hu'
-    have eg : gsub [(x, v)] [{ T := .cls C' Ts, x := x }] = [] := by simp [gsub]
-    rw [eg] at hsub
-    exact hw.up.typing hsub
+  rcases value_declared hwf vt.2.1 with ⟨k, U, hU⟩
+  have hk1 := vt.2.2
+  rw [hU.2] at hsv hs hk1
+  have hc := cast_runtime hwf hok hd hU.1 hw.cast hsv hs hw.kind hk1
+  rw [<- hU.2] at hc
+  have hvT : Typing d [] [] v.expr (.cls C' Ts) := Typing.subs vt.2.1 hw.kind hc
+  have hn := ha.2.2.2.2.1
+  simp only [Expr.noShadow, Bool.and_eq_true] at hn
+  have hu := WFExpr.uniq ha
+  have ht := WFExpr.noThis ha
+  simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ht
+  have hn' : e1'.noShadow [] [x] = true :=
+    Expr.noShadow_scope (Expr.noShadow_of_vsubst ha'.2.2.2.2.1)
+      (fun y hy hm => absurd hm (hdf y hy))
+  have ht' : NoThis e1' := noThis_of_vsubst (WFExpr.noThis ha')
+  have hu' : e1'.uniq := Expr.uniq_of_vsubst (WFExpr.uniq ha')
+  have hT : forall X, List.Mem X (Ty.cls C' Ts).ftv -> List.Mem X ([] : List TVarName) :=
+    fun X hX => Kind.ftv hw.kind X hX
+  have env : REnv [] [] [] [] [{ T := .cls C' Ts, x := x }] [{ T := .cls C' Ts, x := x }] [] [x] [x] :=
+    { bD := fun _ h => by cases h
+      dX := fun _ h => by cases h
+      dT := fun _ h => by cases h
+      g := fun z U hl => by rw [rn_nil, Ty.ren_id (fun _ _ => rn_nil)]; exact hl
+      gT := fun y hy X hX => by
+        cases hy with
+        | head => exact hT X hX
+        | tail _ h => cases h
+      gN := by simp [gdom]
+      gx := fun y hy => hy
+      gx' := fun y hy => hy
+      kv := fun _ h => by cases h }
+  have ty1 := hw.ty1
+  have hr := Typing.ren hwf hok hd ty1 hf.1 env hn.1.2 hn' ht.1.2 ht' hu.2.1 hu'
+  rw [Ty.ren_id (fun _ _ => rn_nil)] at hr
+  have hsub := Typing.vsub hr (n := [(x, v)]) (Xs := []) (xs := [x]) (xs' := [])
+    (fun y v' U hy hl => by
+      by_cases hyx : y = x
+      . subst hyx
+        simp [List.lookup] at hy
+        simp [Gamma.lookup] at hl
+        rw [<- hy, <- hl]
+        exact hvT
+      . rw [lookup_cons_ne hyx] at hy; cases hy)
+    (fun p hp => by
+      cases hp with
+      | head => exact And.intro hn.1.1.1 (And.intro ht.1.1.2 hu.1)
+      | tail _ h => cases h)
+    (fun y hy => by simpa using hdf y hy) (by simp [gdom]) (fun y hy => hy)
+    (fun y hy => by simp [gsub, gdom] at hy) hn' ha'.2.2.2.2.1 ht' hu'
+  have eg : gsub [(x, v)] [{ T := .cls C' Ts, x := x }] = [] := by simp [gsub]
+  rw [eg] at hsub
+  exact hw.up.typing hsub
 
 end Funnelling.High

@@ -61,16 +61,15 @@ theorem Cast.gsub {d : Decls} (hd : DeclOk d) {Delta Delta' : Bounds} {s : TSubs
   | @castVar X T T' hm _ ih =>
     rcases ih with ⟨T1, hT1⟩
     rcases hc { X := X, T := T } hm with h' | h'
-    . cases h' with
-      | intro X' hX =>
-        rcases hT1.2.2 with e | hk
-        . rw [hX.1]
-          refine Exists.intro (Ty.var X') (And.intro Sub.subRefl (And.intro ?_ (Or.inl rfl)))
-          rw [e] at hT1
-          exact Cast.castVar hX.2 hT1.2.1
-        . refine Exists.intro T1 (And.intro ?_ (And.intro hT1.2.1 (Or.inr hk)))
-          rw [hX.1]
-          exact Sub.subVar hX.2 hT1.1
+    . rcases h' with ⟨X', hX⟩
+      rcases hT1.2.2 with e | hk
+      . rw [hX.1]
+        refine Exists.intro (Ty.var X') (And.intro Sub.subRefl (And.intro ?_ (Or.inl rfl)))
+        rw [e] at hT1
+        exact Cast.castVar hX.2 hT1.2.1
+      . refine Exists.intro T1 (And.intro ?_ (And.intro hT1.2.1 (Or.inr hk)))
+        rw [hX.1]
+        exact Sub.subVar hX.2 hT1.1
     . refine Exists.intro T1 (And.intro (h'.1.trans hT1.1) (And.intro hT1.2.1 ?_))
       rcases hT1.2.2 with e | hk
       . rw [e]; exact Or.inr h'.2.2

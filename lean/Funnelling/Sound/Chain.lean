@@ -49,22 +49,21 @@ theorem chain_mem {d : Decls} (hwf : WFDecls d) {Delta : Bounds} : forall (n : N
       . simp only [Ty.cls.injEq] at e
         have e2 := K.dec.inj (Declared.unique hwf hD' hD e.1)
         rw [e2]; exact List.Mem.head _
-      . cases Declared.super hwf hD with
-        | intro D2 hD2 =>
-          have hsup := hD2.2
-          simp only [K.sup] at hsup
-          have hs3 := hs2.2
-          simp only [Ty.subst] at hs3
-          rw [<- hsup] at hs3
-          have hO' : exists D0, List.Mem D0 (superChain d n D2.C) /\ D0.C = Object := by
-            rcases hO with ⟨D0, h⟩
-            refine Exists.intro D0 (And.intro ?_ h.2)
-            cases h.1 with
-            | head => exact absurd h.2 ho
-            | tail _ h' => rw [hsup]; exact h'
-          have r := chain_mem hwf n hD2.1 hO' hD' hs3
-          rw [hsup] at r
-          exact List.Mem.tail _ r
+      . rcases Declared.super hwf hD with ⟨D2, hD2⟩
+        have hsup := hD2.2
+        simp only [K.sup] at hsup
+        have hs3 := hs2.2
+        simp only [Ty.subst] at hs3
+        rw [<- hsup] at hs3
+        have hO' : exists D0, List.Mem D0 (superChain d n D2.C) /\ D0.C = Object := by
+          rcases hO with ⟨D0, h⟩
+          refine Exists.intro D0 (And.intro ?_ h.2)
+          cases h.1 with
+          | head => exact absurd h.2 ho
+          | tail _ h' => rw [hsup]; exact h'
+        have r := chain_mem hwf n hD2.1 hO' hD' hs3
+        rw [hsup] at r
+        exact List.Mem.tail _ r
 
 theorem flatMap_disjoint {A B : Type} {f : A -> List B} : forall {l : List A}, (l.flatMap f).Nodup ->
     forall {x y : A} {b : B}, List.Mem x l -> List.Mem y l -> Not (x = y) -> List.Mem b (f x) -> List.Mem b (f y) -> False
@@ -182,22 +181,20 @@ theorem pres_fieldFound {d : Decls} (hwf : WFDecls d) {D : Dec} {f : FieldName} 
   have ty := vt.2.1
   simp only [Value.expr] at ty
   rcases inv_new ty rfl with h1 | h1
-  . cases object_declared hwf with
-    | intro D0 hD0 =>
-      have e := K.dec.inj (Declared.unique hwf hD hD0.1 (by show D.C = D0.C; rw [h1.1, hD0.2.1]))
-      rw [e, hD0.2.2.2.2.2.2] at hf
-      cases hf
-  . cases h1 with
-    | intro w3 hw3 =>
-      have e3 := K.dec.inj (Declared.unique hwf hw3.decl hD hw3.name)
-      have hsp := hw3.split
-      have hfs := hw3.fields
-      rw [e3] at hfs
-      rw [exprs_append] at hsp
-      have hl2 : (Value.exprs vs1).length = w3.es1.length := by
-        rw [hfs.length, substList_length]; simp [Value.exprs_eq_map, hl]
-      have ev := (List.append_inj hsp hl2).1
-      rw [<- ev] at hfs
-      exact hup.typing (field_typing hfs hm hmem (fields_nodup hwf hD.dec_mem))
+  . rcases object_declared hwf with ⟨D0, hD0⟩
+    have e := K.dec.inj (Declared.unique hwf hD hD0.1 (by show D.C = D0.C; rw [h1.1, hD0.2.1]))
+    rw [e, hD0.2.2.2.2.2.2] at hf
+    cases hf
+  . rcases h1 with ⟨w3, hw3⟩
+    have e3 := K.dec.inj (Declared.unique hwf hw3.decl hD hw3.name)
+    have hsp := hw3.split
+    have hfs := hw3.fields
+    rw [e3] at hfs
+    rw [exprs_append] at hsp
+    have hl2 : (Value.exprs vs1).length = w3.es1.length := by
+      rw [hfs.length, substList_length]; simp [Value.exprs_eq_map, hl]
+    have ev := (List.append_inj hsp hl2).1
+    rw [<- ev] at hfs
+    exact hup.typing (field_typing hfs hm hmem (fields_nodup hwf hD.dec_mem))
 
 end Funnelling.High

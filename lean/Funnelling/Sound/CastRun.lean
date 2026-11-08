@@ -47,30 +47,24 @@ theorem kind_chain {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
       rcases h1.loc_declared with h' | h'
       . cases h' with
         | intro D hD' => exact absurd (Declared.dec_loc hwf hD'.1 hD hD'.2.1) id
-      . cases scopeFacts hwf hok h1 with
-        | intro k' hk' =>
-          have hname : k'.name = C1 := by
-            rcases hk'.2.1 with ⟨Us, hUs⟩; simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
-          have ek := Declared.unique hwf hk'.1 hD hname
-          subst ek
-          have sf := hk'.2.2
-          have hall : forall F, List.Mem F Fs -> F.isFunnel = true :=
-            fun F hF => hwf.2.2.2.2.2.2.2.2.2.2 _ hD.mem F hF
-          rcases h' with ⟨Fs2, h'⟩; cases h' with
-          | intro C2 h' => cases h' with
-            | intro Ts2 h' => cases h' with
-              | intro es2 h' => cases h' with
-                | intro Ms2 h' => cases h' with
-                  | intro Dl hp =>
-                    have ek2 := Declared.unique hwf hp.1 hD rfl
-                    cases ek2
-                    have e0 := pairing_funnels hp.2 hall
-                    subst e0
-                    have hsat := bounds_sat sf.ndom h3 h4 h2
-                    have hK := Kind.subst hd (Delta' := Delta) (fun b hb => (hsat b hb).1)
-                      (fun b hb => (hsat b hb).2) (sf.supK _ _ _ _ _ _ rfl)
-                    rw [bind_eq_bindF sf.gv hall] at hK
-                    exact ih rfl hK
+      . rcases scopeFacts hwf hok h1 with ⟨k', hk'⟩
+        have hname : k'.name = C1 := by
+          rcases hk'.2.1 with ⟨Us, hUs⟩; simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
+        have ek := Declared.unique hwf hk'.1 hD hname
+        subst ek
+        have sf := hk'.2.2
+        have hall : forall F, List.Mem F Fs -> F.isFunnel = true :=
+          fun F hF => hwf.2.2.2.2.2.2.2.2.2.2 _ hD.mem F hF
+        rcases h' with ⟨Fs2, C2, Ts2, es2, Ms2, Dl, hp⟩
+        have ek2 := Declared.unique hwf hp.1 hD rfl
+        cases ek2
+        have e0 := pairing_funnels hp.2 hall
+        subst e0
+        have hsat := bounds_sat sf.ndom h3 h4 h2
+        have hK := Kind.subst hd (Delta' := Delta) (fun b hb => (hsat b hb).1)
+          (fun b hb => (hsat b hb).2) (sf.supK _ _ _ _ _ _ rfl)
+        rw [bind_eq_bindF sf.gv hall] at hK
+        exact ih rfl hK
   | subVar => cases he
 
 theorem kind_len {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {C : ClassName} {Us : List Ty} {Xs : List TVarName}
@@ -93,22 +87,16 @@ theorem kind_len {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {C : ClassName} 
       rcases h1.loc_declared with h' | h'
       . cases h' with
         | intro D hD' => exact absurd (Declared.dec_loc hwf hD'.1 hD hD'.2.1) id
-      . cases h' with
-        | intro Fs2 h' => cases h' with
-          | intro C2 h' => cases h' with
-            | intro Ts2 h' => cases h' with
-              | intro es2 h' => cases h' with
-                | intro Ms2 h' => cases h' with
-                  | intro Dl hp =>
-                    have ek2 := Declared.unique hwf hp.1 hD rfl
-                    cases ek2
-                    have hall : forall F, List.Mem F Fs -> F.isFunnel = true :=
-                      fun F hF => hwf.2.2.2.2.2.2.2.2.2.2 _ hD.mem F hF
-                    have e0 := pairing_funnels hp.2 hall
-                    rw [e0] at h3
-                    have hd := congrArg List.length hp.2.dom_eq
-                    simp only [dom, List.length_map] at hd
-                    rw [h3, hd, hlx]
+      . rcases h' with ⟨Fs2, C2, Ts2, es2, Ms2, Dl, hp⟩
+        have ek2 := Declared.unique hwf hp.1 hD rfl
+        cases ek2
+        have hall : forall F, List.Mem F Fs -> F.isFunnel = true :=
+          fun F hF => hwf.2.2.2.2.2.2.2.2.2.2 _ hD.mem F hF
+        have e0 := pairing_funnels hp.2 hall
+        rw [e0] at h3
+        have hd := congrArg List.length hp.2.dom_eq
+        simp only [dom, List.length_map] at hd
+        rw [h3, hd, hlx]
 
 theorem sub_unique {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {k : K} (hk : Declared d k) {Ts : List Ty}
     {C' : ClassName} {U1 U2 : List Ty} (h1 : Sub d Delta (.cls k.name Ts) (.cls C' U1))

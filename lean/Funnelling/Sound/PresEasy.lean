@@ -64,21 +64,20 @@ theorem pres_searchSuper {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
     have e0 := K.dec.inj (Declared.unique hwf hw.decl0 hD e.1)
     rw [e0] at hM
     exact absurd (List.mem_map_of_mem (f := Method.name) hM) hm
-  . cases Declared.super hwf hD with
-    | intro D' hD' =>
-      have hsup := hD'.2
-      simp only [K.sup] at hsup
-      have hcls := (hok D hD.dec_mem).2.1 _ (List.Mem.head _)
-      have hka := kind_dec_args hwf hD hkind
-      have hK := Kind.subst hd (Delta' := []) (s := bind D.bounds (GTy.tys Gs)) (fun b hb => (hka.2 b hb).1)
-        (fun b hb => (hka.2 b hb).2) hcls
-      rw [<- hsup] at hK hs |-
-      cases hargs with
-      | cons hv hrest =>
-        have hv' := Typing.subs hv hK (Sub.subInherit hD (by rw [gtys_length, hG])
-          (by simp only [Ty.subst]; rw [<- hsup]; exact Sub.subRefl))
-        exact hw.up.typing (Typing.callLbRuntime hs.2 hw.decl0 hw.meth hw.len0 hw.len1 hw.sig hD'.1 hK
-          hw.kinds hw.subs (TypingSeq.cons hv' hrest))
+  . rcases Declared.super hwf hD with ⟨D', hD'⟩
+    have hsup := hD'.2
+    simp only [K.sup] at hsup
+    have hcls := (hok D hD.dec_mem).2.1 _ (List.Mem.head _)
+    have hka := kind_dec_args hwf hD hkind
+    have hK := Kind.subst hd (Delta' := []) (s := bind D.bounds (GTy.tys Gs)) (fun b hb => (hka.2 b hb).1)
+      (fun b hb => (hka.2 b hb).2) hcls
+    rw [<- hsup] at hK hs |-
+    cases hargs with
+    | cons hv hrest =>
+      have hv' := Typing.subs hv hK (Sub.subInherit hD (by rw [gtys_length, hG])
+        (by simp only [Ty.subst]; rw [<- hsup]; exact Sub.subRefl))
+      exact hw.up.typing (Typing.callLbRuntime hs.2 hw.decl0 hw.meth hw.len0 hw.len1 hw.sig hD'.1 hK
+        hw.kinds hw.subs (TypingSeq.cons hv' hrest))
 
 theorem consistent_unfold {d : Decls} {C : ClassName} {Fs : List Funnel} {C0 : ClassName} {Ts : List Ty}
     {es : List Expr} {Ms : List Method} (h : Consistent d (.loc C Fs C0 Ts es Ms)) :
@@ -99,62 +98,58 @@ theorem pres_innerSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {Ms : L
   subst hv
   have ty0 := hw.ty0
   rcases inv_local ty0 rfl with ⟨w2, hw2⟩
-  rcases consistent_unfold hw2.cons with ⟨Fs', h'⟩; cases h' with
-  | intro Ts' h' => cases h' with
-    | intro es' h' => cases h' with
-      | intro Ms' hc =>
-        have hDl := hc.1
-        have hup := hw2.up
-        rw [abs_ground] at hup
-        have hne : Not (w.C0 = C) := by
-          intro e
-          have hM := MethodIn.loc hwf hDl (by rw [<- e]; exact hw.meth)
-          exact hm ((hc.2.2.2.1 m).mp (List.mem_map_of_mem (f := Method.name) hM))
-        have hsub : Sub d [] (.cls C (GTy.tys Gs0)) (.cls w.C0 w.Ts0) := by
-          rcases hup with e | hs
-          . simp only [Ty.cls.injEq] at e; exact absurd e.1.symm hne
-          . exact hs.1
-        rcases Sub.loc_step hwf hDl hsub with e | hs2
-        . simp only [Ty.cls.injEq] at e; exact absurd e.1 hne
-        . have hts := hc.2.2.1
-          rw [abs_ground] at hts
-          have hs3 := hs2.2
-          simp only [Ty.subst] at hs3
-          rw [<- hts] at hs3
-          rcases Declared.super hwf hDl with ⟨D', hD'⟩
-          have hsup := hD'.2
-          simp only [K.sup] at hsup
-          rw [<- hsup] at hs3
-          rcases Sub.top_target hwf hD'.1 hs3 with ⟨D0, hD0⟩
-          have hcC := hD0.2
-          have hscope := hw.scope
-          have hmeth := hw.meth
-          rw [<- hcC] at hs3 hscope hmeth
-          have e := Scope.dec_eq hwf hD0.1 hscope
-          have hsig := hw.sig
-          have hsubs := hw.subs
-          have hlen2 := hw.len2
-          rw [e.1, e.2] at hsig hsubs hlen2
-          have hK := hw2.kindS
-          rw [pairing_ground_nil hw2.pair] at hK
-          rw [<- hsup] at hK
-          have hv0 := vt.2.1
-          have hv1 := Typing.subs hv0 hK (Sub.subInheritLocal hDl hs2.1
-            (by simp only [Ty.subst]; rw [<- hts, <- hsup]; exact Sub.subRefl))
-          have hres := Typing.callLbRuntime hs3 hD0.1 hmeth hlen2 hw.len1 hsig hD'.1 hK hw.kinds hsubs
-            (TypingSeq.cons hv1 hw.args)
-          rw [hsup] at hres
-          exact hw.up.typing hres
+  rcases consistent_unfold hw2.cons with ⟨Fs', Ts', es', Ms', hc⟩
+  have hDl := hc.1
+  have hup := hw2.up
+  rw [abs_ground] at hup
+  have hne : Not (w.C0 = C) := by
+    intro e
+    have hM := MethodIn.loc hwf hDl (by rw [<- e]; exact hw.meth)
+    exact hm ((hc.2.2.2.1 m).mp (List.mem_map_of_mem (f := Method.name) hM))
+  have hsub : Sub d [] (.cls C (GTy.tys Gs0)) (.cls w.C0 w.Ts0) := by
+    rcases hup with e | hs
+    . simp only [Ty.cls.injEq] at e; exact absurd e.1.symm hne
+    . exact hs.1
+  rcases Sub.loc_step hwf hDl hsub with e | hs2
+  . simp only [Ty.cls.injEq] at e; exact absurd e.1 hne
+  . have hts := hc.2.2.1
+    rw [abs_ground] at hts
+    have hs3 := hs2.2
+    simp only [Ty.subst] at hs3
+    rw [<- hts] at hs3
+    rcases Declared.super hwf hDl with ⟨D', hD'⟩
+    have hsup := hD'.2
+    simp only [K.sup] at hsup
+    rw [<- hsup] at hs3
+    rcases Sub.top_target hwf hD'.1 hs3 with ⟨D0, hD0⟩
+    have hcC := hD0.2
+    have hscope := hw.scope
+    have hmeth := hw.meth
+    rw [<- hcC] at hs3 hscope hmeth
+    have e := Scope.dec_eq hwf hD0.1 hscope
+    have hsig := hw.sig
+    have hsubs := hw.subs
+    have hlen2 := hw.len2
+    rw [e.1, e.2] at hsig hsubs hlen2
+    have hK := hw2.kindS
+    rw [pairing_ground_nil hw2.pair] at hK
+    rw [<- hsup] at hK
+    have hv0 := vt.2.1
+    have hv1 := Typing.subs hv0 hK (Sub.subInheritLocal hDl hs2.1
+      (by simp only [Ty.subst]; rw [<- hts, <- hsup]; exact Sub.subRefl))
+    have hres := Typing.callLbRuntime hs3 hD0.1 hmeth hlen2 hw.len1 hsig hD'.1 hK hw.kinds hsubs
+      (TypingSeq.cons hv1 hw.args)
+    rw [hsup] at hres
+    exact hw.up.typing hres
 
 theorem typing_new_exact {d : Decls} {Delta : Bounds} {gamma : Gamma} {C : ClassName} {Ts : List Ty}
     {es : List Expr} {T : Ty} (h : Typing d Delta gamma (.new C Ts es) T) :
     Typing d Delta gamma (.new C Ts es) (.cls C Ts) := by
   rcases inv_new h rfl with h1 | h1
   . rw [h1.1, h1.2.1, h1.2.2.1]; exact Typing.newObject
-  . cases h1 with
-    | intro w hw =>
-      rw [<- hw.name, hw.split]
-      exact Typing.newTop hw.decl hw.kind hw.len hw.fields hw.sup
+  . rcases h1 with ⟨w, hw⟩
+    rw [<- hw.name, hw.split]
+    exact Typing.newTop hw.decl hw.kind hw.len hw.fields hw.sup
 
 theorem TypingSeq.length {d : Decls} {Delta : Bounds} {gamma : Gamma} {es : List Expr} {Ts : List Ty}
     (h : TypingSeq d Delta gamma es Ts) : es.length = Ts.length := by
@@ -169,25 +164,22 @@ theorem pres_innerFieldSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {M
   rcases inv_field h rfl with ⟨w, hw⟩
   have ty := hw.ty
   rcases inv_local ty rfl with ⟨w2, hw2⟩
-  rcases consistent_unfold hw2.cons with ⟨Fs', h'⟩; cases h' with
-  | intro Ts' h' => cases h' with
-    | intro es' h' => cases h' with
-      | intro Ms' hc =>
-        have hDl := hc.1
-        have hup := hw2.up
-        rw [abs_ground] at hup
-        have hne : Not (w.D.C = C) := fun e => Declared.dec_loc hwf hw.decl hDl e
-        rcases hup with e | hs
-        . simp only [Ty.cls.injEq] at e; exact absurd e.1.symm hne
-        . rcases Sub.loc_step hwf hDl hs.1 with e | hs2
-          . simp only [Ty.cls.injEq] at e; exact absurd e.1 hne
-          . have hts := hc.2.2.1
-            rw [abs_ground] at hts
-            have hs3 := hs2.2
-            simp only [Ty.subst] at hs3
-            rw [<- hts] at hs3
-            have hnew := typing_new_exact hw2.tyNew
-            exact hw.up.typing (Typing.declField (Typing.subs hnew hs.2 hs3) hw.decl hw.mem hw.len)
+  rcases consistent_unfold hw2.cons with ⟨Fs', Ts', es', Ms', hc⟩
+  have hDl := hc.1
+  have hup := hw2.up
+  rw [abs_ground] at hup
+  have hne : Not (w.D.C = C) := fun e => Declared.dec_loc hwf hw.decl hDl e
+  rcases hup with e | hs
+  . simp only [Ty.cls.injEq] at e; exact absurd e.1.symm hne
+  . rcases Sub.loc_step hwf hDl hs.1 with e | hs2
+    . simp only [Ty.cls.injEq] at e; exact absurd e.1 hne
+    . have hts := hc.2.2.1
+      rw [abs_ground] at hts
+      have hs3 := hs2.2
+      simp only [Ty.subst] at hs3
+      rw [<- hts] at hs3
+      have hnew := typing_new_exact hw2.tyNew
+      exact hw.up.typing (Typing.declField (Typing.subs hnew hs.2 hs3) hw.decl hw.mem hw.len)
 
 theorem exprs_append {vs1 vs : List Value} : Value.exprs (vs1 ++ vs) = Value.exprs vs1 ++ Value.exprs vs := by
   simp [Value.exprs_eq_map]
@@ -214,20 +206,19 @@ theorem pres_simpleFieldSuper {d : Decls} (hwf : WFDecls d) {D : Dec} {f : Field
     . have ty := vt.2.1
       rcases inv_new ty rfl with h1 | h1
       . exact absurd h1.1 hO
-      . cases h1 with
-        | intro w3 hw3 =>
-          have e3 := K.dec.inj (Declared.unique hwf hw3.decl hD hw3.name)
-          have hsp := hw3.split
-          have hsup := hw3.sup
-          have hfl := hw3.fields.length
-          rw [e3] at hsup hfl
-          rw [exprs_append] at hsp
-          have hl2 : (Value.exprs vs1).length = w3.es1.length := by
-            rw [hfl, substList_length]; simp [Value.exprs_eq_map, hl]
-          have ev := (List.append_inj hsp hl2).2
-          rw [<- ev] at hsup
-          have hnew := typing_new_exact hsup
-          have hs3 := hs2.2
-          exact hw.up.typing (Typing.declField (Typing.subs hnew hs.2 hs3) hw.decl hw.mem hw.len)
+      . rcases h1 with ⟨w3, hw3⟩
+        have e3 := K.dec.inj (Declared.unique hwf hw3.decl hD hw3.name)
+        have hsp := hw3.split
+        have hsup := hw3.sup
+        have hfl := hw3.fields.length
+        rw [e3] at hsup hfl
+        rw [exprs_append] at hsp
+        have hl2 : (Value.exprs vs1).length = w3.es1.length := by
+          rw [hfl, substList_length]; simp [Value.exprs_eq_map, hl]
+        have ev := (List.append_inj hsp hl2).2
+        rw [<- ev] at hsup
+        have hnew := typing_new_exact hsup
+        have hs3 := hs2.2
+        exact hw.up.typing (Typing.declField (Typing.subs hnew hs.2 hs3) hw.decl hw.mem hw.len)
 
 end Funnelling.High

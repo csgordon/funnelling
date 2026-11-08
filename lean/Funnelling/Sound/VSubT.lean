@@ -91,15 +91,12 @@ theorem names_vsubst {n : VSubst} : forall {Ms : List Method},
 theorem Consistent.vsubst {d : Decls} {n n' : VSubst} {C : ClassName} {Fs : List Funnel} {C0 : ClassName}
     {Ts : List Ty} {es : List Expr} {Ms : List Method} (h : Consistent d (.loc C Fs C0 Ts es Ms)) :
     Consistent d (.loc C Fs C0 Ts (Expr.vsubstList n es) (Method.vsubstList n' Ms)) := by
-  rcases consistent_unfold h with ⟨Fs', h⟩; cases h with
-  | intro Ts' h => cases h with
-    | intro es' h => cases h with
-      | intro Ms' h =>
-        refine Exists.intro Fs' (Exists.intro Ts' (Exists.intro es' (Exists.intro Ms' (And.intro h.1
-          (And.intro h.2.1 (And.intro h.2.2.1 (And.intro ?_ ?_)))))))
-        . intro m; rw [names_vsubst]; exact h.2.2.2.1 m
-        . intro M hM
-          rcases vsubstList_mem hM with ⟨M0, hM0⟩; rw [hM0.2]; exact (h.2.2.2.2 M0 hM0.1).vsubst
+  rcases consistent_unfold h with ⟨Fs', Ts', es', Ms', h⟩
+  refine Exists.intro Fs' (Exists.intro Ts' (Exists.intro es' (Exists.intro Ms' (And.intro h.1
+    (And.intro h.2.1 (And.intro h.2.2.1 (And.intro ?_ ?_)))))))
+  . intro m; rw [names_vsubst]; exact h.2.2.2.1 m
+  . intro M hM
+    rcases vsubstList_mem hM with ⟨M0, hM0⟩; rw [hM0.2]; exact (h.2.2.2.2 M0 hM0.1).vsubst
 
 theorem OverrideOk.vsubst {d : Decls} {Delta : Bounds} {T : Ty} {n : VSubst} {Ms : List Method}
     (h : OverrideOk d Delta T Ms) : OverrideOk d Delta T (Method.vsubstList n Ms) := by

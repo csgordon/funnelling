@@ -19,17 +19,16 @@ theorem TypingSeq.mid {d Delta gamma} {x : Expr} : forall {l r : List Expr} {Ts 
 theorem append_cons_split {A : Type} {l r P Q : List A} {x : A} (h : l ++ x :: r = P ++ Q) :
     (exists r1, P = l ++ x :: r1 /\ r = r1 ++ Q) \/ (exists l2, Q = l2 ++ x :: r /\ l = P ++ l2) := by
   rcases List.append_eq_append_iff.mp h with h1 | h1
-  . cases h1 with
-    | intro a h1 =>
-      cases a with
-      | nil =>
-        right
-        exact Exists.intro [] (And.intro (by simpa using h1.2.symm) (by simpa using h1.1.symm))
-      | cons y a =>
-        left
-        simp only [List.cons_append, List.cons.injEq] at h1
-        refine Exists.intro a (And.intro ?_ h1.2.2)
-        rw [h1.1, h1.2.1]
+  . rcases h1 with ⟨a, h1⟩
+    cases a with
+    | nil =>
+      right
+      exact Exists.intro [] (And.intro (by simpa using h1.2.symm) (by simpa using h1.1.symm))
+    | cons y a =>
+      left
+      simp only [List.cons_append, List.cons.injEq] at h1
+      refine Exists.intro a (And.intro ?_ h1.2.2)
+      rw [h1.1, h1.2.1]
   . cases h1 with
     | intro c h1 => exact Or.inr (Exists.intro c (And.intro h1.2 h1.1))
 
@@ -50,21 +49,19 @@ theorem typing_new_mid {d Delta gamma} {x : Expr} : forall {C Ts l r T} {e : Exp
     have hT := he.2.1
     subst hC hT
     rcases append_cons_split hs.symm with h | h
-    . cases h with
-      | intro r1 h =>
-        rw [h.1] at h4
-        rcases TypingSeq.mid h4 with ⟨Tx, hx⟩
-        refine Exists.intro Tx (And.intro hx.1 (fun x' h' => ?_))
-        rw [h.2]
-        have e : l ++ x' :: (r1 ++ es2) = (l ++ x' :: r1) ++ es2 := by simp
-        rw [e]
-        exact Typing.newTop h1 h2 h3 (hx.2 x' h') h5
-    . cases h with
-      | intro l2 h =>
-        rcases typing_new_mid h5 (by rw [h.1]) with ⟨Tx, hx⟩
-        refine Exists.intro Tx (And.intro hx.1 (fun x' h' => ?_))
-        rw [h.2, List.append_assoc]
-        exact Typing.newTop h1 h2 h3 h4 (hx.2 x' h')
+    . rcases h with ⟨r1, h⟩
+      rw [h.1] at h4
+      rcases TypingSeq.mid h4 with ⟨Tx, hx⟩
+      refine Exists.intro Tx (And.intro hx.1 (fun x' h' => ?_))
+      rw [h.2]
+      have e : l ++ x' :: (r1 ++ es2) = (l ++ x' :: r1) ++ es2 := by simp
+      rw [e]
+      exact Typing.newTop h1 h2 h3 (hx.2 x' h') h5
+    . rcases h with ⟨l2, h⟩
+      rcases typing_new_mid h5 (by rw [h.1]) with ⟨Tx, hx⟩
+      refine Exists.intro Tx (And.intro hx.1 (fun x' h' => ?_))
+      rw [h.2, List.append_assoc]
+      exact Typing.newTop h1 h2 h3 h4 (hx.2 x' h')
   | _, _, _, _, _, _, .var .., he => by cases he
   | _, _, _, _, _, _, .declField .., he => by cases he
   | _, _, _, _, _, _, .call .., he => by cases he

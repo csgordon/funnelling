@@ -28,12 +28,11 @@ theorem value_typing {d : Decls} (hwf : WFDecls d) {v : Value} {T : Ty} (h : Typ
       subst hG hv
       rw [h1.1]
       exact And.intro h1.2.2.2 (And.intro Typing.newObject (kind_object hwf))
-    . cases h1 with
-      | intro w hw =>
-        have hn := hw.name
-        refine And.intro (by rw [<- hn]; exact hw.up) (And.intro ?_ (by rw [<- hn]; exact Kind.mono (fun _ h => h) hw.kind))
-        rw [<- hn, hw.split]
-        exact Typing.newTop hw.decl hw.kind hw.len hw.fields hw.sup
+    . rcases h1 with ⟨w, hw⟩
+      have hn := hw.name
+      refine And.intro (by rw [<- hn]; exact hw.up) (And.intro ?_ (by rw [<- hn]; exact Kind.mono (fun _ h => h) hw.kind))
+      rw [<- hn, hw.split]
+      exact Typing.newTop hw.decl hw.kind hw.len hw.fields hw.sup
   | newLocal C Gs C' Gs' vs Ms =>
     simp only [Value.expr] at h |-
     rcases inv_local h rfl with ⟨w, hw⟩

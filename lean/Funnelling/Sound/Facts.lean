@@ -58,18 +58,12 @@ theorem Scope.loc_declared {d : Decls} {Delta0 : Bounds} {Ts0 : List Ty} {C0 : C
 theorem Scope.dec_eq {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : Declared d (.dec D)) {Ts Ts0 : List Ty}
     {Delta0 : Bounds} (h : Scope d (.cls D.C Ts) Delta0 Ts0) : Delta0 = D.bounds /\ Ts0 = Ts := by
   rcases h.loc_declared with h' | h'
-  . cases h' with
-    | intro D' h' =>
-      have e := Declared.unique hwf h'.1 hD h'.2.1
-      cases e
-      exact h'.2.2
-  . cases h' with
-    | intro Fs h' => cases h' with
-      | intro C' h' => cases h' with
-        | intro Ts' h' => cases h' with
-          | intro es h' => cases h' with
-            | intro Ms h' => cases h' with
-              | intro Delta h' => exact absurd (Declared.dec_loc hwf hD h'.1 rfl) id
+  . rcases h' with ⟨D', h'⟩
+    have e := Declared.unique hwf h'.1 hD h'.2.1
+    cases e
+    exact h'.2.2
+  . rcases h' with ⟨Fs, C', Ts', es, Ms, Delta, h'⟩
+    exact absurd (Declared.dec_loc hwf hD h'.1 rfl) id
 
 theorem find_some {A : Type} {p : A -> Bool} : forall {l : List A} {x : A}, l.find? p = some x ->
     List.Mem x l /\ p x = true

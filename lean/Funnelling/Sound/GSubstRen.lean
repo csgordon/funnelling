@@ -47,10 +47,9 @@ theorem GSEnv.var {rt rto : TRen} {s1 s2 : GSubst} {T : List TVarName} (env : GS
     {X : TVarName} (hX : List.Mem X T) :
     ((Ty.var X).ren rt).subst s2.ty = ((Ty.var X).subst s1.ty).ren rto := by
   rcases env.st X hX with h | h
-  . cases h with
-    | intro G hG =>
-      simp only [Ty.ren, Ty.subst, GSubst.lookup_ty, TVarName.ren_eq, hG.1, hG.2, Option.map_some,
-        Option.getD_some, GTy.ren_ty]
+  . rcases h with ⟨G, hG⟩
+    simp only [Ty.ren, Ty.subst, GSubst.lookup_ty, TVarName.ren_eq, hG.1, hG.2, Option.map_some,
+      Option.getD_some, GTy.ren_ty]
   . simp only [Ty.ren, Ty.subst, GSubst.lookup_ty, TVarName.ren_eq, h.1, h.2.1, Option.map_none,
       Option.getD_none]
     rw [h.2.2]
