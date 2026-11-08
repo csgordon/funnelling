@@ -473,19 +473,13 @@ theorem Typing.gsub_newLocal {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd
     rw [hM.2]
     have hnM := noShadowListM_mem hM.1 hn.2
     have htM : NoThisM M := fun h => ht.2 (vbindersListM_mem hM.1 h)
-    have sc2 : Sub1 (gdom (gsubG s gamma)) xs := by rw [gdom_gsubG]; exact sc
-    refine MethodOk.weak (ih7 M hM.1) (fun _ h => h) innerG_gsub_sub
-      (by rw [gdom_gsubG]; exact innerG_nodup n1 _ _)
-      (innerG_nodup (by rw [gdom_gsubG]; exact n1) _ _)
-      (by rw [gdom_gsubG]; exact innerG_dom sc _ _)
-      (by rw [Method.noShadow_gsubst]; exact hnM) ?_
+    have hmo := MethodOk.vmap (ih7 M hM.1) (n := []) (fun _ h => h) (fun y hy => innerG_gsub_sub y (List.mem_filter.mp hy).1)
+      (innerG_nodup (by rw [gdom_gsubG]; exact n1) _ _) (fun _ _ _ h => by cases h) (fun _ _ h => by cases h)
+      (by rw [gdom_gsubG]; exact innerG_nodup n1 _ _) (by rw [gdom_gsubG]; exact innerG_dom sc _ _)
+      (innerG_dom (by rw [gdom_gsubG]; exact sc) _ _) (by rw [Method.noShadow_gsubst]; exact hnM)
+      (by rw [Method.vsubst_nil, Method.noShadow_gsubst]; exact hnM)
       (by simp only [NoThisM]; rw [Method.vbinders_gsubst]; exact htM)
-      (by rw [Method.uniq_gsubst]; exact uniqList_mem hM.1 hu.2)
-    intro y hy hm
-    rw [Method.vbinders_gsubst] at hy
-    have hyt : Not (y = this) := fun e => htM (e ▸ hy)
-    cases innerG_dom sc2 (Fs.map (Funnel.gsubst s)) C y hm with
-    | head => exact hyt rfl
-    | tail _ h => exact Method.noShadow_binders hnM htM y hy h
+      (by rw [Method.uniq_gsubst]; exact uniqList_mem hM.1 hu.2) (fun _ h => by cases h)
+    rwa [Method.vsubst_nil] at hmo
 
 end Funnelling.High
