@@ -1,4 +1,4 @@
-import Funnelling.Sound.PresHard
+import Funnelling.Sound.WFStep
 
 open Funnelling.SoundSimp
 
@@ -20,7 +20,9 @@ theorem preservationH {d : Decls} {e e' : Expr} {T : Ty} (hwf : WFDecls d) (hok 
 
 theorem progressH {d : Decls} {e : Expr} {T : Ty} (hwf : WFDecls d) (hok : DeclsOk d) (he : WFExpr e)
     (ht : Typing d [] [] e T) : IsValue e \/ exists e', Reduces d e e' := by
-  sorry
+  rcases progress_step hwf hok he ht with hv | ⟨e', hs⟩
+  . exact Or.inl hv
+  . exact Or.inr (wf_step hwf hok he hs)
 
 theorem typeSoundnessH {d e0 e T} (hwf : WFDecls d) (hok : DeclsOk d) (he0 : WFExpr e0)
     (ht : Typing d [] [] e0 T) (hs : Steps d e0 e) :
