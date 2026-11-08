@@ -8,3 +8,4 @@ import Funnelling.Proof
 import Funnelling.Soundness
 import Funnelling.Examples
 import Funnelling.Sound.RenTyping
+import Funnelling.Sound.GSubT
