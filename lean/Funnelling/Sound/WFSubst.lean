@@ -254,6 +254,225 @@ theorem Method.closedList_vsubst : forall {Ms : List Method} {n : VSubst} {T : L
     exact ⟨Method.closed_vsubst hc.1 hn, Method.closedList_vsubst hc.2 hn⟩
 end
 
+mutual
+theorem Expr.ifVars_gsubst {s : GSubst} : forall (e : Expr), (e.gsubst s).ifVars = e.ifVars
+  | .var _ => rfl
+  | .call e _ _ es => by simp only [Expr.gsubst, Expr.ifVars, Expr.ifVars_gsubst e, Expr.ifVarsList_gsubst es]
+  | .superCall e _ _ _ es => by simp only [Expr.gsubst, Expr.ifVars, Expr.ifVars_gsubst e, Expr.ifVarsList_gsubst es]
+  | .field e _ => by simp only [Expr.gsubst, Expr.ifVars, Expr.ifVars_gsubst e]
+  | .new _ _ es => by simp only [Expr.gsubst, Expr.ifVars, Expr.ifVarsList_gsubst es]
+  | .newLocal _ _ _ _ es Ms => by
+    simp only [Expr.gsubst, Expr.ifVars, Expr.ifVarsList_gsubst es, Method.ifVarsList_gsubst Ms]
+  | .ifInst e0 _ _ e1 e2 => by
+    simp only [Expr.gsubst, Expr.ifVars, Expr.ifVars_gsubst e0, Expr.ifVars_gsubst e1, Expr.ifVars_gsubst e2]
+theorem Expr.ifVarsList_gsubst {s : GSubst} : forall (es : List Expr),
+    Expr.ifVarsList (Expr.gsubstList s es) = Expr.ifVarsList es
+  | [] => rfl
+  | e :: es => by simp only [Expr.gsubstList, Expr.ifVarsList, Expr.ifVars_gsubst e, Expr.ifVarsList_gsubst es]
+theorem Method.ifVars_gsubst {s : GSubst} : forall (M : Method), (M.gsubst s).ifVars = M.ifVars
+  | .mk _ _ _ _ e => by simp only [Method.gsubst, Method.ifVars, Expr.ifVars_gsubst e]
+theorem Method.ifVarsList_gsubst {s : GSubst} : forall (Ms : List Method),
+    Method.ifVarsList (Method.gsubstList s Ms) = Method.ifVarsList Ms
+  | [] => rfl
+  | M :: Ms => by simp only [Method.gsubstList, Method.ifVarsList, Method.ifVars_gsubst M, Method.ifVarsList_gsubst Ms]
+end
+
+mutual
+theorem Expr.tbinders_gsubst {s : GSubst} : forall (e : Expr), (e.gsubst s).tbinders = e.tbinders
+  | .var _ => rfl
+  | .call e _ _ es => by simp only [Expr.gsubst, Expr.tbinders, Expr.tbinders_gsubst e, Expr.tbindersList_gsubst es]
+  | .superCall e _ _ _ es => by
+    simp only [Expr.gsubst, Expr.tbinders, Expr.tbinders_gsubst e, Expr.tbindersList_gsubst es]
+  | .field e _ => by simp only [Expr.gsubst, Expr.tbinders, Expr.tbinders_gsubst e]
+  | .new _ _ es => by simp only [Expr.gsubst, Expr.tbinders, Expr.tbindersList_gsubst es]
+  | .newLocal _ _ _ _ es Ms => by
+    simp only [Expr.gsubst, Expr.tbinders, Expr.tbindersList_gsubst es, Method.tbindersList_gsubst Ms]
+  | .ifInst e0 _ _ e1 e2 => by
+    simp only [Expr.gsubst, Expr.tbinders, Expr.tbinders_gsubst e0, Expr.tbinders_gsubst e1, Expr.tbinders_gsubst e2]
+theorem Expr.tbindersList_gsubst {s : GSubst} : forall (es : List Expr),
+    Expr.tbindersList (Expr.gsubstList s es) = Expr.tbindersList es
+  | [] => rfl
+  | e :: es => by simp only [Expr.gsubstList, Expr.tbindersList, Expr.tbinders_gsubst e, Expr.tbindersList_gsubst es]
+theorem Method.tbinders_gsubst {s : GSubst} : forall (M : Method), (M.gsubst s).tbinders = M.tbinders
+  | .mk _ _ _ _ e => by simp only [Method.gsubst, Method.tbinders, dom_bounds_subst, Expr.tbinders_gsubst e]
+theorem Method.tbindersList_gsubst {s : GSubst} : forall (Ms : List Method),
+    Method.tbindersList (Method.gsubstList s Ms) = Method.tbindersList Ms
+  | [] => rfl
+  | M :: Ms => by
+    simp only [Method.gsubstList, Method.tbindersList, Method.tbinders_gsubst M, Method.tbindersList_gsubst Ms]
+end
+
+theorem domF_gsubst_sub {s : GSubst} : forall (Fs : List Funnel),
+    (domF (Fs.map (Funnel.gsubst s))).Sublist (domF Fs) /\
+      forall X, List.Mem X (domF (Fs.map (Funnel.gsubst s))) -> Not (List.Mem X (s.map Prod.fst))
+  | [] => ⟨by simp [domF], fun X hX => by simp [domF] at hX⟩
+  | F :: Fs => by
+    have ih := domF_gsubst_sub (s := s) Fs
+    rw [List.map_cons, domF_cons, domF_cons (F := F)]
+    cases F with
+    | ground G =>
+      simp only [Funnel.gsubst]
+      simp only [domF, List.filterMap_cons, List.filterMap_nil, List.nil_append] at ih ⊢
+      exact ih
+    | funnel Y =>
+      cases hl : List.lookup Y s with
+      | none =>
+        simp only [Funnel.gsubst, hl, domF, List.filterMap_cons, List.filterMap_nil, List.singleton_append] at ih ⊢
+        refine ⟨List.Sublist.cons₂ _ ih.1, fun X hX => ?_⟩
+        cases hX with
+        | head => exact fun hm => by cases lookup_isSome hm with | intro v hv => rw [hv] at hl; cases hl
+        | tail _ h => exact ih.2 X h
+      | some G =>
+        simp only [Funnel.gsubst, hl, domF, List.filterMap_cons, List.filterMap_nil, List.nil_append,
+          List.singleton_append] at ih ⊢
+        exact ⟨List.Sublist.cons _ ih.1, ih.2⟩
+
+theorem KQ'.gsubst {s : GSubst} {Ms : List Method} {Fs : List Funnel} (h : KQ' Ms Fs) :
+    KQ' (Method.gsubstList s Ms) (Fs.map (Funnel.gsubst s)) := by
+  unfold KQ' at h ⊢
+  refine ⟨by rw [names_gsubst]; exact h.1, List.Nodup.sublist (domF_gsubst_sub Fs).1 h.2.1, fun M hM => ?_⟩
+  rcases gsubstList_mem hM with ⟨M0, hM0, e⟩
+  subst e
+  cases M0 with
+  | mk D T m ps b =>
+    have := h.2.2 (Method.mk D T m ps b) hM0
+    simp only [Method.gsubst, Method.params, Method.bounds, names_subst, dom_bounds_subst] at this ⊢
+    exact this
+
+mutual
+theorem Expr.kq_gsubst {s : GSubst} : forall {e : Expr}, (forall k, List.Mem k e.locals -> KQ k) ->
+    forall k, List.Mem k (e.gsubst s).locals -> KQ k
+  | .var _, _ => by intro k hk; simp [Expr.gsubst, Expr.locals] at hk
+  | .call _ _ _ _, h => by
+    simp only [Expr.gsubst, Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at h ⊢
+    exact ⟨Expr.kq_gsubst h.1, Expr.kq_gsubstList h.2⟩
+  | .superCall _ _ _ _ _, h => by
+    simp only [Expr.gsubst, Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at h ⊢
+    exact ⟨Expr.kq_gsubst h.1, Expr.kq_gsubstList h.2⟩
+  | .field _ _, h => by
+    simp only [Expr.gsubst, Expr.locals] at h ⊢
+    exact Expr.kq_gsubst h
+  | .new _ _ _, h => by
+    simp only [Expr.gsubst, Expr.locals] at h ⊢
+    exact Expr.kq_gsubstList h
+  | .newLocal _ _ _ _ _ _, h => by
+    simp only [Expr.gsubst, Expr.locals, listMem_iff, List.mem_append, List.mem_cons, or_imp, forall_and,
+      forall_eq] at h ⊢
+    exact ⟨KQ'.gsubst h.1, Expr.kq_gsubstList h.2.1, Method.kq_gsubstList h.2.2⟩
+  | .ifInst _ _ _ _ _, h => by
+    simp only [Expr.gsubst, Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at h ⊢
+    exact ⟨⟨Expr.kq_gsubst h.1.1, Expr.kq_gsubst h.1.2⟩, Expr.kq_gsubst h.2⟩
+theorem Expr.kq_gsubstList {s : GSubst} : forall {es : List Expr},
+    (forall k, List.Mem k (Expr.localsList es) -> KQ k) ->
+    forall k, List.Mem k (Expr.localsList (Expr.gsubstList s es)) -> KQ k
+  | [], _ => by intro k hk; simp [Expr.gsubstList, Expr.localsList] at hk
+  | _ :: _, h => by
+    simp only [Expr.gsubstList, Expr.localsList, listMem_iff, List.mem_append, or_imp, forall_and] at h ⊢
+    exact ⟨Expr.kq_gsubst h.1, Expr.kq_gsubstList h.2⟩
+theorem Method.kq_gsubst {s : GSubst} : forall {M : Method}, (forall k, List.Mem k M.locals -> KQ k) ->
+    forall k, List.Mem k (M.gsubst s).locals -> KQ k
+  | .mk _ _ _ _ _, h => by
+    simp only [Method.gsubst, Method.locals] at h ⊢
+    exact Expr.kq_gsubst h
+theorem Method.kq_gsubstList {s : GSubst} : forall {Ms : List Method},
+    (forall k, List.Mem k (Method.localsList Ms) -> KQ k) ->
+    forall k, List.Mem k (Method.localsList (Method.gsubstList s Ms)) -> KQ k
+  | [], _ => by intro k hk; simp [Method.gsubstList, Method.localsList] at hk
+  | _ :: _, h => by
+    simp only [Method.gsubstList, Method.localsList, listMem_iff, List.mem_append, or_imp, forall_and] at h ⊢
+    exact ⟨Method.kq_gsubst h.1, Method.kq_gsubstList h.2⟩
+end
+
+theorem all_subst_fwd {s : GSubst} {T : List TVarName} {Us : List Ty}
+    (h : (Ty.ftvList Us).all (T ++ s.map Prod.fst).contains = true) :
+    (Ty.ftvList (Ty.substList s.ty Us)).all T.contains = true := by
+  apply all_contains_iff.mpr
+  intro X hX
+  have h' := Ty.ftvList_gsubst hX
+  rcases List.mem_append.mp (all_contains_iff.mp h X h'.1) with hm | hm
+  . exact hm
+  . exact absurd hm h'.2
+
+theorem all_subst_fwd1 {s : GSubst} {T : List TVarName} {U : Ty}
+    (h : U.ftv.all (T ++ s.map Prod.fst).contains = true) : (U.subst s.ty).ftv.all T.contains = true := by
+  apply all_contains_iff.mpr
+  intro X hX
+  have h' := Ty.ftv_gsubst hX
+  rcases List.mem_append.mp (all_contains_iff.mp h X h'.1) with hm | hm
+  . exact hm
+  . exact absurd hm h'.2
+
+mutual
+theorem Expr.closed_gsubst {s : GSubst} : forall {e : Expr} {T : List TVarName} {S : List VarName},
+    e.closed (T ++ s.map Prod.fst) S = true -> (e.gsubst s).closed T S = true
+  | .var _, _, _, hc => hc
+  | .call _ _ _ _, _, _, hc => by
+    simp only [Expr.closed, Bool.and_eq_true] at hc
+    simp only [Expr.gsubst, Expr.closed, Bool.and_eq_true]
+    exact ⟨⟨Expr.closed_gsubst hc.1.1, all_subst_fwd hc.1.2⟩, Expr.closedList_gsubst hc.2⟩
+  | .superCall _ T0 Ts _ _, _, _, hc => by
+    simp only [Expr.closed, Bool.and_eq_true] at hc
+    simp only [Expr.gsubst, Expr.closed, Bool.and_eq_true]
+    exact ⟨⟨Expr.closed_gsubst hc.1.1, all_subst_fwd (Us := T0 :: Ts) hc.1.2⟩, Expr.closedList_gsubst hc.2⟩
+  | .field _ _, _, _, hc => by
+    simp only [Expr.closed] at hc
+    simp only [Expr.gsubst, Expr.closed]
+    exact Expr.closed_gsubst hc
+  | .new _ _ _, _, _, hc => by
+    simp only [Expr.closed, Bool.and_eq_true] at hc
+    simp only [Expr.gsubst, Expr.closed, Bool.and_eq_true]
+    exact ⟨all_subst_fwd hc.1, Expr.closedList_gsubst hc.2⟩
+  | .newLocal _ Fs _ Ts _ _, T, _, hc => by
+    simp only [Expr.closed, Bool.and_eq_true] at hc
+    simp only [Expr.gsubst, Expr.closed, Bool.and_eq_true]
+    refine ⟨⟨?_, Expr.closedList_gsubst hc.1.2⟩, Method.closedList_gsubst hc.2⟩
+    have h1 := hc.1.1
+    rw [List.all_append, Bool.and_eq_true] at h1 ⊢
+    refine ⟨?_, all_subst_fwd h1.2⟩
+    apply all_contains_iff.mpr
+    intro X hX
+    have hd := domF_gsubst_sub (s := s) Fs
+    rcases List.mem_append.mp (all_contains_iff.mp h1.1 X (hd.1.subset hX)) with hm | hm
+    . exact hm
+    . exact absurd hm (hd.2 X hX)
+  | .ifInst _ _ x _ _, T, S, hc => by
+    simp only [Expr.closed, Bool.and_eq_true] at hc
+    simp only [Expr.gsubst, Expr.closed, Bool.and_eq_true]
+    exact ⟨⟨⟨Expr.closed_gsubst hc.1.1.1, all_subst_fwd1 hc.1.1.2⟩, Expr.closed_gsubst hc.1.2⟩, Expr.closed_gsubst hc.2⟩
+theorem Expr.closedList_gsubst {s : GSubst} : forall {es : List Expr} {T : List TVarName} {S : List VarName},
+    Expr.closedList (T ++ s.map Prod.fst) S es = true -> Expr.closedList T S (Expr.gsubstList s es) = true
+  | [], _, _, _ => rfl
+  | _ :: _, _, _, hc => by
+    simp only [Expr.closedList, Bool.and_eq_true] at hc
+    simp only [Expr.gsubstList, Expr.closedList, Bool.and_eq_true]
+    exact ⟨Expr.closed_gsubst hc.1, Expr.closedList_gsubst hc.2⟩
+theorem Method.closed_gsubst {s : GSubst} : forall {M : Method} {T : List TVarName} {S : List VarName},
+    M.closed (T ++ s.map Prod.fst) S = true -> (M.gsubst s).closed T S = true
+  | .mk D T0 _ ps _, T, S, hc => by
+    simp only [Method.closed, Bool.and_eq_true] at hc
+    simp only [Method.gsubst, Method.closed, Bool.and_eq_true, dom_bounds_subst, names_subst]
+    have hsub : Sub1 ((T ++ s.map Prod.fst) ++ dom D) ((T ++ dom D) ++ s.map Prod.fst) := by
+      intro X hX
+      simp only [listMem_iff, List.mem_append] at hX ⊢
+      rcases hX with (hX | hX) | hX
+      . exact Or.inl (Or.inl hX)
+      . exact Or.inr hX
+      . exact Or.inl (Or.inr hX)
+    refine ⟨?_, Expr.closed_gsubst (Expr.closed_mono hc.2 hsub (fun _ h => h))⟩
+    have e : (T0.subst s.ty :: cod (Bounds.subst s.ty D) ++ (ps.map (VarDecl.subst s.ty)).map VarDecl.T) =
+        Ty.substList s.ty (T0 :: cod D ++ ps.map VarDecl.T) := by
+      rw [cod_subst, params_T_subst]; simp only [Ty.substList, substList_app, List.cons_append]
+    rw [e]
+    exact all_subst_fwd (all_contains_mono hc.1 hsub)
+theorem Method.closedList_gsubst {s : GSubst} : forall {Ms : List Method} {T : List TVarName} {S : List VarName},
+    Method.closedList (T ++ s.map Prod.fst) S Ms = true -> Method.closedList T S (Method.gsubstList s Ms) = true
+  | [], _, _, _ => rfl
+  | _ :: _, _, _, hc => by
+    simp only [Method.closedList, Bool.and_eq_true] at hc
+    simp only [Method.gsubstList, Method.closedList, Bool.and_eq_true]
+    exact ⟨Method.closed_gsubst hc.1, Method.closedList_gsubst hc.2⟩
+end
+
 abbrev VNS (n : VSubst) (VB : List VarName) (TB : List TVarName) : Prop :=
   forall p, List.Mem p n -> p.2.expr.noShadow [] [] = true /\
     (forall y, List.Mem y p.2.expr.vbinders -> List.Mem y VB) /\ (forall X, List.Mem X p.2.expr.tbinders -> List.Mem X TB)
