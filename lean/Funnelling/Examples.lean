@@ -190,7 +190,31 @@ theorem t1 : Typing d1 [] [] (.field (Value.new (cn "Box") [gA] [vA]) (fn "val")
 
 -- T2: new Box<A<>>(new B<>()) is ill typed: B<> is not a subtype of A<>.
 theorem t2 : Not (exists T, Typing d1 [] [] (Value.new (cn "Box") [gA] [vB]) T) := by
-  sorry
+  intro h
+  cases h with
+  | intro T h =>
+    cases inv_new h rfl with
+    | inl h1 => exact absurd h1.1 (by decide)
+    | inr h1 =>
+      cases h1 with
+      | intro w hw =>
+        cases w with
+        | mk D es1 es2 T'' =>
+          have hn : D.C = decBox.C := hw.name
+          have e : D = decBox := dec_unique w1 hn hw.decl (.dec (.tail _ (.tail _ (.tail _ (.head _)))))
+          subst e
+          have hf : TypingSeq d1 [] [] es1 [tA] := hw.fields
+          have hs : [vB.expr] = es1 ++ es2 := hw.split
+          cases hf with
+          | cons h2 h3 =>
+            cases h3
+            simp only [List.cons_append, List.nil_append, List.cons.injEq] at hs
+            rw [<- hs.1] at h2
+            cases (value_typing w1 h2).1 with
+            | inl e =>
+              injection e with e
+              exact absurd e (by decide)
+            | inr h4 => exact notSub [cn "B", Object] (by decide) (.head _) (by decide) h4.1
 
 def myFooK : K := .loc (cn "MyFoo") [.funnel (tn "Y")] (cn "Foo") [.var (tn "Y")] [] [myFooMethod]
 
@@ -209,8 +233,8 @@ theorem c1 : Cast d2 [{ X := tn "X", T := obj }] (tFoo (.var (tn "X"))) (.cls (c
       | tail _ h => cases h)
 
 -- C2: rule cast-down rejects the type test instanceof MyFoo<X> from Object<>.
-theorem c2 : Not (Cast d2 [{ X := tn "X", T := obj }] obj (.cls (cn "MyFoo") [.var (tn "X")])) := by
-  sorry
+theorem c2 : Not (Cast d2 [{ X := tn "X", T := obj }] obj (.cls (cn "MyFoo") [.var (tn "X")])) :=
+  castObj (by decide) (by decide) (by decide) (by decide)
 
 def brokenBody : Expr :=
   .ifInst (.var (vn "other")) (.cls (cn "MyFoo") []) (vn "w") (.var (vn "w"))
@@ -272,7 +296,22 @@ theorem w7 : WFDecls d4 := by decide
 
 -- L2: the class Leaker is not Ok.
 theorem l2 : Not (ClassOk d4 decLeaker) := by
-  sorry
+  intro h
+  have hm := h.2.2.1 _ (.head _)
+  cases hm with
+  | methodOk _ _ ht =>
+    cases inv_local ht rfl with
+    | intro w hw =>
+      have hp := hw.pair
+      have hk := hw.kindS
+      generalize w.Delta' = D' at hp hk
+      generalize w.Ts'' = Q at hp
+      cases hp
+      cases hk with
+      | wfClass _ hall _ _ =>
+        have hY : Kind d4 [] (.var (tn "Y")) := hall _ (.head _)
+        cases hY with
+        | wfVar hm => cases hm
 
 def meth (Delta : Bounds) (T0 : Ty) (m : String) (ps : List VarDecl) (e : Expr) : Method := .mk Delta T0 (mn m) ps e
 def par (T : Ty) (x : String) : VarDecl := { T := T, x := vn x }
@@ -411,7 +450,21 @@ theorem p2 : ClassOk d6F decFixed2 := by
 
 -- N4: funnelled, with other : Object<>, Example 2 is still ill typed: Object<> does not determine X.
 theorem n4 : Not (ClassOk d6F decFixed2Obj) := by
-  sorry
+  intro h
+  have hm := h.2.2.1 _ (.head _)
+  cases hm with
+  | methodOk _ _ ht =>
+    cases inv_if ht rfl with
+    | intro w hw =>
+      cases inv_var hw.ty0 rfl with
+      | intro T1 h1 =>
+        have e : some obj = some T1 := h1.1
+        injection e with e
+        subst e
+        have e2 := upObj (by decide) (by decide) h1.2
+        have hc := hw.cast
+        rw [e2] at hc
+        exact castObj (C := cn "MyFoo4") (by decide) (by decide) (by decide) (by decide) hc
 
 -- Example 6: X only in the methods of MyFoo6, and in the captured f.
 
@@ -490,11 +543,42 @@ theorem w12 : WFDecls d8 /\ WFExpr main7 := by decide
 
 -- N6: Counterexample 7 is ill typed: MyFoo7 does not funnel the class type variable X.
 theorem n6 : Not (ClassOk d8 decBox7) := by
-  sorry
+  intro h
+  have hm := h.2.2.1 _ (.head _)
+  cases hm with
+  | methodOk _ _ ht =>
+    cases inv_if ht rfl with
+    | intro w hw =>
+      cases inv_local hw.ty2 rfl with
+      | intro w2 hw2 =>
+        have hp := hw2.pair
+        have hms := hw2.meths _ (.head _)
+        generalize w2.Delta' = D' at hp hms
+        generalize w2.Ts'' = Q at hp
+        cases hp
+        cases hms with
+        | methodOk _ hk _ =>
+          have hX : Kind d8 [] (.var (tn "X")) := hk _ (.head _)
+          cases hX with
+          | wfVar hm => cases hm
 
 -- N7: funnelled, Counterexample 7 is still ill typed: Object<> does not determine X; javac reports this error too.
 theorem n7 : Not (ClassOk d8 decBox7F) := by
-  sorry
+  intro h
+  have hm := h.2.2.1 _ (.head _)
+  cases hm with
+  | methodOk _ _ ht =>
+    cases inv_if ht rfl with
+    | intro w hw =>
+      cases inv_var hw.ty0 rfl with
+      | intro T1 h1 =>
+        have e : some obj = some T1 := h1.1
+        injection e with e
+        subst e
+        have e2 := upObj (by decide) (by decide) h1.2
+        have hc := hw.cast
+        rw [e2] at hc
+        exact castObj (C := cn "MyFoo7F") (by decide) (by decide) (by decide) (by decide) hc
 
 -- R16: Counterexample 7 reduces as Example 2: to new A<>().[Object<>]onlyB(), which is stuck.
 theorem r16 : Steps d8 main7 stuckB /\ Stuck d8 stuckB :=
@@ -667,15 +751,85 @@ theorem o1 : OverrideOkM d11 (.cls (cn "P1") []) p2Id :=
 
 -- O2: P3 changes the return type of id.
 theorem o2 : Not (OverrideOkM d11 (.cls (cn "P1") []) p3Id) := by
-  sorry
+  intro h
+  generalize hT : Ty.cls (cn "P1") [] = T at h
+  generalize hM : p3Id = M at h
+  cases h with
+  | @absent D Ts Delta' T0' m ps' e' hD hm =>
+    injection hT with hC
+    have e : D = decP1 := dec_unique w17 hC.symm hD (.dec (.tail _ (.tail _ (.head _))))
+    subst e
+    simp only [p3Id, meth, Method.mk.injEq] at hM
+    rw [<- hM.2.2.1] at hm
+    exact hm (by decide)
+  | @dec D Ts Delta' T0' m ps' e' Delta'' T0 ps e hD hmem hl1 hl2 hc hs =>
+    injection hT with hC hTs
+    have e : D = decP1 := dec_unique w17 hC.symm hD (.dec (.tail _ (.tail _ (.head _))))
+    subst e
+    subst hTs
+    cases hmem with
+    | tail _ h => cases h
+    | head =>
+    simp only [p3Id, meth, Method.mk.injEq] at hM
+    cases hM with
+    | intro e1 hM =>
+    cases hM with
+    | intro e2 hM =>
+    cases hM with
+    | intro e3 hM =>
+    cases hM with
+    | intro e4 e5 =>
+    subst e1 e2 e4
+    injection hs with h1 h2
+    cases h1
+  | loc hD =>
+    injection hT with hC
+    exact Declared.dec_loc w17 (.dec (.tail _ (.tail _ (.head _)))) hD hC
+
+theorem o4P4 : Not (OverrideOkM d11 (.cls (cn "P1") []) p4Id) := by
+  intro h
+  generalize hT : Ty.cls (cn "P1") [] = T at h
+  generalize hM : p4Id = M at h
+  cases h with
+  | @absent D Ts Delta' T0' m ps' e' hD hm =>
+    injection hT with hC
+    have e : D = decP1 := dec_unique w17 hC.symm hD (.dec (.tail _ (.tail _ (.head _))))
+    subst e
+    simp only [p4Id, meth, Method.mk.injEq] at hM
+    rw [<- hM.2.2.1] at hm
+    exact hm (by decide)
+  | @dec D Ts Delta' T0' m ps' e' Delta'' T0 ps e hD hmem hl1 hl2 hc hs =>
+    injection hT with hC hTs
+    have e : D = decP1 := dec_unique w17 hC.symm hD (.dec (.tail _ (.tail _ (.head _))))
+    subst e
+    subst hTs
+    cases hmem with
+    | tail _ h => cases h
+    | head =>
+    simp only [p4Id, meth, Method.mk.injEq] at hM
+    cases hM with
+    | intro e1 hM =>
+    cases hM with
+    | intro e2 hM =>
+    cases hM with
+    | intro e3 hM =>
+    cases hM with
+    | intro e4 e5 =>
+    subst e1 e2 e4
+    injection hc with h1 h2
+    injection h1 with h3
+    exact absurd h3 (by decide)
+  | loc hD =>
+    injection hT with hC
+    exact Declared.dec_loc w17 (.dec (.tail _ (.tail _ (.head _)))) hD hC
 
 -- O3: P2 is Ok.
 theorem o3 : ClassOk d11 decP2 := by
   sorry
 
 -- O4: P3 and P4 are not Ok: P3 changes the return type, P4 changes the bound of the type variable.
-theorem o4 : Not (ClassOk d11 decP3) /\ Not (ClassOk d11 decP4) := by
-  sorry
+theorem o4 : Not (ClassOk d11 decP3) /\ Not (ClassOk d11 decP4) :=
+  And.intro (fun h => o2 (h.2.2.2 _ _ _ (.head _) .subRefl)) (fun h => o4P4 (h.2.2.2 _ _ _ (.head _) .subRefl))
 
 -- Checked casts.
 
@@ -695,7 +849,11 @@ theorem c4 : Cast d1 [] tB obj := Cast.castUp (Sub.subInherit (D := decB) (.dec 
 
 -- C5: no checked cast between unrelated classes: from A<> to B<>.
 theorem c5 : Not (Cast d1 [] tA tB) := by
-  sorry
+  show Not (Cast d1 [] (.cls (cn "A") []) (.cls (cn "B") []))
+  intro h
+  cases h with
+  | castUp hs => exact notSub [cn "A", Object] (by decide) (.head _) (by decide) hs
+  | castDown hs1 _ _ _ => exact notSub [cn "B", Object] (by decide) (.head _) (by decide) hs1
 
 -- Fields of a superclass.
 
