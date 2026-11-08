@@ -188,7 +188,7 @@ theorem Kind.ftv {d : Decls} {Delta : Bounds} {T : Ty} (h : Kind d Delta T) :
     exact List.mem_map_of_mem (f := Bound.X) hm
   | @wfClass C Ts Delta0 Ts0 _ _ _ _ ih =>
     intro Y hY
-    rcases (ftvList_mem.mp hY) with ⟨T, hT⟩; exact ih T hT.1 Y hT.2
+    rcases (Ty.mem_ftvList.mp hY) with ⟨T, hT⟩; exact ih T hT.1 Y hT.2
 
 theorem Kind.mono {d : Decls} {Delta Delta' : Bounds} (hs : Sub1 Delta Delta') {T : Ty}
     (h : Kind d Delta T) : Kind d Delta' T := by
@@ -324,14 +324,14 @@ theorem sf_dec {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec} (hD : D
   have hc := hok D hD.dec_mem
   refine { closedB := ?_, ndom := ?_, gv := rfl, meths := ?_, ns := ?_, sup := ?_, supK := ?_ }
   . intro X hX
-    rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv (hc.1 T hT.1) X hT.2
+    rcases Ty.mem_ftvList.mp hX with ⟨T, hT⟩; exact Kind.ftv (hc.1 T hT.1) X hT.2
   . exact hwf.2.2.2.2.1 D.bounds (by
       simp only [listMem_iff, List.mem_append, List.mem_map]
       exact Or.inl (Exists.intro D (And.intro hD.dec_mem rfl)))
   . intro M hM; exact Exists.intro _ (hc.2.2.1 M hM)
   . intro M hM
     exact Exists.intro (dom D.bounds) (Exists.intro [] (And.intro (fun _ h => h)
-      (noShadowListM_mem hM (hwf.2.2.2.2.2.2.1 D hD.dec_mem))))
+      (Method.noShadowList_mem hM (hwf.2.2.2.2.2.2.1 D hD.dec_mem))))
   . intro _ _ _ _ _ _ e; cases e
   . intro _ _ _ _ _ _ e; cases e
 
@@ -389,7 +389,7 @@ theorem scopeFacts {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {T : Ty} {Del
       have hn2 := hns.2
       rw [hE] at hn2
       rcases occ_noShadow E hn2 with ⟨xs', hxs'⟩
-      refine Exists.intro (Xs ++ dom Delta') (Exists.intro xs' (And.intro ?_ (noShadowListM_mem hM' hxs')))
+      refine Exists.intro (Xs ++ dom Delta') (Exists.intro xs' (And.intro ?_ (Method.noShadowList_mem hM' hxs')))
       intro X hX
       have hX2 : List.Mem X (dom (Delta ++ Delta')) := by
         have := h5.sub

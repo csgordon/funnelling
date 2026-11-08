@@ -513,19 +513,6 @@ theorem gsubst_ty_bind {Dl : Bounds} {Gs : List GTy} : GSubst.ty (bind Dl Gs) = 
   simp only [GSubst.ty, bind, List.zip_map_right]
   rfl
 
-theorem exprs_mem {v : Value} : forall {vs : List Value}, List.Mem v vs -> List.Mem v.expr (Value.exprs vs)
-  | _, .head _ => by simp only [Value.exprs]; exact List.Mem.head _
-  | _, .tail _ h => by simp only [Value.exprs]; exact List.Mem.tail _ (exprs_mem h)
-
-theorem uniqList_mem_e {e : Expr} : forall {es : List Expr}, List.Mem e es -> Expr.uniqList es -> e.uniq
-  | _, .head _, hu => by simp only [Expr.uniqList] at hu; exact hu.1
-  | _, .tail _ h, hu => by simp only [Expr.uniqList] at hu; exact uniqList_mem_e h hu.2
-
-theorem vbindersList_mem_e {e : Expr} {x : VarName} : forall {es : List Expr}, List.Mem e es ->
-    List.Mem x e.vbinders -> List.Mem x (Expr.vbindersList es)
-  | _, .head _, hx => by simp only [Expr.vbindersList, listMem_iff, List.mem_append]; exact Or.inl hx
-  | _, .tail _ h, hx => by simp only [Expr.vbindersList, listMem_iff, List.mem_append]; exact Or.inr (vbindersList_mem_e h hx)
-
 theorem found_tail {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {B : Bounds} {Gall : List GTy}
     {Tt T0 : Ty} {ps : List VarDecl} {e0 : Expr} {v0 : Value} {vs : List Value}
     (hb : Typing d B ([{ T := Tt, x := this }] ++ ps) e0 T0) (hgok : GOk d B (bind B Gall))
@@ -573,8 +560,8 @@ theorem found_tail {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
     (fun x v U h1 h2 => typingSeq_lookup (vs := v0 :: vs) (by rw [hgd]; exact hN') (by rw [hg1T]; exact hargs) x v U
       (by rw [hgd]; exact h1) h2)
     (fun p hp => by
-      have hv := exprs_mem (List.of_mem_zip hp).2
-      exact And.intro (noShadowList_mem hv hn) (And.intro (fun h => ht (vbindersList_mem_e hv h)) (uniqList_mem_e hv hu)))
+      have hv := Value.mem_exprs (List.of_mem_zip hp).2
+      exact And.intro (Expr.noShadowList_mem hv hn) (And.intro (fun h => ht (Expr.mem_vbindersList hv h)) (Expr.uniqList_mem hv hu)))
     (fun y hy => by rw [hnf]; rw [Expr.vbinders_gsubst] at hy; exact hvs y hy)
     (by rw [hgd]; exact hN')
     (by rw [hgd]; exact fun y hy => hy)
@@ -802,10 +789,10 @@ theorem pres_innerFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
   simp only [Value.expr, Expr.noShadow, Bool.and_eq_true, Expr.vbinders, List.mem_append, not_or,
     Expr.uniq] at hv0n hv0t hv0u
   have hnM : M.noShadow [] [] = true := by
-    have := noShadowListM_mem hM hv0n.2
+    have := Method.noShadowList_mem hM hv0n.2
     simpa using this
-  have htM : NoThisM M := fun h => hv0t.2 (vbindersListM_mem hM h)
-  have huM : M.uniq := uniqList_mem hM hv0u.2
+  have htM : NoThisM M := fun h => hv0t.2 (Method.mem_vbindersList hM h)
+  have huM : M.uniq := Method.uniqList_mem hM hv0u.2
   rcases inv_call h rfl with ⟨⟨C0, Ts0, Delta0, Ts2, Delta1, T0c, psc, body, T0', Ts'⟩, hw⟩
   have vt := value_typing hwf hw.ty0
   have hsv : Sub d [] (typeOf v0) (.cls C0 Ts0) := by

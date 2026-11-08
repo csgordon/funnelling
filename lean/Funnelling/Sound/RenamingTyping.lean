@@ -215,7 +215,7 @@ theorem field_closed {d : Decls} (hok : DeclsOk d) {D : Dec} {T : Ty} {f : Field
 theorem slots_closed {d : Decls} (hok : DeclsOk d) {D : Dec} (hD : Declared d (.dec D)) :
     forall X, List.Mem X (Ty.ftvList (D.Ss.map Slot.T)) -> List.Mem X (dom D.bounds) := by
   intro X hX
-  rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv ((hok D hD.dec_mem).2.1 T (List.Mem.tail _ hT.1)) X hT.2
+  rcases Ty.mem_ftvList.mp hX with ⟨T, hT⟩; exact Kind.ftv ((hok D hD.dec_mem).2.1 T (List.Mem.tail _ hT.1)) X hT.2
 
 theorem methodIn_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {C0 : ClassName} {Ts0 : List Ty}
     {Delta0 : Bounds} {Ts2 : List Ty} {Delta1 : Bounds} {T0 : Ty} {m : MethName} {ps : List VarDecl} {body : Expr}
@@ -232,9 +232,9 @@ theorem methodIn_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {C0 : Cl
   have hmi := methodOk_inv hmo
   refine And.intro ?_ ?_
   . intro X hX
-    rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.2.1 T hT.1) X hT.2
+    rcases Ty.mem_ftvList.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.2.1 T hT.1) X hT.2
   . intro X hX
-    rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.1 T hT.1) X hT.2
+    rcases Ty.mem_ftvList.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.1 T hT.1) X hT.2
 
 theorem Method.noShadow_dom {Xs : List TVarName} {xs : List VarName} {M : Method} (h : M.noShadow Xs xs = true) :
     forall X, List.Mem X (dom M.bounds) -> Not (List.Mem X Xs) := by
@@ -498,14 +498,14 @@ theorem ftv_bind_sub {Dl : Bounds} {Us : List Ty} {L : List Ty} (hl : Us.length 
     forall X, List.Mem X (Ty.ftvList (Ty.substList (bind Dl Us) L)) -> List.Mem X (Ty.ftvList Us) := by
   refine Ty.ftvList_subst_sub (fun Y hY X hX => ?_)
   cases bind_lookup_some hl (hL Y hY) with
-  | intro U hU => exact ftvList_mem.mpr (Exists.intro U (And.intro (mem_bind_snd (lookup_mem hU)) (ftv_var_subst hU hX)))
+  | intro U hU => exact Ty.mem_ftvList.mpr (Exists.intro U (And.intro (mem_bind_snd (lookup_mem hU)) (ftv_var_subst hU hX)))
 
 theorem ftv_bindF_sub {Fs : List Funnel} {Us : List Ty} {L : List Ty} (hl : Us.length = Fs.length)
     (hL : forall X, List.Mem X (Ty.ftvList L) -> List.Mem X (domF Fs)) :
     forall X, List.Mem X (Ty.ftvList (Ty.substList (bindF Fs Us) L)) -> List.Mem X (Ty.ftvList Us) := by
   refine Ty.ftvList_subst_sub (fun Y hY X hX => ?_)
   cases bindF_lookup_some hl (hL Y hY) with
-  | intro U hU => exact ftvList_mem.mpr (Exists.intro U (And.intro (mem_bindF_snd (lookup_mem hU)) (ftv_var_subst hU hX)))
+  | intro U hU => exact Ty.mem_ftvList.mpr (Exists.intro U (And.intro (mem_bindF_snd (lookup_mem hU)) (ftv_var_subst hU hX)))
 
 theorem Sub.inv_subst {d : Decls} (hd : DeclOk d) {Delta Delta2 : Bounds} {s : TSubst} {A : List TVarName}
     {T1 T' : Ty} (h : Sub d Delta T1 T') : forall {C : ClassName} {Ts : List Ty}, T1 = .cls C (Ty.substList s Ts) ->
@@ -527,8 +527,8 @@ theorem Sub.inv_subst {d : Decls} (hd : DeclOk d) {Delta Delta2 : Bounds} {s : T
         .cls D.C' (Ty.substList s (Ty.substList (bind D.bounds Ts) D.Ts)) := by
       simp only [Ty.subst]
       rw [substList_bind_comp hl' (hd.supD D hD)]
-    cases ih heq (fun X hX => ftv_bind_sub hl' (hd.supD D hD) X hX |> fun h => ftvList_mem.mp h |> fun h => by
-        cases h with | intro U hU => exact hA X (ftvList_mem.mpr (Exists.intro U hU))) with
+    cases ih heq (fun X hX => ftv_bind_sub hl' (hd.supD D hD) X hX |> fun h => Ty.mem_ftvList.mp h |> fun h => by
+        cases h with | intro U hU => exact hA X (Ty.mem_ftvList.mpr (Exists.intro U hU))) with
     | intro T0 h0 =>
       refine Exists.intro T0 (And.intro h0.1 (And.intro (Sub.subInherit hD hl' ?_) h0.2.2))
       exact h0.2.1
@@ -549,7 +549,7 @@ theorem Sub.inv_subst {d : Decls} (hd : DeclOk d) {Delta Delta2 : Bounds} {s : T
       apply List.map_congr_left
       intro T hT
       show _ = (T.subst (bindF Fs Ts)).subst s
-      exact (subst_bindF_comp hl' (fun X hX => hcl X (ftvList_mem.mpr (Exists.intro T (And.intro hT hX))))).symm
+      exact (subst_bindF_comp hl' (fun X hX => hcl X (Ty.mem_ftvList.mpr (Exists.intro T (And.intro hT hX))))).symm
     rcases ih heq (fun X hX => by exact hA X (ftv_bindF_sub hl' hcl X hX)) with ⟨T0, h0⟩
     refine Exists.intro T0 (And.intro h0.1 (And.intro (Sub.subInheritLocal hD hl' ?_) h0.2.2))
     exact h0.2.1
@@ -600,7 +600,7 @@ theorem ren_disj {Xs Ys : List TVarName} {r : TRen} {Ts : List Ty}
   rw [Ty.renList_eq_map]
   apply List.map_congr_left
   intro T hT
-  exact Ty.ren_congr (fun X hX => rn_zip_not_mem (h X (ftvList_mem.mpr (Exists.intro T (And.intro hT hX)))))
+  exact Ty.ren_congr (fun X hX => rn_zip_not_mem (h X (Ty.mem_ftvList.mpr (Exists.intro T (And.intro hT hX)))))
 
 theorem declMeth_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {k : K} (hk : Declared d k)
     {Dl : Bounds} {T0 : Ty} {m : MethName} {ps : List VarDecl} {e : Expr} (hM : List.Mem (Method.mk Dl T0 m ps e) k.Ms) :
@@ -618,9 +618,9 @@ theorem declMeth_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {k : K} 
   rw [<- hk'.2.2.gv, <- dom_append]
   refine And.intro ?_ ?_
   . intro X hX
-    rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.1 T hT.1) X hT.2
+    rcases Ty.mem_ftvList.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.1 T hT.1) X hT.2
   . intro X hX
-    rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.2.1 T hT.1) X hT.2
+    rcases Ty.mem_ftvList.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.2.1 T hT.1) X hT.2
 
 theorem OverrideOkM.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {rv : VRen} {rt : TRen} {C : ClassName}
     {Us : List Ty} {M M' : Method} (h : OverrideOkM d (.cls C Us) M) (hr : RenM rv rt M M')
@@ -801,8 +801,8 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
       have hFs : forall X, List.Mem X (Ty.ftvList (abs Fs)) -> List.Mem X Xs := fun X hX => hDX X (Kind.ftv h4 X hX)
       have hTs : forall X, List.Mem X (Ty.ftvList Ts) -> List.Mem X Xs := fun X hX => hDX X (Kind.ftv h5 X hX)
       have hdisM : forall M, List.Mem M Ms -> forall X, List.Mem X Xs -> Not (List.Mem X (dom M.bounds)) :=
-        fun M hM X hX hm => Method.noShadow_dom (noShadowListM_mem hM hn.2) X hm hX
-      have huM : forall M, List.Mem M Ms -> M.uniq := fun M hM => uniqList_mem hM hu.2
+        fun M hM X hX hm => Method.noShadow_dom (Method.noShadowList_mem hM hn.2) X hm hX
+      have huM : forall M, List.Mem M Ms -> M.uniq := fun M hM => Method.uniqList_mem hM hu.2
       have ih6 := Typing.ren hwf hok hd h6 (RenE.new hr1) env (by simpa [Expr.noShadow] using hn.1)
         (by simpa [Expr.noShadow] using hn'.1) (by simpa [NoThis, Expr.vbinders] using ht.1)
         (by simpa [NoThis, Expr.vbinders] using ht'.1) (by simpa [Expr.uniq] using hu.1)
@@ -825,9 +825,9 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
         rcases List.mem_map.mp hX with ⟨Y, hY⟩; rw [<- hY.2]; exact List.mem_map_of_mem (h3 Y hY.1)
       . intro M' hM'
         rcases RenMs.mem_inv hr2 hM' with ⟨M, hM⟩
-        exact MethodOk.ren hwf hok hd (h7 M hM.1) hM.2 (env.inner h2 hFs C) (noShadowListM_mem hM.1 hn.2)
-          (noShadowListM_mem hM' hn'.2) (fun h => ht.2 (vbindersListM_mem hM.1 h))
-          (fun h => ht'.2 (vbindersListM_mem hM' h)) (huM M hM.1) (uniqList_mem hM' hu'.2)
+        exact MethodOk.ren hwf hok hd (h7 M hM.1) hM.2 (env.inner h2 hFs C) (Method.noShadowList_mem hM.1 hn.2)
+          (Method.noShadowList_mem hM' hn'.2) (fun h => ht.2 (Method.mem_vbindersList hM.1 h))
+          (fun h => ht'.2 (Method.mem_vbindersList hM' h)) (huM M hM.1) (Method.uniqList_mem hM' hu'.2)
   | _, _, _, _, .ifInstanceof (x := x) h0 hk hc h1 h2, _, _, _, _, _, _, xs, _, xs', hr, env, hn, hn', ht, ht', hu,
       hu' => by
     cases hr with

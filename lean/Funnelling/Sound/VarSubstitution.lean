@@ -52,11 +52,6 @@ theorem innerG_gsub {n : VSubst} {gamma : Gamma} {Fs : List Funnel} {C : ClassNa
       rw [Bool.eq_iff_iff]; simp only [List.contains_iff_mem]; exact e
     rw [e2]; simp [Bool.and_comm, Bool.and_assoc]
 
-theorem Expr.vsubstList_append {n : VSubst} : forall {es1 es2 : List Expr},
-    Expr.vsubstList n (es1 ++ es2) = Expr.vsubstList n es1 ++ Expr.vsubstList n es2
-  | [], _ => rfl
-  | e :: es1, es2 => by simp only [List.cons_append, Expr.vsubstList]; rw [Expr.vsubstList_append]
-
 theorem OverrideOkM.body {d : Decls} {T : Ty} {Delta : Bounds} {T0 : Ty} {m : MethName} {ps : List VarDecl}
     {e e' : Expr} (h : OverrideOkM d T (.mk Delta T0 m ps e)) : OverrideOkM d T (.mk Delta T0 m ps e') := by
   cases h with
@@ -68,15 +63,6 @@ theorem OverrideOkM.vsubst {d : Decls} {T : Ty} {n : VSubst} {M : Method} (h : O
     OverrideOkM d T (M.vsubst n) := by
   cases M with
   | mk Dm T0 m ps e => simp only [Method.vsubst]; exact h.body
-
-theorem vsubstList_mem {n : VSubst} {M : Method} : forall {Ms : List Method}, List.Mem M (Method.vsubstList n Ms) ->
-    exists M0, List.Mem M0 Ms /\ M = M0.vsubst n
-  | [], h => by cases h
-  | M' :: Ms, h => by
-    cases h with
-    | head => exact Exists.intro M' (And.intro (List.Mem.head _) rfl)
-    | tail _ h =>
-      rcases vsubstList_mem h with ⟨M0, hM0⟩; exact Exists.intro M0 (And.intro (List.Mem.tail _ hM0.1) hM0.2)
 
 theorem names_vsubst {n : VSubst} : forall {Ms : List Method},
     (Method.vsubstList n Ms).map Method.name = Ms.map Method.name
@@ -93,12 +79,12 @@ theorem Consistent.vsubst {d : Decls} {n n' : VSubst} {C : ClassName} {Fs : List
     (And.intro h.2.1 (And.intro h.2.2.1 (And.intro ?_ ?_)))))))
   . intro m; rw [names_vsubst]; exact h.2.2.2.1 m
   . intro M hM
-    rcases vsubstList_mem hM with ⟨M0, hM0⟩; rw [hM0.2]; exact (h.2.2.2.2 M0 hM0.1).vsubst
+    rcases Method.vsubstList_mem hM with ⟨M0, hM0⟩; rw [hM0.2]; exact (h.2.2.2.2 M0 hM0.1).vsubst
 
 theorem OverrideOk.vsubst {d : Decls} {Delta : Bounds} {T : Ty} {n : VSubst} {Ms : List Method}
     (h : OverrideOk d Delta T Ms) : OverrideOk d Delta T (Method.vsubstList n Ms) := by
   intro M C Ts hM hs
-  rcases vsubstList_mem hM with ⟨M0, hM0⟩; rw [hM0.2]; exact (h M0 C Ts hM0.1 hs).vsubst
+  rcases Method.vsubstList_mem hM with ⟨M0, hM0⟩; rw [hM0.2]; exact (h M0 C Ts hM0.1 hs).vsubst
 
 theorem mem_gsub {n : VSubst} {gamma : Gamma} {y : VarDecl} (h : List.Mem y gamma)
     (hy : Not (List.Mem y.x (n.map Prod.fst))) : List.Mem y (gsub n gamma) := by
@@ -165,7 +151,7 @@ theorem Typing.vmap {d : Decls} : forall {Delta gamma e T}, Typing d Delta gamma
       (by simpa [NoThis, Expr.vbinders] using ht.1) (by simpa [Expr.uniq] using hu.1)
     refine Typing.newLocal h1.vsubst (h2.mono hD) h3 h4 h5 h6' ?_ h8.vsubst
     intro M' hM'
-    rcases vsubstList_mem hM' with ⟨M, hM⟩
+    rcases Method.vsubstList_mem hM' with ⟨M, hM⟩
     rw [hM.2]
     exact MethodOk.vmap (h7 M hM.1) (n := nthis n) (xs := xs.filter fun x => x != this)
       (xs' := xs'.filter fun x => x != this) (fun _ h => h) (by rw [<- innerG_gsub]; exact innerG_sub hG _ _)
@@ -185,12 +171,12 @@ theorem Typing.vmap {d : Decls} : forall {Delta gamma e T}, Typing d Delta gamma
         rw [lookup_filter_this hxt] at hx
         exact hv x v U hx hl2)
       (fun y hy hm => by
-        have hyt : Not (y = this) := fun e => ht.2 (e ▸ vbindersListM_mem hM.1 hy)
-        exact hdef y (Or.inr (vbindersListM_mem hM.1 hy)) ((nthis_dom hyt).mp hm))
+        have hyt : Not (y = this) := fun e => ht.2 (e ▸ Method.mem_vbindersList hM.1 hy)
+        exact hdef y (Or.inr (Method.mem_vbindersList hM.1 hy)) ((nthis_dom hyt).mp hm))
       (innerG_nodup n1 _ _) (innerG_dom sc _ _) (innerG_dom sc' _ _)
-      (noShadowListM_mem hM.1 hn.2)
-      (by have := noShadowListM_mem hM' hn'.2; rw [hM.2] at this; exact this)
-      (fun h => ht.2 (vbindersListM_mem hM.1 h)) (uniqList_mem hM.1 hu.2) filter_this_no
+      (Method.noShadowList_mem hM.1 hn.2)
+      (by have := Method.noShadowList_mem hM' hn'.2; rw [hM.2] at this; exact this)
+      (fun h => ht.2 (Method.mem_vbindersList hM.1 h)) (Method.uniqList_mem hM.1 hu.2) filter_this_no
   | _, gamma, _, _, .ifInstanceof (x := x) h0 hk hc h1 h2, n, _, gamma2, _, _, xs, xs', hD, hG, n2, hv, hdef, n1, sc, sc',
       hn, hn', ht, hu => by
     simp only [Expr.noShadow, Bool.and_eq_true, Bool.not_eq_true'] at hn

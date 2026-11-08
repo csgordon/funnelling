@@ -283,31 +283,6 @@ theorem Method.closedList_of_gsubst : forall {Ms : List Method} {s : GSubst} {T 
     exact And.intro (Method.closed_of_gsubst hc.1) (Method.closedList_of_gsubst hc.2)
 end
 
-theorem mem_localsList {e : Expr} {k : K} : forall {es : List Expr}, List.Mem e es -> List.Mem k e.locals ->
-    List.Mem k (Expr.localsList es)
-  | _, .head _, hk => by simp only [Expr.localsList, listMem_iff, List.mem_append]; exact Or.inl hk
-  | _, .tail _ h, hk => by simp only [Expr.localsList, listMem_iff, List.mem_append]; exact Or.inr (mem_localsList h hk)
-
-theorem mem_localsListM {M : Method} {k : K} : forall {Ms : List Method}, List.Mem M Ms -> List.Mem k M.locals ->
-    List.Mem k (Method.localsList Ms)
-  | _, .head _, hk => by simp only [Method.localsList, listMem_iff, List.mem_append]; exact Or.inl hk
-  | _, .tail _ h, hk => by simp only [Method.localsList, listMem_iff, List.mem_append]; exact Or.inr (mem_localsListM h hk)
-
-theorem mem_ifVarsList {e : Expr} {x : VarName} : forall {es : List Expr}, List.Mem e es -> List.Mem x e.ifVars ->
-    List.Mem x (Expr.ifVarsList es)
-  | _, .head _, hk => by simp only [Expr.ifVarsList, listMem_iff, List.mem_append]; exact Or.inl hk
-  | _, .tail _ h, hk => by simp only [Expr.ifVarsList, listMem_iff, List.mem_append]; exact Or.inr (mem_ifVarsList h hk)
-
-theorem noShadowList_mem {e : Expr} {Xs : List TVarName} {xs : List VarName} : forall {es : List Expr},
-    List.Mem e es -> Expr.noShadowList Xs xs es = true -> e.noShadow Xs xs = true
-  | _, .head _, hn => by simp only [Expr.noShadowList, Bool.and_eq_true] at hn; exact hn.1
-  | _, .tail _ h, hn => by simp only [Expr.noShadowList, Bool.and_eq_true] at hn; exact noShadowList_mem h hn.2
-
-theorem closedList_mem {e : Expr} {Xs : List TVarName} {xs : List VarName} : forall {es : List Expr},
-    List.Mem e es -> Expr.closedList Xs xs es = true -> e.closed Xs xs = true
-  | _, .head _, hn => by simp only [Expr.closedList, Bool.and_eq_true] at hn; exact hn.1
-  | _, .tail _ h, hn => by simp only [Expr.closedList, Bool.and_eq_true] at hn; exact closedList_mem h hn.2
-
 theorem mem_mid {A : Type} {l r : List A} {x : A} : List.Mem x (l ++ x :: r) :=
   List.mem_append_right _ (List.Mem.head _)
 
@@ -318,9 +293,9 @@ theorem ECtx.locals_plug {a : Expr} {k : K} (hk : List.Mem k a.locals) :
   case hole => exact hk
   all_goals
     rename_i ih
-    first | exact List.mem_append_left _ ih | exact ih | exact mem_localsList mem_mid ih
-          | exact List.mem_append_right _ (mem_localsList mem_mid ih)
-          | exact List.Mem.tail _ (List.mem_append_left _ (mem_localsList mem_mid ih))
+    first | exact List.mem_append_left _ ih | exact ih | exact Expr.mem_localsList mem_mid ih
+          | exact List.mem_append_right _ (Expr.mem_localsList mem_mid ih)
+          | exact List.Mem.tail _ (List.mem_append_left _ (Expr.mem_localsList mem_mid ih))
           | exact List.mem_append_left _ (List.mem_append_left _ ih)
 
 theorem ECtx.ifVars_plug {a : Expr} {x : VarName} (hk : List.Mem x a.ifVars) :
@@ -330,9 +305,9 @@ theorem ECtx.ifVars_plug {a : Expr} {x : VarName} (hk : List.Mem x a.ifVars) :
   case hole => exact hk
   all_goals
     rename_i ih
-    first | exact List.mem_append_left _ ih | exact ih | exact mem_ifVarsList mem_mid ih
-          | exact List.mem_append_right _ (mem_ifVarsList mem_mid ih)
-          | exact List.mem_append_left _ (mem_ifVarsList mem_mid ih)
+    first | exact List.mem_append_left _ ih | exact ih | exact Expr.mem_ifVarsList mem_mid ih
+          | exact List.mem_append_right _ (Expr.mem_ifVarsList mem_mid ih)
+          | exact List.mem_append_left _ (Expr.mem_ifVarsList mem_mid ih)
           | exact List.Mem.tail _ (List.mem_append_left _ (List.mem_append_left _ ih))
 
 theorem ECtx.noShadow_plug {a : Expr} {Xs : List TVarName} {xs : List VarName} :
@@ -342,8 +317,8 @@ theorem ECtx.noShadow_plug {a : Expr} {Xs : List TVarName} {xs : List VarName} :
   case hole => exact h
   all_goals
     rename_i ih
-    first | exact ih h | exact ih h.1 | exact ih h.1.1.1 | exact ih (noShadowList_mem mem_mid h)
-          | exact ih (noShadowList_mem mem_mid h.1) | exact ih (noShadowList_mem mem_mid h.2)
+    first | exact ih h | exact ih h.1 | exact ih h.1.1.1 | exact ih (Expr.noShadowList_mem mem_mid h)
+          | exact ih (Expr.noShadowList_mem mem_mid h.1) | exact ih (Expr.noShadowList_mem mem_mid h.2)
 
 theorem ECtx.closed_plug {a : Expr} {Xs : List TVarName} {xs : List VarName} :
     forall (E : ECtx), (E.plug a).closed Xs xs = true -> a.closed Xs xs = true := by
@@ -352,8 +327,8 @@ theorem ECtx.closed_plug {a : Expr} {Xs : List TVarName} {xs : List VarName} :
   case hole => exact h
   all_goals
     rename_i ih
-    first | exact ih h | exact ih h.1.1 | exact ih h.1.1.1 | exact ih (closedList_mem mem_mid h.2)
-          | exact ih (closedList_mem mem_mid h.1.2)
+    first | exact ih h | exact ih h.1.1 | exact ih h.1.1.1 | exact ih (Expr.closedList_mem mem_mid h.2)
+          | exact ih (Expr.closedList_mem mem_mid h.1.2)
 
 theorem methods_sub {e e' : Expr} (h : forall k, List.Mem k e.locals -> List.Mem k e'.locals) :
     forall M, List.Mem M e.methods -> List.Mem M e'.methods := by
@@ -552,28 +527,18 @@ theorem WFDecls.locOk {d : Decls} (h : WFDecls d) : LocOk (classes d) := by
     simp only [listMem_iff, List.mem_append, List.mem_map]
     exact Or.inr (Exists.intro M (And.intro hm rfl)))
 
-theorem mem_ifVarsListM {M : Method} {x : VarName} : forall {Ms : List Method}, List.Mem M Ms ->
-    List.Mem x M.ifVars -> List.Mem x (Method.ifVarsList Ms)
-  | _, .head _, hk => by simp only [Method.ifVarsList, listMem_iff, List.mem_append]; exact Or.inl hk
-  | _, .tail _ h, hk => by simp only [Method.ifVarsList, listMem_iff, List.mem_append]; exact Or.inr (mem_ifVarsListM h hk)
-
-theorem noShadowListM_mem {M : Method} {Xs : List TVarName} {xs : List VarName} : forall {Ms : List Method},
-    List.Mem M Ms -> Method.noShadowList Xs xs Ms = true -> M.noShadow Xs xs = true
-  | _, .head _, hn => by simp only [Method.noShadowList, Bool.and_eq_true] at hn; exact hn.1
-  | _, .tail _ h, hn => by simp only [Method.noShadowList, Bool.and_eq_true] at hn; exact noShadowListM_mem h hn.2
-
 theorem WFDecls.method {d : Decls} (h : WFDecls d) {D : Dec} (hD : List.Mem D d) {M : Method}
     (hM : List.Mem M D.Ms) : M.uniq /\ NoThisM M /\ Method.noShadow (dom D.bounds) [] M = true := by
   have hl := h.locOk
   have hmo : MOk M := hl (K.dec D) (classes_mem_dec hD) M hM
-  have hlm : LocOk M.locals := hl.sub (fun k hk => classes_mem_loc hD (mem_localsListM hM hk))
+  have hlm : LocOk M.locals := hl.sub (fun k hk => classes_mem_loc hD (Method.mem_localsList hM hk))
   have hi : Not (List.Mem this M.ifVars) := by
     intro ht
     apply h.2.2.2.2.2.2.2.1.2
     simp only [listMem_iff, List.mem_flatMap]
-    exact Exists.intro D (And.intro hD (mem_ifVarsListM hM ht))
+    exact Exists.intro D (And.intro hD (Method.mem_ifVarsList hM ht))
   refine And.intro (Method.uniq_of hmo hlm) (And.intro (Method.noThis_of hmo hlm hi) ?_)
   have h7 := h.2.2.2.2.2.2.1 D hD
-  exact noShadowListM_mem hM h7
+  exact Method.noShadowList_mem hM h7
 
 end Funnelling

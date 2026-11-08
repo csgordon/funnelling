@@ -444,31 +444,13 @@ theorem FreshM.mem_names {M : Method} {Ms : List Method} {D T m ps e} (hM : List
     (h : FreshM M (.mk D T m ps e)) : List.Mem m (Ms.map Method.name) :=
   FreshM.name h ▸ List.mem_map_of_mem hM
 
-theorem uniqList_mem {M : Method} : forall {Ms : List Method}, List.Mem M Ms -> Method.uniqList Ms -> M.uniq
-  | _, .head _, hu => by simp only [Method.uniqList] at hu; exact hu.1
-  | _, .tail _ h, hu => by simp only [Method.uniqList] at hu; exact uniqList_mem h hu.2
-
-theorem vbindersListM_mem {M : Method} {x : VarName} : forall {Ms : List Method}, List.Mem M Ms ->
-    List.Mem x M.vbinders -> List.Mem x (Method.vbindersList Ms)
-  | _, .head _, hx => by simp only [Method.vbindersList, listMem_iff, List.mem_append]; exact Or.inl hx
-  | _, .tail _ h, hx => by simp only [Method.vbindersList, listMem_iff, List.mem_append]; exact Or.inr (vbindersListM_mem h hx)
-
-theorem closedList_vals {T : List TVarName} {S : List VarName} : forall {vs : List Value},
-    Expr.closedList T S (Value.exprs vs) = true -> forall v, List.Mem v vs -> v.expr.closed T S = true
-  | [], _, _, h => by cases h
-  | w :: vs, h, v, hv => by
-    simp only [Value.exprs, Expr.closedList, Bool.and_eq_true] at h
-    cases hv with
-    | head => exact h.1
-    | tail _ hv => exact closedList_vals h.2 v hv
-
 theorem closed_cons_vals {v0 : Value} {vs : List Value} (h0 : v0.expr.closed [] [] = true)
     (hs : Expr.closedList [] [] (Value.exprs vs) = true) :
     forall v, List.Mem v (v0 :: vs) -> v.expr.closed [] [] = true := by
   intro v hv
   cases hv with
   | head => exact h0
-  | tail _ hv => exact closedList_vals hs v hv
+  | tail _ hv => exact Expr.closedList_mem (Value.mem_exprs hv) hs
 
 theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr a) (hw1 : WFExpr b1)
     (hw2 : WFExpr b2) (h1 : BaseStep d a b1) (h2 : BaseStep d a' b2) (he : a = a') : Fresh b1 b2 := by
@@ -523,9 +505,9 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
       Bool.and_eq_true] at ht hn
     simp only [Expr.closed, Bool.and_eq_true] at hc
     have hvals := closed_cons_vals hc.1.1 hc.2
-    have hMu := uniqList_mem hM hu.1.2
-    have hMt : NoThisM _ := fun h => ht.1.2 (vbindersListM_mem hM h)
-    have hMn : Method.noShadow (dom []) [] _ = true := noShadowListM_mem hM hn.1.2
+    have hMu := Method.uniqList_mem hM hu.1.2
+    have hMt : NoThisM _ := fun h => ht.1.2 (Method.mem_vbindersList hM h)
+    have hMn : Method.noShadow (dom []) [] _ = true := Method.noShadowList_mem hM hn.1.2
     exact And.intro
       (renE_meth (B := []) (Gs := []) hF.2 hF2.1 hMu hMt hMn rfl hG hG2 hp hp2 hN hN2 hN' hN2' hgs hgs2 hvs hvs2
         hw1.2.2.2.2.2.2 hvals)

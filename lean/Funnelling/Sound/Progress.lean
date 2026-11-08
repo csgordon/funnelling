@@ -264,10 +264,10 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         simp only [Value.expr, Expr.noShadow, Bool.and_eq_true, Expr.vbinders, List.mem_append, not_or,
           Expr.uniq] at hv0n hv0t hv0u
         have hnM : (Method.mk Delta' T0 m' ps e0).noShadow [] [] = true := by
-          have := noShadowListM_mem hM hv0n.2
+          have := Method.noShadowList_mem hM hv0n.2
           simpa using this
-        have htM : NoThisM (Method.mk Delta' T0 m' ps e0) := fun h => hv0t.2 (vbindersListM_mem hM h)
-        have huM : (Method.mk Delta' T0 m' ps e0).uniq := uniqList_mem hM hv0u.2
+        have htM : NoThisM (Method.mk Delta' T0 m' ps e0) := fun h => hv0t.2 (Method.mem_vbindersList hM h)
+        have huM : (Method.mk Delta' T0 m' ps e0).uniq := Method.uniqList_mem hM hv0u.2
         simp only [Method.noShadow, Bool.and_eq_true, List.nil_append, List.cons_append, NoThisM, Method.vbinders,
           listMem_iff, List.mem_append, not_or, Method.uniq] at hnM htM huM
         exact ⟨_, Step.innerFound (v0 := Value.newLocal C Gs C' Gs'' vs0 Ms) rfl hM (FreshM.refl _) hl.1 hl.2

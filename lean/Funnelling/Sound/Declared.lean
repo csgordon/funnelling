@@ -53,9 +53,9 @@ theorem ExprCtx.locals_plug {a : Expr} {k : K} (hk : List.Mem k a.locals) :
   case hole => exact hk
   all_goals
     rename_i ih
-    first | exact List.mem_append_left _ ih | exact ih | exact mem_localsList mem_mid ih
-          | exact List.mem_append_right _ (mem_localsList mem_mid ih) | exact List.mem_append_right _ ih
-          | exact List.Mem.tail _ (List.mem_append_left _ (mem_localsList mem_mid ih))
+    first | exact List.mem_append_left _ ih | exact ih | exact Expr.mem_localsList mem_mid ih
+          | exact List.mem_append_right _ (Expr.mem_localsList mem_mid ih) | exact List.mem_append_right _ ih
+          | exact List.Mem.tail _ (List.mem_append_left _ (Expr.mem_localsList mem_mid ih))
           | exact List.mem_append_left _ (List.mem_append_left _ ih)
           | exact List.mem_append_left _ (List.mem_append_right _ ih)
 
@@ -67,7 +67,7 @@ theorem Declared.mem {d : Decls} {k : K} (h : Declared d k) : List.Mem k (classe
   induction h with
   | dec h => exact classes_mem_dec h
   | @loc k Delta T0 m ps e C0 Fs C' Ts es Ms hk hM hO ih =>
-    exact classes_locClosed d k ih _ (mem_localsListM hM hO.locals)
+    exact classes_locClosed d k ih _ (Method.mem_localsList hM hO.locals)
 
 theorem Declared.unique {d : Decls} (hwf : WFDecls d) {k1 k2 : K} (h1 : Declared d k1) (h2 : Declared d k2)
     (he : k1.name = k2.name) : k1 = k2 :=
@@ -225,8 +225,8 @@ theorem occ_noShadow {Xs : List TVarName} {C Fs C' Ts es Ms} : forall (E : ExprC
   all_goals
     rename_i ih
     first | exact ih h | exact ih h.1 | exact ih h.2 | exact ih h.1.1.1 | exact ih h.1.2
-          | exact ih (noShadowList_mem mem_mid h) | exact ih (noShadowList_mem mem_mid h.1)
-          | exact ih (noShadowList_mem mem_mid h.2)
+          | exact ih (Expr.noShadowList_mem mem_mid h) | exact ih (Expr.noShadowList_mem mem_mid h.1)
+          | exact ih (Expr.noShadowList_mem mem_mid h.2)
 
 theorem Pairing.dom_eq {Delta : Bounds} {Fs : List Funnel} {Ts : List Ty} {Delta0 : Bounds} {Ts0 : List Ty}
     (h : Pairing Delta Fs Ts Delta0 Ts0) : dom Delta0 = domF Fs := by

@@ -8,14 +8,6 @@ theorem all_contains_iff {A : Type} [DecidableEq A] {l xs : List A} :
     l.all xs.contains = true <-> forall x, List.Mem x l -> List.Mem x xs := by
   simp [List.all_eq_true]
 
-theorem ftvList_mem {X : TVarName} : forall {Ts : List Ty},
-    List.Mem X (Ty.ftvList Ts) <-> exists T, List.Mem T Ts /\ List.Mem X T.ftv
-  | [] => by simp [Ty.ftvList]
-  | T :: Ts => by
-    have ih := @ftvList_mem X Ts
-    simp only [listMem_iff] at ih |-
-    simp [Ty.ftvList, ih, or_and_right, exists_or]
-
 mutual
 theorem Ty.ren_comp {rt1 rt2 rt3 : TRen} : forall {T : Ty},
     (forall X, List.Mem X T.ftv -> rn rt2 (rn rt1 X) = rn rt3 X) -> (T.ren rt1).ren rt2 = T.ren rt3
@@ -184,6 +176,22 @@ def Method.uniqList : List Method -> Prop
   | [] => True
   | M :: Ms => M.uniq /\ Method.uniqList Ms
 end
+
+theorem Expr.uniqList_iff (es : List Expr) : Expr.uniqList es <-> forall e, List.Mem e es -> e.uniq := by
+  induction es <;> simp_all [Expr.uniqList]
+
+theorem Method.uniqList_iff (Ms : List Method) : Method.uniqList Ms <-> forall M, List.Mem M Ms -> M.uniq := by
+  induction Ms <;> simp_all [Method.uniqList]
+
+theorem Expr.uniqList_mem {e : Expr} {es : List Expr} (h : List.Mem e es) (hu : Expr.uniqList es) : e.uniq :=
+  (Expr.uniqList_iff es).mp hu e h
+
+theorem Method.uniqList_mem {M : Method} {Ms : List Method} (h : List.Mem M Ms) (hu : Method.uniqList Ms) : M.uniq :=
+  (Method.uniqList_iff Ms).mp hu M h
+
+theorem uniqList_append {es1 es2 : List Expr} :
+    Expr.uniqList (es1 ++ es2) <-> Expr.uniqList es1 /\ Expr.uniqList es2 := by
+  simp [Expr.uniqList_iff, or_imp, forall_and]
 
 abbrev NoThis (e : Expr) : Prop := Not (List.Mem this e.vbinders)
 
@@ -391,11 +399,6 @@ theorem params_comp {r1 r2 r3 : TRen} : forall {ps : List VarDecl} {xs1 xs2 : Li
     refine And.intro ?_ (params_comp (by simpa using h1) (by simpa using h2)
       (fun p' hp' => h p' (List.Mem.tail _ hp')))
     rw [h p (List.Mem.head _)]
-
-theorem ftvList_append {Ts Us : List Ty} : Ty.ftvList (Ts ++ Us) = Ty.ftvList Ts ++ Ty.ftvList Us := by
-  induction Ts with
-  | nil => rfl
-  | cons T Ts ih => simp [Ty.ftvList, ih]
 
 theorem ftvList_map_mem {A : Type} {f : A -> Ty} {l : List A} {a : A} (ha : List.Mem a l) {X : TVarName}
     (hX : List.Mem X (f a).ftv) : List.Mem X (Ty.ftvList (l.map f)) := by

@@ -123,8 +123,8 @@ theorem wf_new_mem {C : ClassName} {Ts : List Ty} {es : List Expr} {e : Expr} (h
   have hn := h.2.2.2.2.1
   have hc := h.2.2.2.2.2.2
   simp only [Expr.noShadow, Expr.closed, Bool.and_eq_true] at hn hc
-  exact WFExpr.sub h (fun _ hk => mem_localsList he hk) (fun _ hx => mem_ifVarsList he hx)
-    (noShadowList_mem he hn) (closedList_mem he hc.2)
+  exact WFExpr.sub h (fun _ hk => Expr.mem_localsList he hk) (fun _ hx => Expr.mem_ifVarsList he hx)
+    (Expr.noShadowList_mem he hn) (Expr.closedList_mem he hc.2)
 
 theorem wf_new_suffix {C C' : ClassName} {Ts Ts' : List Ty} {l r : List Expr} (h : WFExpr (.new C Ts (l ++ r)))
     (hT : Ty.ftvList Ts' = []) : WFExpr (.new C' Ts' r) := by
@@ -235,23 +235,13 @@ theorem wf_ifThen {C' : ClassName} {Ts : List Ty} {x : VarName} {e1 e2 : Expr} {
     | head => exact ⟨fun y hy hm => hav y hm (List.mem_append_left _ hy), fun X hX hm => hat X hm hX⟩
     | tail _ h => cases h
 
-theorem closedListM_mem {M : Method} {Xs : List TVarName} {xs : List VarName} : forall {Ms : List Method},
-    List.Mem M Ms -> Method.closedList Xs xs Ms = true -> M.closed Xs xs = true
-  | _, .head _, hc => by simp only [Method.closedList, Bool.and_eq_true] at hc; exact hc.1
-  | _, .tail _ h, hc => by simp only [Method.closedList, Bool.and_eq_true] at hc; exact closedListM_mem h hc.2
-
-theorem tbindersList_mem_e {e : Expr} {X : TVarName} : forall {es : List Expr}, List.Mem e es ->
-    List.Mem X e.tbinders -> List.Mem X (Expr.tbindersList es)
-  | _, .head _, hX => by simp only [Expr.tbindersList, listMem_iff, List.mem_append]; exact Or.inl hX
-  | _, .tail _ h, hX => by simp only [Expr.tbindersList, listMem_iff, List.mem_append]; exact Or.inr (tbindersList_mem_e h hX)
-
 theorem wf_call_arg {e0 : Expr} {Ts : List Ty} {m : MethName} {es : List Expr} {e : Expr}
     (h : WFExpr (.call e0 Ts m es)) (he : List.Mem e es) : WFExpr e := by
   have hn := h.2.2.2.2.1
   have hc := h.2.2.2.2.2.2
   simp only [Expr.noShadow, Bool.and_eq_true, Expr.closed] at hn hc
-  exact WFExpr.sub h (fun _ hk => List.mem_append_right _ (mem_localsList he hk))
-    (fun _ hx => List.mem_append_right _ (mem_ifVarsList he hx)) (noShadowList_mem he hn.2) (closedList_mem he hc.2)
+  exact WFExpr.sub h (fun _ hk => List.mem_append_right _ (Expr.mem_localsList he hk))
+    (fun _ hx => List.mem_append_right _ (Expr.mem_ifVarsList he hx)) (Expr.noShadowList_mem he hn.2) (Expr.closedList_mem he hc.2)
 
 theorem wf_found {M : Method} {m : MethName} {B0 Delta' : Bounds} {T0 : Ty} {ps : List VarDecl} {e0 : Expr}
     {v0 : Value} {Gs Gs' : List GTy} {vs : List Value} (hF : FreshM M (.mk Delta' T0 m ps e0))
@@ -308,12 +298,12 @@ theorem wf_found {M : Method} {m : MethName} {B0 Delta' : Bounds} {T0 : Ty} {ps 
       apply hav y (Or.inr hm)
       cases hpv with
       | head => exact Or.inl hy
-      | tail _ h => exact Or.inr (vbindersList_mem_e (exprs_mem h) hy)
+      | tail _ h => exact Or.inr (Expr.mem_vbindersList (Value.mem_exprs h) hy)
     . rw [Expr.tbinders_gsubst] at hm
       apply hat X (Or.inr hm)
       cases hpv with
       | head => exact Or.inl hX
-      | tail _ h => exact Or.inr (tbindersList_mem_e (exprs_mem h) hX)
+      | tail _ h => exact Or.inr (Expr.mem_tbindersList (Value.mem_exprs h) hX)
 
 theorem wf_innerFound {C C' : ClassName} {Ms : List Method} {M : Method} {m : MethName} {Delta' : Bounds} {T0 : Ty}
     {ps : List VarDecl} {e0 : Expr} {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} (hM : List.Mem M Ms)
@@ -322,7 +312,7 @@ theorem wf_innerFound {C C' : ClassName} {Ms : List Method} {M : Method} {m : Me
     exists Delta2 T2 ps2 e2, Found M [] Delta2 T2 m ps2 e2 [] Gs' (Value.newLocal C Gs C' Gs'' vs0 Ms) vs := by
   have hv0 : WFExpr (Value.newLocal C Gs C' Gs'' vs0 Ms).expr :=
     WFExpr.plug (E := .callRecv .hole Gs' m (Value.exprs vs)) ha
-  have hvs : forall v, List.Mem v vs -> WFExpr v.expr := fun v hv => wf_call_arg ha (exprs_mem hv)
+  have hvs : forall v, List.Mem v vs -> WFExpr v.expr := fun v hv => wf_call_arg ha (Value.mem_exprs hv)
   have hk0 := hv0.nodup
   have hc0 := hv0.2.2.2.2.2.2
   have ht0 := WFExpr.noThis hv0
@@ -330,9 +320,9 @@ theorem wf_innerFound {C C' : ClassName} {Ms : List Method} {M : Method} {m : Me
     forall_eq] at hk0
   simp only [Value.expr, Expr.closed, Bool.and_eq_true] at hc0
   simp only [NoThis, Value.expr, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ht0
-  have hkM : forall k, List.Mem k M.locals -> K.Nodup k := fun k hk => hk0.2.2 k (mem_localsListM hM hk)
-  have hcM : M.closed [] [] = true := closedListM_mem hM hc0.2
-  have htM : NoThisM M := fun h => ht0.2 (vbindersListM_mem hM h)
+  have hkM : forall k, List.Mem k M.locals -> K.Nodup k := fun k hk => hk0.2.2 k (Method.mem_localsList hM hk)
+  have hcM : M.closed [] [] = true := Method.closedList_mem hM hc0.2
+  have htM : NoThisM M := fun h => ht0.2 (Method.mem_vbindersList hM h)
   exact wf_found (B0 := []) (Gs := []) hF rfl hG' hp List.nodup_nil hkM hcM htM hv0 hvs
 
 theorem WFDecls.nodup {d : Decls} (hwf : WFDecls d) : forall k, List.Mem k (classes d) -> K.Nodup k := by
@@ -345,7 +335,7 @@ theorem kinds_all {d : Decls} {Delta : Bounds} {Ts : List Ty} (h : forall T, Lis
     (Ty.ftvList Ts).all (dom Delta).contains = true := by
   apply all_contains_iff.mpr
   intro X hX
-  rcases ftvList_mem.mp hX with ⟨T, hT, hX⟩
+  rcases Ty.mem_ftvList.mp hX with ⟨T, hT, hX⟩
   exact Kind.ftv (h T hT) X hX
 
 theorem Method.closed_this {M : Method} {T : List TVarName} {S : List VarName} (h : M.closed T (this :: S) = true) :
@@ -465,8 +455,8 @@ theorem wf_super_arg {e0 : Expr} {T : Ty} {Ts : List Ty} {m : MethName} {es : Li
   have hn := h.2.2.2.2.1
   have hc := h.2.2.2.2.2.2
   simp only [Expr.noShadow, Bool.and_eq_true, Expr.closed] at hn hc
-  exact WFExpr.sub h (fun _ hk => List.mem_append_right _ (mem_localsList he hk))
-    (fun _ hx => List.mem_append_right _ (mem_ifVarsList he hx)) (noShadowList_mem he hn.2) (closedList_mem he hc.2)
+  exact WFExpr.sub h (fun _ hk => List.mem_append_right _ (Expr.mem_localsList he hk))
+    (fun _ hx => List.mem_append_right _ (Expr.mem_ifVarsList he hx)) (Expr.noShadowList_mem he hn.2) (Expr.closedList_mem he hc.2)
 
 theorem wf_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec} {M : Method} {m : MethName}
     {Delta' : Bounds} {T0 : Ty} {ps : List VarDecl} {e0 : Expr} {v0 : Value} {Gs Gs' : List GTy} {vs : List Value}
@@ -477,10 +467,10 @@ theorem wf_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec}
   have hd := hD.dec_mem
   rcases WFDecls.method hwf hd hM with ⟨-, htM, -⟩
   have hkM : forall k, List.Mem k M.locals -> K.Nodup k :=
-    fun k hk => WFDecls.nodup hwf k (classes_mem_loc hd (mem_localsListM hM hk))
+    fun k hk => WFDecls.nodup hwf k (classes_mem_loc hd (Method.mem_localsList hM hk))
   have hcM := dec_method_closed hok hD hM
   have hv0 : WFExpr v0.expr := WFExpr.plug (E := .superRecv .hole (GTy.cls D.C Gs) Gs' m (Value.exprs vs)) ha
-  have hvs : forall v, List.Mem v vs -> WFExpr v.expr := fun v hv => wf_super_arg ha (exprs_mem hv)
+  have hvs : forall v, List.Mem v vs -> WFExpr v.expr := fun v hv => wf_super_arg ha (Value.mem_exprs hv)
   exact wf_found hF hG hG' hp (hwf.2.2.2.2.1 D.bounds (by
     simp only [listMem_iff, List.mem_append, List.mem_map]
     exact Or.inl (Exists.intro D (And.intro hd rfl)))) hkM hcM htM hv0 hvs
@@ -490,7 +480,7 @@ theorem wf_base {d : Decls} {a a' : Expr} (hwf : WFDecls d) (hok : DeclsOk d) (h
   cases hs with
   | simpleFieldFound h1 h2 h3 =>
     exact ⟨_, BaseStep.simpleFieldFound h1 h2 h3,
-      wf_new_mem (wf_field.mp ha) (exprs_mem (List.mem_append_left _ (List.of_mem_zip h3).2))⟩
+      wf_new_mem (wf_field.mp ha) (Value.mem_exprs (List.mem_append_left _ (List.of_mem_zip h3).2))⟩
   | simpleFieldSuper h1 h2 h3 h4 h5 =>
     refine ⟨_, BaseStep.simpleFieldSuper h1 h2 h3 h4 h5, ?_⟩
     have hw := wf_field.mp ha

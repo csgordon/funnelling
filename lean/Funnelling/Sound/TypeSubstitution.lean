@@ -68,21 +68,6 @@ theorem Gamma.lookup_gsubG {s : GSubst} {x : VarName} {T : Ty} : forall {gamma :
 theorem gdom_gsubG {s : GSubst} {gamma : Gamma} : gdom (gsubG s gamma) = gdom gamma := by
   simp [gdom, gsubG, VarDecl.subst, List.map_map, Function.comp_def]
 
-theorem Expr.gsubstList_append {s : GSubst} : forall {es1 es2 : List Expr},
-    Expr.gsubstList s (es1 ++ es2) = Expr.gsubstList s es1 ++ Expr.gsubstList s es2
-  | [], _ => rfl
-  | e :: es1, es2 => by simp only [List.cons_append, Expr.gsubstList]; rw [Expr.gsubstList_append]
-
-theorem tbindersList_append : forall {es1 es2 : List Expr},
-    Expr.tbindersList (es1 ++ es2) = Expr.tbindersList es1 ++ Expr.tbindersList es2
-  | [], _ => rfl
-  | e :: es1, es2 => by simp only [List.cons_append, Expr.tbindersList]; rw [tbindersList_append, List.append_assoc]
-
-theorem tbindersListM_mem {M : Method} {X : TVarName} : forall {Ms : List Method}, List.Mem M Ms ->
-    List.Mem X M.tbinders -> List.Mem X (Method.tbindersList Ms)
-  | _, .head _, hx => by simp only [Method.tbindersList, listMem_iff, List.mem_append]; exact Or.inl hx
-  | _, .tail _ h, hx => by simp only [Method.tbindersList, listMem_iff, List.mem_append]; exact Or.inr (tbindersListM_mem h hx)
-
 theorem substList_app {s : TSubst} {Ts Us : List Ty} :
     Ty.substList s (Ts ++ Us) = Ty.substList s Ts ++ Ty.substList s Us := by
   simp [substList_eq_map]
@@ -176,7 +161,7 @@ theorem vars_gsubst {s : GSubst} {Xs : List TVarName} (h : forall X, List.Mem X 
   intro X hX
   apply var_gsubst_none
   apply h
-  rcases ftvList_mem.mp hX with ⟨T, hT⟩
+  rcases Ty.mem_ftvList.mp hX with ⟨T, hT⟩
   simp only [vars, listMem_iff, List.mem_map] at hT
   rcases hT.1 with ⟨Y, hY⟩; rw [<- hY.2] at hT; have := hT.2; simp [Ty.ftv] at this; rw [this]; exact hY.1
 
@@ -187,15 +172,6 @@ theorem Sub.cls_target {d : Decls} {Delta : Bounds} {T1 T : Ty} (h : Sub d Delta
   | subInherit _ _ _ ih => intro _ _ _; exact ih (C := _) (Ts := _) (by simp only [Ty.subst]; rfl)
   | subInheritLocal _ _ _ ih => intro _ _ _; exact ih (C := _) (Ts := _) (by simp only [Ty.subst]; rfl)
   | subVar _ _ _ => intro _ _ e; cases e
-
-theorem gsubstList_mem {s : GSubst} {M' : Method} : forall {Ms : List Method}, List.Mem M' (Method.gsubstList s Ms) ->
-    exists M, List.Mem M Ms /\ M' = M.gsubst s
-  | [], h => by cases h
-  | M :: Ms, h => by
-    cases h with
-    | head => exact Exists.intro M (And.intro (List.Mem.head _) rfl)
-    | tail _ h =>
-      rcases gsubstList_mem h with ⟨M0, hM0⟩; exact Exists.intro M0 (And.intro (List.Mem.tail _ hM0.1) hM0.2)
 
 theorem names_gsubst {s : GSubst} : forall {Ms : List Method}, (Method.gsubstList s Ms).map Method.name = Ms.map Method.name
   | [] => rfl
@@ -321,7 +297,7 @@ theorem Consistent.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
   . intro m; rw [names_gsubst]; exact h.2.2.2.1 m
   . intro M' hM'
     rw [abs_gsubst]
-    cases gsubstList_mem hM' with
+    cases Method.gsubstList_mem hM' with
     | intro M hM => rw [hM.2]; exact OverrideOkM.gsubst hwf hok (h.2.2.2.2 M hM.1) (hdis M hM.1)
 
 theorem OverrideOk.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {s : GSubst}
@@ -329,7 +305,7 @@ theorem OverrideOk.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
     (hdis : forall M, List.Mem M Ms -> forall X, List.Mem X (dom M.bounds) -> Not (List.Mem X (s.map Prod.fst))) :
     OverrideOk d Delta2 (.cls C0 (Ty.substList s.ty Ts)) (Method.gsubstList s Ms) := by
   intro M' C' Ts' hM' hs
-  rcases gsubstList_mem hM' with ⟨M, hM⟩
+  rcases Method.gsubstList_mem hM' with ⟨M, hM⟩
   rw [hM.2]
   rcases Sub.inv_subst hd (Delta2 := Delta) (A := Ty.ftvList Ts) hs rfl (fun _ h => h) with ⟨T0, h0⟩
   rcases Sub.cls_target h0.2.1 rfl with ⟨C1, U0, e0⟩
@@ -365,7 +341,7 @@ theorem Typing.gsub_newLocal {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd
   simp only [Expr.noShadow, Bool.and_eq_true, Expr.tbinders, listMem_iff, List.mem_append, NoThis, Expr.vbinders,
     not_or, Expr.uniq] at hn hdis ht hu
   have hdisM : forall M, List.Mem M Ms -> forall X, List.Mem X (dom M.bounds) -> Not (List.Mem X (s.map Prod.fst)) :=
-    fun M hM X hX => hdis X (Or.inr (tbindersListM_mem hM (dom_mem_tbinders hX)))
+    fun M hM X hX => hdis X (Or.inr (Method.mem_tbindersList hM (dom_mem_tbinders hX)))
   have hg' := hg.mono h2.sub
   have sc' := hg'.substCtx
   simp only [Expr.gsubst] at ih6 |-
@@ -378,8 +354,8 @@ theorem Typing.gsub_newLocal {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd
     have h1' := Ty.ftvList_gsubst hX
     have h2' : List.Mem X (dom Delta') := by
       apply h3
-      rcases ftvList_mem.mp h1'.1 with ⟨T, hT⟩
-      refine ftvList_mem.mpr (Exists.intro T (And.intro ?_ hT.2))
+      rcases Ty.mem_ftvList.mp h1'.1 with ⟨T, hT⟩
+      refine Ty.mem_ftvList.mpr (Exists.intro T (And.intro ?_ hT.2))
       simp only [cod, listMem_iff, List.mem_map, List.mem_filter] at hT |-
       rcases hT.1 with ⟨b, hb⟩; exact Exists.intro b (And.intro hb.1.1 hb.2)
     simp only [dom, listMem_iff, List.mem_map] at h2'
@@ -394,17 +370,17 @@ theorem Typing.gsub_newLocal {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd
   . have := Kind.subst hd sc'.sub sc'.kind h5
     exact this
   . intro M' hM'
-    rcases gsubstList_mem hM' with ⟨M, hM⟩
+    rcases Method.gsubstList_mem hM' with ⟨M, hM⟩
     rw [hM.2]
-    have hnM := noShadowListM_mem hM.1 hn.2
-    have htM : NoThisM M := fun h => ht.2 (vbindersListM_mem hM.1 h)
+    have hnM := Method.noShadowList_mem hM.1 hn.2
+    have htM : NoThisM M := fun h => ht.2 (Method.mem_vbindersList hM.1 h)
     have hmo := MethodOk.vmap (ih7 M hM.1) (n := []) (fun _ h => h) (fun y hy => innerG_gsub_sub y (List.mem_filter.mp hy).1)
       (innerG_nodup (by rw [gdom_gsubG]; exact n1) _ _) (fun _ _ _ h => by cases h) (fun _ _ h => by cases h)
       (by rw [gdom_gsubG]; exact innerG_nodup n1 _ _) (by rw [gdom_gsubG]; exact innerG_dom sc _ _)
       (innerG_dom (by rw [gdom_gsubG]; exact sc) _ _) (by rw [Method.noShadow_gsubst]; exact hnM)
       (by rw [Method.vsubst_nil, Method.noShadow_gsubst]; exact hnM)
       (by simp only [NoThisM]; rw [Method.vbinders_gsubst]; exact htM)
-      (by rw [Method.uniq_gsubst]; exact uniqList_mem hM.1 hu.2) (fun _ h => by cases h)
+      (by rw [Method.uniq_gsubst]; exact Method.uniqList_mem hM.1 hu.2) (fun _ h => by cases h)
     rwa [Method.vsubst_nil] at hmo
 
 mutual
@@ -482,8 +458,8 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
     refine Typing.gsub_newLocal hwf hok hd h1 h2 h3 h4 h5 h8 ih6 ?_ hg hdis0 n1 sc hn0 ht0 hu0
     intro M hM
     exact MethodOk.gsub hwf hok hd (h7 M hM) (hg.mono h2.sub)
-      (fun X hX => hdis X (Or.inr (tbindersListM_mem hM hX))) (innerG_nodup n1 _ _) (innerG_dom sc _ _)
-      (noShadowListM_mem hM hn.2) (fun h => ht.2 (vbindersListM_mem hM h)) (uniqList_mem hM hu.2)
+      (fun X hX => hdis X (Or.inr (Method.mem_tbindersList hM hX))) (innerG_nodup n1 _ _) (innerG_dom sc _ _)
+      (Method.noShadowList_mem hM hn.2) (fun h => ht.2 (Method.mem_vbindersList hM h)) (Method.uniqList_mem hM hu.2)
   | Delta, gamma, _, _, .ifInstanceof (e0 := e0) (x := x) h0 hk hc h1 h2, s, _, xs, hg, hdis, n1, sc, hn, ht, hu => by
     simp only [Expr.noShadow, Bool.and_eq_true, Bool.not_eq_true', Expr.tbinders, listMem_iff, List.mem_append,
       NoThis, Expr.vbinders, List.mem_cons, not_or, Expr.uniq] at hn hdis ht hu

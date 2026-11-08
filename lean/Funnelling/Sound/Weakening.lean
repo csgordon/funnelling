@@ -119,24 +119,6 @@ theorem Method.noShadowList_binders : forall {Ms : List Method} {Xs : List TVarN
     . exact Method.noShadowList_binders hn.2 ht.2 y hy
 end
 
-theorem noShadowList_append {Xs : List TVarName} {xs : List VarName} {es1 es2 : List Expr} :
-    Expr.noShadowList Xs xs (es1 ++ es2) = (Expr.noShadowList Xs xs es1 && Expr.noShadowList Xs xs es2) := by
-  induction es1 with
-  | nil => simp [Expr.noShadowList]
-  | cons e es ih => simp [Expr.noShadowList, ih, Bool.and_assoc]
-
-theorem vbindersList_append {es1 es2 : List Expr} :
-    Expr.vbindersList (es1 ++ es2) = Expr.vbindersList es1 ++ Expr.vbindersList es2 := by
-  induction es1 with
-  | nil => simp [Expr.vbindersList]
-  | cons e es ih => simp [Expr.vbindersList, ih]
-
-theorem uniqList_append {es1 es2 : List Expr} :
-    Expr.uniqList (es1 ++ es2) <-> Expr.uniqList es1 /\ Expr.uniqList es2 := by
-  induction es1 with
-  | nil => simp [Expr.uniqList]
-  | cons e es ih => simp [Expr.uniqList, ih, and_assoc]
-
 theorem Pairing.mono {Delta Delta2 : Bounds} (hs : Sub1 Delta Delta2) {Fs : List Funnel} {Ts : List Ty}
     {D0 : Bounds} {T0 : List Ty} (h : Pairing Delta Fs Ts D0 T0) : Pairing Delta2 Fs Ts D0 T0 := by
   induction h with

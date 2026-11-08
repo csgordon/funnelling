@@ -507,8 +507,8 @@ theorem RenE.inv {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 rv3 rt3 Sa 
         exact List.pairwise_map.mpr (List.Pairwise.imp_of_mem
           (fun hX hY hne e => hne ((hinv _ hX).symm.trans ((congrArg (rn rt2) e).trans (hinv _ hY)))) hk1.2.1)
       . intro M hM
-        have hMu := uniqList_mem hM hu.2
-        have hMt : Not (List.Mem this M.vbinders) := fun h => hb.2 (vbindersListM_mem hM h)
+        have hMu := Method.uniqList_mem hM hu.2
+        have hMt : Not (List.Mem this M.vbinders) := fun h => hb.2 (Method.mem_vbindersList hM h)
         cases M with
         | mk D T0 m ps body =>
           simp only [Method.uniq, Method.vbinders, listMem_iff, List.mem_append, not_or] at hMu hMt

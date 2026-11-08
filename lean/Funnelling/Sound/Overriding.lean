@@ -26,7 +26,7 @@ theorem substList_bind_vars_id {Dl : Bounds} {L : List Ty}
 theorem vars_append {Xs Ys : List TVarName} : vars (Xs ++ Ys) = vars Xs ++ vars Ys := by simp [vars]
 
 theorem ftv_vars {X : TVarName} {Xs : List TVarName} (h : List.Mem X (Ty.ftvList (vars Xs))) : List.Mem X Xs := by
-  rcases ftvList_mem.mp h with ⟨T, hT⟩
+  rcases Ty.mem_ftvList.mp h with ⟨T, hT⟩
   simp only [vars, listMem_iff, List.mem_map] at hT
   rcases hT.1 with ⟨Y, hY⟩; rw [<- hY.2] at hT; have := hT.2; simp [Ty.ftv] at this; rw [this]; exact hY.1
 

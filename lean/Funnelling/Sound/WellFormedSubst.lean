@@ -14,7 +14,7 @@ theorem KNodup.vsubst {n : VSubst} {Ms : List Method} {Fs : List Funnel} (h : KN
     KNodup (Method.vsubstList n Ms) Fs := by
   unfold KNodup at h |-
   refine ⟨by rw [names_vsubst]; exact h.1, h.2.1, fun M hM => ?_⟩
-  rcases vsubstList_mem hM with ⟨M0, hM0, e⟩
+  rcases Method.vsubstList_mem hM with ⟨M0, hM0, e⟩
   subst e
   cases M0 with
   | mk D T m ps b => exact h.2.2 (Method.mk D T m ps b) hM0
@@ -216,7 +216,7 @@ theorem KNodup.gsubst {s : GSubst} {Ms : List Method} {Fs : List Funnel} (h : KN
     KNodup (Method.gsubstList s Ms) (Fs.map (Funnel.gsubst s)) := by
   unfold KNodup at h |-
   refine ⟨by rw [names_gsubst]; exact h.1, List.Nodup.sublist (domF_gsubst_sub Fs).1 h.2.1, fun M hM => ?_⟩
-  rcases gsubstList_mem hM with ⟨M0, hM0, e⟩
+  rcases Method.gsubstList_mem hM with ⟨M0, hM0, e⟩
   subst e
   cases M0 with
   | mk D T m ps b =>
