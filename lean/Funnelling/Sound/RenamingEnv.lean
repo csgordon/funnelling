@@ -136,6 +136,23 @@ structure REnv (rv : VRen) (rt : TRen) (Delta Delta' : Bounds) (gamma gamma' : G
   gx' : Sub1 (gdom gamma') xs'
   kv : forall p, List.Mem p rv -> Not (p.1 = this) /\ Not (p.2 = this)
 
+theorem REnv.refl {Delta : Bounds} {T : Ty} {x : VarName}
+    (hd : forall b, List.Mem b Delta -> forall X, List.Mem X b.T.ftv -> List.Mem X (dom Delta))
+    (hT : forall X, List.Mem X T.ftv -> List.Mem X (dom Delta)) :
+    REnv [] [] Delta Delta [{ T := T, x := x }] [{ T := T, x := x }] (dom Delta) [x] [x] :=
+  { bD := fun b hb => by rw [rn_nil, Ty.ren_id (fun _ _ => rn_nil)]; exact hb
+    dX := fun X hX => hX
+    dT := hd
+    g := fun z U hl => by rw [rn_nil, Ty.ren_id (fun _ _ => rn_nil)]; exact hl
+    gT := fun y hy X hX => by
+      cases hy with
+      | head => exact hT X hX
+      | tail _ h => cases h
+    gN := by simp [gdom]
+    gx := fun y hy => hy
+    gx' := fun y hy => hy
+    kv := fun _ h => by cases h }
+
 theorem REnv.ext {rv : VRen} {rt : TRen} {Delta Delta' : Bounds} {gamma gamma' : Gamma} {Xs : List TVarName}
     {xs xs' : List VarName} (env : REnv rv rt Delta Delta' gamma gamma' Xs xs xs') {T : Ty} {x y : VarName}
     (hx : Not (List.Mem x xs)) (hy : Not (List.Mem y xs')) (hT : forall X, List.Mem X T.ftv -> List.Mem X Xs)

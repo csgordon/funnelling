@@ -211,18 +211,8 @@ theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
     have hmo := (hok D hD.dec_mem).2.2.1 M hM
     have env : REnv [] [] D.bounds D.bounds [{ T := .cls D.C (vars (dom D.bounds)), x := this }]
         [{ T := .cls D.C (vars (dom D.bounds)), x := this }] (dom D.bounds) [this] [this] :=
-      { bD := fun b hb => by rw [rn_nil, Ty.ren_id (fun _ _ => rn_nil)]; exact hb
-        dX := fun X hX => hX
-        dT := fun b hb X hX => Kind.ftv ((hok D hD.dec_mem).1 b.T (List.mem_map_of_mem (f := Bound.T) hb)) X hX
-        g := fun z U hl => by rw [rn_nil, Ty.ren_id (fun _ _ => rn_nil)]; exact hl
-        gT := fun y hy X hX => by
-          cases hy with
-          | head => exact ftv_vars (by simpa [Ty.ftv] using hX)
-          | tail _ h => cases h
-        gN := by simp [gdom]
-        gx := fun y hy => hy
-        gx' := fun y hy => hy
-        kv := fun _ h => by cases h }
+      REnv.refl (fun b hb X hX => Kind.ftv ((hok D hD.dec_mem).1 b.T (List.mem_map_of_mem (f := Bound.T) hb)) X hX)
+        (fun X hX => ftv_vars (by simpa [Ty.ftv] using hX))
     have hmo' := MethodOk.ren hwf hok hd hmo f.fresh.1 env hwm.2.2 f.methNoShadow hwm.2.1 f.methNoThis hwm.1 f.methUniq
     have hmi := methodOk_inv hmo'
     have hlook : forall b, List.Mem b (D.bounds ++ Delta') -> forall U,
@@ -368,18 +358,7 @@ theorem pres_innerFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
     rw [<- h5, hcomp2 _ hcl0.2]
   have env : REnv [] [] [] [] [{ T := .cls C (GTy.tys Gs), x := this }]
       [{ T := .cls C (GTy.tys Gs), x := this }] [] [this] [this] :=
-    { bD := fun _ h => by cases h
-      dX := fun _ h => by cases h
-      dT := fun _ h => by cases h
-      g := fun z U hl => by rw [rn_nil, Ty.ren_id (fun _ _ => rn_nil)]; exact hl
-      gT := fun y hy X hX => by
-        cases hy with
-        | head => simp [Ty.ftv, GTy.ftv_tys] at hX
-        | tail _ h => cases h
-      gN := by simp [gdom]
-      gx := fun y hy => hy
-      gx' := fun y hy => hy
-      kv := fun _ h => by cases h }
+    REnv.refl (fun _ h => by cases h) (fun X hX => by simp [Ty.ftv, GTy.ftv_tys] at hX)
   have hmeth' : MethodOk d [] [{ T := .cls C (GTy.tys Gs), x := this }] M := by
     simpa [withoutThis, restrict] using hmeth
   have hmo' := MethodOk.ren hwf hok hd hmeth' f.fresh.1 env hnM f.methNoShadow htM f.methNoThis huM f.methUniq

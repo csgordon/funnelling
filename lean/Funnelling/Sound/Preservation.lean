@@ -302,21 +302,8 @@ theorem pres_ifThen {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
       (fun y hy hm => absurd hm (hdf y hy))
   have ht' : NoThis e1' := noThis_of_vsubst (WFExpr.noThis ha')
   have hu' : e1'.uniq := (Expr.vsubst_back _ _).2.1 (WFExpr.uniq ha')
-  have hT : forall X, List.Mem X (Ty.cls C' Ts).ftv -> List.Mem X ([] : List TVarName) :=
-    fun X hX => Kind.ftv hw.kind X hX
   have env : REnv [] [] [] [] [{ T := .cls C' Ts, x := x }] [{ T := .cls C' Ts, x := x }] [] [x] [x] :=
-    { bD := fun _ h => by cases h
-      dX := fun _ h => by cases h
-      dT := fun _ h => by cases h
-      g := fun z U hl => by rw [rn_nil, Ty.ren_id (fun _ _ => rn_nil)]; exact hl
-      gT := fun y hy X hX => by
-        cases hy with
-        | head => exact hT X hX
-        | tail _ h => cases h
-      gN := by simp [gdom]
-      gx := fun y hy => hy
-      gx' := fun y hy => hy
-      kv := fun _ h => by cases h }
+    REnv.refl (fun _ h => by cases h) (fun X hX => Kind.ftv hw.kind X hX)
   have ty1 := hw.ty1
   have hr := Typing.ren hwf hok hd ty1 hf.1 env hn.1.2 hn' ht.1.2 ht' hu.2.1 hu'
   rw [Ty.ren_id (fun _ _ => rn_nil)] at hr
