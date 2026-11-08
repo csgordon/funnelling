@@ -24,7 +24,7 @@ theorem notDom_single {e : Expr} {x : VarName} {v : Value} (h : VSubstDefined [x
   exact h y hy (by simpa using hm)
 
 theorem noThis_of_vsubst {e : Expr} {n : VSubst} (h : NoThis (e.vsubst n)) : NoThis e :=
-  fun ht => h (Expr.vbinders_vsubst ht)
+  fun ht => h ((Expr.vsubst_back _ _).1 _ ht)
 
 theorem renE_if {e1 e1' e1'' : Expr} {x : VarName} {v : Value} (h1 : RenE [] [] e1' e1)
     (h2 : RenE [] [] e1 e1'') (hd1 : VSubstDefined [x] e1') (hd2 : VSubstDefined [x] e1'')

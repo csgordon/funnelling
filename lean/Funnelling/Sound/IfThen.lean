@@ -4,70 +4,6 @@ open Funnelling.SoundSimp
 
 namespace Funnelling.High
 
-mutual
-theorem Expr.noShadow_of_vsubst : forall {e : Expr} {n : VSubst} {Xs : List TVarName} {xs : List VarName},
-    (e.vsubst n).noShadow Xs xs = true -> e.noShadow Xs xs = true
-  | .var _, _, _, _, _ => rfl
-  | .call e _ _ es, _, _, _, h => by
-    simp only [Expr.vsubst, Expr.noShadow, Bool.and_eq_true] at h |-
-    exact And.intro (Expr.noShadow_of_vsubst h.1) (Expr.noShadowList_of_vsubst h.2)
-  | .superCall e _ _ _ es, _, _, _, h => by
-    simp only [Expr.vsubst, Expr.noShadow, Bool.and_eq_true] at h |-
-    exact And.intro (Expr.noShadow_of_vsubst h.1) (Expr.noShadowList_of_vsubst h.2)
-  | .field e _, _, _, _, h => by
-    simp only [Expr.vsubst, Expr.noShadow] at h |-
-    exact Expr.noShadow_of_vsubst h
-  | .new _ _ es, _, _, _, h => Expr.noShadowList_of_vsubst h
-  | .newLocal _ _ _ _ es Ms, _, _, _, h => by
-    simp only [Expr.vsubst, Expr.noShadow, Bool.and_eq_true] at h |-
-    exact And.intro (Expr.noShadowList_of_vsubst h.1) (Method.noShadowList_of_vsubst h.2)
-  | .ifInst e0 _ _ e1 e2, _, _, _, h => by
-    simp only [Expr.vsubst, Expr.noShadow, Bool.and_eq_true] at h |-
-    exact And.intro (And.intro (And.intro (Expr.noShadow_of_vsubst h.1.1.1) h.1.1.2) (Expr.noShadow_of_vsubst h.1.2))
-      (Expr.noShadow_of_vsubst h.2)
-theorem Expr.noShadowList_of_vsubst : forall {es : List Expr} {n : VSubst} {Xs : List TVarName} {xs : List VarName},
-    Expr.noShadowList Xs xs (Expr.vsubstList n es) = true -> Expr.noShadowList Xs xs es = true
-  | [], _, _, _, _ => rfl
-  | e :: es, _, _, _, h => by
-    simp only [Expr.vsubstList, Expr.noShadowList, Bool.and_eq_true] at h |-
-    exact And.intro (Expr.noShadow_of_vsubst h.1) (Expr.noShadowList_of_vsubst h.2)
-theorem Method.noShadow_of_vsubst : forall {M : Method} {n : VSubst} {Xs : List TVarName} {xs : List VarName},
-    (M.vsubst n).noShadow Xs xs = true -> M.noShadow Xs xs = true
-  | .mk _ _ _ _ e, _, _, _, h => by
-    simp only [Method.vsubst, Method.noShadow, Bool.and_eq_true] at h |-
-    exact And.intro h.1 (Expr.noShadow_of_vsubst h.2)
-theorem Method.noShadowList_of_vsubst : forall {Ms : List Method} {n : VSubst} {Xs : List TVarName}
-    {xs : List VarName}, Method.noShadowList Xs xs (Method.vsubstList n Ms) = true -> Method.noShadowList Xs xs Ms = true
-  | [], _, _, _, _ => rfl
-  | M :: Ms, _, _, _, h => by
-    simp only [Method.vsubstList, Method.noShadowList, Bool.and_eq_true] at h |-
-    exact And.intro (Method.noShadow_of_vsubst h.1) (Method.noShadowList_of_vsubst h.2)
-end
-
-mutual
-theorem Expr.uniq_of_vsubst : forall {e : Expr} {n : VSubst}, (e.vsubst n).uniq -> e.uniq
-  | .var _, _, _ => trivial
-  | .call e _ _ es, _, h => And.intro (Expr.uniq_of_vsubst h.1) (Expr.uniqList_of_vsubst h.2)
-  | .superCall e _ _ _ es, _, h => And.intro (Expr.uniq_of_vsubst h.1) (Expr.uniqList_of_vsubst h.2)
-  | .field e _, _, h => by
-    simp only [Expr.vsubst, Expr.uniq] at h |-
-    exact Expr.uniq_of_vsubst h
-  | .new _ _ es, _, h => Expr.uniqList_of_vsubst h
-  | .newLocal _ _ _ _ es Ms, _, h => And.intro (Expr.uniqList_of_vsubst h.1) (Method.uniqList_of_vsubst h.2)
-  | .ifInst e0 _ _ e1 e2, _, h =>
-    And.intro (Expr.uniq_of_vsubst h.1) (And.intro (Expr.uniq_of_vsubst h.2.1) (Expr.uniq_of_vsubst h.2.2))
-theorem Expr.uniqList_of_vsubst : forall {es : List Expr} {n : VSubst},
-    Expr.uniqList (Expr.vsubstList n es) -> Expr.uniqList es
-  | [], _, _ => trivial
-  | _ :: _, _, h => And.intro (Expr.uniq_of_vsubst h.1) (Expr.uniqList_of_vsubst h.2)
-theorem Method.uniq_of_vsubst : forall {M : Method} {n : VSubst}, (M.vsubst n).uniq -> M.uniq
-  | .mk _ _ _ _ _, _, h => And.intro h.1 (And.intro h.2.1 (Expr.uniq_of_vsubst h.2.2))
-theorem Method.uniqList_of_vsubst : forall {Ms : List Method} {n : VSubst},
-    Method.uniqList (Method.vsubstList n Ms) -> Method.uniqList Ms
-  | [], _, _ => trivial
-  | _ :: _, _, h => And.intro (Method.uniq_of_vsubst h.1) (Method.uniqList_of_vsubst h.2)
-end
-
 theorem all_not_contains_of {A : Type} [DecidableEq A] {l xs : List A} (h : forall x, List.Mem x l -> Not (List.Mem x xs)) :
     l.all (fun x => !(xs.contains x)) = true := by
   rw [List.all_eq_true]
@@ -181,10 +117,10 @@ theorem pres_ifThen' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclO
   have ht := WFExpr.noThis ha
   simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ht
   have hn' : e1'.noShadow [] [x] = true :=
-    Expr.noShadow_scope (Expr.noShadow_of_vsubst ha'.2.2.2.2.1)
+    Expr.noShadow_scope ((Expr.vsubst_back _ _).2.2 _ _ ha'.2.2.2.2.1)
       (fun y hy hm => absurd hm (hdf y hy))
   have ht' : NoThis e1' := noThis_of_vsubst (WFExpr.noThis ha')
-  have hu' : e1'.uniq := Expr.uniq_of_vsubst (WFExpr.uniq ha')
+  have hu' : e1'.uniq := (Expr.vsubst_back _ _).2.1 (WFExpr.uniq ha')
   have hT : forall X, List.Mem X (Ty.cls C' Ts).ftv -> List.Mem X ([] : List TVarName) :=
     fun X hX => Kind.ftv hw.kind X hX
   have env : REnv [] [] [] [] [{ T := .cls C' Ts, x := x }] [{ T := .cls C' Ts, x := x }] [] [x] [x] :=

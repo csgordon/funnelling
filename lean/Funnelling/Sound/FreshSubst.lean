@@ -68,58 +68,66 @@ theorem Method.noShadow_gsubst {s : GSubst} (M : Method) {Xs : List TVarName} {x
     (M.gsubst s).noShadow Xs xs = M.noShadow Xs xs := (Method.gsubst_keeps M).2.2.2.2 Xs xs
 
 mutual
-theorem Expr.vbinders_vsubst {n : VSubst} {x : VarName} : forall {e : Expr}, List.Mem x e.vbinders ->
-    List.Mem x (e.vsubst n).vbinders
-  | .var _, h => by cases h
-  | .call e _ _ es, h => by
-    simp only [Expr.vsubst, Expr.vbinders, listMem_iff, List.mem_append] at h |-
-    rcases h with h | h
-    . exact Or.inl (Expr.vbinders_vsubst h)
-    . exact Or.inr (Expr.vbindersList_vsubst h)
-  | .superCall e _ _ _ es, h => by
-    simp only [Expr.vsubst, Expr.vbinders, listMem_iff, List.mem_append] at h |-
-    rcases h with h | h
-    . exact Or.inl (Expr.vbinders_vsubst h)
-    . exact Or.inr (Expr.vbindersList_vsubst h)
-  | .field e _, h => by
-    simp only [Expr.vsubst, Expr.vbinders] at h |-
-    exact Expr.vbinders_vsubst h
-  | .new _ _ es, h => Expr.vbindersList_vsubst h
-  | .newLocal _ _ _ _ es Ms, h => by
-    simp only [Expr.vsubst, Expr.vbinders, listMem_iff, List.mem_append] at h |-
-    rcases h with h | h
-    . exact Or.inl (Expr.vbindersList_vsubst h)
-    . exact Or.inr (Method.vbindersList_vsubst h)
-  | .ifInst e0 _ _ e1 e2, h => by
-    simp only [Expr.vsubst, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons] at h |-
-    rcases h with ((h | h) | h) | h
-    . exact Or.inl (Or.inl (Or.inl h))
-    . exact Or.inl (Or.inl (Or.inr (Expr.vbinders_vsubst h)))
-    . exact Or.inl (Or.inr (Expr.vbinders_vsubst h))
-    . exact Or.inr (Expr.vbinders_vsubst h)
-theorem Expr.vbindersList_vsubst {n : VSubst} {x : VarName} : forall {es : List Expr},
-    List.Mem x (Expr.vbindersList es) -> List.Mem x (Expr.vbindersList (Expr.vsubstList n es))
-  | [], h => by cases h
-  | e :: es, h => by
-    simp only [Expr.vsubstList, Expr.vbindersList, listMem_iff, List.mem_append] at h |-
-    rcases h with h | h
-    . exact Or.inl (Expr.vbinders_vsubst h)
-    . exact Or.inr (Expr.vbindersList_vsubst h)
-theorem Method.vbinders_vsubst {n : VSubst} {x : VarName} : forall {M : Method}, List.Mem x M.vbinders ->
-    List.Mem x (M.vsubst n).vbinders
-  | .mk _ _ _ ps e, h => by
-    simp only [Method.vsubst, Method.vbinders, listMem_iff, List.mem_append] at h |-
-    rcases h with h | h
-    . exact Or.inl h
-    . exact Or.inr (Expr.vbinders_vsubst h)
-theorem Method.vbindersList_vsubst {n : VSubst} {x : VarName} : forall {Ms : List Method},
-    List.Mem x (Method.vbindersList Ms) -> List.Mem x (Method.vbindersList (Method.vsubstList n Ms))
-  | [], h => by cases h
-  | M :: Ms, h => by
-    simp only [Method.vsubstList, Method.vbindersList, listMem_iff, List.mem_append] at h |-
-    rcases h with h | h
-    . exact Or.inl (Method.vbinders_vsubst h)
-    . exact Or.inr (Method.vbindersList_vsubst h)
+theorem Expr.vsubst_back : forall (e : Expr) (n : VSubst),
+    (forall x, List.Mem x e.vbinders -> List.Mem x (e.vsubst n).vbinders) /\ ((e.vsubst n).uniq -> e.uniq) /\
+    forall Xs xs, (e.vsubst n).noShadow Xs xs = true -> e.noShadow Xs xs = true
+  | .var _, _ => ⟨fun _ h => (nomatch h), fun _ => trivial, fun _ _ _ => rfl⟩
+  | .call e _ _ es, n => by
+    have h1 := Expr.vsubst_back e n
+    have h2 := Expr.vsubstList_back es n
+    simp only [Expr.vsubst, Expr.vbinders, Expr.uniq, Expr.noShadow, listMem_iff, List.mem_append, Bool.and_eq_true] at h1 h2 |-
+    grind
+  | .superCall e _ _ _ es, n => by
+    have h1 := Expr.vsubst_back e n
+    have h2 := Expr.vsubstList_back es n
+    simp only [Expr.vsubst, Expr.vbinders, Expr.uniq, Expr.noShadow, listMem_iff, List.mem_append, Bool.and_eq_true] at h1 h2 |-
+    grind
+  | .field e _, n => by
+    have h1 := Expr.vsubst_back e n
+    simp only [Expr.vsubst, Expr.vbinders, Expr.uniq, Expr.noShadow, listMem_iff, Bool.and_eq_true] at h1 |-
+    grind
+  | .new _ _ es, n => by
+    have h1 := Expr.vsubstList_back es n
+    simp only [Expr.vsubst, Expr.vbinders, Expr.uniq, Expr.noShadow, listMem_iff, List.mem_append, Bool.and_eq_true] at h1 |-
+    grind
+  | .newLocal _ _ _ _ es Ms, n => by
+    have h1 := Expr.vsubstList_back es n
+    have h2 := Method.vsubstList_back Ms (n.filter fun p => p.1 != this)
+    simp only [Expr.vsubst, Expr.vbinders, Expr.uniq, Expr.noShadow, listMem_iff, List.mem_append, Bool.and_eq_true] at h1 h2 |-
+    grind
+  | .ifInst e0 _ _ e1 e2, n => by
+    have h1 := Expr.vsubst_back e0 n
+    have h2 := Expr.vsubst_back e1 n
+    have h3 := Expr.vsubst_back e2 n
+    simp only [Expr.vsubst, Expr.vbinders, Expr.uniq, Expr.noShadow, listMem_iff, List.mem_append, List.mem_cons, Bool.and_eq_true] at h1 h2 h3 |-
+    grind
+theorem Expr.vsubstList_back : forall (es : List Expr) (n : VSubst),
+    (forall x, List.Mem x (Expr.vbindersList es) -> List.Mem x (Expr.vbindersList (Expr.vsubstList n es))) /\
+    (Expr.uniqList (Expr.vsubstList n es) -> Expr.uniqList es) /\
+    forall Xs xs, Expr.noShadowList Xs xs (Expr.vsubstList n es) = true -> Expr.noShadowList Xs xs es = true
+  | [], _ => ⟨fun _ h => (nomatch h), fun _ => trivial, fun _ _ _ => rfl⟩
+  | e :: es, n => by
+    have h1 := Expr.vsubst_back e n
+    have h2 := Expr.vsubstList_back es n
+    simp only [Expr.vsubstList, Expr.vbindersList, Expr.uniqList, Expr.noShadowList, listMem_iff, List.mem_append, Bool.and_eq_true] at h1 h2 |-
+    grind
+theorem Method.vsubst_back : forall (M : Method) (n : VSubst),
+    (forall x, List.Mem x M.vbinders -> List.Mem x (M.vsubst n).vbinders) /\ ((M.vsubst n).uniq -> M.uniq) /\
+    forall Xs xs, (M.vsubst n).noShadow Xs xs = true -> M.noShadow Xs xs = true
+  | .mk _ _ _ _ e, n => by
+    have h1 := Expr.vsubst_back e n
+    simp only [Method.vsubst, Method.vbinders, Method.uniq, Method.noShadow, listMem_iff, List.mem_append, Bool.and_eq_true] at h1 |-
+    grind
+theorem Method.vsubstList_back : forall (Ms : List Method) (n : VSubst),
+    (forall x, List.Mem x (Method.vbindersList Ms) -> List.Mem x (Method.vbindersList (Method.vsubstList n Ms))) /\
+    (Method.uniqList (Method.vsubstList n Ms) -> Method.uniqList Ms) /\
+    forall Xs xs, Method.noShadowList Xs xs (Method.vsubstList n Ms) = true -> Method.noShadowList Xs xs Ms = true
+  | [], _ => ⟨fun _ h => (nomatch h), fun _ => trivial, fun _ _ _ => rfl⟩
+  | M :: Ms, n => by
+    have h1 := Method.vsubst_back M n
+    have h2 := Method.vsubstList_back Ms n
+    simp only [Method.vsubstList, Method.vbindersList, Method.uniqList, Method.noShadowList, listMem_iff, List.mem_append, Bool.and_eq_true] at h1 h2 |-
+    grind
 end
 
 theorem mem_zip_fst {A B : Type} : forall {xs : List A} {ys : List B} {x : A}, xs.length = ys.length ->

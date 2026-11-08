@@ -243,7 +243,7 @@ theorem pres_simpleFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : 
     Typing d [] [] ((e0.gsubst (bind (D.bounds ++ Delta') (Gs ++ Gs'))).vsubst
       ((this :: ps.map VarDecl.x).zip (v0 :: vs))) T := by
   have hwm := WFDecls.method hwf hD.dec_mem hM
-  have hn0 := Expr.noShadow_of_vsubst ha'.2.2.2.2.1
+  have hn0 := (Expr.vsubst_back _ _).2.2 _ _ ha'.2.2.2.2.1
   rw [Expr.noShadow_gsubst] at hn0
   have hnx : e0.noShadow [] (this :: ps.map VarDecl.x) = true :=
     Expr.noShadow_scope hn0 (fun y hy hm => absurd hm (hvs y hy))
@@ -251,7 +251,7 @@ theorem pres_simpleFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : 
     have := noThis_of_vsubst (WFExpr.noThis ha')
     simpa [NoThis, Expr.vbinders_gsubst] using this
   have hu0 : e0.uniq := by
-    have := Expr.uniq_of_vsubst (WFExpr.uniq ha')
+    have := (Expr.vsubst_back _ _).2.1 (WFExpr.uniq ha')
     rwa [Expr.uniq_gsubst] at this
   rcases inv_super h rfl with ⟨⟨D1, Ts, D0, Ts0, Delta1, T0o, pso, body, T0', Ts'⟩, hw⟩
   have ann := hw.ann
