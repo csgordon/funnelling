@@ -4,15 +4,8 @@ import Funnelling.High.Declarations
 import Funnelling.High.WellFormed
 import Funnelling.High.Typing
 import Funnelling.High.Reduction
-import Funnelling.Low.Syntax
-import Funnelling.Low.Substitution
-import Funnelling.Low.Declarations
-import Funnelling.Low.WellFormed
-import Funnelling.Low.Typing
-import Funnelling.Low.Reduction
-import Funnelling.Low.Soundness
-import Funnelling.Translation
-import Funnelling.Adequacy
 import Funnelling.Proof
 import Funnelling.Soundness
 import Funnelling.Examples
+import Funnelling.Sound.RenTyping
+import Funnelling.Sound.GSubT

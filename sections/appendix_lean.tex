@@ -47,10 +47,8 @@ The project depends on Mathlib v4.35.0, which brings Batteries and Aesop; \textt
 The current files import only the core library of Lean.
 \texttt{lake build} in the folder \texttt{lean} checks all the files.
 \\[1ex]
-The formalization has two levels.
 The \emph{high level}, \leanfile{High}, follows the metarules of the paper as closely as Lean allows; Section~\ref{app:lean:sidebyside} compares it with the paper.
-The \emph{low level}, \leanfile{Low}, is free: it can change in any way that makes the proofs easier, and several low levels can be tried, without changing the high level.
-The low level starts as a computable version of the high level.
+The proofs are on the high level.
 The files are:
 \begin{itemize}
 \item \leanfile{High/Syntax.lean}: names, types, ground types, funnels, expressions, methods, values, declarations, class declarations $K$.
@@ -59,17 +57,16 @@ The files are:
 \item \leanfile{High/WellFormed.lean}: the well-formedness requirements A1-A12.
 \item \leanfile{High/Typing.lean}: subtyping, kinding, checked casts, $\mathsf{overrideOk}$, $\mathsf{consistent}$, typing, method, class and program typing.
 \item \leanfile{High/Reduction.lean}: evaluation contexts and the reduction.
-\item \leanfile{Low/*.lean}: the low level, and \leanfile{Low/Soundness.lean}, progress and preservation of the low level.
-\item \leanfile{Translation.lean}: the translation from the high level to the low level.
-\item \leanfile{Adequacy.lean}: lemmas that relate the two levels through the translation.
+\item \leanfile{Sound/*.lean}: the lemmas of the proofs, and \leanfile{Sound/Soundness.lean}, progress and preservation.
 \item \leanfile{Proof.lean}: the proofs of Type Soundness and Determinism.
 \item \leanfile{Soundness.lean}: Type Soundness and Determinism, on the high level.
 \item \leanfile{Examples.lean}: the validation examples, on the high level.
 \end{itemize}
 Lean accepts all the files.
 The fixed statements are \texttt{typeSoundness} and \texttt{determinism} in \leanfile{Soundness.lean}, the two theorems of the paper.
-Everything else is a component of their proofs, and can change: the low level, the translation, the adequacy lemmas and \leanfile{Proof.lean}.
-\leanfile{Proof.lean} proves \texttt{typeSoundness} from progress and preservation on the high level, each proved through the low level; the low-level progress and preservation and the six adequacy lemmas are stated with \texttt{sorry}.
+Everything else is a component of their proofs, and can change: \leanfile{Sound/*.lean} and \leanfile{Proof.lean}.
+\leanfile{Proof.lean} proves \texttt{typeSoundness} from progress and preservation on the high level, and \texttt{determinism} on the high level.
+The two proofs are complete: they use no \texttt{sorry}, and they depend on no axiom other than the three standard axioms of Lean, \texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound} (Section~\ref{app:lean:statements}).
 Section~\ref{app:lean:examples} lists which validation examples are proved and which are stated with \texttt{sorry}.
 \\[1ex]
 The Lean code is written in ASCII:
@@ -1481,36 +1478,17 @@ theorem determinism {d e e1 e2} (hwf : WFDecls d) (he : WFExpr e) (h1 : Reduces 
 \end{lstlisting}
 \texttt{hok} says that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$; \texttt{hwf} says that \decls satisfies A1-A11, and \texttt{he0} says that the initial expression satisfies A3-A8 and A12, as every program of the paper does; in \texttt{determinism}, \texttt{he} says that the expression that reduces satisfies A3-A8 and A12.
 \\[1ex]
-The proofs are in \leanfile{Proof.lean}, and they can take any structure; \texttt{determinism} is stated there with \texttt{sorry}.
-For \texttt{typeSoundness}, the two structures below are both acceptable:
-\begin{itemize}
-\item \textbf{Divide first, then translate.}
-Type Soundness follows from progress and preservation on the high level, by induction on \texttt{Steps}.
-Progress and preservation on the high level follow from progress and preservation on the low level, through adequacy lemmas: the translation preserves values, well-formedness, $\mathsf{Dec}\gap\mathrm{Ok}$ and typing, and the two reductions simulate each other up to the names chosen by $\mathsf{fresh}$.
-This is the structure of \leanfile{Proof.lean} now.
-\item \textbf{Translate first, then divide.}
-Type Soundness is stated on the low level and proved there, from progress and preservation on the low level.
-The whole statement is then transported to the high level, through a simulation between the reductions of the two levels.
-This structure is needed when the high level is sound, but progress or preservation do not hold on the high level as stated, for example because of the names chosen by $\mathsf{fresh}$.
-\end{itemize}
-In both structures, progress, preservation and the adequacy lemmas are components of the proof, not statements of the paper.
-\leanfile{Proof.lean} now uses these adequacy lemmas, stated with \texttt{sorry}:
+The proofs are in \leanfile{Proof.lean} and \leanfile{Sound/*.lean}, on the high level.
+The proofs are complete.
+In a Lean file that imports \texttt{Funnelling.Soundness}, the commands
 \begin{lstlisting}[language=lean,basicstyle=\scriptsize\ttfamily]
-theorem isValue_tr {e : High.Expr} : High.IsValue e <-> (trExpr e).isValue = true
-theorem wfExpr_tr {e : High.Expr} (he : High.WFExpr e) : Low.wfExpr (trExpr e) = true
-theorem declsOk_tr {d : High.Decls} (hwf : High.WFDecls d) (hok : High.DeclsOk d) :
-    Low.DeclsOk (trDecls d)
-theorem typing_tr {d : High.Decls} {e : High.Expr} {T : High.Ty} (hwf : High.WFDecls d) :
-    High.Typing d [] [] e T <->
-      Low.Typing (trDecls d) [] [] (trExpr e) (trTy T)
-theorem step_tr {d : High.Decls} {e e' : High.Expr} (hwf : High.WFDecls d) (he : High.WFExpr e)
-    (hs : High.Reduces d e e') : Low.Step (trDecls d) (trExpr e) (trExpr e')
-theorem step_back {d : High.Decls} {e : High.Expr} {e'' : Low.Expr} (hwf : High.WFDecls d)
-    (he : High.WFExpr e) (hs : Low.Step (trDecls d) (trExpr e) e'') :
-    exists e', High.Reduces d e e'
+#print axioms Funnelling.High.typeSoundness
+#print axioms Funnelling.High.determinism
 \end{lstlisting}
-The low level, the translation and these lemmas can change together; what must not change is the high level and the statements of \texttt{typeSoundness} and \texttt{determinism}.
-The planned proofs of progress and preservation, on whichever level they are proved, are:
+print \texttt{[propext, Classical.choice, Quot.sound]} for both theorems: the proofs use no \texttt{sorry} and no axiom other than propositional extensionality, the axiom of choice and the soundness of quotients, the three standard axioms of Lean.
+Type Soundness follows from progress and preservation, by induction on \texttt{Steps}.
+Progress, preservation and the lemmas below are components of the proof, not statements of the paper; what must not change is the high level and the statements of \texttt{typeSoundness} and \texttt{determinism}.
+The proofs of progress, preservation and determinism use these lemmas:
 \begin{enumerate}
 \item \textbf{Basic lemmas.} \texttt{lookup} on a substitution built by \texttt{zip}; by A1, A5 and A7, $\mathsf{declared}$, $\mathsf{scope}$ and $\mathrm{generic}$ have one result per class name; subtyping is transitive; $\subtype{\emptyset}{T_0}{\gen{C}{\pl{T}}}$ and $\subtype{\emptyset}{T_0}{\gen{C}{\pl{T}'}}$ imply $\pl{T}=\pl{T}'$.
 \item \textbf{Renaming.} A renaming by \texttt{Fresh} keeps typing and kinding under $\Delta;\Gamma$ when the renamed expression binds no name of $\mathrm{dom}(\Delta)$ or $\mathrm{dom}(\Gamma)$ and satisfies A7 and A8; in the rules, \texttt{VSubstDefined}, \texttt{GSubstDefined} and \texttt{Nodup} give the first condition; \texttt{Fresh} alone does not keep A7 and A8 (W26, W27).
@@ -1531,7 +1509,7 @@ $T_0\sigma$ is a type variable when $T_0$ is a type variable of a method of a lo
 \item \textbf{Checked cast.} If $\emptyset\vdash\mathsf{typeOf}(v)<:\gen{C}{\_}$, $v$ has type $T_0$, $\cast{\emptyset}{T_0}{\gen{C}{\pl{T}}}$ and $\kind{\emptyset}{\gen{C}{\pl{T}}}$, then $v$ has type $\gen{C}{\pl{T}}$.
 The proof uses that the chain of superclasses is unique and that $\pl{X}\subseteq\ftv{\pl{T}'}$ fixes $\pl{T}$.
 \item \textbf{Well-formedness of the result.} A step whose $\mathsf{fresh}$ names are distinct, are not \Q@this@ and avoid the names of the program keeps A7 and A8; by $\mathsf{Dec}\gap\mathrm{Ok}$ for \textsc{simpleFound}, and by A12 of the left side for \textsc{innerFound} and \textsc{ifThen}, every variable and every type variable of a method body is bound, so a step keeps A12; the other requirements are local; progress needs it, since a step of the paper reduces to a well-formed expression.
-\item \textbf{Progress} by induction on typing, with canonical forms; a call terminates its search at a class declaring the method, before \Q@Object@, since typing found the method in a superclass.
+\item \textbf{Progress} by decomposition of the expression into an evaluation context and a redex, with canonical forms; a call terminates its search at a class declaring the method, before \Q@Object@, since typing found the method in a superclass.
 \item \textbf{Preservation} by induction on the reduction, with the lemmas above.
 \item \textbf{Determinism.} An expression that is not a value decomposes in at most one way as $\ctx{e}$ with $e$ a redex, and no value reduces.
 The rules on one redex exclude each other, and by A1, A2 and A3 the class, the field and the method are unique.
