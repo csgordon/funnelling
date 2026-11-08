@@ -1,32 +1,8 @@
-import Funnelling.Sound.RenT
+import Funnelling.Sound.RenOver
 
 open Funnelling.SoundSimp
 
 namespace Funnelling.High
-
-theorem Consistent.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {rv : VRen} {rt : TRen}
-    {C : ClassName} {Fs : List Funnel} {C0 : ClassName} {Ts : List Ty} {es es' : List Expr} {Ms Ms' : List Method}
-    (h : Consistent d (.loc C Fs C0 Ts es Ms)) (hr : RenMs rv rt Ms Ms')
-    (hdis : forall M, List.Mem M Ms -> forall X, List.Mem X (Ty.ftvList (abs Fs)) -> Not (List.Mem X (dom M.bounds)))
-    (hu : forall M, List.Mem M Ms -> M.uniq) :
-    Consistent d (.loc C (Fs.map (Funnel.ren rt)) C0 (Ty.renList rt Ts) es' Ms') := by
-  sorry
-
-theorem OverrideOk.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {rv : VRen} {rt : TRen}
-    {Delta Delta' : Bounds} {C0 : ClassName} {Ts : List Ty} {Ms Ms' : List Method}
-    (h : OverrideOk d Delta (.cls C0 Ts) Ms) (hr : RenMs rv rt Ms Ms')
-    (hdis : forall M, List.Mem M Ms -> forall X, List.Mem X (Ty.ftvList Ts) -> Not (List.Mem X (dom M.bounds)))
-    (hu : forall M, List.Mem M Ms -> M.uniq) :
-    OverrideOk d Delta' (.cls C0 (Ty.renList rt Ts)) Ms' := by
-  sorry
-
-theorem map_zip_fst {A B C : Type} {f : A -> C} : forall {l : List A} {l' : List B}, l'.length = l.length ->
-    (l.zip l').map (fun p => f p.1) = l.map f
-  | [], _, _ => rfl
-  | _ :: _, [], h => by simp at h
-  | a :: l, b :: l', h => by
-    simp only [List.zip_cons_cons, List.map_cons]
-    rw [map_zip_fst (by simpa using h)]
 
 mutual
 theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) :
