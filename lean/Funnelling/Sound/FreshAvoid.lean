@@ -2,7 +2,7 @@ import Funnelling.Sound.WFSubst
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 class Nm (A : Type) where
   nm : A -> String
@@ -666,4 +666,4 @@ theorem freshM_avoid (M : Method) (LV : List VarName) (LT : List TVarName) {Xs :
     fun X hX hm => htb X hX (List.mem_append_left _ hm), r.2.2, hns, fun h => hnt (Method.ifVars_vb _ h), r.2.1,
     hnt, Method.fr_uniq M⟩
 
-end Funnelling.High
+end Funnelling

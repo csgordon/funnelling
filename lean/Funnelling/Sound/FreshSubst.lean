@@ -2,7 +2,7 @@ import Funnelling.Sound.Conv
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 mutual
 theorem Expr.gsubst_keeps {s : GSubst} : forall (e : Expr), (e.gsubst s).vbinders = e.vbinders /\
@@ -202,4 +202,4 @@ theorem nodup_append_disj {A : Type} {l1 l2 : List A} (h : (l1 ++ l2).Nodup) {x 
   have := (List.nodup_append.mp h).2.2 x h1 x h2
   exact this rfl
 
-end Funnelling.High
+end Funnelling

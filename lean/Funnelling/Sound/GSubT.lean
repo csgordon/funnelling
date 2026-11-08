@@ -2,7 +2,7 @@ import Funnelling.Sound.GSubLoc
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 mutual
 theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) :
@@ -135,4 +135,4 @@ theorem MethodOk.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Decl
       exact this
 end
 
-end Funnelling.High
+end Funnelling

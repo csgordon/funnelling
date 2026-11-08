@@ -2,7 +2,7 @@ import Funnelling.Sound.InnerFound
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem pres_ifThen {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {C' : ClassName} {Ts Ts' : List Ty}
     {x : VarName} {e1 e1' e2 : Expr} {v : Value} {T : Ty} (hs : Sub d [] (typeOf v) (.cls C' Ts'))
@@ -57,4 +57,4 @@ theorem presBase' {d : Decls} {a a' : Expr} {T : Ty} (hwf : WFDecls d) (hok : De
   | innerSuper h1 h2 => exact pres_innerSuper hwf h1 h2 ht
   | searchSuper h1 h2 h3 h4 => exact pres_searchSuper hwf hok hd h1 h2 h4 ht
 
-end Funnelling.High
+end Funnelling

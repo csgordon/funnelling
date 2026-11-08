@@ -2,7 +2,7 @@ import Funnelling.Sound.Decl
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 structure DeclOk (d : Decls) : Prop where
   supD : forall D, Declared d (.dec D) -> forall X, List.Mem X (Ty.ftvList D.Ts) -> List.Mem X (dom D.bounds)
@@ -224,4 +224,4 @@ theorem Kind.subst {d : Decls} (hd : DeclOk d) {Delta Delta' : Bounds} {s : TSub
     . have := SubSeq.subst hd hb h4
       rwa [substList_bind_comp h3 (hd.scopeB _ _ _ h1)] at this
 
-end Funnelling.High
+end Funnelling

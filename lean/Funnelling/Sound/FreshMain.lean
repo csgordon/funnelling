@@ -2,7 +2,7 @@ import Funnelling.Sound.FreshSubst
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem CompEnv.base (B : List TVarName) : CompEnv [] [] [] [] [] [] [] [] B B where
   sv := fun _ h => by cases h
@@ -169,4 +169,4 @@ theorem renE_meth {M : Method} {B : Bounds} {Gs Gs' : List GTy} {v0 : Value} {vs
     exact RenE.vsub hrg venv (Expr.closed_mono hcv (fun _ h => h) (fun x hx => by simpa using hx))
       hvd1 hvd2 nt1' nt2'
 
-end Funnelling.High
+end Funnelling

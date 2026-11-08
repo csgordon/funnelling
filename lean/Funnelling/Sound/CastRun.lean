@@ -2,7 +2,7 @@ import Funnelling.Sound.Unique
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem pairing_funnels {Delta : Bounds} {Fs : List Funnel} {Ts : List Ty} {D0 : Bounds} {T0 : List Ty}
     (h : Pairing Delta Fs Ts D0 T0) (hf : forall F, List.Mem F Fs -> F.isFunnel = true) : T0 = Ts := by
@@ -244,4 +244,4 @@ theorem cast_runtime {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclO
     rw [hts]
     exact hr
 
-end Funnelling.High
+end Funnelling

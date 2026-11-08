@@ -2,7 +2,7 @@ import Funnelling.Sound.PresHard
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 mutual
 theorem Ty.ground_of : forall {T : Ty}, T.ftv = [] -> exists G : GTy, T = G.ty
@@ -354,4 +354,4 @@ theorem progress_step {d : Decls} {e : Expr} {T : Ty} (hwf : WFDecls d) (hok : D
     rcases redex_step hwf hok hr (WFExpr.plug he) hTa with ⟨r', hr'⟩
     exact Or.inr ⟨_, Step.ctx hr'⟩
 
-end Funnelling.High
+end Funnelling

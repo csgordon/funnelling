@@ -2,7 +2,7 @@ import Funnelling.Sound.PresEasy
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem object_unique {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : Declared d (.dec D)) (hO : D.C = Object) :
     D.C' = Object /\ D.Ts = [] := by
@@ -197,4 +197,4 @@ theorem pres_fieldFound {d : Decls} (hwf : WFDecls d) {D : Dec} {f : FieldName} 
     rw [<- ev] at hfs
     exact hup.typing (field_typing hfs hm hmem (fields_nodup hwf hD.dec_mem))
 
-end Funnelling.High
+end Funnelling

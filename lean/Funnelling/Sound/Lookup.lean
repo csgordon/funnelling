@@ -2,7 +2,7 @@ import Funnelling.Sound.Decomp
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 section
 variable {A B : Type} [DecidableEq A]
@@ -132,4 +132,4 @@ theorem VarName.ren_eq (rv : VRen) (x : VarName) : x.ren rv = rn rv x := rfl
 
 theorem TVarName.ren_eq (rt : TRen) (X : TVarName) : X.ren rt = rn rt X := rfl
 
-end Funnelling.High
+end Funnelling

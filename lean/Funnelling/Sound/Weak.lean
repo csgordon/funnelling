@@ -2,7 +2,7 @@ import Funnelling.Sound.GammaL
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem Pairing.mono {Delta Delta2 : Bounds} (hs : Sub1 Delta Delta2) {Fs : List Funnel} {Ts : List Ty}
     {D0 : Bounds} {T0 : List Ty} (h : Pairing Delta Fs Ts D0 T0) : Pairing Delta2 Fs Ts D0 T0 := by
@@ -105,4 +105,4 @@ theorem nodup_params {gamma : Gamma} {xs : List VarName} {ps : List VarDecl} (n1
   | head => exact ht hb
   | tail _ h => exact not_mem_of_all_not_contains hn hb h
 
-end Funnelling.High
+end Funnelling

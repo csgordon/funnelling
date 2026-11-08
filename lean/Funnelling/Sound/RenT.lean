@@ -2,7 +2,7 @@ import Funnelling.Sound.VSubT
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 abbrev tS (rt : TRen) : TSubst := rt.map fun p => (p.1, Ty.var p.2)
 
@@ -451,4 +451,4 @@ theorem REnv.inner {rv : VRen} {rt : TRen} {Delta Delta' : Bounds} {gamma gamma'
   gx' := innerG_dom env.gx' _ C
   kv := env.kv
 
-end Funnelling.High
+end Funnelling

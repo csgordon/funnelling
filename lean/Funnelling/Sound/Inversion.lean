@@ -2,7 +2,7 @@ import Funnelling.Sound.Determinism
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem Sub.trans {d : Decls} {Delta : Bounds} {T1 T2 T3 : Ty} (h1 : Sub d Delta T1 T2)
     (h2 : Sub d Delta T2 T3) : Sub d Delta T1 T3 := by
@@ -244,4 +244,4 @@ theorem inv_new {d Delta gamma C Ts es} : forall {e T}, Typing d Delta gamma e T
   | _, _, .newLocal .., he => by cases he
   | _, _, .ifInstanceof .., he => by cases he
 
-end Funnelling.High
+end Funnelling

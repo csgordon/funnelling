@@ -2,7 +2,7 @@ import Funnelling.Sound.FreshAvoid
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 
 theorem localsList_eq : forall (es : List Expr), Expr.localsList es = es.flatMap Expr.locals
@@ -552,4 +552,4 @@ theorem wf_step {d : Decls} {e e' : Expr} (hwf : WFDecls d) (hok : DeclsOk d) (h
   rcases wf_base hwf hok (WFExpr.plug he) hb with ⟨a'', hb'', hw''⟩
   exact ⟨E.plug a'', Step.ctx hb''.toStep, WFExpr.replace he hw''⟩
 
-end Funnelling.High
+end Funnelling

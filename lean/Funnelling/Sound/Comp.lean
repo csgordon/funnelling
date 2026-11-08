@@ -2,7 +2,7 @@ import Funnelling.Sound.Uniq
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 structure CompEnv (rv1 rv2 rv3 : VRen) (rt1 rt2 rt3 : TRen) (Sa Sb : List VarName)
     (Ta Tb : List TVarName) : Prop where
@@ -350,4 +350,4 @@ theorem RenMs.comp {rv1 rt1 Mas Mbs} : RenMs rv1 rt1 Mas Mbs -> forall {rv2 rt2 
         (RenMs.comp hs1 hs2 env hc.2 hn.2 ha.2 hb.2 hu.2)
 end
 
-end Funnelling.High
+end Funnelling

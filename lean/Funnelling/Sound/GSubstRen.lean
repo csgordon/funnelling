@@ -2,7 +2,7 @@ import Funnelling.Sound.SubstRen
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 mutual
 theorem GTy.ftv_ty : forall (G : GTy), G.ty.ftv = []
@@ -232,4 +232,4 @@ theorem RenMs.gsub {rv rt Mas Mbs} : RenMs rv rt Mas Mbs -> forall {rto s1 s2 T 
       (RenMs.gsub hs1 env hc.2 (notDomT_append_right hd1) (notDomT_append_right hd2))
 end
 
-end Funnelling.High
+end Funnelling

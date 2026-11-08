@@ -2,7 +2,7 @@ import Funnelling.Sound.GSubstRen
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 inductive BaseStep (d : Decls) : Expr -> Expr -> Prop
   | simpleFieldFound {D f} {Gs : List GTy} {vs1 vs : List Value} {v : Value} :
@@ -171,4 +171,4 @@ theorem Step.toBase {d : Decls} {e e' : Expr} (h : Step d e e') :
     . rw [ECtx.comp_plug, h'.1]
     . rw [ECtx.comp_plug, h'.2.1]
 
-end Funnelling.High
+end Funnelling

@@ -2,7 +2,7 @@ import Funnelling.Sound.Closed
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem mem_localsList {e : Expr} {k : K} : forall {es : List Expr}, List.Mem e es -> List.Mem k e.locals ->
     List.Mem k (Expr.localsList es)
@@ -136,4 +136,4 @@ theorem RenE.plug {a b : Expr} (h : RenE [] [] a b) : forall (E : ECtx), RenE []
 theorem Fresh.plug {a b : Expr} (h : Fresh a b) (E : ECtx) : Fresh (E.plug a) (E.plug b) :=
   And.intro (RenE.plug h.1 E) (RenE.plug h.2 E)
 
-end Funnelling.High
+end Funnelling

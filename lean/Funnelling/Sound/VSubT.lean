@@ -2,7 +2,7 @@ import Funnelling.Sound.Weak
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 abbrev gsub (n : VSubst) (gamma : Gamma) : Gamma := gamma.filter fun y => !((n.map Prod.fst).contains y.x)
 
@@ -301,4 +301,4 @@ theorem Typing.vsub {d : Decls} {Delta gamma e T} (h : Typing d Delta gamma e T)
       Typing.weak (hv x v U hx hl) n3 sc3 (hw _ (lookup_mem hx)).1 (hw _ (lookup_mem hx)).2.1 (hw _ (lookup_mem hx)).2.2 hn3)
     hdef n1 sc sc' hn hn' ht hu
 
-end Funnelling.High
+end Funnelling

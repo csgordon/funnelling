@@ -1,10 +1,9 @@
-import Funnelling.High.Syntax
-import Funnelling.High.Substitution
-import Funnelling.High.Declarations
-import Funnelling.High.WellFormed
-import Funnelling.High.Typing
-import Funnelling.High.Reduction
-import Funnelling.Proof
+import Funnelling.Syntax
+import Funnelling.Substitution
+import Funnelling.Declarations
+import Funnelling.WellFormed
+import Funnelling.Typing
+import Funnelling.Reduction
 import Funnelling.Soundness
 import Funnelling.Examples
 import Funnelling.Sound.RenTyping

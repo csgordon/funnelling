@@ -2,7 +2,7 @@ import Funnelling.Sound.RenOver
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 mutual
 theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) :
@@ -197,4 +197,4 @@ theorem MethodOk.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclO
         simpa only [Ty.renList] using this
 end
 
-end Funnelling.High
+end Funnelling

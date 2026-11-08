@@ -2,7 +2,7 @@ import Funnelling.Sound.Inversion
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem TypingSeq.mid {d Delta gamma} {x : Expr} : forall {l r : List Expr} {Ts : List Ty},
     TypingSeq d Delta gamma (l ++ x :: r) Ts -> exists Tx, Typing d Delta gamma x Tx /\
@@ -124,4 +124,4 @@ theorem typing_plug {d Delta gamma} {a : Expr} : forall (E : ECtx) {T : Ty},
     exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hw.up.typing
       (Typing.ifInstanceof (hTa.2 a' h') hw.kind hw.cast hw.ty1 hw.ty2)))
 
-end Funnelling.High
+end Funnelling

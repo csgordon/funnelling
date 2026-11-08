@@ -2,7 +2,7 @@ import Funnelling.Sound.Occ
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 def K.gvars : K -> List TVarName
   | .dec D => dom D.bounds
@@ -168,4 +168,4 @@ theorem declOk {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) : DeclOk d where
     intro T Delta0 Ts0 hs
     rcases scopeFacts hwf hok hs with ⟨k', hk'⟩; exact hk'.2.2.closedB
 
-end Funnelling.High
+end Funnelling
