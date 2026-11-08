@@ -400,4 +400,55 @@ theorem inv_callTop {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : List.Mem D d) 
     exact Exists.intro _ (Exists.intro _ (Exists.intro _ (Exists.intro _ (Exists.intro _ (Exists.intro _
       (And.intro hm2 (And.intro hw.len1 (And.intro hsig (And.intro hw.args hw.up)))))))))
 
+theorem subObjEq {d : Decls} (hN : Closed d [Object]) (hO : ObjArgs d) {Delta : Bounds} {C : ClassName}
+    {Ts : List Ty} (hs : Sub d Delta (.cls Object []) (.cls C Ts)) : C = Object /\ Ts = [] := by
+  cases subNames hN hs rfl (.head _) with
+  | intro C1 h1 =>
+    cases h1 with
+    | intro Ts1 h2 =>
+      injection h2.1 with e1 e2
+      subst e1 e2
+      have hC : C = Object := by
+        cases h2.2 with
+        | head => rfl
+        | tail _ h => cases h
+      subst hC
+      exact And.intro rfl (subObjArgs hO hs (Exists.intro _ (Exists.intro _ rfl)) (fun _ e => by
+        injection e with _ e; exact e.symm) Ts rfl)
+
+theorem overObj {d : Decls} (hN : Closed d [Object]) (hO : ObjArgs d) {D0 : Dec} (hD0 : List.Mem D0 d)
+    (hC : D0.C = Object) (hMs : D0.Ms.isEmpty = true) {Delta : Bounds} {C : ClassName} {Ts : List Ty} {M : Method}
+    (hs : Sub d Delta (.cls Object []) (.cls C Ts)) : OverrideOkM d (.cls C Ts) M := by
+  have e := subObjEq hN hO hs
+  rw [e.1, e.2, <- hC]
+  cases M with
+  | mk Delta' T0 m ps e' =>
+    apply OverrideOkM.absent (.dec hD0)
+    rw [List.isEmpty_iff] at hMs
+    rw [hMs]
+    intro h
+    cases h
+
+theorem overrideObj {d : Decls} (hN : Closed d [Object]) (hO : ObjArgs d) {D0 : Dec} (hD0 : List.Mem D0 d)
+    (hC : D0.C = Object) (hMs : D0.Ms.isEmpty = true) {Delta : Bounds} {Ms : List Method} :
+    OverrideOk d Delta (.cls Object []) Ms :=
+  fun _ _ _ _ hs => overObj hN hO hD0 hC hMs hs
+
+theorem overDec {d : Decls} (hwf : WFDecls d) (hN : Closed d [Object]) (hO : ObjArgs d) {D0 : Dec}
+    (hD0 : List.Mem D0 d) (hC : D0.C = Object) (hMs : D0.Ms.isEmpty = true) {D : Dec} (hD : List.Mem D d)
+    (hsup : D.C' = Object) (hTs : D.Ts = []) {Delta : Bounds} {Ts : List Ty} {Ms : List Method}
+    (h : forall M, List.Mem M Ms -> OverrideOkM d (.cls D.C Ts) M) : OverrideOk d Delta (.cls D.C Ts) Ms := by
+  intro M C Ts' hM hs
+  cases Sub.dec_step hwf (.dec hD) hs with
+  | inl e => rw [e]; exact h M hM
+  | inr h2 =>
+    have h3 := h2.2
+    rw [hsup, hTs] at h3
+    exact overObj hN hO hD0 hC hMs h3
+
+theorem kNull {d : Decls} {D : Dec} (hD : List.Mem D d) (hb : D.bounds = []) {Delta : Bounds} :
+    Kind d Delta (.cls D.C []) :=
+  Kind.wfClass (Delta0 := D.bounds) (Ts0 := []) (Scope.dec (.dec hD)) (by intro T h; cases h) (by rw [hb]; rfl)
+    (by rw [hb]; exact .nil)
+
 end Funnelling.ExampleFacts
