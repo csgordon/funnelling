@@ -65,7 +65,8 @@ The files are:
 Lean accepts all the files.
 The fixed statements are \texttt{typeSoundness} and \texttt{determinism} in \leanfile{Soundness.lean}, the two theorems of the paper.
 Everything else is a component of their proofs, and can change: \leanfile{Sound/*.lean} and \leanfile{Proof.lean}.
-\leanfile{Proof.lean} proves \texttt{typeSoundness} from progress and preservation on the high level, and \texttt{determinism} on the high level; the two proofs use no \texttt{sorry} and no axiom other than \texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound}.
+\leanfile{Proof.lean} proves \texttt{typeSoundness} from progress and preservation on the high level, and \texttt{determinism} on the high level.
+The two proofs are complete: they use no \texttt{sorry}, and they depend on no axiom other than the three standard axioms of Lean, \texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound} (Section~\ref{app:lean:statements}).
 Section~\ref{app:lean:examples} lists which validation examples are proved and which are stated with \texttt{sorry}.
 \\[1ex]
 The Lean code is written in ASCII:
@@ -1478,6 +1479,13 @@ theorem determinism {d e e1 e2} (hwf : WFDecls d) (he : WFExpr e) (h1 : Reduces 
 \texttt{hok} says that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$; \texttt{hwf} says that \decls satisfies A1-A11, and \texttt{he0} says that the initial expression satisfies A3-A8 and A12, as every program of the paper does; in \texttt{determinism}, \texttt{he} says that the expression that reduces satisfies A3-A8 and A12.
 \\[1ex]
 The proofs are in \leanfile{Proof.lean} and \leanfile{Sound/*.lean}, on the high level.
+The proofs are complete.
+In a Lean file that imports \texttt{Funnelling.Soundness}, the commands
+\begin{lstlisting}[language=lean,basicstyle=\scriptsize\ttfamily]
+#print axioms Funnelling.High.typeSoundness
+#print axioms Funnelling.High.determinism
+\end{lstlisting}
+print \texttt{[propext, Classical.choice, Quot.sound]} for both theorems: the proofs use no \texttt{sorry} and no axiom other than propositional extensionality, the axiom of choice and the soundness of quotients, the three standard axioms of Lean.
 Type Soundness follows from progress and preservation, by induction on \texttt{Steps}.
 Progress, preservation and the lemmas below are components of the proof, not statements of the paper; what must not change is the high level and the statements of \texttt{typeSoundness} and \texttt{determinism}.
 The proofs of progress, preservation and determinism use these lemmas:
