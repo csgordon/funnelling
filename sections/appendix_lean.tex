@@ -57,13 +57,13 @@ The files are:
 \item \leanfile{Reduction.lean}: evaluation contexts and the reduction.
 \item \leanfile{Sound/*.lean}: the lemmas of the proofs, and \leanfile{Sound/Soundness.lean}, progress and preservation.
 \item \leanfile{Soundness.lean}: Type Soundness and Determinism, and their proofs.
-\item \leanfile{Examples.lean}: the validation examples.
+\item \leanfile{ExampleFacts.lean} and \leanfile{Examples.lean}: the validation examples and their proofs.
 \end{itemize}
 Lean accepts all the files.
 The theorems \texttt{typeSoundness} and \texttt{determinism} in \leanfile{Soundness.lean} are the two theorems of the paper.
 \leanfile{Soundness.lean} proves \texttt{typeSoundness} from progress and preservation.
 The two proofs are complete: they use no \texttt{sorry}, and they depend on no axiom other than the three standard axioms of Lean, \texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound} (Section~\ref{app:lean:statements}).
-Section~\ref{app:lean:examples} lists which validation examples are proved and which are stated with \texttt{sorry}.
+Section~\ref{app:lean:examples} lists the validation examples.
 \\[1ex]
 The Lean code is written in ASCII:
 \texttt{->} is $\rightarrow$, \texttt{/\char`\\} is $\wedge$, \texttt{\char`\\/} is $\vee$, \texttt{List.Mem x xs} is $x\in xs$, and \texttt{Delta}, \texttt{gamma}, \texttt{sigma} are $\Delta$, $\Gamma$, $\sigma$.
@@ -1516,7 +1516,7 @@ Replacing related names with the same ground types and closed values keeps \text
 \subsection{Validation Examples}
 \label{app:lean:examples}
 \leanfile{Examples.lean} defines the class tables below and the examples.
-A Lean theorem marked \emph{proved} is accepted by Lean, with no axiom other than the standard ones; a theorem marked \emph{stated} has \texttt{sorry}: a positive one needs a derivation, and a negative one needs the inversion lemmas of Section~\ref{app:lean:statements}.
+Lean proves every example, with no axiom other than the three standard ones, and \leanfile{ExampleFacts.lean} holds the lemmas that the proofs share.
 The core language has no strings, no lambdas, no \Q@switch@ and no casts.
 The examples of Section~2 use \Q@Fun<X,Y>@ for \Q@Function<X,Y>@, and its subclasses \Q@AToB@ and \Q@AsB@ for the lambdas of the two calls of \Q@m@.
 \Q@AsB@ plays the lambda \Q@s->s@: its method \Q@apply@ uses its argument as a \Q@B<>@, so a failing cast to \Q@String@ becomes the call \Q@new A<>().onlyB()@, which reduces by \textsc{simpleAddSuper} and \textsc{searchSuper} to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
@@ -1601,94 +1601,97 @@ class K<> extends Object<>{ Object<> k(L<> y){ return
 In the list, the paper verdict follows from the rule or the requirement named in the item.
 A program that is \emph{ill typed} has no type under the rules of Section~\ref{sec:core}, as Lean states it; a program that is \emph{stuck} is not a value and has no reduction step.
 \begin{description}
-\item[W1] \texttt{w1}, proved: d1 satisfies A1-A11.
-\item[W2] \texttt{w2}, proved: a method with two parameters \Q@x@ violates A4.
-\item[W3] \texttt{w3}, proved: an \Q@if@ binding the parameter \Q@x@ again violates A7.
-\item[W4] \texttt{w4}, proved: an undeclared superclass violates A9 and A10.
-\item[W5] \texttt{w5}, proved: d2 satisfies A1-A11.
-\item[W6] \texttt{w6}, proved: d3 satisfies A1-A11, and the main expression of Example~1 satisfies A3-A8 and A12.
-\item[W7] \texttt{w7}, proved: d4 satisfies A1-A11.
-\item[W8] \texttt{w8}, proved: d5 satisfies A1-A11.
-\item[W9] \texttt{w9}, proved: d6 satisfies A1-A11, and the main expression of Example~2 satisfies A3-A8 and A12.
-\item[W10] \texttt{w10}, proved: d6F satisfies A1-A11.
-\item[W11] \texttt{w11}, proved: d7 satisfies A1-A11, and the main expression of Example~6 satisfies A3-A8 and A12.
-\item[W12] \texttt{w12}, proved: d8 satisfies A1-A11, and the main expression of Counterexample~7 satisfies A3-A8 and A12.
-\item[W13] \texttt{w13}, proved: d4F satisfies A1-A11.
-\item[W14] \texttt{w14}, proved: d9, with \Q@Inner@ written in a method of \Q@Outer@, satisfies A1-A11.
-\item[W15] \texttt{w15}, proved: d10 satisfies A1-A11.
-\item[W16] \texttt{w16}, proved: the value \Q@new Outer2<A<>> extends Foo<A<>>(){..}@, whose method \Q@g@ holds \Q@Inner2<Y funnel>@, satisfies A3-A8 and A12: a ground funnel and a funnel in the same main expression.
-\item[W17] \texttt{w17}, proved: d11 satisfies A1-A11.
-\item[W18] \texttt{w18}, proved: a field \Q@f@ declared again in a subclass violates A2.
-\item[W19] \texttt{w19}, proved: a local class named \Q@A@, as a top-level class, violates A1.
-\item[W20] \texttt{w20}, proved: a ground funnel in \decls violates A11.
-\item[W21] \texttt{w21}, proved: \Q@X funnel, X funnel@ violates A6.
-\item[W22] \texttt{w22}, proved: a parameter named \Q@this@ violates A8.
-\item[W23] \texttt{w23}, proved: two classes extending each other violate A9.
-\item[W24] \texttt{w24}, proved: the result of the call of \Q@k@ of Section~\ref{sec:opsem} without renaming, a method \Q@m(x)@ holding a value whose method \Q@m@ binds \Q@x@ again, violates A7.
-\item[W25] \texttt{w25}, proved: in \Q@if (new A<>() instanceof A<> x){ if (new B<>() instanceof B<> y){ y.onlyB() } else { new B<>() } } else { new B<>() }@, renaming \Q@y@ into \Q@x@ makes the substitution \Q@[x=new A<>()]@ of rule \textsc{ifThen} undefined, so rule \textsc{ifThen} has no instance with that renaming.
-\item[W26] \texttt{w26}, proved: \texttt{Fresh} relates \Q@if (new A<>() instanceof A<> x){ new L<> extends Object<>(){ Object<> m(){ return x; } } } else { new B<>() }@ to the same expression with \Q@x@ renamed into \Q@this@, which the method \Q@m@ captures; the renamed expression violates A8.
-\item[W27] \texttt{w27}, proved: \texttt{Fresh} relates the program of W25 to the same program with \Q@y@ renamed into \Q@x@; the renamed program violates A7.
-\item[W28] \texttt{w28}, proved: \Q@if (vZ instanceof L<> x){ if (new A<>() instanceof A<> y){ x } else { x } } else { new B<>() }@ violates A12, where \Q@vZ@ is \Q@new L<> extends Object<>(){ Object<> m(){ return z; } }@.
-\item[W29] \texttt{w29}, proved: \Q@if (vT instanceof L<> x){ new L2<> extends Object<>(){ <Y extends Object<>> Object<> k(){ return x; } } } else { new B<>() }@ violates A12, where \Q@vT@ is \Q@new L<> extends Object<>(){ Z m(){ return this; } }@.
-\item[R1] \texttt{r1}, proved: \Q@new Box<A<>>(new A<>()).val@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFieldFound}.
-\item[R2] \texttt{r2}, proved: \Q@new C2<>().m()@ $\rightarrow$ \Q@new C2<>().[C2<>]m()@ by \textsc{simpleAddSuper}.
-\item[R3] \texttt{r3}, proved: \Q@new C2<>().[C2<>]m()@ $\rightarrow$ \Q@new C2<>().[C1<>]m()@ by \textsc{searchSuper}.
-\item[R4] \texttt{r4}, proved: \Q@new C2<>().[C1<>]m()@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFound}.
-\item[R5] \texttt{r5}, proved: R1 inside the receiver of a call, by \textsc{ctx}.
-\item[R6] \texttt{r6Then}, proved: \Q@if (new A<>() instanceof A<> x){ x } else { new B<>() }@ $\rightarrow$ \Q@new A<>()@ by \textsc{ifThen}.
-\item[R6] \texttt{r6Else}, proved: the same with \Q@B<>@ as the test $\rightarrow$ \Q@new B<>()@ by \textsc{ifElse}.
-\item[R7] \texttt{r7}, proved: \Q@new Maker<>().[Maker<>]<A<>>mk(new A<>())@ $\rightarrow$ \Q@new MyFoo<A<>> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }@ by \textsc{simpleFound}, renaming \Q@Y@ and \Q@y@ into \Q@Y1@ and \Q@y1@.
-\item[R8] \texttt{r8}, proved: the value of R7 \Q@.x()@ $\rightarrow$ \Q@new A<>()@ by \textsc{innerFound}.
-\item[R9] \texttt{r9}, proved: the value of R7 \Q@.other()@ $\rightarrow$ \Q@.[Foo<A<>>]other()@ by \textsc{innerSuper}.
-\item[R10] \texttt{r10}, proved: the value of R7 \Q@.f@ $\rightarrow$ \Q@new Foo<A<>>().f@ by \textsc{innerFieldSuper}.
-\item[R11] \texttt{r11}, proved: R2, R3, R4 in sequence.
-\item[R12] \texttt{r12}, stated: in d5, \Q@new Fixed<>().<A<>>mk(new Foo<A<>>(), new A<>())@ $\rightarrow^*$ \Q@new MyFoo<A<>> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }@: the type test fails by \textsc{ifElse}.
-\item[R13] \texttt{r13}, stated: in d5, \Q@mk@ given that value of \Q@MyFoo<A<>>@ returns it: the type test succeeds by \textsc{ifThen}.
-\item[R14] \texttt{r14}, stated: Example~2 reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck: the second call finds the \Q@MyFoo2@ of the first call, and \Q@AsB@ receives the \Q@A<>@ of the first call.
-\item[R15] \texttt{r15}, stated: Example~6 reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck: \Q@mine.show(local)@ applies the \Q@f@ of the second call to the \Q@v()@ of the first call.
-\item[R16] \texttt{r16}, stated: Counterexample~7 reduces as Example~2, to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
-\item[R17] \texttt{r17}, stated: \Q@new Leaker<>().<B<>>leak(new Leaker<>().<A<>>mk2(new A<>())).x().onlyB()@ reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
-\item[R18] \texttt{r18}, stated: \Q@new Nest<>().<A<>>mk(new A<>()).x()@ $\rightarrow^*$ \Q@new A<>()@, through a value of \Q@Outer@ and a value of \Q@Inner@.
-\item[R19] \texttt{r19}, stated: calling \Q@g<B<>>(new B<>())@ on the value of W16 gives \Q@new Inner2<B<>> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }@.
-\item[R20] \texttt{r20}, proved: \Q@new Derived<>(new B<>(), new A<>()).f@ $\rightarrow$ \Q@new Base<A<>>(new A<>()).f@ $\rightarrow$ \Q@new A<>()@, by \textsc{simpleFieldSuper} and \textsc{simpleFieldFound}.
-\item[R21] \texttt{r21}, proved: \Q@if (new A<>() instanceof A<> x){ if (x instanceof A<> y){ y } else { x } } else { new B<>() }@ $\rightarrow$ \Q@if (new A<>() instanceof A<> y1){ y1 } else { new A<>() }@: \textsc{ifThen} renames the inner \Q@y@.
-\item[R22] \texttt{r22}, proved: \Q@new K<>().k(vL)@ $\rightarrow^*$ \Q@new L<> extends Object<>(){ Object<> m(Object<> x1){ return vL.m(x1); } }@, where \Q@vL@ is a value of \Q@L@ whose method \Q@m@ binds \Q@x@: \textsc{simpleFound} renames \Q@y@ and \Q@x@, so the result satisfies A7 (compare W24).
-\item[R23] \texttt{r23}, proved: the program of W25 reduces to \Q@new B<>()@ in four steps, renaming \Q@y@ into \Q@y1@.
-\item[T1] \texttt{t1}, proved: \Q@new Box<A<>>(new A<>()).val : A<>@.
-\item[T2] \texttt{t2}, stated: \Q@new Box<A<>>(new B<>())@ is ill typed: \Q@B<>@ is not a subtype of \Q@A<>@.
-\item[T3] \texttt{t3}, stated: in d5, \Q@new Fixed<>().<A<>>mk(new Foo<A<>>(), new A<>()) : Foo<A<>>@.
-\item[T4] \texttt{t4}, proved: \Q@new Derived<>(new B<>(), new A<>()).f : A<>@, by \textsc{subs} to \Q@Base<A<>>@ and then \textsc{declField}.
-\item[T5] \texttt{t5}, proved: \Q@new C2<>().[C2<>]m() : A<>@ and \Q@new C2<>().[C1<>]m() : A<>@, the results of R2 and R3, by \textsc{call-lb-runtime}.
-\item[T6] \texttt{t6}, proved: \Q@if (new A<>() instanceof A<> x){ x } else { new A<>() } : A<>@, by \textsc{if-instanceof} and \textsc{cast-up}.
-\item[T7] \texttt{t7}, proved: in d2, \Q@if (v instanceof MyFoo<A<>> w){ w } else { v } : Foo<A<>>@, where \Q@v@ is the result of R7, by \textsc{if-instanceof} and \textsc{cast-down}.
-\item[C1] \texttt{c1}, proved: $\cast{\QQ{X extends Object<>}}{\QQ{Foo<X>}}{\QQ{MyFoo<X>}}$ in d2, by \textsc{cast-down}.
-\item[C2] \texttt{c2}, stated: not $\cast{\QQ{X extends Object<>}}{\QQ{Object<>}}{\QQ{MyFoo<X>}}$ in d2: \textsc{cast-down} needs $\QQ{Y}\in\ftv{\emptyset}$, since $\generic{\QQ{MyFoo}}$ is \Q@MyFoo<Y>@, and \Q@MyFoo<Y>@ has the supertype \Q@Object<>@ with no type arguments.
-\item[C3] \texttt{c3}, proved: $\cast{\QQ{X extends Foo<A<>>}}{\QQ{X}}{\QQ{MyFoo<A<>>}}$ in d2, by \textsc{cast-var} and then \textsc{cast-down}.
-\item[C4] \texttt{c4}, proved: $\cast{\emptyset}{\QQ{B<>}}{\QQ{Object<>}}$, by \textsc{cast-up}.
-\item[C5] \texttt{c5}, stated: not $\cast{\emptyset}{\QQ{A<>}}{\QQ{B<>}}$: the classes are unrelated.
-\item[D1] \texttt{d1Inner}, proved: \Q@Inner@ is declared: it occurs in the method \Q@x@ of \Q@Outer@, which occurs in the method \Q@mk@ of \Q@Nest@.
-\item[K1] \texttt{k1}, proved: $\kind{\emptyset}{\QQ{Inner<A<>>}}$: the scope of \Q@Inner@ goes through the scope of \Q@Outer<X>@.
-\item[O1] \texttt{o1}, proved: $\mathsf{overrideOk}(\QQ{P1<>},M)$ for the method \Q@id@ of \Q@P2@, whose type variable is \Q@Z@ instead of \Q@X@.
-\item[O2] \texttt{o2}, stated: not $\mathsf{overrideOk}(\QQ{P1<>},M)$ for the method \Q@id@ of \Q@P3@, which returns \Q@Object<>@.
-\item[O3] \texttt{o3}, stated: class \Q@P2@ is Ok.
-\item[O4] \texttt{o4}, stated: classes \Q@P3@ and \Q@P4@ are not Ok: \Q@P3@ changes the return type, \Q@P4@ changes the bound of the type variable.
-\item[M1] \texttt{m1}, proved: class \Q@Maker@ is Ok.
-\item[V1] \texttt{v1}, proved: the hypotheses of \texttt{typeSoundness} hold together on d1 and the expression of T1; in particular every class of d1 is Ok.
-\item[V2] \texttt{v2}, proved: the hypotheses of \texttt{typeSoundness} hold together on d2, with the funnelled local class \Q@MyFoo@, and \Q@new Maker<>().<A<>>mk(new A<>()) : Foo<A<>>@.
-\item[V3] \texttt{v3}, proved: the result of R7, a copy of \Q@MyFoo@ in the main expression, has type \Q@Foo<A<>>@.
-\item[V4] \texttt{v4}, proved: d2 with the main expression of V2 is Ok, by \textsc{prog-ok}.
-\item[P1] \texttt{p1}, stated: class \Q@Fixed@ is Ok.
-\item[P2] \texttt{p2}, stated: class \Q@Fixed2@ is Ok: \Q@Holder<X>@ determines \Q@X@.
-\item[P3] \texttt{p3}, stated: class \Q@LeakerF@ is Ok.
-\item[N1] \texttt{n1}, stated: Example~1 is not Ok: rule \textsc{new-local} fails at $\kind{\emptyset}{\QQ{Foo<X>}}$, since \Q@MyFoo@ funnels nothing.
-\item[N2] \texttt{n2}, stated: in d5, the main expression of Example~1 is ill typed: a \Q@Foo<A<>>@ is passed where a \Q@Foo<B<>>@ is expected.
-\item[N3] \texttt{n3}, stated: Example~2 is not Ok: the method \Q@x@ of \Q@MyFoo2@ returns \Q@X@, which \Q@MyFoo2@ does not funnel.
-\item[N4] \texttt{n4}, stated: class \Q@Fixed2Obj@ is not Ok: \Q@MyFoo4@ funnels \Q@X@, but \Q@Object<>@ does not determine \Q@X@, so the type test is rejected.
-\item[N5] \texttt{n5}, stated: Example~6 is not Ok: \Q@MyFoo6@ mentions \Q@X@ and captures \Q@f@, but funnels nothing.
-\item[N6] \texttt{n6}, stated: class \Q@Box7@ is not Ok: \Q@MyFoo7@ does not funnel the class type variable \Q@X@.
-\item[N7] \texttt{n7}, stated: class \Q@Box7F@ is not Ok: \Q@Object<>@ does not determine \Q@X@; javac rejects Counterexample~7 for the same reason.
-\item[N8] \texttt{n8}, stated: in d4F, the main expression of the leak is ill typed: a \Q@MyFoo2F<A<>>@ is passed where a \Q@MyFoo2F<B<>>@ is expected.
-\item[J2] \texttt{j2}, stated: Example~1 reduces to \Q@new A<>().onlyB()@, and then to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
-\item[L2] \texttt{l2}, stated: class \Q@Leaker@ is not Ok: the local class in \Q@mk2@ funnels nothing, as in N1.
-\item[S1] \texttt{s1}, stated: \Q@new Object<>().f@ is stuck.
+\item[W1] \texttt{w1}: d1 satisfies A1-A11.
+\item[W2] \texttt{w2}: a method with two parameters \Q@x@ violates A4.
+\item[W3] \texttt{w3}: an \Q@if@ binding the parameter \Q@x@ again violates A7.
+\item[W4] \texttt{w4}: an undeclared superclass violates A9 and A10.
+\item[W5] \texttt{w5}: d2 satisfies A1-A11.
+\item[W6] \texttt{w6}: d3 satisfies A1-A11, and the main expression of Example~1 satisfies A3-A8 and A12.
+\item[W7] \texttt{w7}: d4 satisfies A1-A11.
+\item[W8] \texttt{w8}: d5 satisfies A1-A11.
+\item[W9] \texttt{w9}: d6 satisfies A1-A11, and the main expression of Example~2 satisfies A3-A8 and A12.
+\item[W10] \texttt{w10}: d6F satisfies A1-A11.
+\item[W11] \texttt{w11}: d7 satisfies A1-A11, and the main expression of Example~6 satisfies A3-A8 and A12.
+\item[W12] \texttt{w12}: d8 satisfies A1-A11, and the main expression of Counterexample~7 satisfies A3-A8 and A12.
+\item[W13] \texttt{w13}: d4F satisfies A1-A11.
+\item[W14] \texttt{w14}: d9, with \Q@Inner@ written in a method of \Q@Outer@, satisfies A1-A11.
+\item[W15] \texttt{w15}: d10 satisfies A1-A11.
+\item[W16] \texttt{w16}: the value \Q@new Outer2<A<>> extends Foo<A<>>(){..}@, whose method \Q@g@ holds \Q@Inner2<Y funnel>@, satisfies A3-A8 and A12: a ground funnel and a funnel in the same main expression.
+\item[W17] \texttt{w17}: d11 satisfies A1-A11.
+\item[W18] \texttt{w18}: a field \Q@f@ declared again in a subclass violates A2.
+\item[W19] \texttt{w19}: a local class named \Q@A@, as a top-level class, violates A1.
+\item[W20] \texttt{w20}: a ground funnel in \decls violates A11.
+\item[W21] \texttt{w21}: \Q@X funnel, X funnel@ violates A6.
+\item[W22] \texttt{w22}: a parameter named \Q@this@ violates A8.
+\item[W23] \texttt{w23}: two classes extending each other violate A9.
+\item[W24] \texttt{w24}: the result of the call of \Q@k@ of Section~\ref{sec:opsem} without renaming, a method \Q@m(x)@ holding a value whose method \Q@m@ binds \Q@x@ again, violates A7.
+\item[W25] \texttt{w25}: in \Q@if (new A<>() instanceof A<> x){ if (new B<>() instanceof B<> y){ y.onlyB() } else { new B<>() } } else { new B<>() }@, renaming \Q@y@ into \Q@x@ makes the substitution \Q@[x=new A<>()]@ of rule \textsc{ifThen} undefined, so rule \textsc{ifThen} has no instance with that renaming.
+\item[W26] \texttt{w26}: \texttt{Fresh} relates \Q@if (new A<>() instanceof A<> x){ new L<> extends Object<>(){ Object<> m(){ return x; } } } else { new B<>() }@ to the same expression with \Q@x@ renamed into \Q@this@, which the method \Q@m@ captures; the renamed expression violates A8.
+\item[W27] \texttt{w27}: \texttt{Fresh} relates the program of W25 to the same program with \Q@y@ renamed into \Q@x@; the renamed program violates A7.
+\item[W28] \texttt{w28}: \Q@if (vZ instanceof L<> x){ if (new A<>() instanceof A<> y){ x } else { x } } else { new B<>() }@ violates A12, where \Q@vZ@ is \Q@new L<> extends Object<>(){ Object<> m(){ return z; } }@.
+\item[W29] \texttt{w29}: \Q@if (vT instanceof L<> x){ new L2<> extends Object<>(){ <Y extends Object<>> Object<> k(){ return x; } } } else { new B<>() }@ violates A12, where \Q@vT@ is \Q@new L<> extends Object<>(){ Z m(){ return this; } }@.
+\item[R1] \texttt{r1}: \Q@new Box<A<>>(new A<>()).val@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFieldFound}.
+\item[R2] \texttt{r2}: \Q@new C2<>().m()@ $\rightarrow$ \Q@new C2<>().[C2<>]m()@ by \textsc{simpleAddSuper}.
+\item[R3] \texttt{r3}: \Q@new C2<>().[C2<>]m()@ $\rightarrow$ \Q@new C2<>().[C1<>]m()@ by \textsc{searchSuper}.
+\item[R4] \texttt{r4}: \Q@new C2<>().[C1<>]m()@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFound}.
+\item[R5] \texttt{r5}: R1 inside the receiver of a call, by \textsc{ctx}.
+\item[R6] \texttt{r6Then}: \Q@if (new A<>() instanceof A<> x){ x } else { new B<>() }@ $\rightarrow$ \Q@new A<>()@ by \textsc{ifThen}.
+\item[R6] \texttt{r6Else}: the same with \Q@B<>@ as the test $\rightarrow$ \Q@new B<>()@ by \textsc{ifElse}.
+\item[R7] \texttt{r7}: \Q@new Maker<>().[Maker<>]<A<>>mk(new A<>())@ $\rightarrow$ \Q@new MyFoo<A<>> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }@ by \textsc{simpleFound}, renaming \Q@Y@ and \Q@y@ into \Q@Y1@ and \Q@y1@.
+\item[R8] \texttt{r8}: the value of R7 \Q@.x()@ $\rightarrow$ \Q@new A<>()@ by \textsc{innerFound}.
+\item[R9] \texttt{r9}: the value of R7 \Q@.other()@ $\rightarrow$ \Q@.[Foo<A<>>]other()@ by \textsc{innerSuper}.
+\item[R10] \texttt{r10}: the value of R7 \Q@.f@ $\rightarrow$ \Q@new Foo<A<>>().f@ by \textsc{innerFieldSuper}.
+\item[R11] \texttt{r11}: R2, R3, R4 in sequence.
+\item[R12] \texttt{r12}: in d5, \Q@new Fixed<>().<A<>>mk(new Foo<A<>>(), new A<>())@ $\rightarrow^*$ \Q@new MyFoo<A<>> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }@: the type test fails by \textsc{ifElse}.
+\item[R13] \texttt{r13}: in d5, \Q@mk@ given that value of \Q@MyFoo<A<>>@ returns it: the type test succeeds by \textsc{ifThen}.
+\item[R14] \texttt{r14}: Example~2 reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck: the second call finds the \Q@MyFoo2@ of the first call, and \Q@AsB@ receives the \Q@A<>@ of the first call.
+\item[R15] \texttt{r15}: Example~6 reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck: \Q@mine.show(local)@ applies the \Q@f@ of the second call to the \Q@v()@ of the first call.
+\item[R16] \texttt{r16}: Counterexample~7 reduces as Example~2, to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
+\item[R17] \texttt{r17}: \Q@new Leaker<>().<B<>>leak(new Leaker<>().<A<>>mk2(new A<>())).x().onlyB()@ reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
+\item[R18] \texttt{r18}: \Q@new Nest<>().<A<>>mk(new A<>()).x()@ $\rightarrow^*$ \Q@new A<>()@, through a value of \Q@Outer@ and a value of \Q@Inner@.
+\item[R19] \texttt{r19}: calling \Q@g<B<>>(new B<>())@ on the value of W16 gives \Q@new Inner2<B<>> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }@.
+\item[R20] \texttt{r20}: \Q@new Derived<>(new B<>(), new A<>()).f@ $\rightarrow$ \Q@new Base<A<>>(new A<>()).f@ $\rightarrow$ \Q@new A<>()@, by \textsc{simpleFieldSuper} and \textsc{simpleFieldFound}.
+\item[R21] \texttt{r21}: \Q@if (new A<>() instanceof A<> x){ if (x instanceof A<> y){ y } else { x } } else { new B<>() }@ $\rightarrow$ \Q@if (new A<>() instanceof A<> y1){ y1 } else { new A<>() }@: \textsc{ifThen} renames the inner \Q@y@.
+\item[R22] \texttt{r22}: \Q@new K<>().k(vL)@ $\rightarrow^*$ \Q@new L<> extends Object<>(){ Object<> m(Object<> x1){ return vL.m(x1); } }@, where \Q@vL@ is a value of \Q@L@ whose method \Q@m@ binds \Q@x@: \textsc{simpleFound} renames \Q@y@ and \Q@x@, so the result satisfies A7 (compare W24).
+\item[R23] \texttt{r23}: the program of W25 reduces to \Q@new B<>()@ in four steps, renaming \Q@y@ into \Q@y1@.
+\item[T1] \texttt{t1}: \Q@new Box<A<>>(new A<>()).val : A<>@.
+\item[T2] \texttt{t2}: \Q@new Box<A<>>(new B<>())@ is ill typed: \Q@B<>@ is not a subtype of \Q@A<>@.
+\item[T3] \texttt{t3}: in d5, \Q@new Fixed<>().<A<>>mk(new Foo<A<>>(), new A<>()) : Foo<A<>>@.
+\item[T4] \texttt{t4}: \Q@new Derived<>(new B<>(), new A<>()).f : A<>@, by \textsc{subs} to \Q@Base<A<>>@ and then \textsc{declField}.
+\item[T5] \texttt{t5}: \Q@new C2<>().[C2<>]m() : A<>@ and \Q@new C2<>().[C1<>]m() : A<>@, the results of R2 and R3, by \textsc{call-lb-runtime}.
+\item[T6] \texttt{t6}: \Q@if (new A<>() instanceof A<> x){ x } else { new A<>() } : A<>@, by \textsc{if-instanceof} and \textsc{cast-up}.
+\item[T7] \texttt{t7}: in d2, \Q@if (v instanceof MyFoo<A<>> w){ w } else { v } : Foo<A<>>@, where \Q@v@ is the result of R7, by \textsc{if-instanceof} and \textsc{cast-down}.
+\item[C1] \texttt{c1}: $\cast{\QQ{X extends Object<>}}{\QQ{Foo<X>}}{\QQ{MyFoo<X>}}$ in d2, by \textsc{cast-down}.
+\item[C2] \texttt{c2}: not $\cast{\QQ{X extends Object<>}}{\QQ{Object<>}}{\QQ{MyFoo<X>}}$ in d2: \textsc{cast-down} needs $\QQ{Y}\in\ftv{\emptyset}$, since $\generic{\QQ{MyFoo}}$ is \Q@MyFoo<Y>@, and \Q@MyFoo<Y>@ has the supertype \Q@Object<>@ with no type arguments.
+\item[C3] \texttt{c3}: $\cast{\QQ{X extends Foo<A<>>}}{\QQ{X}}{\QQ{MyFoo<A<>>}}$ in d2, by \textsc{cast-var} and then \textsc{cast-down}.
+\item[C4] \texttt{c4}: $\cast{\emptyset}{\QQ{B<>}}{\QQ{Object<>}}$, by \textsc{cast-up}.
+\item[C5] \texttt{c5}: not $\cast{\emptyset}{\QQ{A<>}}{\QQ{B<>}}$: the classes are unrelated.
+\item[D1] \texttt{d1Inner}: \Q@Inner@ is declared: it occurs in the method \Q@x@ of \Q@Outer@, which occurs in the method \Q@mk@ of \Q@Nest@.
+\item[K1] \texttt{k1}: $\kind{\emptyset}{\QQ{Inner<A<>>}}$: the scope of \Q@Inner@ goes through the scope of \Q@Outer<X>@.
+\item[O1] \texttt{o1}: $\mathsf{overrideOk}(\QQ{P1<>},M)$ for the method \Q@id@ of \Q@P2@, whose type variable is \Q@Z@ instead of \Q@X@.
+\item[O2] \texttt{o2}: not $\mathsf{overrideOk}(\QQ{P1<>},M)$ for the method \Q@id@ of \Q@P3@, which returns \Q@Object<>@.
+\item[O3] \texttt{o3}: class \Q@P2@ is Ok.
+\item[O4] \texttt{o4}: classes \Q@P3@ and \Q@P4@ are not Ok: \Q@P3@ changes the return type, \Q@P4@ changes the bound of the type variable.
+\item[M1] \texttt{m1}: class \Q@Maker@ is Ok.
+\item[V1] \texttt{v1}: the hypotheses of \texttt{typeSoundness} hold together on d1 and the expression of T1; in particular every class of d1 is Ok.
+\item[V2] \texttt{v2}: the hypotheses of \texttt{typeSoundness} hold together on d2, with the funnelled local class \Q@MyFoo@, and \Q@new Maker<>().<A<>>mk(new A<>()) : Foo<A<>>@.
+\item[V3] \texttt{v3}: the result of R7, a copy of \Q@MyFoo@ in the main expression, has type \Q@Foo<A<>>@.
+\item[V4] \texttt{v4}: d2 with the main expression of V2 is Ok, by \textsc{prog-ok}.
+\item[P1] \texttt{p1}: class \Q@Fixed@ is Ok.
+\item[P2] \texttt{p2}: class \Q@Fixed2@ is Ok: \Q@Holder<X>@ determines \Q@X@.
+\item[P3] \texttt{p3}: class \Q@LeakerF@ is Ok.
+\item[N1] \texttt{n1}: Example~1 is not Ok: rule \textsc{new-local} fails at $\kind{\emptyset}{\QQ{Foo<X>}}$, since \Q@MyFoo@ funnels nothing.
+Lean derives it from \texttt{typeSoundness}, W6 and J2: the program reduces to a stuck expression.
+\item[N2] \texttt{n2}: in d5, the main expression of Example~1 is ill typed: a \Q@Foo<A<>>@ is passed where a \Q@Foo<B<>>@ is expected.
+\item[N3] \texttt{n3}: Example~2 is not Ok: the method \Q@x@ of \Q@MyFoo2@ returns \Q@X@, which \Q@MyFoo2@ does not funnel.
+Lean derives it from \texttt{typeSoundness}, W9 and R14: the program reduces to a stuck expression.
+\item[N4] \texttt{n4}: class \Q@Fixed2Obj@ is not Ok: \Q@MyFoo4@ funnels \Q@X@, but \Q@Object<>@ does not determine \Q@X@, so the type test is rejected.
+\item[N5] \texttt{n5}: Example~6 is not Ok: \Q@MyFoo6@ mentions \Q@X@ and captures \Q@f@, but funnels nothing.
+Lean derives it from \texttt{typeSoundness}, W11 and R15: the program reduces to a stuck expression.
+\item[N6] \texttt{n6}: class \Q@Box7@ is not Ok: \Q@MyFoo7@ does not funnel the class type variable \Q@X@.
+\item[N7] \texttt{n7}: class \Q@Box7F@ is not Ok: \Q@Object<>@ does not determine \Q@X@; javac rejects Counterexample~7 for the same reason.
+\item[N8] \texttt{n8}: in d4F, the main expression of the leak is ill typed: a \Q@MyFoo2F<A<>>@ is passed where a \Q@MyFoo2F<B<>>@ is expected.
+\item[J2] \texttt{j2}: Example~1 reduces to \Q@new A<>().onlyB()@, and then to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
+\item[L2] \texttt{l2}: class \Q@Leaker@ is not Ok: the local class in \Q@mk2@ funnels nothing, as in N1.
+\item[S1] \texttt{s1}: \Q@new Object<>().f@ is stuck.
 \end{description}
