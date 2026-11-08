@@ -1,4 +1,4 @@
-import Funnelling.Sound.IfThen
+import Funnelling.Sound.SimpleFound
 
 open Funnelling.SoundSimp
 
