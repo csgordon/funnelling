@@ -264,7 +264,7 @@ theorem domF_gsubst_sub {s : GSubst} : forall (Fs : List Funnel),
       cases hl : List.lookup Y s with
       | none =>
         simp only [Funnel.gsubst, hl, domF, List.filterMap_cons, List.filterMap_nil, List.singleton_append] at ih ⊢
-        refine ⟨List.Sublist.cons₂ _ ih.1, fun X hX => ?_⟩
+        refine ⟨List.Sublist.cons_cons _ ih.1, fun X hX => ?_⟩
         cases hX with
         | head => exact fun hm => by cases lookup_isSome hm with | intro v hv => rw [hv] at hl; cases hl
         | tail _ h => exact ih.2 X h

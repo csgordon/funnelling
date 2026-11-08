@@ -44,9 +44,9 @@ theorem innerG_nodup {gamma : Gamma} (h : (gdom gamma).Nodup) (Fs : List Funnel)
   apply List.nodup_append.mpr
   refine And.intro (gdom_filter_nodup (gdom_filter_nodup h)) (And.intro (by simp) ?_)
   intro a ha b hb e
-  simp only [listMem_iff, List.mem_singleton] at hb
+  simp only [List.mem_singleton] at hb
   subst hb
-  simp only [listMem_iff, List.mem_map, withoutThis, List.mem_filter] at ha
+  simp only [List.mem_map, withoutThis, List.mem_filter] at ha
   rcases ha with ⟨y, hy⟩
   have := hy.1.2
   rw [hy.2, e] at this
@@ -56,7 +56,7 @@ theorem innerG_dom {gamma : Gamma} {xs : List VarName} (h : Sub1 (gdom gamma) xs
     Sub1 (gdom (innerG gamma Fs C)) (this :: xs.filter fun x => x != this) := by
   intro y hy
   simp only [innerG, gdom, withoutThis, restrict, listMem_iff, List.map_append, List.mem_append, List.mem_map,
-    List.mem_filter, List.mem_singleton, List.map_cons, List.map_nil, List.mem_cons, List.not_mem_nil, or_false] at hy |-
+    List.mem_filter, List.map_cons, List.map_nil, List.mem_cons, List.not_mem_nil, or_false] at hy |-
   rcases hy with hy | hy
   . cases hy with
     | intro z hz =>
@@ -70,7 +70,7 @@ theorem innerG_dom2 {gamma : Gamma} (Fs : List Funnel) (C : ClassName) :
     Sub1 (gdom (innerG gamma Fs C)) (this :: gdom gamma) := by
   intro y hy
   simp only [innerG, gdom, withoutThis, restrict, listMem_iff, List.map_append, List.mem_append, List.mem_map,
-    List.mem_filter, List.mem_singleton, List.map_cons, List.map_nil, List.mem_cons, List.not_mem_nil, or_false] at hy |-
+    List.mem_filter, List.map_cons, List.map_nil, List.mem_cons, List.not_mem_nil, or_false] at hy |-
   rcases hy with hy | hy
   . cases hy with
     | intro z hz => right; exact Exists.intro z (And.intro hz.1.1.1 hz.2)
@@ -83,7 +83,7 @@ theorem nodup_snoc {l : List VarName} {x : VarName} (h : l.Nodup) (hx : Not (Lis
   apply List.nodup_append.mpr
   refine And.intro h (And.intro (by simp) ?_)
   intro a ha b hb e
-  simp only [listMem_iff, List.mem_singleton] at hb
+  simp only [List.mem_singleton] at hb
   subst hb; subst e
   exact hx ha
 

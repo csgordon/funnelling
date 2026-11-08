@@ -15,7 +15,7 @@ theorem superChain_stab {d : Decls} : forall (n : Nat) (C : ClassName),
         have := (find_some hf).2
         simpa using this
       by_cases ho : C = Object
-      . simp [superChain, hf, ho]
+      . simp [superChain, ho]
       . have h1 : superChain d (n + 2) C = D :: superChain d (n + 1) D.C' := by simp [superChain, hf, ho]
         have h2 : superChain d (n + 1) C = D :: superChain d n D.C' := by simp [superChain, hf, ho]
         rw [h1, h2]
@@ -76,7 +76,7 @@ theorem rank_sub {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : 
   | subVar => cases he
 
 theorem no_cycle {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : Declared d (.dec D))
-    (ho : Not (D.C = Object)) {Ts U : List Ty} (hl : Ts.length = D.bounds.length)
+    (ho : Not (D.C = Object)) {Ts U : List Ty}
     (h : Sub d Delta ((Ty.cls D.C' D.Ts).subst (bind D.bounds Ts)) (.cls D.C U)) : False := by
   rcases Declared.super hwf hD with ⟨D'', hD''⟩
   have hsup := hD''.2
@@ -136,7 +136,7 @@ theorem sub_unique_dec {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {T1 : Ty}
           rcases object_args hwf hs4 with e | e
           . exact e.symm
           . exact e.symm
-        . exact absurd (no_cycle hwf h1.1 ho hs3.1 hs3.2) id
+        . exact absurd (no_cycle hwf h1.1 ho hs3.2) id
   | @subInherit D Ts0 T' hD hl hs ih =>
     intro U2 hs2
     rcases Sub.dec_step hwf hD hs2 with e | hs3
@@ -154,7 +154,7 @@ theorem sub_unique_dec {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {T1 : Ty}
         rcases object_args hwf hs with e2 | e2
         . exact e2
         . exact e2
-      . exact absurd (no_cycle hwf hD ho hl hs) id
+      . exact absurd (no_cycle hwf hD ho hs) id
     . refine ih ?_ ht hs3.2
       rcases Declared.super hwf hD with ⟨D'', hD''⟩
       refine Exists.intro D'' (Exists.intro (Ty.substList (bind D.bounds Ts0) D.Ts) (And.intro hD''.1 ?_))

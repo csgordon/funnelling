@@ -130,10 +130,10 @@ theorem RenM.reflS {rv : VRen} {rt : TRen} : forall {M : Method} {Ts : List TVar
       fun T hT => Ty.ren_id (fun X hX => ht' X (hall X (hT X hX)))
     rw [hty T0 (fun X hX => by simp only [List.cons_append]; exact List.mem_append_left _ hX),
       bounds_zip_dom_ren (fun b hb => hty b.T (fun X hX => by
-        simp only [List.cons_append, Ty.ftvList, List.append_eq]
+        simp only [List.cons_append, Ty.ftvList]
         exact List.mem_append_right _ (by rw [ftvList_append]; exact List.mem_append_left _ (ftvList_map_mem (f := Bound.T) hb hX)))),
       params_zip_names_ren (fun p hp => hty p.T (fun X hX => by
-        simp only [List.cons_append, Ty.ftvList, List.append_eq]
+        simp only [List.cons_append, Ty.ftvList]
         exact List.mem_append_right _ (by rw [ftvList_append]; exact List.mem_append_right _ (ftvList_map_mem (f := VarDecl.T) hp hX))))] at h
     exact h
 theorem RenMs.reflS {rv : VRen} {rt : TRen} : forall {Ms : List Method} {Ts : List TVarName} {xs : List VarName},

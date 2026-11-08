@@ -151,8 +151,8 @@ theorem wf_local_new {C C' : ClassName} {Fs : List Funnel} {Ts : List Ty} {es : 
   simp only [Expr.noShadow, Bool.and_eq_true] at hn
   simp only [Expr.closed, List.all_append, Bool.and_eq_true] at hc
   refine WFExpr.sub h ?_ ?_ ?_ ?_
-  . intro k hk; simp only [Expr.locals, Expr.ifVars, listMem_iff, List.mem_cons, List.mem_append, or_assoc]; exact Or.inr (Or.inl hk)
-  . intro x hx; simp only [Expr.locals, Expr.ifVars, listMem_iff, List.mem_cons, List.mem_append, or_assoc]; exact Or.inl hx
+  . intro k hk; simp only [Expr.locals, listMem_iff, List.mem_cons, List.mem_append]; exact Or.inr (Or.inl hk)
+  . intro x hx; simp only [Expr.ifVars, listMem_iff, List.mem_append]; exact Or.inl hx
   . exact hn.1
   . simp only [Expr.closed, Bool.and_eq_true]; exact ⟨hc.1.1.2, hc.1.2⟩
 
@@ -163,8 +163,8 @@ theorem wf_if_else {e0 : Expr} {T : Ty} {x : VarName} {e1 e2 : Expr} (h : WFExpr
   simp only [Expr.noShadow, Bool.and_eq_true] at hn
   simp only [Expr.closed, Bool.and_eq_true] at hc
   refine WFExpr.sub h ?_ ?_ hn.2 hc.2
-  . intro k hk; simp only [Expr.locals, Expr.ifVars, listMem_iff, List.mem_cons, List.mem_append, or_assoc]; exact Or.inr (Or.inr hk)
-  . intro y hy; simp only [Expr.locals, Expr.ifVars, listMem_iff, List.mem_cons, List.mem_append, or_assoc]; exact Or.inr (Or.inr (Or.inr hy))
+  . intro k hk; simp only [Expr.locals, listMem_iff, List.mem_append, or_assoc]; exact Or.inr (Or.inr hk)
+  . intro y hy; simp only [Expr.ifVars, listMem_iff, List.mem_cons, List.mem_append, or_assoc]; exact Or.inr (Or.inr (Or.inr hy))
 
 theorem wf_call_super {e : Expr} {T : Ty} {Ts : List Ty} {m : MethName} {es : List Expr}
     (h : WFExpr (.call e Ts m es)) (hT : T.ftv = []) : WFExpr (.superCall e T Ts m es) := by

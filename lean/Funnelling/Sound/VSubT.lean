@@ -53,7 +53,7 @@ theorem innerG_gsub {n : VSubst} {gamma : Gamma} {Fs : List Funnel} {C : ClassNa
   . have e := nthis_dom (n := n) hy
     have e2 : ((nthis n).map Prod.fst).contains y.x = (n.map Prod.fst).contains y.x := by
       rw [Bool.eq_iff_iff]; simp only [List.contains_iff_mem]; exact e
-    rw [e2]; simp [Bool.and_comm, Bool.and_left_comm, Bool.and_assoc]
+    rw [e2]; simp [Bool.and_comm, Bool.and_assoc]
 
 theorem Expr.vsubstList_append {n : VSubst} : forall {es1 es2 : List Expr},
     Expr.vsubstList n (es1 ++ es2) = Expr.vsubstList n es1 ++ Expr.vsubstList n es2
@@ -201,7 +201,7 @@ theorem Typing.vsub {d : Decls} : forall {Delta gamma e T}, Typing d Delta gamma
           simp at this
         have hl2 : gamma.lookup x = some U := by
           have hm := lookup_mem_g hl
-          simp only [innerG, withoutThis, restrict, listMem_iff, List.mem_append, List.mem_filter,
+          simp only [withoutThis, restrict, listMem_iff, List.mem_append, List.mem_filter,
             List.mem_singleton] at hm
           rcases hm with hm | hm
           . exact lookup_of_mem_g n1 hm.1.1

@@ -100,7 +100,7 @@ theorem lookup_zip_ren {A B : Type} [DecidableEq A] {rt : List (Prod A A)} :
     List.lookup X (X1.zip Us) = List.lookup (rn rt X) (X2.zip Us)
   | [], _, _, _, _, _, _, h => by cases h
   | _ :: _, [], _, _, h, _, _, _ => by simp at h
-  | a :: X1, b :: X2, [], X, _, _, _, _ => by simp [List.lookup]
+  | a :: X1, b :: X2, [], X, _, _, _, _ => by simp
   | a :: X1, b :: X2, u :: Us, X, hl, hn, hp, hX => by
     simp only [List.zip_cons_cons]
     by_cases e : X = a

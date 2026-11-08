@@ -221,10 +221,10 @@ theorem RenM.gsub {rv rt Ma Mb} : RenM rv rt Ma Mb -> forall {rto s1 s2 T S}, GS
     rw [dom_bounds_subst] at hm
     rw [env'.ty (fun X hX => hall X (by simp only [List.cons_append]; exact List.mem_append_left _ hX)),
       bounds_subst_ren hL (fun b hb => env'.ty (fun X hX => hall X (by
-        simp only [List.cons_append, Ty.ftvList, List.append_eq]
+        simp only [List.cons_append, Ty.ftvList]
         exact List.mem_append_right _ (by rw [ftvList_append]; exact List.mem_append_left _ (ftvList_map_mem (f := Bound.T) hb hX))))),
       params_subst_ren hl (fun p hp => env'.ty (fun X hX => hall X (by
-        simp only [List.cons_append, Ty.ftvList, List.append_eq]
+        simp only [List.cons_append, Ty.ftvList]
         exact List.mem_append_right _ (by rw [ftvList_append]; exact List.mem_append_right _ (ftvList_map_mem (f := VarDecl.T) hp hX)))))]
     exact hm
 theorem RenMs.gsub {rv rt Mas Mbs} : RenMs rv rt Mas Mbs -> forall {rto s1 s2 T S}, GSEnv rt rto s1 s2 T ->

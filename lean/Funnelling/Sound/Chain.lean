@@ -138,7 +138,7 @@ theorem sub_self_eq {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} {f 
     have hd := List.nodup_append.mp hA2
     exfalso
     apply hd.2.2 f hf f _ rfl
-    simp only [listMem_iff, List.mem_flatMap]
+    simp only [List.mem_flatMap]
     exact Exists.intro D (And.intro hm hf)
 
 theorem field_typing {d : Decls} {Delta : Bounds} {gamma : Gamma} {s : TSubst} {f : FieldName} {v : Value}

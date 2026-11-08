@@ -100,7 +100,7 @@ theorem pres_innerFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
   have hv0u := hau.1
   rw [hv] at hv0n hv0t hv0u
   simp only [Value.expr, Expr.noShadow, Bool.and_eq_true] at hv0n
-  simp only [Value.expr, Expr.vbinders, listMem_iff, List.mem_append, not_or] at hv0t
+  simp only [Value.expr, Expr.vbinders, List.mem_append, not_or] at hv0t
   simp only [Value.expr, Expr.uniq] at hv0u
   have hnM : M.noShadow [] [] = true := by
     have := noShadowListM_mem hM hv0n.2

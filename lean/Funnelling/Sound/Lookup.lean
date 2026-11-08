@@ -53,7 +53,7 @@ theorem lookup_append_left {x : A} : forall {r1 r2 : List (Prod A B)}, List.Mem 
       | head => exact absurd rfl hx
       | tail _ h => exact lookup_append_left h
 
-theorem zip_map_fst : forall {xs : List A} {ys : List B}, xs.length = ys.length -> (xs.zip ys).map Prod.fst = xs
+omit [DecidableEq A] in theorem zip_map_fst : forall {xs : List A} {ys : List B}, xs.length = ys.length -> (xs.zip ys).map Prod.fst = xs
   | [], [], _ => rfl
   | [], _ :: _, h => by simp at h
   | _ :: _, [], h => by simp at h
