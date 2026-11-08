@@ -121,9 +121,7 @@ theorem Expr.closed_of_vsubst : forall {e : Expr} {n : VSubst} {T : List TVarNam
       (Expr.closed_mono (Expr.closed_of_vsubst hc.1.2) (fun _ h => h) (fun y hy => by
         simp only [listMem_iff, List.mem_append, List.mem_cons] at hy |-
         rcases hy with hy | hy
-        . rcases hy with hy | hy
-          . exact Or.inl hy
-          . exact Or.inr (Or.inl hy)
+        . grind
         . exact Or.inr (Or.inr hy))))
       (Expr.closed_of_vsubst hc.2)
 theorem Expr.closedList_of_vsubst : forall {es : List Expr} {n : VSubst} {T : List TVarName} {S : List VarName},

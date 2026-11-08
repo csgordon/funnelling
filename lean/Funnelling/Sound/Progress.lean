@@ -317,12 +317,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         have hdis := Method.noShadow_dom hnM
         simp only [Method.noShadow, Bool.and_eq_true, List.nil_append, List.cons_append, NoThisM, Method.vbinders,
           listMem_iff, List.mem_append, not_or, Method.uniq] at hnM htM huM
-        have hN : (dom w.D.bounds ++ dom Delta').Nodup := by
-          apply List.nodup_append.mpr
-          refine And.intro hnD (And.intro huM.1 ?_)
-          intro a ha b hb e
-          subst e
-          exact hdis a hb ha
+        have hN : (dom w.D.bounds ++ dom Delta').Nodup := by grind
         exact ⟨_, Step.simpleFound hw'.decl hM (FreshM.refl _) hkd (by omega) hN
           (List.nodup_cons.mpr ⟨htM.1, huM.2.1⟩) (by omega) (fun X hX => Expr.noShadow_tb hnM.2 X hX)
           (fun y hy => Expr.noShadow_binders hnM.2 htM.2 y hy) rfl⟩
