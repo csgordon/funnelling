@@ -210,26 +210,14 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
       rw [hv2.1, hv2.2.1, GTy.tys_inj he.2.1, he.2.2.1, Value.exprs_inj he.2.2.2]
       exact Fresh.refl _
     | @innerFound C2 C2' Ms2 M2 m2 D2 T2 ps2 e02 e2 v02 Gs2 Gs2'' Gs2' vs02 vs2 hv2 =>
-      simp only [Expr.call.injEq] at he
-      have ev := Value.expr_inj he.1
-      subst ev
-      rw [hv] at hv2
-      simp at hv2
+      exact Value.noConfusion (hv.symm.trans ((Value.expr_inj (Expr.call.inj he).1).trans hv2))
     | @innerSuper C2 C2' Ms2 m2 v02 Gs20 Gs2 Gs2' vs02 vs2 hv2 =>
-      simp only [Expr.call.injEq] at he
-      have ev := Value.expr_inj he.1
-      subst ev
-      rw [hv] at hv2
-      simp at hv2
+      exact Value.noConfusion (hv.symm.trans ((Value.expr_inj (Expr.call.inj he).1).trans hv2))
     | _ => simp at he
   | @innerFound C C' Ms M m Delta' T0 ps e0 e v0 Gs Gs'' Gs' vs0 vs hv hM hF hG hp hN hN' hgs hvs hres =>
     cases h2 with
     | @simpleAddSuper C2 m2 v2 Gs2 Gs2' vs02 vs2 hv2 =>
-      simp only [Expr.call.injEq] at he
-      have ev := Value.expr_inj he.1
-      subst ev
-      rw [hv] at hv2
-      simp at hv2
+      exact Value.noConfusion (hv2.symm.trans ((Value.expr_inj (Expr.call.inj he).1).symm.trans hv))
     | @innerFound C2 C2' Ms2 M2 m2 D2 T2 ps2 e02 e2 v02 Gs2 Gs2'' Gs2' vs02 vs2 hv2 hM2 hF2 hG2 hp2 hN2 hN2' hgs2 hvs2 hres2 =>
       simp only [Expr.call.injEq] at he
       have ev := Value.expr_inj he.1
@@ -261,7 +249,8 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
         (renE_meth (B := []) (Gs := []) hF.2 hF2.1 hMu hMt hMn rfl hG hG2 hp hp2 hN hN2 hN' hN2' hgs hgs2 hvs hvs2
           hw1.2.2.2.2.2.2 hvals)
         (renE_meth (B := []) (Gs := []) hF2.2 hF.1 hMu hMt hMn rfl hG2 hG hp2 hp hN2 hN hN2' hN' hgs2 hgs hvs2 hvs
-          hw2.2.2.2.2.2.2 hvals)    | @innerSuper C2 C2' Ms2 m2 v02 Gs20 Gs2 Gs2' vs02 vs2 hv2 hm2 =>
+          hw2.2.2.2.2.2.2 hvals)
+    | @innerSuper C2 C2' Ms2 m2 v02 Gs20 Gs2 Gs2' vs02 vs2 hv2 hm2 =>
       simp only [Expr.call.injEq] at he
       have ev := Value.expr_inj he.1
       subst ev
@@ -273,11 +262,7 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
   | @innerSuper C C' Ms m v0 Gs0 Gs Gs' vs0 vs hv hm =>
     cases h2 with
     | @simpleAddSuper C2 m2 v2 Gs2 Gs2' vs02 vs2 hv2 =>
-      simp only [Expr.call.injEq] at he
-      have ev := Value.expr_inj he.1
-      subst ev
-      rw [hv] at hv2
-      simp at hv2
+      exact Value.noConfusion (hv2.symm.trans ((Value.expr_inj (Expr.call.inj he).1).symm.trans hv))
     | @innerFound C2 C2' Ms2 M2 m2 D2 T2 ps2 e02 e2 v02 Gs2 Gs2'' Gs2' vs02 vs2 hv2 hM2 hF2 =>
       simp only [Expr.call.injEq] at he
       have ev := Value.expr_inj he.1
