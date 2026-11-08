@@ -184,76 +184,54 @@ theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
   subst eD
   have eTs := ann.2
   subst eTs
-  rcases hw.meth with ⟨k, hk, hkn, hkM⟩
-  have ek := Declared.unique hwf hk hw.decl0 hkn
-  subst ek
   rcases dec_override hwf hok hd hD hM hw.decl0 (by rw [gtys_length]; exact hG) hw.sub with ⟨Us, hUs, hO, hUf⟩
   have hO' := OverrideOkM.ren (rv := []) (rt := []) hwf hok hO f.fresh.1
     (fun X hX hm => Method.noShadow_dom hwm.2.2 X hm (hUf X hX)) hwm.1
   rw [Ty.renList_id (fun _ _ => rn_nil)] at hO'
-  generalize hTT : Ty.cls D0.C Us = TT at hO'
-  cases hO' with
-  | absent h1 h2 =>
-    simp only [Ty.cls.injEq] at hTT
-    have e := Declared.unique hwf hw.decl0 h1 (by simp only [K.name]; exact hTT.1)
-    cases e
-    exact absurd (List.mem_map_of_mem (f := Method.name) hkM) h2
-  | loc h1 =>
-    simp only [Ty.cls.injEq] at hTT
-    exact absurd (Declared.dec_loc hwf hw.decl0 h1 hTT.1) id
-  | @dec D2 Us2 _ _ _ _ _ Do T0x psx ex h1 h2 h3 h4 h5 h6 =>
-    simp only [Ty.cls.injEq] at hTT
-    have e := Declared.unique hwf hw.decl0 h1 (by simp only [K.name]; exact hTT.1)
-    cases e
-    have eU := hTT.2
-    subst eU
-    have eM := names_unique (Declared.namesNodup hwf hw.decl0) h2 hkM rfl
-    simp only [Method.mk.injEq] at eM
-    rcases eM with ⟨eM1, eM2, _, eM4, _⟩
-    subst eM1 eM2 eM4
-    have hv1 := f.subst_vars hG
-    have hcomp1 : forall L, (forall X, List.Mem X (Ty.ftvList L) -> List.Mem X (dom D.bounds)) ->
-        Ty.substList (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs'))) L =
-          Ty.substList (bind D.bounds (GTy.tys Gs)) L := by
-      intro L hL
-      conv => lhs; rw [<- substList_bind_vars_id hL]
-      rw [substList_bind_comp (by simp [vars, dom]) hL, hv1.1]
-    have hUt : Ty.substList (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs'))) Us = Ts0 := by
-      rw [hcomp1 Us hUf]; exact hUs.symm
-    have hcl0 := declMeth_closed hwf hok hw.decl0 hkM
-    simp only [K.gvars, <- dom_append] at hcl0
-    have hmo := (hok D hD.dec_mem).2.2.1 M hM
-    have env : REnv [] [] D.bounds D.bounds [{ T := .cls D.C (vars (dom D.bounds)), x := this }]
-        [{ T := .cls D.C (vars (dom D.bounds)), x := this }] (dom D.bounds) [this] [this] :=
-      REnv.refl (fun b hb X hX => Kind.ftv ((hok D hD.dec_mem).1 b.T (List.mem_map_of_mem (f := Bound.T) hb)) X hX)
-        (fun X hX => ftv_vars (by simpa [Ty.ftv] using hX))
-    have hmo' := MethodOk.ren hwf hok hd hmo f.fresh.1 env hwm.2.2 f.methNoShadow hwm.2.1 f.methNoThis hwm.1 f.methUniq
-    have hb0 : forall b, List.Mem b D.bounds ->
-        Sub d [] ((Ty.var b.X).subst (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs'))))
-          (b.T.subst (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs')))) /\
-        Kind d [] ((Ty.var b.X).subst (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs')))) := by
-      intro b hb
-      have hka := (kind_dec_args hwf hD hw.kind).2 b hb
-      have hbT : forall X, List.Mem X (Ty.ftvList [b.T]) -> List.Mem X (dom D.bounds) := by
-        intro X hX
-        simp only [Ty.ftvList, List.append_nil] at hX
-        exact Kind.ftv ((hok D hD.dec_mem).1 b.T (List.mem_map_of_mem (f := Bound.T) hb)) X hX
-      have hbX : forall X, List.Mem X (Ty.ftvList [Ty.var b.X]) -> List.Mem X (dom D.bounds) := by
-        intro X hX
-        cases hX with
-        | head => exact List.mem_map_of_mem (f := Bound.X) hb
-        | tail _ h => cases h
-      have e1 := hcomp1 [b.T] hbT
-      have e2 := hcomp1 [Ty.var b.X] hbX
-      simp only [Ty.substList, List.cons.injEq] at e1 e2
-      rw [e1.1, e2.1]
-      exact hka
-    refine hw.up.typing (f.typing (Ts' := Ts') hwf hok hd hG hmo' hb0 (fun b hb => ?_) ?_ ?_ hw.kinds ?_ ha.noShadow
-      (WFExpr.noThis ha) (WFExpr.uniq ha))
-    . exact Kind.mono (fun x hx => List.mem_append_left _ hx) ((hok D hD.dec_mem).1 b.T (List.mem_map_of_mem (f := Bound.T) hb))
-    . rw [<- h6, f.sig hG hUt h3 h4 hcl0.2]; exact hw.sig.symm
-    . rw [<- h5, f.sig hG hUt h3 h4 hcl0.1]; exact hw.subs
-    . simp only [Ty.subst]; rw [hv1.1]; exact hw.args
+  have h3 : Us.length = D0.bounds.length := by rw [<- hw.len0, hUs, substList_length]
+  rcases found_sig hwf (Scope.dec hw.decl0) hw.meth h3 hO' with ⟨_, h4, h5, h6⟩
+  have hv1 := f.subst_vars hG
+  have hcomp1 : forall L, (forall X, List.Mem X (Ty.ftvList L) -> List.Mem X (dom D.bounds)) ->
+      Ty.substList (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs'))) L =
+        Ty.substList (bind D.bounds (GTy.tys Gs)) L := by
+    intro L hL
+    conv => lhs; rw [<- substList_bind_vars_id hL]
+    rw [substList_bind_comp (by simp [vars, dom]) hL, hv1.1]
+  have hUt : Ty.substList (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs'))) Us = Ts0 := by
+    rw [hcomp1 Us hUf]; exact hUs.symm
+  have hcl0 := methodIn_closed hwf hok (Scope.dec (Ts := Us) hw.decl0) hw.meth
+  have hmo := (hok D hD.dec_mem).2.2.1 M hM
+  have env : REnv [] [] D.bounds D.bounds [{ T := .cls D.C (vars (dom D.bounds)), x := this }]
+      [{ T := .cls D.C (vars (dom D.bounds)), x := this }] (dom D.bounds) [this] [this] :=
+    REnv.refl (fun b hb X hX => Kind.ftv ((hok D hD.dec_mem).1 b.T (List.mem_map_of_mem (f := Bound.T) hb)) X hX)
+      (fun X hX => ftv_vars (by simpa [Ty.ftv] using hX))
+  have hmo' := MethodOk.ren hwf hok hd hmo f.fresh.1 env hwm.2.2 f.methNoShadow hwm.2.1 f.methNoThis hwm.1 f.methUniq
+  have hb0 : forall b, List.Mem b D.bounds ->
+      Sub d [] ((Ty.var b.X).subst (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs'))))
+        (b.T.subst (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs')))) /\
+      Kind d [] ((Ty.var b.X).subst (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs')))) := by
+    intro b hb
+    have hka := (kind_dec_args hwf hD hw.kind).2 b hb
+    have hbT : forall X, List.Mem X (Ty.ftvList [b.T]) -> List.Mem X (dom D.bounds) := by
+      intro X hX
+      simp only [Ty.ftvList, List.append_nil] at hX
+      exact Kind.ftv ((hok D hD.dec_mem).1 b.T (List.mem_map_of_mem (f := Bound.T) hb)) X hX
+    have hbX : forall X, List.Mem X (Ty.ftvList [Ty.var b.X]) -> List.Mem X (dom D.bounds) := by
+      intro X hX
+      cases hX with
+      | head => exact List.mem_map_of_mem (f := Bound.X) hb
+      | tail _ h => cases h
+    have e1 := hcomp1 [b.T] hbT
+    have e2 := hcomp1 [Ty.var b.X] hbX
+    simp only [Ty.substList, List.cons.injEq] at e1 e2
+    rw [e1.1, e2.1]
+    exact hka
+  refine hw.up.typing (f.typing (Ts' := Ts') hwf hok hd hG hmo' hb0 (fun b hb => ?_) ?_ ?_ hw.kinds ?_ ha.noShadow
+    (WFExpr.noThis ha) (WFExpr.uniq ha))
+  . exact Kind.mono (fun x hx => List.mem_append_left _ hx) ((hok D hD.dec_mem).1 b.T (List.mem_map_of_mem (f := Bound.T) hb))
+  . rw [<- h6, f.sig hG hUt h3 h4 hcl0.1]; exact hw.sig.symm
+  . rw [<- h5, f.sig hG hUt h3 h4 hcl0.2]; exact hw.subs
+  . simp only [Ty.subst]; rw [hv1.1]; exact hw.args
 
 theorem pres_innerFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {C C' : ClassName}
     {Ms : List Method} {M : Method} {m : MethName} {Delta' : Bounds} {T0 : Ty} {ps : List VarDecl} {e0 : Expr}
