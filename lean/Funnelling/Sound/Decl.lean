@@ -26,8 +26,7 @@ theorem Expr.locClosed : forall (e : Expr), LocClosed e.locals
     | head => exact List.Mem.tail _ (List.mem_append_right _ hx)
     | tail _ hk =>
       exact List.Mem.tail _ (((Expr.locClosedList es).append (Method.locClosedList Ms)) k hk x hx)
-  | .ifInst e0 _ _ e1 e2 => by
-    exact ((Expr.locClosed e0).append (Expr.locClosed e1)).append (Expr.locClosed e2)
+  | .ifInst e0 _ _ e1 e2 => ((Expr.locClosed e0).append (Expr.locClosed e1)).append (Expr.locClosed e2)
 theorem Expr.locClosedList : forall (es : List Expr), LocClosed (Expr.localsList es)
   | [] => fun _ h => by cases h
   | e :: es => by simp only [Expr.localsList]; exact (Expr.locClosed e).append (Expr.locClosedList es)

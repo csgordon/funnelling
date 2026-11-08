@@ -160,8 +160,7 @@ theorem RenE.gsub {rv rt a b} : RenE rv rt a b -> forall {rto s1 s2 T S}, GSEnv 
       env.ty (fun X hX => h2 X (List.mem_append_left _ hX))]
     exact RenE.superCall (RenE.gsub h1 env hc.1.1 (notDomT_append_left hd1) (notDomT_append_left hd2))
       (RenEs.gsub hs1 env hc.2 (notDomT_append_right hd1) (notDomT_append_right hd2))
-  | .field h1, rto, s1, s2, T, S, env, hc, hd1, hd2 => by
-    exact RenE.field (RenE.gsub h1 env hc hd1 hd2)
+  | .field h1, rto, s1, s2, T, S, env, hc, hd1, hd2 => RenE.field (RenE.gsub h1 env hc hd1 hd2)
   | .new hs1, rto, s1, s2, T, S, env, hc, hd1, hd2 => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
     simp only [Expr.gsubst]

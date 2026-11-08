@@ -9,8 +9,7 @@ theorem Ty.ftv_subst_sub {s : TSubst} {A : List TVarName} : forall {T : Ty},
     (forall Y, List.Mem Y T.ftv -> forall X, List.Mem X ((Ty.var Y).subst s).ftv -> List.Mem X A) ->
     forall X, List.Mem X (T.subst s).ftv -> List.Mem X A
   | .var Y, h, X, hX => h Y (List.Mem.head _) X hX
-  | .cls C Ts, h, X, hX => by
-    exact Ty.ftvList_subst_sub h X hX
+  | .cls C Ts, h, X, hX => Ty.ftvList_subst_sub h X hX
 theorem Ty.ftvList_subst_sub {s : TSubst} {A : List TVarName} : forall {Ts : List Ty},
     (forall Y, List.Mem Y (Ty.ftvList Ts) -> forall X, List.Mem X ((Ty.var Y).subst s).ftv -> List.Mem X A) ->
     forall X, List.Mem X (Ty.ftvList (Ty.substList s Ts)) -> List.Mem X A

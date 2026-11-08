@@ -451,8 +451,7 @@ theorem Expr.noShadow_vsubst {VB : List VarName} {TB : List TVarName} (hthis : N
   | .field _ _, _, _, _, h, hn, hxs, he, hXs, hE => by
     simp only [Expr.vsubst, Expr.noShadow]
     exact Expr.noShadow_vsubst hthis h hn hxs he hXs hE
-  | .new _ _ _, _, _, _, h, hn, hxs, he, hXs, hE => by
-    exact Expr.noShadowList_vsubst hthis h hn hxs he hXs hE
+  | .new _ _ _, _, _, _, h, hn, hxs, he, hXs, hE => Expr.noShadowList_vsubst hthis h hn hxs he hXs hE
   | .newLocal _ _ _ _ _ _, _, _, _, h, hn, hxs, he, hXs, hE => by
     simp only [Expr.noShadow, Bool.and_eq_true, Expr.vbinders, listMem_iff, List.mem_append, Expr.tbinders] at h he hE
     simp only [Expr.vsubst, Expr.noShadow, Bool.and_eq_true]

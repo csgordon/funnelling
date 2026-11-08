@@ -177,8 +177,7 @@ theorem RenE.vsub {rv rt a b} : RenE rv rt a b -> forall {rvo n1 n2 S T}, VSEnv 
     simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ha hb
     exact RenE.superCall (RenE.vsub h1 env hc.1.1 (notDom_append_left hd1) (notDom_append_left hd2) ha.1 hb.1)
       (RenEs.vsub hs1 env hc.2 (notDom_append_right hd1) (notDom_append_right hd2) ha.2 hb.2)
-  | .field h1, rvo, n1, n2, S, T, env, hc, hd1, hd2, ha, hb => by
-    exact RenE.field (RenE.vsub h1 env hc hd1 hd2 ha hb)
+  | .field h1, rvo, n1, n2, S, T, env, hc, hd1, hd2, ha, hb => RenE.field (RenE.vsub h1 env hc hd1 hd2 ha hb)
   | .new hs1, rvo, n1, n2, S, T, env, hc, hd1, hd2, ha, hb => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
     exact RenE.new (RenEs.vsub hs1 env hc.2 hd1 hd2 ha hb)

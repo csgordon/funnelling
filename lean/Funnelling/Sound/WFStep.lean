@@ -361,8 +361,7 @@ mutual
 theorem Typing.closed {d : Decls} : forall {Delta gamma e T}, Typing d Delta gamma e T ->
     e.closed (dom Delta) (gdom gamma) = true
   | _, _, _, _, .subs h _ _ => Typing.closed h
-  | _, _, _, _, .var hl => by
-    exact List.contains_iff_mem.mpr (List.mem_map_of_mem (f := VarDecl.x) (lookup_mem_g hl))
+  | _, _, _, _, .var hl => List.contains_iff_mem.mpr (List.mem_map_of_mem (f := VarDecl.x) (lookup_mem_g hl))
   | _, _, _, _, .newObject => rfl
   | _, _, _, _, .declField h1 _ _ _ => by
     simp only [Expr.closed]

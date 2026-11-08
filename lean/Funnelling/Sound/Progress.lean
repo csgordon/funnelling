@@ -127,8 +127,7 @@ theorem Expr.noShadow_tb : forall {e : Expr} {Xs : List TVarName} {xs : List Var
   | .field e _, _, _, hn, X, hX => by
     simp only [Expr.noShadow, Expr.tbinders] at hn hX
     exact Expr.noShadow_tb hn X hX
-  | .new _ _ es, _, _, hn, X, hX => by
-    exact Expr.noShadowList_tb hn X hX
+  | .new _ _ es, _, _, hn, X, hX => Expr.noShadowList_tb hn X hX
   | .newLocal _ _ _ _ es Ms, _, _, hn, X, hX => by
     simp only [Expr.noShadow, Bool.and_eq_true, Expr.tbinders, listMem_iff, List.mem_append] at hn hX
     rcases hX with hX | hX
