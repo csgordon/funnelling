@@ -4,24 +4,6 @@ open Funnelling.SoundSimp
 
 namespace Funnelling
 
-theorem localsList_eq : forall (es : List Expr), Expr.localsList es = es.flatMap Expr.locals
-  | [] => rfl
-  | e :: es => by simp [Expr.localsList, localsList_eq es]
-
-theorem ifVarsList_eq : forall (es : List Expr), Expr.ifVarsList es = es.flatMap Expr.ifVars
-  | [] => rfl
-  | e :: es => by simp [Expr.ifVarsList, ifVarsList_eq es]
-
-theorem noShadowList_eq {Xs : List TVarName} {xs : List VarName} :
-    forall (es : List Expr), Expr.noShadowList Xs xs es = es.all (Expr.noShadow Xs xs)
-  | [] => rfl
-  | e :: es => by simp [Expr.noShadowList, noShadowList_eq es]
-
-theorem closedList_eq {Xs : List TVarName} {xs : List VarName} :
-    forall (es : List Expr), Expr.closedList Xs xs es = es.all (Expr.closed Xs xs)
-  | [] => rfl
-  | e :: es => by simp [Expr.closedList, closedList_eq es]
-
 theorem ECtx.nodup_replace {a a' : Expr} (h' : forall k, List.Mem k a'.locals -> K.Nodup k) :
     forall (E : ECtx), (forall k, List.Mem k (E.plug a).locals -> K.Nodup k) ->
       forall k, List.Mem k (E.plug a').locals -> K.Nodup k := by
@@ -30,7 +12,7 @@ theorem ECtx.nodup_replace {a a' : Expr} (h' : forall k, List.Mem k a'.locals ->
   case hole => exact h'
   all_goals
     rename_i ih
-    simp only [ECtx.plug, Expr.locals, localsList_eq, List.flatMap_append, List.flatMap_cons, listMem_iff,
+    simp only [ECtx.plug, Expr.locals, Expr.localsList_eq_flatMap, List.flatMap_append, List.flatMap_cons, listMem_iff,
       List.mem_append, List.mem_cons, or_imp, forall_and, forall_eq, K.Nodup] at h ih |-
     simp_all only [implies_true, and_self, K.Ms, K.Fs]
 
@@ -41,7 +23,7 @@ theorem ECtx.ifVars_replace {a a' : Expr} {x : VarName} (h' : Not (List.Mem x a'
   case hole => exact h'
   all_goals
     rename_i ih
-    simp only [ECtx.plug, Expr.ifVars, ifVarsList_eq, List.flatMap_append, List.flatMap_cons, listMem_iff,
+    simp only [ECtx.plug, Expr.ifVars, Expr.ifVarsList_eq_flatMap, List.flatMap_append, List.flatMap_cons, listMem_iff,
       List.mem_append, List.mem_cons, not_or] at h ih |-
     simp_all
 
@@ -53,7 +35,7 @@ theorem ECtx.noShadow_replace {a a' : Expr} {Xs : List TVarName} {xs : List VarN
   case hole => exact h'
   all_goals
     rename_i ih
-    simp only [ECtx.plug, Expr.noShadow, noShadowList_eq, List.all_append, List.all_cons, Bool.and_eq_true] at h ih |-
+    simp only [ECtx.plug, Expr.noShadow, Expr.noShadowList_eq_all, List.all_append, List.all_cons, Bool.and_eq_true] at h ih |-
     simp_all
 
 theorem ECtx.closed_replace {a a' : Expr} {Xs : List TVarName} {xs : List VarName}
@@ -64,7 +46,7 @@ theorem ECtx.closed_replace {a a' : Expr} {Xs : List TVarName} {xs : List VarNam
   case hole => exact h'
   all_goals
     rename_i ih
-    simp only [ECtx.plug, Expr.closed, closedList_eq, List.all_append, List.all_cons, Bool.and_eq_true] at h ih |-
+    simp only [ECtx.plug, Expr.closed, Expr.closedList_eq_all, List.all_append, List.all_cons, Bool.and_eq_true] at h ih |-
     simp_all
 
 theorem WFExpr.nodup {e : Expr} (h : WFExpr e) : forall k, List.Mem k e.locals -> K.Nodup k := by
@@ -126,16 +108,16 @@ theorem wf_new_suffix {C C' : ClassName} {Ts Ts' : List Ty} {l r : List Expr} (h
     (hT : Ty.ftvList Ts' = []) : WFExpr (.new C' Ts' r) := by
   have hn := h.2.2.2.2.1
   have hc := h.2.2.2.2.2.2
-  simp only [Expr.noShadow, noShadowList_eq, List.all_append, Bool.and_eq_true, Expr.closed, closedList_eq] at hn hc
+  simp only [Expr.noShadow, Expr.noShadowList_eq_all, List.all_append, Bool.and_eq_true, Expr.closed, Expr.closedList_eq_all] at hn hc
   refine WFExpr.sub h ?_ ?_ ?_ ?_
   . intro k hk
-    simp only [Expr.locals, localsList_eq, List.flatMap_append, listMem_iff, List.mem_append] at hk |-
+    simp only [Expr.locals, Expr.localsList_eq_flatMap, List.flatMap_append, listMem_iff, List.mem_append] at hk |-
     exact Or.inr hk
   . intro x hx
-    simp only [Expr.ifVars, ifVarsList_eq, List.flatMap_append, listMem_iff, List.mem_append] at hx |-
+    simp only [Expr.ifVars, Expr.ifVarsList_eq_flatMap, List.flatMap_append, listMem_iff, List.mem_append] at hx |-
     exact Or.inr hx
-  . simp only [Expr.noShadow, noShadowList_eq]; exact hn.2
-  . simp only [Expr.closed, closedList_eq, hT, List.all_nil, Bool.true_and]; exact hc.2.2
+  . simp only [Expr.noShadow, Expr.noShadowList_eq_all]; exact hn.2
+  . simp only [Expr.closed, Expr.closedList_eq_all, hT, List.all_nil, Bool.true_and]; exact hc.2.2
 
 theorem wf_local_new {C C' : ClassName} {Fs : List Funnel} {Ts : List Ty} {es : List Expr} {Ms : List Method}
     (h : WFExpr (.newLocal C Fs C' Ts es Ms)) : WFExpr (.new C' Ts es) := by
@@ -374,10 +356,10 @@ theorem Typing.closed {d : Decls} : forall {Delta gamma e T}, Typing d Delta gam
   | _, _, _, _, .newTop _ h2 _ h4 h5 => by
     have h5c := Typing.closed h5
     simp only [Expr.closed, Bool.and_eq_true] at h5c
-    simp only [Expr.closed, Bool.and_eq_true, closedList_eq, List.all_append]
-    rw [closedList_eq] at h5c
+    simp only [Expr.closed, Bool.and_eq_true, Expr.closedList_eq_all, List.all_append]
+    rw [Expr.closedList_eq_all] at h5c
     have h4c := TypingSeq.closed h4
-    rw [closedList_eq] at h4c
+    rw [Expr.closedList_eq_all] at h4c
     refine ⟨?_, h4c, h5c.2⟩
     apply all_contains_iff.mpr
     intro X hX
