@@ -196,54 +196,6 @@ theorem Method.closedList_vsubst : forall {Ms : List Method} {n : VSubst} {T : L
     exact ⟨Method.closed_vsubst hc.1 hn, Method.closedList_vsubst hc.2 hn⟩
 end
 
-mutual
-theorem Expr.ifVars_gsubst {s : GSubst} : forall (e : Expr), (e.gsubst s).ifVars = e.ifVars
-  | .var _ => rfl
-  | .call e _ _ es => by simp only [Expr.gsubst, Expr.ifVars, Expr.ifVars_gsubst e, Expr.ifVarsList_gsubst es]
-  | .superCall e _ _ _ es => by simp only [Expr.gsubst, Expr.ifVars, Expr.ifVars_gsubst e, Expr.ifVarsList_gsubst es]
-  | .field e _ => by simp only [Expr.gsubst, Expr.ifVars, Expr.ifVars_gsubst e]
-  | .new _ _ es => by simp only [Expr.gsubst, Expr.ifVars, Expr.ifVarsList_gsubst es]
-  | .newLocal _ _ _ _ es Ms => by
-    simp only [Expr.gsubst, Expr.ifVars, Expr.ifVarsList_gsubst es, Method.ifVarsList_gsubst Ms]
-  | .ifInst e0 _ _ e1 e2 => by
-    simp only [Expr.gsubst, Expr.ifVars, Expr.ifVars_gsubst e0, Expr.ifVars_gsubst e1, Expr.ifVars_gsubst e2]
-theorem Expr.ifVarsList_gsubst {s : GSubst} : forall (es : List Expr),
-    Expr.ifVarsList (Expr.gsubstList s es) = Expr.ifVarsList es
-  | [] => rfl
-  | e :: es => by simp only [Expr.gsubstList, Expr.ifVarsList, Expr.ifVars_gsubst e, Expr.ifVarsList_gsubst es]
-theorem Method.ifVars_gsubst {s : GSubst} : forall (M : Method), (M.gsubst s).ifVars = M.ifVars
-  | .mk _ _ _ _ e => by simp only [Method.gsubst, Method.ifVars, Expr.ifVars_gsubst e]
-theorem Method.ifVarsList_gsubst {s : GSubst} : forall (Ms : List Method),
-    Method.ifVarsList (Method.gsubstList s Ms) = Method.ifVarsList Ms
-  | [] => rfl
-  | M :: Ms => by simp only [Method.gsubstList, Method.ifVarsList, Method.ifVars_gsubst M, Method.ifVarsList_gsubst Ms]
-end
-
-mutual
-theorem Expr.tbinders_gsubst {s : GSubst} : forall (e : Expr), (e.gsubst s).tbinders = e.tbinders
-  | .var _ => rfl
-  | .call e _ _ es => by simp only [Expr.gsubst, Expr.tbinders, Expr.tbinders_gsubst e, Expr.tbindersList_gsubst es]
-  | .superCall e _ _ _ es => by
-    simp only [Expr.gsubst, Expr.tbinders, Expr.tbinders_gsubst e, Expr.tbindersList_gsubst es]
-  | .field e _ => by simp only [Expr.gsubst, Expr.tbinders, Expr.tbinders_gsubst e]
-  | .new _ _ es => by simp only [Expr.gsubst, Expr.tbinders, Expr.tbindersList_gsubst es]
-  | .newLocal _ _ _ _ es Ms => by
-    simp only [Expr.gsubst, Expr.tbinders, Expr.tbindersList_gsubst es, Method.tbindersList_gsubst Ms]
-  | .ifInst e0 _ _ e1 e2 => by
-    simp only [Expr.gsubst, Expr.tbinders, Expr.tbinders_gsubst e0, Expr.tbinders_gsubst e1, Expr.tbinders_gsubst e2]
-theorem Expr.tbindersList_gsubst {s : GSubst} : forall (es : List Expr),
-    Expr.tbindersList (Expr.gsubstList s es) = Expr.tbindersList es
-  | [] => rfl
-  | e :: es => by simp only [Expr.gsubstList, Expr.tbindersList, Expr.tbinders_gsubst e, Expr.tbindersList_gsubst es]
-theorem Method.tbinders_gsubst {s : GSubst} : forall (M : Method), (M.gsubst s).tbinders = M.tbinders
-  | .mk _ _ _ _ e => by simp only [Method.gsubst, Method.tbinders, dom_bounds_subst, Expr.tbinders_gsubst e]
-theorem Method.tbindersList_gsubst {s : GSubst} : forall (Ms : List Method),
-    Method.tbindersList (Method.gsubstList s Ms) = Method.tbindersList Ms
-  | [] => rfl
-  | M :: Ms => by
-    simp only [Method.gsubstList, Method.tbindersList, Method.tbinders_gsubst M, Method.tbindersList_gsubst Ms]
-end
-
 theorem domF_gsubst_sub {s : GSubst} : forall (Fs : List Funnel),
     (domF (Fs.map (Funnel.gsubst s))).Sublist (domF Fs) /\
       forall X, List.Mem X (domF (Fs.map (Funnel.gsubst s))) -> Not (List.Mem X (s.map Prod.fst))

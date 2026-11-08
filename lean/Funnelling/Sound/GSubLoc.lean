@@ -258,56 +258,6 @@ theorem OverrideOkM.gsubst {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {s : 
           <- substList_eq_map, <- substList_eq_map, hv] at e
         rw [dom_bounds_subst, e, Ty.substList, params_T_subst]
 
-
-mutual
-theorem Expr.noShadow_gsubst {s : GSubst} : forall (e : Expr) {Xs : List TVarName} {xs : List VarName},
-    (e.gsubst s).noShadow Xs xs = e.noShadow Xs xs
-  | .var _, _, _ => rfl
-  | .call e _ _ es, _, _ => by simp only [Expr.gsubst, Expr.noShadow, Expr.noShadow_gsubst e, Expr.noShadowList_gsubst es]
-  | .superCall e _ _ _ es, _, _ => by
-    simp only [Expr.gsubst, Expr.noShadow, Expr.noShadow_gsubst e, Expr.noShadowList_gsubst es]
-  | .field e _, _, _ => by simp only [Expr.gsubst, Expr.noShadow, Expr.noShadow_gsubst e]
-  | .new _ _ es, _, _ => by simp only [Expr.gsubst, Expr.noShadow, Expr.noShadowList_gsubst es]
-  | .newLocal _ _ _ _ es Ms, _, _ => by
-    simp only [Expr.gsubst, Expr.noShadow, Expr.noShadowList_gsubst es, Method.noShadowList_gsubst Ms]
-  | .ifInst e0 _ _ e1 e2, _, _ => by
-    simp only [Expr.gsubst, Expr.noShadow, Expr.noShadow_gsubst e0, Expr.noShadow_gsubst e1, Expr.noShadow_gsubst e2]
-theorem Expr.noShadowList_gsubst {s : GSubst} : forall (es : List Expr) {Xs : List TVarName} {xs : List VarName},
-    Expr.noShadowList Xs xs (Expr.gsubstList s es) = Expr.noShadowList Xs xs es
-  | [], _, _ => rfl
-  | e :: es, _, _ => by simp only [Expr.gsubstList, Expr.noShadowList, Expr.noShadow_gsubst e, Expr.noShadowList_gsubst es]
-theorem Method.noShadow_gsubst {s : GSubst} : forall (M : Method) {Xs : List TVarName} {xs : List VarName},
-    (M.gsubst s).noShadow Xs xs = M.noShadow Xs xs
-  | .mk _ _ _ _ e, _, _ => by
-    simp only [Method.gsubst, Method.noShadow, dom_bounds_subst, names_subst, Expr.noShadow_gsubst e]
-theorem Method.noShadowList_gsubst {s : GSubst} : forall (Ms : List Method) {Xs : List TVarName} {xs : List VarName},
-    Method.noShadowList Xs xs (Method.gsubstList s Ms) = Method.noShadowList Xs xs Ms
-  | [], _, _ => rfl
-  | M :: Ms, _, _ => by
-    simp only [Method.gsubstList, Method.noShadowList, Method.noShadow_gsubst M, Method.noShadowList_gsubst Ms]
-end
-
-mutual
-theorem Expr.uniq_gsubst {s : GSubst} : forall (e : Expr), (e.gsubst s).uniq = e.uniq
-  | .var _ => rfl
-  | .call e _ _ es => by simp only [Expr.gsubst, Expr.uniq, Expr.uniq_gsubst e, Expr.uniqList_gsubst es]
-  | .superCall e _ _ _ es => by simp only [Expr.gsubst, Expr.uniq, Expr.uniq_gsubst e, Expr.uniqList_gsubst es]
-  | .field e _ => by simp only [Expr.gsubst, Expr.uniq, Expr.uniq_gsubst e]
-  | .new _ _ es => by simp only [Expr.gsubst, Expr.uniq, Expr.uniqList_gsubst es]
-  | .newLocal _ _ _ _ es Ms => by simp only [Expr.gsubst, Expr.uniq, Expr.uniqList_gsubst es, Method.uniqList_gsubst Ms]
-  | .ifInst e0 _ _ e1 e2 => by
-    simp only [Expr.gsubst, Expr.uniq, Expr.uniq_gsubst e0, Expr.uniq_gsubst e1, Expr.uniq_gsubst e2]
-theorem Expr.uniqList_gsubst {s : GSubst} : forall (es : List Expr), Expr.uniqList (Expr.gsubstList s es) = Expr.uniqList es
-  | [] => rfl
-  | e :: es => by simp only [Expr.gsubstList, Expr.uniqList, Expr.uniq_gsubst e, Expr.uniqList_gsubst es]
-theorem Method.uniq_gsubst {s : GSubst} : forall (M : Method), (M.gsubst s).uniq = M.uniq
-  | .mk _ _ _ _ e => by simp only [Method.gsubst, Method.uniq, dom_bounds_subst, names_subst, Expr.uniq_gsubst e]
-theorem Method.uniqList_gsubst {s : GSubst} : forall (Ms : List Method),
-    Method.uniqList (Method.gsubstList s Ms) = Method.uniqList Ms
-  | [] => rfl
-  | M :: Ms => by simp only [Method.gsubstList, Method.uniqList, Method.uniq_gsubst M, Method.uniqList_gsubst Ms]
-end
-
 theorem gsubB_cons_none {s : GSubst} {b : Bound} {Delta : Bounds} (h : Not (List.Mem b.X (s.map Prod.fst))) :
     gsubB s (b :: Delta) = { X := b.X, T := b.T.subst s.ty } :: gsubB s Delta := by
   have : ((s.map Prod.fst).contains b.X) = false := by simpa using h

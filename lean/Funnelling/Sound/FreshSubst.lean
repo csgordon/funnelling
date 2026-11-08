@@ -5,27 +5,67 @@ open Funnelling.SoundSimp
 namespace Funnelling.High
 
 mutual
-theorem Expr.vbinders_gsubst {s : GSubst} : forall (e : Expr), (e.gsubst s).vbinders = e.vbinders
-  | .var _ => rfl
-  | .call e _ _ es => by simp only [Expr.gsubst, Expr.vbinders, Expr.vbinders_gsubst e, Expr.vbindersList_gsubst es]
-  | .superCall e _ _ _ es => by simp only [Expr.gsubst, Expr.vbinders, Expr.vbinders_gsubst e, Expr.vbindersList_gsubst es]
-  | .field e _ => by simp only [Expr.gsubst, Expr.vbinders, Expr.vbinders_gsubst e]
-  | .new _ _ es => by simp only [Expr.gsubst, Expr.vbinders, Expr.vbindersList_gsubst es]
+theorem Expr.gsubst_keeps {s : GSubst} : forall (e : Expr), (e.gsubst s).vbinders = e.vbinders /\
+    (e.gsubst s).ifVars = e.ifVars /\ (e.gsubst s).tbinders = e.tbinders /\ (e.gsubst s).uniq = e.uniq /\
+    forall Xs xs, (e.gsubst s).noShadow Xs xs = e.noShadow Xs xs
+  | .var _ => ⟨rfl, rfl, rfl, rfl, fun _ _ => rfl⟩
+  | .call e _ _ es => by
+    simp only [Expr.gsubst, Expr.vbinders, Expr.ifVars, Expr.tbinders, Expr.uniq, Expr.noShadow, Expr.gsubst_keeps e,
+      Expr.gsubstList_keeps es, implies_true, and_self]
+  | .superCall e _ _ _ es => by
+    simp only [Expr.gsubst, Expr.vbinders, Expr.ifVars, Expr.tbinders, Expr.uniq, Expr.noShadow, Expr.gsubst_keeps e,
+      Expr.gsubstList_keeps es, implies_true, and_self]
+  | .field e _ => by
+    simp only [Expr.gsubst, Expr.vbinders, Expr.ifVars, Expr.tbinders, Expr.uniq, Expr.noShadow, Expr.gsubst_keeps e,
+      implies_true, and_self]
+  | .new _ _ es => by
+    simp only [Expr.gsubst, Expr.vbinders, Expr.ifVars, Expr.tbinders, Expr.uniq, Expr.noShadow,
+      Expr.gsubstList_keeps es, implies_true, and_self]
   | .newLocal _ _ _ _ es Ms => by
-    simp only [Expr.gsubst, Expr.vbinders, Expr.vbindersList_gsubst es, Method.vbindersList_gsubst Ms]
+    simp only [Expr.gsubst, Expr.vbinders, Expr.ifVars, Expr.tbinders, Expr.uniq, Expr.noShadow,
+      Expr.gsubstList_keeps es, Method.gsubstList_keeps Ms, implies_true, and_self]
   | .ifInst e0 _ _ e1 e2 => by
-    simp only [Expr.gsubst, Expr.vbinders, Expr.vbinders_gsubst e0, Expr.vbinders_gsubst e1, Expr.vbinders_gsubst e2]
-theorem Expr.vbindersList_gsubst {s : GSubst} : forall (es : List Expr),
-    Expr.vbindersList (Expr.gsubstList s es) = Expr.vbindersList es
-  | [] => rfl
-  | e :: es => by simp only [Expr.gsubstList, Expr.vbindersList, Expr.vbinders_gsubst e, Expr.vbindersList_gsubst es]
-theorem Method.vbinders_gsubst {s : GSubst} : forall (M : Method), (M.gsubst s).vbinders = M.vbinders
-  | .mk _ _ _ ps e => by simp only [Method.gsubst, Method.vbinders, Expr.vbinders_gsubst e, names_subst]
-theorem Method.vbindersList_gsubst {s : GSubst} : forall (Ms : List Method),
-    Method.vbindersList (Method.gsubstList s Ms) = Method.vbindersList Ms
-  | [] => rfl
-  | M :: Ms => by simp only [Method.gsubstList, Method.vbindersList, Method.vbinders_gsubst M, Method.vbindersList_gsubst Ms]
+    simp only [Expr.gsubst, Expr.vbinders, Expr.ifVars, Expr.tbinders, Expr.uniq, Expr.noShadow, Expr.gsubst_keeps e0,
+      Expr.gsubst_keeps e1, Expr.gsubst_keeps e2, implies_true, and_self]
+theorem Expr.gsubstList_keeps {s : GSubst} : forall (es : List Expr),
+    Expr.vbindersList (Expr.gsubstList s es) = Expr.vbindersList es /\
+    Expr.ifVarsList (Expr.gsubstList s es) = Expr.ifVarsList es /\
+    Expr.tbindersList (Expr.gsubstList s es) = Expr.tbindersList es /\
+    Expr.uniqList (Expr.gsubstList s es) = Expr.uniqList es /\
+    forall Xs xs, Expr.noShadowList Xs xs (Expr.gsubstList s es) = Expr.noShadowList Xs xs es
+  | [] => ⟨rfl, rfl, rfl, rfl, fun _ _ => rfl⟩
+  | e :: es => by
+    simp only [Expr.gsubstList, Expr.vbindersList, Expr.ifVarsList, Expr.tbindersList, Expr.uniqList,
+      Expr.noShadowList, Expr.gsubst_keeps e, Expr.gsubstList_keeps es, implies_true, and_self]
+theorem Method.gsubst_keeps {s : GSubst} : forall (M : Method), (M.gsubst s).vbinders = M.vbinders /\
+    (M.gsubst s).ifVars = M.ifVars /\ (M.gsubst s).tbinders = M.tbinders /\ (M.gsubst s).uniq = M.uniq /\
+    forall Xs xs, (M.gsubst s).noShadow Xs xs = M.noShadow Xs xs
+  | .mk _ _ _ _ e => by
+    simp only [Method.gsubst, Method.vbinders, Method.ifVars, Method.tbinders, Method.uniq, Method.noShadow,
+      dom_bounds_subst, names_subst, Expr.gsubst_keeps e, implies_true, and_self]
+theorem Method.gsubstList_keeps {s : GSubst} : forall (Ms : List Method),
+    Method.vbindersList (Method.gsubstList s Ms) = Method.vbindersList Ms /\
+    Method.ifVarsList (Method.gsubstList s Ms) = Method.ifVarsList Ms /\
+    Method.tbindersList (Method.gsubstList s Ms) = Method.tbindersList Ms /\
+    Method.uniqList (Method.gsubstList s Ms) = Method.uniqList Ms /\
+    forall Xs xs, Method.noShadowList Xs xs (Method.gsubstList s Ms) = Method.noShadowList Xs xs Ms
+  | [] => ⟨rfl, rfl, rfl, rfl, fun _ _ => rfl⟩
+  | M :: Ms => by
+    simp only [Method.gsubstList, Method.vbindersList, Method.ifVarsList, Method.tbindersList, Method.uniqList,
+      Method.noShadowList, Method.gsubst_keeps M, Method.gsubstList_keeps Ms, implies_true, and_self]
 end
+
+theorem Expr.vbinders_gsubst {s : GSubst} (e : Expr) : (e.gsubst s).vbinders = e.vbinders := (Expr.gsubst_keeps e).1
+theorem Expr.ifVars_gsubst {s : GSubst} (e : Expr) : (e.gsubst s).ifVars = e.ifVars := (Expr.gsubst_keeps e).2.1
+theorem Expr.tbinders_gsubst {s : GSubst} (e : Expr) : (e.gsubst s).tbinders = e.tbinders := (Expr.gsubst_keeps e).2.2.1
+theorem Expr.uniq_gsubst {s : GSubst} (e : Expr) : (e.gsubst s).uniq = e.uniq := (Expr.gsubst_keeps e).2.2.2.1
+theorem Expr.noShadow_gsubst {s : GSubst} (e : Expr) {Xs : List TVarName} {xs : List VarName} :
+    (e.gsubst s).noShadow Xs xs = e.noShadow Xs xs := (Expr.gsubst_keeps e).2.2.2.2 Xs xs
+theorem Method.vbinders_gsubst {s : GSubst} (M : Method) : (M.gsubst s).vbinders = M.vbinders :=
+  (Method.gsubst_keeps M).1
+theorem Method.uniq_gsubst {s : GSubst} (M : Method) : (M.gsubst s).uniq = M.uniq := (Method.gsubst_keeps M).2.2.2.1
+theorem Method.noShadow_gsubst {s : GSubst} (M : Method) {Xs : List TVarName} {xs : List VarName} :
+    (M.gsubst s).noShadow Xs xs = M.noShadow Xs xs := (Method.gsubst_keeps M).2.2.2.2 Xs xs
 
 mutual
 theorem Expr.vbinders_vsubst {n : VSubst} {x : VarName} : forall {e : Expr}, List.Mem x e.vbinders ->
