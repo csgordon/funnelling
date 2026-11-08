@@ -1,4 +1,4 @@
-import Funnelling.Sound.WFSubst
+import Funnelling.Sound.WellFormedSubst
 
 open Funnelling.SoundSimp
 

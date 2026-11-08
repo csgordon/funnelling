@@ -1,5 +1,4 @@
 import Funnelling.Sound.Soundness
-import Funnelling.Sound.Determinism
 
 namespace Funnelling
 

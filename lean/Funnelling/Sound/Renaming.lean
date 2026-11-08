@@ -1,8 +1,205 @@
-import Funnelling.Sound.Uniq
+import Funnelling.Sound.Decomposition
 
 open Funnelling.SoundSimp
 
 namespace Funnelling
+
+theorem all_contains_iff {A : Type} [DecidableEq A] {l xs : List A} :
+    l.all xs.contains = true <-> forall x, List.Mem x l -> List.Mem x xs := by
+  simp [List.all_eq_true]
+
+theorem ftvList_mem {X : TVarName} : forall {Ts : List Ty},
+    List.Mem X (Ty.ftvList Ts) <-> exists T, List.Mem T Ts /\ List.Mem X T.ftv
+  | [] => by simp [Ty.ftvList]
+  | T :: Ts => by
+    have ih := @ftvList_mem X Ts
+    simp only [listMem_iff] at ih |-
+    simp [Ty.ftvList, ih, or_and_right, exists_or]
+
+mutual
+theorem Ty.ren_comp {rt1 rt2 rt3 : TRen} : forall {T : Ty},
+    (forall X, List.Mem X T.ftv -> rn rt2 (rn rt1 X) = rn rt3 X) -> (T.ren rt1).ren rt2 = T.ren rt3
+  | .var X, h => by
+    simp only [Ty.ren, TVarName.ren_eq]
+    rw [h X (by simp [Ty.ftv])]
+  | .cls C Ts, h => by
+    simp only [Ty.ren]
+    rw [Ty.renList_comp (fun X hX => h X (by simpa [Ty.ftv] using hX))]
+theorem Ty.renList_comp {rt1 rt2 rt3 : TRen} : forall {Ts : List Ty},
+    (forall X, List.Mem X (Ty.ftvList Ts) -> rn rt2 (rn rt1 X) = rn rt3 X) ->
+    Ty.renList rt2 (Ty.renList rt1 Ts) = Ty.renList rt3 Ts
+  | [], _ => rfl
+  | T :: Ts, h => by
+    simp only [Ty.renList]
+    rw [Ty.ren_comp (fun X hX => h X (List.mem_append_left _ hX)),
+      Ty.renList_comp (fun X hX => h X (List.mem_append_right _ hX))]
+end
+
+mutual
+theorem Ty.ren_id {rt : TRen} : forall {T : Ty}, (forall X, List.Mem X T.ftv -> rn rt X = X) -> T.ren rt = T
+  | .var X, h => by
+    simp only [Ty.ren, TVarName.ren_eq]
+    rw [h X (by simp [Ty.ftv])]
+  | .cls C Ts, h => by
+    simp only [Ty.ren]
+    rw [Ty.renList_id (fun X hX => h X (by simpa [Ty.ftv] using hX))]
+theorem Ty.renList_id {rt : TRen} : forall {Ts : List Ty},
+    (forall X, List.Mem X (Ty.ftvList Ts) -> rn rt X = X) -> Ty.renList rt Ts = Ts
+  | [], _ => rfl
+  | T :: Ts, h => by
+    simp only [Ty.renList]
+    rw [Ty.ren_id (fun X hX => h X (List.mem_append_left _ hX)),
+      Ty.renList_id (fun X hX => h X (List.mem_append_right _ hX))]
+end
+
+theorem Ty.renList_eq_map {rt : TRen} : forall {Ts : List Ty}, Ty.renList rt Ts = Ts.map (Ty.ren rt)
+  | [] => rfl
+  | T :: Ts => by simp [Ty.renList, Ty.renList_eq_map]
+
+theorem Funnel.ren_comp {rt1 rt2 rt3 : TRen} {F : Funnel}
+    (h : forall X, List.Mem X (domF [F]) -> rn rt2 (rn rt1 X) = rn rt3 X) :
+    (F.ren rt1).ren rt2 = F.ren rt3 := by
+  cases F with
+  | ground G => rfl
+  | funnel X =>
+    simp only [Funnel.ren, TVarName.ren_eq]
+    rw [h X (by simp [domF])]
+
+theorem Funnel.ren_id {rt : TRen} {F : Funnel}
+    (h : forall X, List.Mem X (domF [F]) -> rn rt X = X) : F.ren rt = F := by
+  cases F with
+  | ground G => rfl
+  | funnel X =>
+    simp only [Funnel.ren, TVarName.ren_eq]
+    rw [h X (by simp [domF])]
+
+theorem domF_cons {F : Funnel} {Fs : List Funnel} : domF (F :: Fs) = domF [F] ++ domF Fs := by cases F <;> simp [domF]
+
+theorem Funnels.ren_comp {rt1 rt2 rt3 : TRen} : forall {Fs : List Funnel},
+    (forall X, List.Mem X (domF Fs) -> rn rt2 (rn rt1 X) = rn rt3 X) ->
+    (Fs.map (Funnel.ren rt1)).map (Funnel.ren rt2) = Fs.map (Funnel.ren rt3)
+  | [], _ => rfl
+  | F :: Fs, h => by
+    simp only [List.map_cons]
+    rw [Funnel.ren_comp (fun X hX => h X (by rw [domF_cons]; exact List.mem_append_left _ hX)),
+      Funnels.ren_comp (fun X hX => h X (by rw [domF_cons]; exact List.mem_append_right _ hX))]
+
+theorem Funnels.ren_id {rt : TRen} : forall {Fs : List Funnel},
+    (forall X, List.Mem X (domF Fs) -> rn rt X = X) -> Fs.map (Funnel.ren rt) = Fs
+  | [], _ => rfl
+  | F :: Fs, h => by
+    simp only [List.map_cons]
+    rw [Funnel.ren_id (fun X hX => h X (by rw [domF_cons]; exact List.mem_append_left _ hX)),
+      Funnels.ren_id (fun X hX => h X (by rw [domF_cons]; exact List.mem_append_right _ hX))]
+
+theorem bounds_zip_dom : forall (Delta : Bounds),
+    (Delta.zip (dom Delta)).map (fun p => ({ X := p.2, T := p.1.T } : Bound)) = Delta
+  | [] => rfl
+  | b :: Delta => by
+    simp only [dom, List.map_cons, List.zip_cons_cons]
+    rw [show List.map Bound.X Delta = dom Delta from rfl, bounds_zip_dom Delta]
+
+theorem params_zip_names : forall (ps : List VarDecl),
+    (ps.zip (ps.map VarDecl.x)).map (fun p => ({ T := p.1.T, x := p.2 } : VarDecl)) = ps
+  | [] => rfl
+  | p :: ps => by
+    simp only [List.map_cons, List.zip_cons_cons]
+    rw [params_zip_names ps]
+
+abbrev IdRen {A : Type} (r : List (Prod A A)) : Prop := forall p, List.Mem p r -> p.1 = p.2
+
+theorem IdRen.cons {A : Type} {r : List (Prod A A)} {x : A} (h : IdRen r) : IdRen ((x, x) :: r) := by
+  intro p hp
+  cases hp with
+  | head => rfl
+  | tail _ hp => exact h p hp
+
+theorem IdRen.zip_append {A : Type} {r : List (Prod A A)} (h : IdRen r) :
+    forall (xs : List A), IdRen (xs.zip xs ++ r)
+  | [] => h
+  | _ :: xs => IdRen.cons (IdRen.zip_append h xs)
+
+theorem Ty.ren_idRen {rt : TRen} (h : IdRen rt) (T : Ty) : T.ren rt = T :=
+  Ty.ren_id (fun X _ => rn_id h X)
+
+theorem Ty.renList_idRen {rt : TRen} (h : IdRen rt) (Ts : List Ty) : Ty.renList rt Ts = Ts :=
+  Ty.renList_id (fun X _ => rn_id h X)
+
+mutual
+theorem RenE.refl {rv : VRen} {rt : TRen} (hv : IdRen rv) (ht : IdRen rt) : forall (e : Expr), RenE rv rt e e
+  | .var x => by
+    have := RenE.var (rv := rv) (rt := rt) (x := x)
+    rwa [VarName.ren_eq, rn_id hv] at this
+  | .call e Ts m es => by
+    have := RenE.call (m := m) (Ts := Ts) (RenE.refl hv ht e) (RenEs.refl hv ht es)
+    rwa [Ty.renList_idRen ht] at this
+  | .superCall e T Ts m es => by
+    have := RenE.superCall (m := m) (T := T) (Ts := Ts) (RenE.refl hv ht e) (RenEs.refl hv ht es)
+    rwa [Ty.renList_idRen ht, Ty.ren_idRen ht] at this
+  | .field e f => RenE.field (RenE.refl hv ht e)
+  | .new C Ts es => by
+    have := RenE.new (C := C) (Ts := Ts) (RenEs.refl hv ht es)
+    rwa [Ty.renList_idRen ht] at this
+  | .newLocal C Fs C' Ts es Ms => by
+    have := RenE.newLocal (C := C) (Fs := Fs) (C' := C') (Ts := Ts) (RenEs.refl hv ht es) (RenMs.refl hv ht Ms)
+    rwa [Ty.renList_idRen ht, Funnels.ren_id (fun X _ => rn_id ht X)] at this
+  | .ifInst e0 T x e1 e2 => by
+    have := RenE.ifInst (T := T) (RenE.refl hv ht e0) (RenE.refl (IdRen.cons (x := x) hv) ht e1) (RenE.refl hv ht e2)
+    rwa [Ty.ren_idRen ht] at this
+theorem RenEs.refl {rv : VRen} {rt : TRen} (hv : IdRen rv) (ht : IdRen rt) : forall (es : List Expr), RenEs rv rt es es
+  | [] => RenEs.nil
+  | e :: es => RenEs.cons (RenE.refl hv ht e) (RenEs.refl hv ht es)
+theorem RenM.refl {rv : VRen} {rt : TRen} (hv : IdRen rv) (ht : IdRen rt) : forall (M : Method), RenM rv rt M M
+  | .mk Delta T0 m ps e => by
+    have h := RenM.mk (rv := rv) (rt := rt) (Delta := Delta) (T0 := T0) (m := m) (ps := ps)
+      (Xs' := dom Delta) (xs' := ps.map VarDecl.x) (by simp [dom]) (by simp)
+      (RenE.refl (IdRen.zip_append hv _) (IdRen.zip_append ht _) e)
+    have ht' := IdRen.zip_append ht (dom Delta)
+    simp only [Ty.ren_idRen ht'] at h
+    rwa [bounds_zip_dom, params_zip_names] at h
+theorem RenMs.refl {rv : VRen} {rt : TRen} (hv : IdRen rv) (ht : IdRen rt) : forall (Ms : List Method), RenMs rv rt Ms Ms
+  | [] => RenMs.nil
+  | M :: Ms => RenMs.cons (RenM.refl hv ht M) (RenMs.refl hv ht Ms)
+end
+
+theorem Fresh.refl (e : Expr) : Fresh e e :=
+  And.intro (RenE.refl (by intro p hp; cases hp) (by intro p hp; cases hp) e)
+    (RenE.refl (by intro p hp; cases hp) (by intro p hp; cases hp) e)
+
+mutual
+def Expr.uniq : Expr -> Prop
+  | .var _ => True
+  | .call e _ _ es => e.uniq /\ Expr.uniqList es
+  | .superCall e _ _ _ es => e.uniq /\ Expr.uniqList es
+  | .field e _ => e.uniq
+  | .new _ _ es => Expr.uniqList es
+  | .newLocal _ _ _ _ es Ms => Expr.uniqList es /\ Method.uniqList Ms
+  | .ifInst e0 _ _ e1 e2 => e0.uniq /\ e1.uniq /\ e2.uniq
+def Expr.uniqList : List Expr -> Prop
+  | [] => True
+  | e :: es => e.uniq /\ Expr.uniqList es
+def Method.uniq : Method -> Prop
+  | .mk Delta _ _ ps e => (dom Delta).Nodup /\ (ps.map VarDecl.x).Nodup /\ e.uniq
+def Method.uniqList : List Method -> Prop
+  | [] => True
+  | M :: Ms => M.uniq /\ Method.uniqList Ms
+end
+
+abbrev NoThis (e : Expr) : Prop := Not (List.Mem this e.vbinders)
+
+abbrev NoThisM (M : Method) : Prop := Not (List.Mem this M.vbinders)
+
+theorem rn_this {rv : VRen} (h : forall p, List.Mem p rv -> Not (p.1 = this)) : rn rv this = this := by
+  simp only [rn]
+  rw [lookup_none (fun p hp e => h p hp e)]
+  rfl
+
+theorem rn_ne_this {rv : VRen} (h : forall p, List.Mem p rv -> Not (p.2 = this)) {w : VarName}
+    (hw : Not (w = this)) : Not (rn rv w = this) := by
+  simp only [rn]
+  cases hl : List.lookup w rv with
+  | none => exact hw
+  | some y => exact h (w, y) (lookup_mem hl)
 
 structure CompEnv (rv1 rv2 rv3 : VRen) (rt1 rt2 rt3 : TRen) (Sa Sb : List VarName)
     (Ta Tb : List TVarName) : Prop where
@@ -349,5 +546,146 @@ theorem RenMs.comp {rv1 rt1 Mas Mbs} : RenMs rv1 rt1 Mas Mbs -> forall {rv2 rt2 
       exact RenMs.cons (RenM.comp h1 h2 env hc.1 hn.1 ha.1 hb.1 hu.1)
         (RenMs.comp hs1 hs2 env hc.2 hn.2 ha.2 hb.2 hu.2)
 end
+
+theorem rn_zip_self {A : Type} [DecidableEq A] : forall {xs : List A} {r : List (Prod A A)} {w : A},
+    List.Mem w xs -> rn (xs.zip xs ++ r) w = w
+  | [], _, _, h => by cases h
+  | a :: xs, r, w, h => by
+    simp only [List.zip_cons_cons, List.cons_append]
+    by_cases e : w = a
+    . subst e; exact rn_cons_eq
+    . rw [rn_cons_ne e]
+      cases h with
+      | head => exact absurd rfl e
+      | tail _ h => exact rn_zip_self h
+
+theorem rn_zip_self_or {A : Type} [DecidableEq A] {xs : List A} {r : List (Prod A A)} {w : A}
+    (h : Not (List.Mem w xs) -> rn r w = w) : rn (xs.zip xs ++ r) w = w := by
+  by_cases hm : List.Mem w xs
+  . exact rn_zip_self hm
+  . rw [rn_zip_not_mem hm]; exact h hm
+
+theorem bounds_zip_dom_ren {rt : TRen} : forall {Delta : Bounds},
+    (forall b, List.Mem b Delta -> b.T.ren rt = b.T) ->
+    (Delta.zip (dom Delta)).map (fun p => ({ X := p.2, T := p.1.T.ren rt } : Bound)) = Delta
+  | [], _ => rfl
+  | b :: Delta, h => by
+    simp only [dom, List.map_cons, List.zip_cons_cons]
+    rw [h b (List.Mem.head _),
+      show List.map Bound.X Delta = dom Delta from rfl,
+      bounds_zip_dom_ren (fun b' hb' => h b' (List.Mem.tail _ hb'))]
+
+theorem params_zip_names_ren {rt : TRen} : forall {ps : List VarDecl},
+    (forall p, List.Mem p ps -> p.T.ren rt = p.T) ->
+    (ps.zip (ps.map VarDecl.x)).map (fun p => ({ T := p.1.T.ren rt, x := p.2 } : VarDecl)) = ps
+  | [], _ => rfl
+  | p :: ps, h => by
+    simp only [List.map_cons, List.zip_cons_cons]
+    rw [h p (List.Mem.head _), params_zip_names_ren (fun p' hp' => h p' (List.Mem.tail _ hp'))]
+
+mutual
+theorem RenE.reflS {rv : VRen} {rt : TRen} : forall {e : Expr} {Ts : List TVarName} {xs : List VarName},
+    e.closed Ts xs = true -> (forall w, (List.Mem w xs \/ w = this) -> rn rv w = w) ->
+    (forall X, List.Mem X Ts -> rn rt X = X) -> RenE rv rt e e
+  | .var x, Ts, xs, hc, hv, _ => by
+    simp only [Expr.closed] at hc
+    have hx : List.Mem x xs := by simpa using hc
+    have := RenE.var (rv := rv) (rt := rt) (x := x)
+    rwa [VarName.ren_eq, hv x (Or.inl hx)] at this
+  | .call e Ts' m es, Ts, xs, hc, hv, ht => by
+    simp only [Expr.closed, Bool.and_eq_true] at hc
+    have := RenE.call (m := m) (Ts := Ts') (RenE.reflS hc.1.1 hv ht) (RenEs.reflS hc.2 hv ht)
+    rwa [Ty.renList_id (fun X hX => ht X (all_contains_iff.mp hc.1.2 X hX))] at this
+  | .superCall e T Ts' m es, Ts, xs, hc, hv, ht => by
+    simp only [Expr.closed, Bool.and_eq_true] at hc
+    have h2 := all_contains_iff.mp hc.1.2
+    have := RenE.superCall (m := m) (T := T) (Ts := Ts') (RenE.reflS hc.1.1 hv ht) (RenEs.reflS hc.2 hv ht)
+    rwa [Ty.renList_id (fun X hX => ht X (h2 X (List.mem_append_right _ hX))),
+      Ty.ren_id (fun X hX => ht X (h2 X (List.mem_append_left _ hX)))] at this
+  | .field e f, Ts, xs, hc, hv, ht => RenE.field (RenE.reflS hc hv ht)
+  | .new C Ts' es, Ts, xs, hc, hv, ht => by
+    simp only [Expr.closed, Bool.and_eq_true] at hc
+    have := RenE.new (C := C) (Ts := Ts') (RenEs.reflS hc.2 hv ht)
+    rwa [Ty.renList_id (fun X hX => ht X (all_contains_iff.mp hc.1 X hX))] at this
+  | .newLocal C Fs C' Ts' es Ms, Ts, xs, hc, hv, ht => by
+    simp only [Expr.closed, Bool.and_eq_true] at hc
+    have h1 := all_contains_iff.mp hc.1.1
+    have := RenE.newLocal (C := C) (Fs := Fs) (C' := C') (Ts := Ts') (RenEs.reflS hc.1.2 hv ht)
+      (RenMs.reflS hc.2 hv ht)
+    rwa [Ty.renList_id (fun X hX => ht X (h1 X (List.mem_append_right _ hX))),
+      Funnels.ren_id (fun X hX => ht X (h1 X (List.mem_append_left _ hX)))] at this
+  | .ifInst e0 T x e1 e2, Ts, xs, hc, hv, ht => by
+    simp only [Expr.closed, Bool.and_eq_true] at hc
+    have hv' : forall w, (List.Mem w (x :: xs) \/ w = this) -> rn ((x, x) :: rv) w = w := by
+      intro w hw
+      by_cases e : w = x
+      . subst e; exact rn_cons_eq
+      . rw [rn_cons_ne e]
+        apply hv
+        rcases hw with hw | hw
+        . simp_all
+        . exact Or.inr hw
+    have := RenE.ifInst (T := T) (y := x) (RenE.reflS hc.1.1.1 hv ht) (RenE.reflS hc.1.2 hv' ht)
+      (RenE.reflS hc.2 hv ht)
+    rwa [Ty.ren_id (fun X hX => ht X (all_contains_iff.mp hc.1.1.2 X hX))] at this
+theorem RenEs.reflS {rv : VRen} {rt : TRen} : forall {es : List Expr} {Ts : List TVarName} {xs : List VarName},
+    Expr.closedList Ts xs es = true -> (forall w, (List.Mem w xs \/ w = this) -> rn rv w = w) ->
+    (forall X, List.Mem X Ts -> rn rt X = X) -> RenEs rv rt es es
+  | [], _, _, _, _, _ => RenEs.nil
+  | e :: es, Ts, xs, hc, hv, ht => by
+    simp only [Expr.closedList, Bool.and_eq_true] at hc
+    exact RenEs.cons (RenE.reflS hc.1 hv ht) (RenEs.reflS hc.2 hv ht)
+theorem RenM.reflS {rv : VRen} {rt : TRen} : forall {M : Method} {Ts : List TVarName} {xs : List VarName},
+    M.closed Ts xs = true -> (forall w, (List.Mem w xs \/ w = this) -> rn rv w = w) ->
+    (forall X, List.Mem X Ts -> rn rt X = X) -> RenM rv rt M M
+  | .mk Delta T0 m ps e, Ts, xs, hc, hv, ht => by
+    simp only [Method.closed, Bool.and_eq_true] at hc
+    have hall := all_contains_iff.mp hc.1
+    have ht' : forall X, List.Mem X (Ts ++ dom Delta) -> rn ((dom Delta).zip (dom Delta) ++ rt) X = X := by
+      intro X hX
+      apply rn_zip_self_or
+      intro hn
+      exact (List.mem_append.mp hX).elim (ht X) (fun hX => absurd hX hn)
+    have hv' : forall w, (List.Mem w (this :: xs ++ ps.map VarDecl.x) \/ w = this) ->
+        rn ((ps.map VarDecl.x).zip (ps.map VarDecl.x) ++ rv) w = w := by
+      intro w hw
+      apply rn_zip_self_or
+      intro hn
+      apply hv
+      simp only [listMem_iff, List.mem_append, List.mem_cons] at hw hn
+      rcases hw with ((hw | hw) | hw) | hw
+      . exact Or.inr hw
+      . exact Or.inl hw
+      . exact absurd hw hn
+      . exact Or.inr hw
+    have h := RenM.mk (rv := rv) (rt := rt) (Delta := Delta) (T0 := T0) (m := m) (ps := ps)
+      (Xs' := dom Delta) (xs' := ps.map VarDecl.x) (by simp [dom]) (by simp)
+      (RenE.reflS hc.2 hv' ht')
+    have hty : forall T : Ty, (forall X, List.Mem X T.ftv -> List.Mem X (Ty.ftvList (T0 :: cod Delta ++ ps.map VarDecl.T))) ->
+        T.ren ((dom Delta).zip (dom Delta) ++ rt) = T :=
+      fun T hT => Ty.ren_id (fun X hX => ht' X (hall X (hT X hX)))
+    rw [hty T0 (fun X hX => by simp only [List.cons_append]; exact List.mem_append_left _ hX),
+      bounds_zip_dom_ren (fun b hb => hty b.T (fun X hX => by
+        simp only [List.cons_append, Ty.ftvList]
+        exact List.mem_append_right _ (by rw [ftvList_append]; exact List.mem_append_left _ (ftvList_map_mem (f := Bound.T) hb hX)))),
+      params_zip_names_ren (fun p hp => hty p.T (fun X hX => by
+        simp only [List.cons_append, Ty.ftvList]
+        exact List.mem_append_right _ (by rw [ftvList_append]; exact List.mem_append_right _ (ftvList_map_mem (f := VarDecl.T) hp hX))))] at h
+    exact h
+theorem RenMs.reflS {rv : VRen} {rt : TRen} : forall {Ms : List Method} {Ts : List TVarName} {xs : List VarName},
+    Method.closedList Ts xs Ms = true -> (forall w, (List.Mem w xs \/ w = this) -> rn rv w = w) ->
+    (forall X, List.Mem X Ts -> rn rt X = X) -> RenMs rv rt Ms Ms
+  | [], _, _, _, _, _ => RenMs.nil
+  | M :: Ms, Ts, xs, hc, hv, ht => by
+    simp only [Method.closedList, Bool.and_eq_true] at hc
+    exact RenMs.cons (RenM.reflS hc.1 hv ht) (RenMs.reflS hc.2 hv ht)
+end
+
+theorem RenE.value {rv : VRen} {rt : TRen} {v : Value} (hc : v.expr.closed [] [] = true)
+    (ht : rn rv this = this) : RenE rv rt v.expr v.expr :=
+  RenE.reflS hc (fun w hw => by
+    rcases hw with hw | hw
+    . cases hw
+    . subst hw; exact ht) (fun X hX => by cases hX)
 
 end Funnelling

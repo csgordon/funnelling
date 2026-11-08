@@ -1,4 +1,4 @@
-import Funnelling.Sound.WFStep
+import Funnelling.Sound.WellFormedStep
 
 open Funnelling.SoundSimp
 

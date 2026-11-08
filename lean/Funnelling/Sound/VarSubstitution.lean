@@ -1,4 +1,4 @@
-import Funnelling.Sound.Weak
+import Funnelling.Sound.Weakening
 
 open Funnelling.SoundSimp
 

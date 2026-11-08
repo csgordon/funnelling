@@ -1,9 +1,8 @@
-import Funnelling.Sound.FreshAvoid
+import Funnelling.Sound.FreshNames
 
 open Funnelling.SoundSimp
 
 namespace Funnelling
-
 
 theorem localsList_eq : forall (es : List Expr), Expr.localsList es = es.flatMap Expr.locals
   | [] => rfl
