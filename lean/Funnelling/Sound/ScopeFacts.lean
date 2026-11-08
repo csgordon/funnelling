@@ -126,8 +126,7 @@ def K.generic : K -> Ty
   | .dec D => .cls D.C (vars (dom D.bounds))
   | .loc C Fs _ _ _ _ => .cls C (vars (domF Fs))
 
-theorem K.generic_name (k : K) : exists Us, k.generic = .cls k.name Us := by
-  cases k <;> exact Exists.intro _ rfl
+theorem K.generic_name (k : K) : exists Us, k.generic = .cls k.name Us := by cases k <;> exact Exists.intro _ rfl
 
 theorem Declared.generic {d : Decls} {k : K} (hk : Declared d k) : Generic d k.name k.generic := by
   cases k with

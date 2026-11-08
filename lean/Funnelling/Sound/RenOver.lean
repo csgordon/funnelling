@@ -164,23 +164,22 @@ theorem declMeth_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {k : K} 
     {Dl : Bounds} {T0 : Ty} {m : MethName} {ps : List VarDecl} {e : Expr} (hM : List.Mem (Method.mk Dl T0 m ps e) k.Ms) :
     (forall X, List.Mem X (Ty.ftvList (cod Dl)) -> List.Mem X (k.gvars ++ dom Dl)) /\
       (forall X, List.Mem X (Ty.ftvList (T0 :: ps.map VarDecl.T)) -> List.Mem X (k.gvars ++ dom Dl)) := by
-  cases scopeExists hwf hok hk with
-  | intro Dk h => cases h with
-    | intro Tk hs =>
-      rcases scopeFacts hwf hok hs with ⟨k', hk'⟩
-      have hname : k'.name = k.name := by
-        rcases hk'.2.1 with ⟨Us, hUs⟩
-        rcases K.generic_name k with ⟨Vs, hVs⟩; rw [hVs] at hUs; simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
-      have ek := Declared.unique hwf hk'.1 hk hname
-      subst ek
-      rcases hk'.2.2.meths _ hM with ⟨gamma, hmo⟩
-      have hmi := methodOk_inv hmo
-      rw [<- hk'.2.2.gv, <- dom_append]
-      refine And.intro ?_ ?_
-      . intro X hX
-        rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.1 T hT.1) X hT.2
-      . intro X hX
-        rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.2.1 T hT.1) X hT.2
+  rcases scopeExists hwf hok hk with ⟨Dk, h⟩; cases h with
+  | intro Tk hs =>
+    rcases scopeFacts hwf hok hs with ⟨k', hk'⟩
+    have hname : k'.name = k.name := by
+      rcases hk'.2.1 with ⟨Us, hUs⟩
+      rcases K.generic_name k with ⟨Vs, hVs⟩; rw [hVs] at hUs; simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
+    have ek := Declared.unique hwf hk'.1 hk hname
+    subst ek
+    rcases hk'.2.2.meths _ hM with ⟨gamma, hmo⟩
+    have hmi := methodOk_inv hmo
+    rw [<- hk'.2.2.gv, <- dom_append]
+    refine And.intro ?_ ?_
+    . intro X hX
+      rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.1 T hT.1) X hT.2
+    . intro X hX
+      rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.2.1 T hT.1) X hT.2
 
 theorem OverrideOkM.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {rv : VRen} {rt : TRen} {C : ClassName}
     {Us : List Ty} {M M' : Method} (h : OverrideOkM d (.cls C Us) M) (hr : RenM rv rt M M')
@@ -238,22 +237,21 @@ theorem Consistent.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Dec
     (hdis : forall M, List.Mem M Ms -> forall X, List.Mem X (Ty.ftvList (abs Fs)) -> Not (List.Mem X (dom M.bounds)))
     (hu : forall M, List.Mem M Ms -> M.uniq) :
     Consistent d (.loc C (Fs.map (Funnel.ren rt)) C0 (Ty.renList rt Ts) es' Ms') := by
-  cases consistent_unfold h with
-  | intro Fs' h => cases h with
-    | intro Ts' h => cases h with
-      | intro es'' h => cases h with
-        | intro Ms'' h =>
-          have hcl := hd.supL _ _ _ _ _ _ h.1
-          refine Exists.intro Fs' (Exists.intro Ts' (Exists.intro es'' (Exists.intro Ms'' (And.intro h.1
-            (And.intro (by simp [h.2.1]) (And.intro ?_ (And.intro ?_ ?_)))))))
-          . rw [abs_ren, h.2.2.1, renList_subst_gen (fun X hX => by
-              cases bindF_lookup_some (Us := abs Fs) (by rw [abs_length]; exact h.2.1) (hcl X hX) with
-              | intro U hU => exact lookup_some_mem_dom hU), <- bindF_map, Ty.renList_eq_map]
-          . intro m; rw [RenMs.names hr]; exact h.2.2.2.1 m
-          . intro M' hM'
-            rw [abs_ren]
-            cases RenMs.mem_inv hr hM' with
-            | intro M hM => exact OverrideOkM.ren hwf hok (h.2.2.2.2 M hM.1) hM.2 (hdis M hM.1) (hu M hM.1)
+  rcases consistent_unfold h with ⟨Fs', h⟩; cases h with
+  | intro Ts' h => cases h with
+    | intro es'' h => cases h with
+      | intro Ms'' h =>
+        have hcl := hd.supL _ _ _ _ _ _ h.1
+        refine Exists.intro Fs' (Exists.intro Ts' (Exists.intro es'' (Exists.intro Ms'' (And.intro h.1
+          (And.intro (by simp [h.2.1]) (And.intro ?_ (And.intro ?_ ?_)))))))
+        . rw [abs_ren, h.2.2.1, renList_subst_gen (fun X hX => by
+            cases bindF_lookup_some (Us := abs Fs) (by rw [abs_length]; exact h.2.1) (hcl X hX) with
+            | intro U hU => exact lookup_some_mem_dom hU), <- bindF_map, Ty.renList_eq_map]
+        . intro m; rw [RenMs.names hr]; exact h.2.2.2.1 m
+        . intro M' hM'
+          rw [abs_ren]
+          cases RenMs.mem_inv hr hM' with
+          | intro M hM => exact OverrideOkM.ren hwf hok (h.2.2.2.2 M hM.1) hM.2 (hdis M hM.1) (hu M hM.1)
 
 theorem OverrideOk.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {rv : VRen} {rt : TRen}
     {Delta Delta' : Bounds} {C0 : ClassName} {Ts : List Ty} {Ms Ms' : List Method}

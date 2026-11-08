@@ -73,8 +73,7 @@ theorem Funnel.ren_id {rt : TRen} {F : Funnel}
     simp only [Funnel.ren, TVarName.ren_eq]
     rw [h X (by simp [domF])]
 
-theorem domF_cons {F : Funnel} {Fs : List Funnel} : domF (F :: Fs) = domF [F] ++ domF Fs := by
-  cases F <;> simp [domF]
+theorem domF_cons {F : Funnel} {Fs : List Funnel} : domF (F :: Fs) = domF [F] ++ domF Fs := by cases F <;> simp [domF]
 
 theorem Funnels.ren_comp {rt1 rt2 rt3 : TRen} : forall {Fs : List Funnel},
     (forall X, List.Mem X (domF Fs) -> rn rt2 (rn rt1 X) = rn rt3 X) ->

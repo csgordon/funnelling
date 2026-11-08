@@ -117,27 +117,26 @@ theorem sub_unique_dec {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {T1 : Ty}
   induction hs1 with
   | @subRefl T =>
     intro U2 hs2
-    cases h1 with
-    | intro D h1 => cases h1 with
-      | intro Ts h1 =>
-        rw [h1.2] at ht hs2
-        simp only [Ty.cls.injEq] at ht
-        rcases Sub.dec_step hwf h1.1 hs2 with e | hs3
-        . simp only [Ty.cls.injEq] at e; rw [ht.2, e.2]
-        . have hC : C' = D.C := ht.1
-          rw [hC] at hs3
-          by_cases ho : D.C = Object
-          . have hb := object_bounds hwf h1.1 ho
-            have hU : Ts = [] := by have := hs3.1; rw [hb] at this; cases Ts <;> simp_all
-            have hs4 := hs3.2
-            simp only [Ty.subst] at hs4
-            rw [(object_unique hwf h1.1 ho).1, (object_unique hwf h1.1 ho).2, ho] at hs4
-            simp only [Ty.substList] at hs4
-            rw [ht.2, hU]
-            rcases object_args hwf hs4 with e | e
-            . exact e.symm
-            . exact e.symm
-          . exact absurd (no_cycle hwf h1.1 ho hs3.1 hs3.2) id
+    rcases h1 with ⟨D, h1⟩; cases h1 with
+    | intro Ts h1 =>
+      rw [h1.2] at ht hs2
+      simp only [Ty.cls.injEq] at ht
+      rcases Sub.dec_step hwf h1.1 hs2 with e | hs3
+      . simp only [Ty.cls.injEq] at e; rw [ht.2, e.2]
+      . have hC : C' = D.C := ht.1
+        rw [hC] at hs3
+        by_cases ho : D.C = Object
+        . have hb := object_bounds hwf h1.1 ho
+          have hU : Ts = [] := by have := hs3.1; rw [hb] at this; cases Ts <;> simp_all
+          have hs4 := hs3.2
+          simp only [Ty.subst] at hs4
+          rw [(object_unique hwf h1.1 ho).1, (object_unique hwf h1.1 ho).2, ho] at hs4
+          simp only [Ty.substList] at hs4
+          rw [ht.2, hU]
+          rcases object_args hwf hs4 with e | e
+          . exact e.symm
+          . exact e.symm
+        . exact absurd (no_cycle hwf h1.1 ho hs3.1 hs3.2) id
   | @subInherit D Ts0 T' hD hl hs ih =>
     intro U2 hs2
     rcases Sub.dec_step hwf hD hs2 with e | hs3
@@ -163,15 +162,13 @@ theorem sub_unique_dec {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {T1 : Ty}
       rw [hD''.2]; rfl
   | subInheritLocal hD _ _ =>
     intro _ _
-    cases h1 with
-    | intro D h1 => cases h1 with
-      | intro Ts h1 =>
-        simp only [Ty.cls.injEq] at h1
-        exact absurd (Declared.dec_loc hwf h1.1 hD h1.2.1.symm) id
+    rcases h1 with ⟨D, h1⟩; cases h1 with
+    | intro Ts h1 =>
+      simp only [Ty.cls.injEq] at h1
+      exact absurd (Declared.dec_loc hwf h1.1 hD h1.2.1.symm) id
   | subVar =>
     intro _ _
-    cases h1 with
-    | intro D h1 => cases h1 with
-      | intro Ts h1 => cases h1.2
+    rcases h1 with ⟨D, h1⟩; cases h1 with
+    | intro Ts h1 => cases h1.2
 
 end Funnelling.High

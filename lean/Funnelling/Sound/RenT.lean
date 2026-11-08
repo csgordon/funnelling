@@ -202,8 +202,7 @@ theorem RenMs.mem_inv {rv : VRen} {rt : TRen} {M' : Method} : forall {Ms Ms' : L
     | tail _ h =>
       rcases RenMs.mem_inv h2 h with ⟨M, hM⟩; exact Exists.intro M (And.intro (List.Mem.tail _ hM.1) hM.2)
 
-theorem RenM.name {rv : VRen} {rt : TRen} {M M' : Method} (h : RenM rv rt M M') : M'.name = M.name := by
-  cases h; rfl
+theorem RenM.name {rv : VRen} {rt : TRen} {M M' : Method} (h : RenM rv rt M M') : M'.name = M.name := by cases h; rfl
 
 theorem RenMs.names {rv : VRen} {rt : TRen} : forall {Ms Ms' : List Method}, RenMs rv rt Ms Ms' ->
     Ms'.map Method.name = Ms.map Method.name

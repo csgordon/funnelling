@@ -142,8 +142,7 @@ theorem renE_meth {M : Method} {B : Bounds} {Gs Gs' : List GTy} {v0 : Value} {vs
       sv := fun w hw => by
         left
         have hw' : List.Mem w (this :: p1.map VarDecl.x) := by simpa using hw
-        have hwd : List.Mem w (((this :: p1.map VarDecl.x).zip (v0 :: vs)).map Prod.fst) := by
-          rw [hndom1]; exact hw'
+        have hwd : List.Mem w (((this :: p1.map VarDecl.x).zip (v0 :: vs)).map Prod.fst) := by rw [hndom1]; exact hw'
         rcases lookup_isSome hwd with ⟨v, hvl⟩
         refine Exists.intro v (And.intro hvl ?_)
         rw [<- hvl]

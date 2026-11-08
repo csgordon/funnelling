@@ -328,11 +328,9 @@ theorem RenM.comp {rv1 rt1 Ma Mb} : RenM rv1 rt1 Ma Mb -> forall {rv2 rt2 Mc rv3
       rw [dom_renBounds hL1] at hn hu
       rw [names_renParams hl1] at hn hb hu
       have hla : (psa.map VarDecl.x).length = xs1.length := by simp [hl1]
-      have hlb : xs1.length = xs2.length := by
-        rw [hl2]; simp [hl1]
+      have hlb : xs1.length = xs2.length := by rw [hl2]; simp [hl1]
       have hLa : (dom Da).length = Xs1.length := by simp [dom, hL1]
-      have hLb : Xs1.length = Xs2.length := by
-        rw [hL2]; simp [hL1]
+      have hLb : Xs1.length = Xs2.length := by rw [hL2]; simp [hL1]
       have env' := env.methExt hla hlb hu.2.1 hLa hLb hu.1 ha.1 hb.1 hn.1.2 hn.1.1
       have hbody := RenE.comp h1 h2 env' hc.2 hn.2 ha.2 hb.2 hu.2.2
       have hm := RenM.mk (rv := rv3) (rt := rt3) (Delta := Da) (T0 := T0) (m := m) (ps := psa)

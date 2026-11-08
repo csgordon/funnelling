@@ -260,8 +260,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         rw [substList_length, List.length_map] at hl1
         have hsp := congrArg List.length hw2.split
         rw [List.length_append, Value.exprs_eq_map, List.length_map] at hsp
-        have hk : (vs.take w2.D.Ss.length).length = w2.D.Ss.length := by
-          rw [List.length_take]; omega
+        have hk : (vs.take w2.D.Ss.length).length = w2.D.Ss.length := by rw [List.length_take]; omega
         rw [<- List.take_append_drop w2.D.Ss.length vs]
         by_cases hf : List.Mem f (w2.D.Ss.map Slot.f)
         . rcases mem_zip_fst (ys := vs.take w2.D.Ss.length) (by rw [List.length_map, hk]) hf with ⟨v, hv⟩

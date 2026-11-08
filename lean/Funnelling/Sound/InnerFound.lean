@@ -143,8 +143,7 @@ theorem pres_innerFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
   have hO' := OverrideOkM.ren (rv := []) (rt := []) hwf hok hO hF.1 (fun X hX _ => hTs0 X hX) huM
   rw [Ty.renList_id (fun _ _ => rn_nil)] at hO'
   rcases found_sig hwf hw.scope hw.meth hw.len2 hO' with ⟨eT2, h4, h5, h6⟩
-  have hσ : GSubst.ty (bind Delta' Gs') = (dom Delta').zip (GTy.tys Gs') := by
-    rw [gsubst_ty_bind]; rfl
+  have hσ : GSubst.ty (bind Delta' Gs') = (dom Delta').zip (GTy.tys Gs') := by rw [gsubst_ty_bind]; rfl
   have hv1 : Ty.substList (GSubst.ty (bind Delta' Gs')) (vars (dom Delta')) = GTy.tys Gs' := by
     rw [hσ]; exact vars_subst hN (by simp [gtys_length, hG', dom])
   have hT2 : Ty.substList (GSubst.ty (bind Delta' Gs')) Ts2 = Ts2 := by
@@ -154,8 +153,7 @@ theorem pres_innerFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
     rw [e] at hX
     exact absurd hX (fun h => hTs0 X h)
   have hcl0 := methodIn_closed hwf hok hw.scope hw.meth
-  have hlen0 : (Ts2 ++ vars (dom Delta')).length = (Delta0 ++ Delta1).length := by
-    simp [hw.len2, h4, vars, dom]
+  have hlen0 : (Ts2 ++ vars (dom Delta')).length = (Delta0 ++ Delta1).length := by simp [hw.len2, h4, vars, dom]
   have hcomp2 : forall L, (forall X, List.Mem X (Ty.ftvList L) -> List.Mem X (dom (Delta0 ++ Delta1))) ->
       Ty.substList (GSubst.ty (bind Delta' Gs'))
         (Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ vars (dom Delta'))) L) =

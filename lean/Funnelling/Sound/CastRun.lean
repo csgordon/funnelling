@@ -57,22 +57,21 @@ theorem kind_chain {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
           have sf := hk'.2.2
           have hall : forall F, List.Mem F Fs -> F.isFunnel = true :=
             fun F hF => hwf.2.2.2.2.2.2.2.2.2.2 _ hD.mem F hF
-          cases h' with
-          | intro Fs2 h' => cases h' with
-            | intro C2 h' => cases h' with
-              | intro Ts2 h' => cases h' with
-                | intro es2 h' => cases h' with
-                  | intro Ms2 h' => cases h' with
-                    | intro Dl hp =>
-                      have ek2 := Declared.unique hwf hp.1 hD rfl
-                      cases ek2
-                      have e0 := pairing_funnels hp.2 hall
-                      subst e0
-                      have hsat := bounds_sat sf.ndom h3 h4 h2
-                      have hK := Kind.subst hd (Delta' := Delta) (fun b hb => (hsat b hb).1)
-                        (fun b hb => (hsat b hb).2) (sf.supK _ _ _ _ _ _ rfl)
-                      rw [bind_eq_bindF sf.gv hall] at hK
-                      exact ih rfl hK
+          rcases h' with ⟨Fs2, h'⟩; cases h' with
+          | intro C2 h' => cases h' with
+            | intro Ts2 h' => cases h' with
+              | intro es2 h' => cases h' with
+                | intro Ms2 h' => cases h' with
+                  | intro Dl hp =>
+                    have ek2 := Declared.unique hwf hp.1 hD rfl
+                    cases ek2
+                    have e0 := pairing_funnels hp.2 hall
+                    subst e0
+                    have hsat := bounds_sat sf.ndom h3 h4 h2
+                    have hK := Kind.subst hd (Delta' := Delta) (fun b hb => (hsat b hb).1)
+                      (fun b hb => (hsat b hb).2) (sf.supK _ _ _ _ _ _ rfl)
+                    rw [bind_eq_bindF sf.gv hall] at hK
+                    exact ih rfl hK
   | subVar => cases he
 
 theorem kind_len {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {C : ClassName} {Us : List Ty} {Xs : List TVarName}

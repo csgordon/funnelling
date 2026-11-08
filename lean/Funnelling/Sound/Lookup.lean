@@ -68,8 +68,7 @@ variable {A : Type} [DecidableEq A]
 
 def rn (r : List (Prod A A)) (x : A) : A := (List.lookup x r).getD x
 
-theorem rn_cons_eq {a b : A} {r : List (Prod A A)} : rn ((a, b) :: r) a = b := by
-  simp [rn]
+theorem rn_cons_eq {a b : A} {r : List (Prod A A)} : rn ((a, b) :: r) a = b := by simp [rn]
 
 theorem rn_cons_ne {a b x : A} {r : List (Prod A A)} (h : Not (x = a)) : rn ((a, b) :: r) x = rn r x := by
   simp [rn, lookup_cons_ne h]
@@ -123,8 +122,7 @@ theorem rn_zip_comp : forall {xs ys zs : List A} {r1 r2 r3 : List (Prod A A)} {x
         | head => exact absurd rfl h
         | tail _ hx => exact hx
       have hm := rn_zip_mem (r := r1) (by simpa using h1) hx'
-      have hb : Not (rn (xs.zip ys ++ r1) x = b) := by
-        intro e; rw [e] at hm; exact (List.nodup_cons.mp hn).1 hm
+      have hb : Not (rn (xs.zip ys ++ r1) x = b) := by intro e; rw [e] at hm; exact (List.nodup_cons.mp hn).1 hm
       rw [rn_cons_ne hb]
       exact rn_zip_comp (by simpa using h1) (by simpa using h2) (List.nodup_cons.mp hn).2 hx'
 

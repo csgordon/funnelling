@@ -230,8 +230,7 @@ theorem Expr.closed_of_gsubst : forall {e : Expr} {s : GSubst} {T : List TVarNam
     exact And.intro (And.intro (Expr.closed_of_gsubst hc.1.1) (all_of_subst hc.1.2)) (Expr.closedList_of_gsubst hc.2)
   | .superCall e T0 Ts m es, s, T, S, hc => by
     simp only [Expr.gsubst, Expr.closed, Bool.and_eq_true] at hc |-
-    have h2 : (Ty.ftvList (Ty.substList s.ty (T0 :: Ts))).all T.contains = true := by
-      simpa [Ty.substList] using hc.1.2
+    have h2 : (Ty.ftvList (Ty.substList s.ty (T0 :: Ts))).all T.contains = true := by simpa [Ty.substList] using hc.1.2
     exact And.intro (And.intro (Expr.closed_of_gsubst hc.1.1) (all_of_subst h2)) (Expr.closedList_of_gsubst hc.2)
   | .field e f, s, T, S, hc => by
     simp only [Expr.gsubst, Expr.closed] at hc |-
