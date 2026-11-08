@@ -147,9 +147,7 @@ theorem Ty.ftv_gsubst {s : GSubst} {X : TVarName} : forall {T : Ty}, List.Mem X 
       subst e
       exact And.intro h hY
     | some G => rw [var_gsubst_some hl, GTy.ftv_ty] at h; cases h
-  | .cls C Ts, h => by
-    simp only [Ty.subst, Ty.ftv] at h |-
-    exact Ty.ftvList_gsubst h
+  | .cls C Ts, h => Ty.ftvList_gsubst h
 theorem Ty.ftvList_gsubst {s : GSubst} {X : TVarName} : forall {Ts : List Ty},
     List.Mem X (Ty.ftvList (Ty.substList s.ty Ts)) -> List.Mem X (Ty.ftvList Ts) /\ Not (List.Mem X (s.map Prod.fst))
   | [], h => by cases h
@@ -168,9 +166,7 @@ theorem Ty.ftv_gsubst_back {s : GSubst} {X : TVarName} : forall {T : Ty}, List.M
     subst e
     rw [var_gsubst_none hX]
     exact h
-  | .cls C Ts, h, hX => by
-    simp only [Ty.subst, Ty.ftv] at h |-
-    exact Ty.ftvList_gsubst_back h hX
+  | .cls C Ts, h, hX => Ty.ftvList_gsubst_back h hX
 theorem Ty.ftvList_gsubst_back {s : GSubst} {X : TVarName} : forall {Ts : List Ty},
     List.Mem X (Ty.ftvList Ts) -> Not (List.Mem X (s.map Prod.fst)) -> List.Mem X (Ty.ftvList (Ty.substList s.ty Ts))
   | [], h, _ => by cases h

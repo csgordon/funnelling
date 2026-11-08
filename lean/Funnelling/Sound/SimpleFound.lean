@@ -86,9 +86,7 @@ theorem Expr.noShadow_tscope : forall {e : Expr} {Xs Xs2 : List TVarName} {xs : 
   | .field e _, _, _, _, h, hs => by
     simp only [Expr.noShadow] at h |-
     exact Expr.noShadow_tscope h hs
-  | .new _ _ es, _, _, _, h, hs => by
-    simp only [Expr.noShadow] at h |-
-    exact Expr.noShadowList_tscope h hs
+  | .new _ _ es, _, _, _, h, hs => Expr.noShadowList_tscope h hs
   | .newLocal _ _ _ _ es Ms, _, _, _, h, hs => by
     simp only [Expr.noShadow, Bool.and_eq_true] at h |-
     simp only [Expr.tbinders, listMem_iff, List.mem_append] at hs

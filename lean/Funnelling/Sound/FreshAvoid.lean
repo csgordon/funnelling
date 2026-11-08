@@ -315,12 +315,8 @@ theorem Expr.ifVars_vb : forall (e : Expr) {y : VarName}, List.Mem y e.ifVars ->
     rcases h with h | h
     . exact Or.inl (Expr.ifVars_vb e h)
     . exact Or.inr (Expr.ifVarsList_vb es h)
-  | .field e _, _, h => by
-    simp only [Expr.ifVars, Expr.vbinders] at h ⊢
-    exact Expr.ifVars_vb e h
-  | .new _ _ es, _, h => by
-    simp only [Expr.ifVars, Expr.vbinders] at h ⊢
-    exact Expr.ifVarsList_vb es h
+  | .field e _, _, h => Expr.ifVars_vb e h
+  | .new _ _ es, _, h => Expr.ifVarsList_vb es h
   | .newLocal _ _ _ _ es Ms, _, h => by
     simp only [Expr.ifVars, Expr.vbinders, listMem_iff, List.mem_append] at h ⊢
     rcases h with h | h

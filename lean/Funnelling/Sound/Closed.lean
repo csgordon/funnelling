@@ -162,9 +162,7 @@ theorem Ty.ftv_of_subst {s : GSubst} {X : TVarName} : forall {U : Ty}, List.Mem 
       simp only [Ty.subst, GSubst.lookup_ty, hl, Option.map_none, Option.getD_none, Ty.ftv]
       exact List.Mem.head _
     | some G => exact Or.inr (lookup_some_mem_dom hl)
-  | .cls C Us, h => by
-    simp only [Ty.subst, Ty.ftv] at h |-
-    exact Ty.ftvList_of_subst h
+  | .cls C Us, h => Ty.ftvList_of_subst h
 theorem Ty.ftvList_of_subst {s : GSubst} {X : TVarName} : forall {Us : List Ty}, List.Mem X (Ty.ftvList Us) ->
     List.Mem X (Ty.ftvList (Ty.substList s.ty Us)) \/ List.Mem X (s.map Prod.fst)
   | [], h => by cases h

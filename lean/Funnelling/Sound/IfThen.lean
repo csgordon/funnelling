@@ -17,9 +17,7 @@ theorem Expr.noShadow_of_vsubst : forall {e : Expr} {n : VSubst} {Xs : List TVar
   | .field e _, _, _, _, h => by
     simp only [Expr.vsubst, Expr.noShadow] at h |-
     exact Expr.noShadow_of_vsubst h
-  | .new _ _ es, _, _, _, h => by
-    simp only [Expr.vsubst, Expr.noShadow] at h |-
-    exact Expr.noShadowList_of_vsubst h
+  | .new _ _ es, _, _, _, h => Expr.noShadowList_of_vsubst h
   | .newLocal _ _ _ _ es Ms, _, _, _, h => by
     simp only [Expr.vsubst, Expr.noShadow, Bool.and_eq_true] at h |-
     exact And.intro (Expr.noShadowList_of_vsubst h.1) (Method.noShadowList_of_vsubst h.2)
@@ -49,40 +47,25 @@ end
 mutual
 theorem Expr.uniq_of_vsubst : forall {e : Expr} {n : VSubst}, (e.vsubst n).uniq -> e.uniq
   | .var _, _, _ => trivial
-  | .call e _ _ es, _, h => by
-    simp only [Expr.vsubst, Expr.uniq] at h |-
-    exact And.intro (Expr.uniq_of_vsubst h.1) (Expr.uniqList_of_vsubst h.2)
-  | .superCall e _ _ _ es, _, h => by
-    simp only [Expr.vsubst, Expr.uniq] at h |-
-    exact And.intro (Expr.uniq_of_vsubst h.1) (Expr.uniqList_of_vsubst h.2)
+  | .call e _ _ es, _, h => And.intro (Expr.uniq_of_vsubst h.1) (Expr.uniqList_of_vsubst h.2)
+  | .superCall e _ _ _ es, _, h => And.intro (Expr.uniq_of_vsubst h.1) (Expr.uniqList_of_vsubst h.2)
   | .field e _, _, h => by
     simp only [Expr.vsubst, Expr.uniq] at h |-
     exact Expr.uniq_of_vsubst h
-  | .new _ _ es, _, h => by
-    simp only [Expr.vsubst, Expr.uniq] at h |-
-    exact Expr.uniqList_of_vsubst h
-  | .newLocal _ _ _ _ es Ms, _, h => by
-    simp only [Expr.vsubst, Expr.uniq] at h |-
-    exact And.intro (Expr.uniqList_of_vsubst h.1) (Method.uniqList_of_vsubst h.2)
-  | .ifInst e0 _ _ e1 e2, _, h => by
-    simp only [Expr.vsubst, Expr.uniq] at h |-
-    exact And.intro (Expr.uniq_of_vsubst h.1) (And.intro (Expr.uniq_of_vsubst h.2.1) (Expr.uniq_of_vsubst h.2.2))
+  | .new _ _ es, _, h => Expr.uniqList_of_vsubst h
+  | .newLocal _ _ _ _ es Ms, _, h => And.intro (Expr.uniqList_of_vsubst h.1) (Method.uniqList_of_vsubst h.2)
+  | .ifInst e0 _ _ e1 e2, _, h =>
+    And.intro (Expr.uniq_of_vsubst h.1) (And.intro (Expr.uniq_of_vsubst h.2.1) (Expr.uniq_of_vsubst h.2.2))
 theorem Expr.uniqList_of_vsubst : forall {es : List Expr} {n : VSubst},
     Expr.uniqList (Expr.vsubstList n es) -> Expr.uniqList es
   | [], _, _ => trivial
-  | e :: es, _, h => by
-    simp only [Expr.vsubstList, Expr.uniqList] at h |-
-    exact And.intro (Expr.uniq_of_vsubst h.1) (Expr.uniqList_of_vsubst h.2)
+  | _ :: _, _, h => And.intro (Expr.uniq_of_vsubst h.1) (Expr.uniqList_of_vsubst h.2)
 theorem Method.uniq_of_vsubst : forall {M : Method} {n : VSubst}, (M.vsubst n).uniq -> M.uniq
-  | .mk _ _ _ _ e, _, h => by
-    simp only [Method.vsubst, Method.uniq] at h |-
-    exact And.intro h.1 (And.intro h.2.1 (Expr.uniq_of_vsubst h.2.2))
+  | .mk _ _ _ _ _, _, h => And.intro h.1 (And.intro h.2.1 (Expr.uniq_of_vsubst h.2.2))
 theorem Method.uniqList_of_vsubst : forall {Ms : List Method} {n : VSubst},
     Method.uniqList (Method.vsubstList n Ms) -> Method.uniqList Ms
   | [], _, _ => trivial
-  | M :: Ms, _, h => by
-    simp only [Method.vsubstList, Method.uniqList] at h |-
-    exact And.intro (Method.uniq_of_vsubst h.1) (Method.uniqList_of_vsubst h.2)
+  | _ :: _, _, h => And.intro (Method.uniq_of_vsubst h.1) (Method.uniqList_of_vsubst h.2)
 end
 
 theorem all_not_contains_of {A : Type} [DecidableEq A] {l xs : List A} (h : forall x, List.Mem x l -> Not (List.Mem x xs)) :
@@ -109,9 +92,7 @@ theorem Expr.noShadow_scope : forall {e : Expr} {Xs : List TVarName} {xs xs2 : L
   | .field e _, _, _, _, h, hs => by
     simp only [Expr.noShadow] at h |-
     exact Expr.noShadow_scope h hs
-  | .new _ _ es, _, _, _, h, hs => by
-    simp only [Expr.noShadow] at h |-
-    exact Expr.noShadowList_scope h hs
+  | .new _ _ es, _, _, _, h, hs => Expr.noShadowList_scope h hs
   | .newLocal _ _ _ _ es Ms, _, _, _, h, hs => by
     simp only [Expr.noShadow, Bool.and_eq_true] at h |-
     simp only [Expr.vbinders, listMem_iff, List.mem_append] at hs

@@ -84,9 +84,7 @@ theorem Expr.vbinders_vsubst {n : VSubst} {x : VarName} : forall {e : Expr}, Lis
   | .field e _, h => by
     simp only [Expr.vsubst, Expr.vbinders] at h |-
     exact Expr.vbinders_vsubst h
-  | .new _ _ es, h => by
-    simp only [Expr.vsubst, Expr.vbinders] at h |-
-    exact Expr.vbindersList_vsubst h
+  | .new _ _ es, h => Expr.vbindersList_vsubst h
   | .newLocal _ _ _ _ es Ms, h => by
     simp only [Expr.vsubst, Expr.vbinders, listMem_iff, List.mem_append] at h |-
     rcases h with h | h
