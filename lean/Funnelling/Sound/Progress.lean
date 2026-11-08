@@ -165,13 +165,6 @@ theorem Method.noShadowList_tb : forall {Ms : List Method} {Xs : List TVarName} 
     . exact Method.noShadowList_tb hn.2 X hX
 end
 
-theorem object_eq {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : Declared d (.dec D)) (hO : D.C = Object) :
-    D.bounds = [] /\ D.Ms = [] /\ D.Ss = [] := by
-  rcases object_declared hwf with ⟨D0, hD0, h1, h2, _, _, h5, h6⟩
-  have e := K.dec.inj (Declared.unique hwf hD hD0 (by show D.C = D0.C; rw [hO, h1]))
-  subst e
-  exact ⟨h2, h5, h6⟩
-
 theorem idRen_nil {A : Type} : IdRen ([] : List (Prod A A)) := by intro p hp; cases hp
 
 theorem FreshM.refl (M : Method) : FreshM M M :=
@@ -231,7 +224,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         rcases sub_from_object hwf hsv with ⟨U, hU⟩
         simp only [Ty.cls.injEq] at hU
         have hm := hw'.mem
-        rw [(object_eq hwf hw'.decl hU.1).2.2] at hm
+        rw [(Declared.object hwf hw'.decl hU.1).2.2.2.2] at hm
         cases hm
       have ht2 := vt.2.1
       rcases inv_new ht2 rfl with h1 | ⟨w2, hw2⟩
@@ -328,7 +321,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
           rcases sub_from_object hwf hs with ⟨U, hU⟩
           simp only [Ty.cls.injEq] at hU
           have hM := MethodIn.dec hwf hw'.decl0 hw'.meth
-          rw [(object_eq hwf hw'.decl0 hU.1).2.1] at hM
+          rw [(Declared.object hwf hw'.decl0 hU.1).2.2.2.1] at hM
           cases hM
         exact ⟨_, Step.searchSuper hw'.decl hm hO hkd⟩
   | ifInst v G x e1 e2 =>

@@ -150,6 +150,11 @@ theorem lookup_isSome {x : A} : forall {r : List (Prod A B)}, List.Mem x (r.map 
       | head => exact absurd rfl hx
       | tail _ h => exact lookup_isSome h
 
+theorem lookup_none_not_dom {x : A} {r : List (Prod A B)} (h : List.lookup x r = none) :
+    Not (List.Mem x (r.map Prod.fst)) := by
+  intro hm
+  rcases lookup_isSome hm with ⟨v, hv⟩; rw [hv] at h; cases h
+
 theorem lookup_append_left {x : A} : forall {r1 r2 : List (Prod A B)}, List.Mem x (r1.map Prod.fst) ->
     List.lookup x (r1 ++ r2) = List.lookup x r1
   | [], _, h => by cases h

@@ -328,9 +328,9 @@ theorem renE_meth {M : Method} {B : Bounds} {Gs Gs' : List GTy} {v0 : Value} {vs
             have hnot : Not (List.Mem p.1 (dom D1)) := fun h => nodup_append_disj hN1 hp1 h
             rw [rn_zip_not_mem hnot, rn_nil, e]
           . exact rn_zip_pair (nodup_append_right hN1) hp }
-    have hgd1 : NotDomT e1.tbinders (bind (B ++ D1) (Gs ++ Gs')) := by
+    have hgd1 : NotDom e1.tbinders (bind (B ++ D1) (Gs ++ Gs')) := by
       intro X hX hm; rw [hdom1] at hm; exact hgs1 X hX hm
-    have hgd2 : NotDomT e2.tbinders (bind (B ++ D2) (Gs ++ Gs')) := by
+    have hgd2 : NotDom e2.tbinders (bind (B ++ D2) (Gs ++ Gs')) := by
       intro X hX hm; rw [hdom2] at hm; exact hgs2 X hX hm
     have hrg := RenE.gsub hr genv hca hgd1 hgd2
     have venv : VSEnv ((p1.map VarDecl.x).zip (p2.map VarDecl.x) ++ []) []

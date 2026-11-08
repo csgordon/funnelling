@@ -22,8 +22,7 @@ theorem GOk.substCtx {d : Decls} {Delta : Bounds} {s : GSubst} (h : GOk d Delta 
     . simp only [Ty.subst, GSubst.lookup_ty, hl, Option.map_none, Option.getD_none]
     . simp only [gsubB, Bounds.subst, listMem_iff, List.mem_map, List.mem_filter]
       refine Exists.intro b (And.intro (And.intro hb ?_) rfl)
-      have := lookup_none_not_dom' hl
-      simpa using this
+      simpa using lookup_none_not_dom hl
   | some G =>
     have hg := h b hb G hl
     have e : (Ty.var b.X).subst s.ty = G.ty := by
@@ -34,10 +33,6 @@ theorem GOk.substCtx {d : Decls} {Delta : Bounds} {s : GSubst} (h : GOk d Delta 
     | cls C Gs =>
       refine Or.inr (And.intro (Sub.cls_indep hg.1) (And.intro (Kind.mono (fun _ h => by cases h) hg.2.1)
         (Kind.mono (fun _ h => by cases h) hg.2.2)))
-where
-  lookup_none_not_dom' {X : TVarName} {s : GSubst} (h : List.lookup X s = none) : Not (List.Mem X (s.map Prod.fst)) := by
-    intro hm
-    rcases lookup_isSome hm with ⟨v, hv⟩; rw [hv] at h; cases h
 
 theorem GOk.append {d : Decls} {Delta Dm : Bounds} {s : GSubst} (h : GOk d Delta s)
     (hm : forall b, List.Mem b Dm -> Not (List.Mem b.X (s.map Prod.fst))) : GOk d (Delta ++ Dm) s := by

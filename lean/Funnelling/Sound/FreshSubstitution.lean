@@ -18,7 +18,8 @@ structure VSEnv (rv rvo : VRen) (n1 n2 : VSubst) (S : List VarName) : Prop where
   ko : forall p, List.Mem p rvo -> Not (p.1 = this)
   c1 : forall p, List.Mem p n1 -> p.2.expr.closed [] [] = true
 
-abbrev NotDom (xs : List VarName) (n : VSubst) : Prop := forall x, List.Mem x xs -> Not (List.Mem x (n.map Prod.fst))
+abbrev NotDom {A B : Type} (xs : List A) (n : List (Prod A B)) : Prop :=
+  forall x, List.Mem x xs -> Not (List.Mem x (n.map Prod.fst))
 
 theorem lookup_filter_this {n : VSubst} {w : VarName} (hw : Not (w = this)) :
     List.lookup w (n.filter fun p => p.1 != this) = List.lookup w n := by
@@ -138,10 +139,10 @@ theorem notDom_filter {xs : List VarName} {n : VSubst} (h : NotDom xs n) :
   have := List.mem_map.mp hm
   rcases this with ⟨p, hp⟩; rw [<- hp.2]; exact List.mem_map_of_mem (List.mem_filter.mp hp.1).1
 
-theorem notDom_append_left {xs ys : List VarName} {n : VSubst} (h : NotDom (xs ++ ys) n) : NotDom xs n :=
+theorem notDom_append_left {A B : Type} {xs ys : List A} {n : List (Prod A B)} (h : NotDom (xs ++ ys) n) : NotDom xs n :=
   fun x hx => h x (List.mem_append_left _ hx)
 
-theorem notDom_append_right {xs ys : List VarName} {n : VSubst} (h : NotDom (xs ++ ys) n) : NotDom ys n :=
+theorem notDom_append_right {A B : Type} {xs ys : List A} {n : List (Prod A B)} (h : NotDom (xs ++ ys) n) : NotDom ys n :=
   fun x hx => h x (List.mem_append_right _ hx)
 
 mutual
@@ -254,9 +255,6 @@ theorem GSubst.lookup_ty {sigma : GSubst} {X : TVarName} :
       . subst e; rw [lookup_cons_eq, lookup_cons_eq]; rfl
       . rw [lookup_cons_ne e, lookup_cons_ne e]; exact ih
 
-abbrev NotDomT (Xs : List TVarName) (sigma : GSubst) : Prop :=
-  forall X, List.Mem X Xs -> Not (List.Mem X (sigma.map Prod.fst))
-
 structure GSEnv (rt rto : TRen) (s1 s2 : GSubst) (T : List TVarName) : Prop where
   st : forall X, List.Mem X T ->
     (exists G, List.lookup X s1 = some G /\ List.lookup (rn rt X) s2 = some G) \/
@@ -308,7 +306,7 @@ theorem GSEnv.funnels {rt rto : TRen} {s1 s2 : GSubst} {T : List TVarName} (env 
         rw [h'.2.2]
 
 theorem GSEnv.methExt {rt rto : TRen} {s1 s2 : GSubst} {T : List TVarName} (env : GSEnv rt rto s1 s2 T)
-    {Xa Xb : List TVarName} (hl : Xa.length = Xb.length) (ha : NotDomT Xa s1) (hb : NotDomT Xb s2) :
+    {Xa Xb : List TVarName} (hl : Xa.length = Xb.length) (ha : NotDom Xa s1) (hb : NotDom Xb s2) :
     GSEnv (Xa.zip Xb ++ rt) (Xa.zip Xb ++ rto) s1 s2 (T ++ Xa) where
   st := by
     intro X hX
@@ -323,12 +321,6 @@ theorem GSEnv.methExt {rt rto : TRen} {s1 s2 : GSubst} {T : List TVarName} (env 
         . exact h
         . exact absurd h hm
       exact env.st X hXT
-
-theorem notDomT_append_left {xs ys : List TVarName} {s : GSubst} (h : NotDomT (xs ++ ys) s) : NotDomT xs s :=
-  fun x hx => h x (List.mem_append_left _ hx)
-
-theorem notDomT_append_right {xs ys : List TVarName} {s : GSubst} (h : NotDomT (xs ++ ys) s) : NotDomT ys s :=
-  fun x hx => h x (List.mem_append_right _ hx)
 
 theorem bounds_subst_ren {r1 r2 : TRen} {s1 s2 : TSubst} : forall {Delta : Bounds} {Xs : List TVarName},
     Xs.length = Delta.length ->
@@ -361,23 +353,23 @@ theorem dom_bounds_subst {s : TSubst} {Delta : Bounds} : dom (Bounds.subst s Del
 
 mutual
 theorem RenE.gsub {rv rt a b} : RenE rv rt a b -> forall {rto s1 s2 T S}, GSEnv rt rto s1 s2 T ->
-    a.closed T S = true -> NotDomT a.tbinders s1 -> NotDomT b.tbinders s2 ->
+    a.closed T S = true -> NotDom a.tbinders s1 -> NotDom b.tbinders s2 ->
     RenE rv rto (a.gsubst s1) (b.gsubst s2)
   | .var, _, _, _, _, _, _, _, _, _ => by simp only [Expr.gsubst]; exact RenE.var
   | .call h1 hs1, rto, s1, s2, T, S, env, hc, hd1, hd2 => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
     simp only [Expr.gsubst]
     rw [env.tys (all_contains_iff.mp hc.1.2)]
-    exact RenE.call (RenE.gsub h1 env hc.1.1 (notDomT_append_left hd1) (notDomT_append_left hd2))
-      (RenEs.gsub hs1 env hc.2 (notDomT_append_right hd1) (notDomT_append_right hd2))
+    exact RenE.call (RenE.gsub h1 env hc.1.1 (notDom_append_left hd1) (notDom_append_left hd2))
+      (RenEs.gsub hs1 env hc.2 (notDom_append_right hd1) (notDom_append_right hd2))
   | .superCall h1 hs1, rto, s1, s2, T, S, env, hc, hd1, hd2 => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
     simp only [Expr.gsubst]
     have h2 := all_contains_iff.mp hc.1.2
     rw [env.tys (fun X hX => h2 X (List.mem_append_right _ hX)),
       env.ty (fun X hX => h2 X (List.mem_append_left _ hX))]
-    exact RenE.superCall (RenE.gsub h1 env hc.1.1 (notDomT_append_left hd1) (notDomT_append_left hd2))
-      (RenEs.gsub hs1 env hc.2 (notDomT_append_right hd1) (notDomT_append_right hd2))
+    exact RenE.superCall (RenE.gsub h1 env hc.1.1 (notDom_append_left hd1) (notDom_append_left hd2))
+      (RenEs.gsub hs1 env hc.2 (notDom_append_right hd1) (notDom_append_right hd2))
   | .field h1, rto, s1, s2, T, S, env, hc, hd1, hd2 => RenE.field (RenE.gsub h1 env hc hd1 hd2)
   | .new hs1, rto, s1, s2, T, S, env, hc, hd1, hd2 => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
@@ -391,31 +383,31 @@ theorem RenE.gsub {rv rt a b} : RenE rv rt a b -> forall {rto s1 s2 T S}, GSEnv 
     have h1 := all_contains_iff.mp hc.1.1
     rw [env.tys (fun X hX => h1 X (List.mem_append_right _ hX)),
       env.funnels (fun X hX => h1 X (List.mem_append_left _ hX))]
-    exact RenE.newLocal (RenEs.gsub hs1 env hc.1.2 (notDomT_append_left hd1) (notDomT_append_left hd2))
-      (RenMs.gsub hm1 env hc.2 (notDomT_append_right hd1) (notDomT_append_right hd2))
+    exact RenE.newLocal (RenEs.gsub hs1 env hc.1.2 (notDom_append_left hd1) (notDom_append_left hd2))
+      (RenMs.gsub hm1 env hc.2 (notDom_append_right hd1) (notDom_append_right hd2))
   | .ifInst h01 h11 h21, rto, s1, s2, T, S, env, hc, hd1, hd2 => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
     simp only [Expr.tbinders] at hd1 hd2
     simp only [Expr.gsubst]
     rw [env.ty (all_contains_iff.mp hc.1.1.2)]
     exact RenE.ifInst
-      (RenE.gsub h01 env hc.1.1.1 (notDomT_append_left (notDomT_append_left hd1))
-        (notDomT_append_left (notDomT_append_left hd2)))
-      (RenE.gsub h11 env hc.1.2 (notDomT_append_right (notDomT_append_left hd1))
-        (notDomT_append_right (notDomT_append_left hd2)))
-      (RenE.gsub h21 env hc.2 (notDomT_append_right hd1) (notDomT_append_right hd2))
+      (RenE.gsub h01 env hc.1.1.1 (notDom_append_left (notDom_append_left hd1))
+        (notDom_append_left (notDom_append_left hd2)))
+      (RenE.gsub h11 env hc.1.2 (notDom_append_right (notDom_append_left hd1))
+        (notDom_append_right (notDom_append_left hd2)))
+      (RenE.gsub h21 env hc.2 (notDom_append_right hd1) (notDom_append_right hd2))
 theorem RenEs.gsub {rv rt as bs} : RenEs rv rt as bs -> forall {rto s1 s2 T S}, GSEnv rt rto s1 s2 T ->
-    Expr.closedList T S as = true -> NotDomT (Expr.tbindersList as) s1 -> NotDomT (Expr.tbindersList bs) s2 ->
+    Expr.closedList T S as = true -> NotDom (Expr.tbindersList as) s1 -> NotDom (Expr.tbindersList bs) s2 ->
     RenEs rv rto (Expr.gsubstList s1 as) (Expr.gsubstList s2 bs)
   | .nil, _, _, _, _, _, _, _, _, _ => RenEs.nil
   | .cons h1 hs1, rto, s1, s2, T, S, env, hc, hd1, hd2 => by
     simp only [Expr.closedList, Bool.and_eq_true] at hc
     simp only [Expr.tbindersList] at hd1 hd2
     simp only [Expr.gsubstList]
-    exact RenEs.cons (RenE.gsub h1 env hc.1 (notDomT_append_left hd1) (notDomT_append_left hd2))
-      (RenEs.gsub hs1 env hc.2 (notDomT_append_right hd1) (notDomT_append_right hd2))
+    exact RenEs.cons (RenE.gsub h1 env hc.1 (notDom_append_left hd1) (notDom_append_left hd2))
+      (RenEs.gsub hs1 env hc.2 (notDom_append_right hd1) (notDom_append_right hd2))
 theorem RenM.gsub {rv rt Ma Mb} : RenM rv rt Ma Mb -> forall {rto s1 s2 T S}, GSEnv rt rto s1 s2 T ->
-    Ma.closed T S = true -> NotDomT Ma.tbinders s1 -> NotDomT Mb.tbinders s2 ->
+    Ma.closed T S = true -> NotDom Ma.tbinders s1 -> NotDom Mb.tbinders s2 ->
     RenM rv rto (Ma.gsubst s1) (Mb.gsubst s2)
   | .mk (Delta := Da) (T0 := T0) (m := m) (ps := ps) (Xs' := Xs) (xs' := xs) hL hl h1, rto, s1, s2, T, S, env, hc, hd1, hd2 => by
     simp only [Method.closed, Bool.and_eq_true] at hc
@@ -423,8 +415,8 @@ theorem RenM.gsub {rv rt Ma Mb} : RenM rv rt Ma Mb -> forall {rto s1 s2 T S}, GS
     rw [dom_renBounds hL] at hd2
     simp only [Method.gsubst]
     have hLa : (dom Da).length = Xs.length := by simp [dom, hL]
-    have env' := env.methExt hLa (notDomT_append_left hd1) (notDomT_append_left hd2)
-    have hbody := RenE.gsub h1 env' hc.2 (notDomT_append_right hd1) (notDomT_append_right hd2)
+    have env' := env.methExt hLa (notDom_append_left hd1) (notDom_append_left hd2)
+    have hbody := RenE.gsub h1 env' hc.2 (notDom_append_right hd1) (notDom_append_right hd2)
     have hm := RenM.mk (rv := rv) (rt := rto) (Delta := Bounds.subst s1.ty Da) (T0 := T0.subst s1.ty) (m := m)
       (ps := ps.map (VarDecl.subst s1.ty)) (Xs' := Xs) (xs' := xs) (by simp [Bounds.subst, hL]) (by simp [hl])
       (by rw [dom_bounds_subst]; simpa [List.map_map, Function.comp_def, VarDecl.subst] using hbody)
@@ -439,16 +431,16 @@ theorem RenM.gsub {rv rt Ma Mb} : RenM rv rt Ma Mb -> forall {rto s1 s2 T S}, GS
         exact List.mem_append_right _ (by rw [ftvList_append]; exact List.mem_append_right _ (ftvList_map_mem (f := VarDecl.T) hp hX)))))]
     exact hm
 theorem RenMs.gsub {rv rt Mas Mbs} : RenMs rv rt Mas Mbs -> forall {rto s1 s2 T S}, GSEnv rt rto s1 s2 T ->
-    Method.closedList T S Mas = true -> NotDomT (Method.tbindersList Mas) s1 ->
-    NotDomT (Method.tbindersList Mbs) s2 ->
+    Method.closedList T S Mas = true -> NotDom (Method.tbindersList Mas) s1 ->
+    NotDom (Method.tbindersList Mbs) s2 ->
     RenMs rv rto (Method.gsubstList s1 Mas) (Method.gsubstList s2 Mbs)
   | .nil, _, _, _, _, _, _, _, _, _ => RenMs.nil
   | .cons h1 hs1, rto, s1, s2, T, S, env, hc, hd1, hd2 => by
     simp only [Method.closedList, Bool.and_eq_true] at hc
     simp only [Method.tbindersList] at hd1 hd2
     simp only [Method.gsubstList]
-    exact RenMs.cons (RenM.gsub h1 env hc.1 (notDomT_append_left hd1) (notDomT_append_left hd2))
-      (RenMs.gsub hs1 env hc.2 (notDomT_append_right hd1) (notDomT_append_right hd2))
+    exact RenMs.cons (RenM.gsub h1 env hc.1 (notDom_append_left hd1) (notDom_append_left hd2))
+      (RenMs.gsub hs1 env hc.2 (notDom_append_right hd1) (notDom_append_right hd2))
 end
 
 end Funnelling

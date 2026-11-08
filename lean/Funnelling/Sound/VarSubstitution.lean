@@ -100,11 +100,6 @@ theorem OverrideOk.vsubst {d : Decls} {Delta : Bounds} {T : Ty} {n : VSubst} {Ms
   intro M C Ts hM hs
   rcases vsubstList_mem hM with ⟨M0, hM0⟩; rw [hM0.2]; exact (h M0 C Ts hM0.1 hs).vsubst
 
-theorem lookup_none_not_dom {n : VSubst} {x : VarName} (h : List.lookup x n = none) :
-    Not (List.Mem x (n.map Prod.fst)) := by
-  intro hm
-  rcases lookup_isSome hm with ⟨v, hv⟩; rw [hv] at h; cases h
-
 theorem mem_gsub {n : VSubst} {gamma : Gamma} {y : VarDecl} (h : List.Mem y gamma)
     (hy : Not (List.Mem y.x (n.map Prod.fst))) : List.Mem y (gsub n gamma) := by
   simp only [gsub, listMem_iff, List.mem_filter]

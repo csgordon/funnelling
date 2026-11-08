@@ -4,12 +4,12 @@ open Funnelling.SoundSimp
 
 namespace Funnelling
 
-theorem object_unique {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : Declared d (.dec D)) (hO : D.C = Object) :
-    D.C' = Object /\ D.Ts = [] := by
-  rcases object_declared hwf with ⟨D0, hD0⟩
-  have e := K.dec.inj (Declared.unique hwf hD hD0.1 (by show D.C = D0.C; rw [hO, hD0.2.1]))
-  rw [e]
-  exact And.intro hD0.2.2.2.1 hD0.2.2.2.2.1
+theorem Declared.object {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : Declared d (.dec D)) (hO : D.C = Object) :
+    D.C' = Object /\ D.Ts = [] /\ D.bounds = [] /\ D.Ms = [] /\ D.Ss = [] := by
+  rcases object_declared hwf with ⟨D0, hD0, h1, h2, h3, h4, h5, h6⟩
+  have e := K.dec.inj (Declared.unique hwf hD hD0 (by show D.C = D0.C; rw [hO, h1]))
+  subst e
+  exact ⟨h3, h4, h2, h5, h6⟩
 
 theorem sub_from_object {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {U0 : List Ty} {T : Ty}
     (h : Sub d Delta (.cls Object U0) T) : exists U, T = .cls Object U := by
@@ -18,7 +18,7 @@ theorem sub_from_object {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {U0 : Lis
   | subRefl => exact Exists.intro U0 he.symm
   | @subInherit D Ts0 T' hD hl _ ih =>
     simp only [Ty.cls.injEq] at he
-    have ho := object_unique hwf hD he.1.symm
+    have ho := Declared.object hwf hD he.1.symm
     exact ih (U0 := Ty.substList (bind D.bounds Ts0) D.Ts) (by simp only [Ty.subst]; rw [ho.1])
   | subInheritLocal hD _ _ =>
     simp only [Ty.cls.injEq] at he
@@ -202,7 +202,7 @@ theorem rank_sub {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : 
     have r := ih hD''.1 (Ts := Ty.substList (bind D'.bounds Ts0') D'.Ts) (by simp only [Ty.subst]; rw [hsup]) ht
     rw [hsup] at r
     by_cases ho : D'.C = Object
-    . have ho2 := (object_unique hwf hD' ho).1
+    . have ho2 := (Declared.object hwf hD' ho).1
       rw [ho2, <- ho] at r
       exact r
     . rw [rank_super hwf hD' ho]; exact Nat.le_succ_of_le r
@@ -230,20 +230,14 @@ theorem object_args {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {U0 U : List 
   | subRefl => rw [<- ht] at he; simp only [Ty.cls.injEq] at he; exact Or.inl he.2.symm
   | @subInherit D Ts0 T' hD hl _ ih =>
     simp only [Ty.cls.injEq] at he
-    have ho := object_unique hwf hD he.1.symm
+    have ho := Declared.object hwf hD he.1.symm
     rcases ih (U0 := Ty.substList (bind D.bounds Ts0) D.Ts) (by simp only [Ty.subst]; rw [ho.1]) ht with e | e
-    . right; rw [e, ho.2]; rfl
+    . right; rw [e, ho.2.1]; rfl
     . exact Or.inr e
   | subInheritLocal hD _ _ =>
     simp only [Ty.cls.injEq] at he
     rcases object_declared hwf with ⟨D0, hD0⟩; exact absurd (Declared.dec_loc hwf hD0.1 hD (by rw [hD0.2.1, he.1])) id
   | subVar => cases he
-
-theorem object_bounds {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : Declared d (.dec D)) (ho : D.C = Object) :
-    D.bounds = [] := by
-  rcases object_declared hwf with ⟨D0, hD0⟩
-  have e := K.dec.inj (Declared.unique hwf hD hD0.1 (by show D.C = D0.C; rw [ho, hD0.2.1]))
-  rw [e]; exact hD0.2.2.1
 
 theorem sub_unique_dec {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {T1 : Ty}
     (h1 : exists D Ts, Declared d (.dec D) /\ T1 = .cls D.C Ts) {C' : ClassName} {U1 : List Ty}
@@ -260,11 +254,11 @@ theorem sub_unique_dec {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {T1 : Ty}
     . have hC : C' = D.C := ht.1
       rw [hC] at hs3
       by_cases ho : D.C = Object
-      . have hb := object_bounds hwf h1.1 ho
+      . have hb := (Declared.object hwf h1.1 ho).2.2.1
         have hU : Ts = [] := by have := hs3.1; rw [hb] at this; cases Ts <;> simp_all
         have hs4 := hs3.2
         simp only [Ty.subst] at hs4
-        rw [(object_unique hwf h1.1 ho).1, (object_unique hwf h1.1 ho).2, ho] at hs4
+        rw [(Declared.object hwf h1.1 ho).1, (Declared.object hwf h1.1 ho).2.1, ho] at hs4
         simp only [Ty.substList] at hs4
         rw [ht.2, hU]
         rcases object_args hwf hs4 with e | e
@@ -279,10 +273,10 @@ theorem sub_unique_dec {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {T1 : Ty}
       have hC : C' = D.C := e.1
       rw [hC] at hs
       by_cases ho : D.C = Object
-      . have hb := object_bounds hwf hD ho
+      . have hb := (Declared.object hwf hD ho).2.2.1
         have hT0 : Ts0 = [] := by rw [hb] at hl; cases Ts0 <;> simp_all
         simp only [Ty.subst] at hs
-        rw [(object_unique hwf hD ho).1, (object_unique hwf hD ho).2, ho] at hs
+        rw [(Declared.object hwf hD ho).1, (Declared.object hwf hD ho).2.1, ho] at hs
         simp only [Ty.substList] at hs
         rw [e.2, hT0]
         rcases object_args hwf hs with e2 | e2
