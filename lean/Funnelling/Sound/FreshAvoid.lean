@@ -4,79 +4,51 @@ open Funnelling.SoundSimp
 
 namespace Funnelling.High
 
-def freshV (L : List VarName) (k : Nat) : VarName :=
-  { name := String.ofList (List.replicate ((L.map fun v => v.name.length).sum + k + 1) 'a') }
+class Nm (A : Type) where
+  nm : A -> String
+  ofName : String -> A
+  nm_mk : forall s, nm (ofName s) = s
 
-def freshT (L : List TVarName) (k : Nat) : TVarName :=
-  { name := String.ofList (List.replicate ((L.map fun v => v.name.length).sum + k + 1) 'a') }
+instance : Nm VarName := ⟨VarName.name, VarName.mk, fun _ => rfl⟩
 
-theorem freshV_len (L : List VarName) (k : Nat) :
-    (freshV L k).name.length = (L.map fun v => v.name.length).sum + k + 1 := by
-  simp [freshV]
+instance : Nm TVarName := ⟨TVarName.name, TVarName.mk, fun _ => rfl⟩
 
-theorem freshT_len (L : List TVarName) (k : Nat) :
-    (freshT L k).name.length = (L.map fun v => v.name.length).sum + k + 1 := by
-  simp [freshT]
+def fresh {A : Type} [Nm A] (L : List A) (k : Nat) : A :=
+  Nm.ofName (String.ofList (List.replicate ((L.map fun v => (Nm.nm v).length).sum + k + 1) 'a'))
 
-theorem lenV_le_sum : forall {L : List VarName} {v : VarName}, List.Mem v L ->
-    v.name.length <= (L.map fun v => v.name.length).sum
+theorem fresh_len {A : Type} [Nm A] (L : List A) (k : Nat) :
+    (Nm.nm (fresh L k)).length = (L.map fun v => (Nm.nm v).length).sum + k + 1 := by
+  simp [fresh, Nm.nm_mk]
+
+theorem len_le_sum {A : Type} [Nm A] : forall {L : List A} {v : A}, List.Mem v L ->
+    (Nm.nm v).length <= (L.map fun v => (Nm.nm v).length).sum
   | [], _, h => by cases h
   | _ :: _, _, h => by
     cases h with
     | head => simp
-    | tail _ h => have := lenV_le_sum h; simp; omega
+    | tail _ h => have := len_le_sum h; simp; omega
 
-theorem lenT_le_sum : forall {L : List TVarName} {v : TVarName}, List.Mem v L ->
-    v.name.length <= (L.map fun v => v.name.length).sum
-  | [], _, h => by cases h
-  | _ :: _, _, h => by
-    cases h with
-    | head => simp
-    | tail _ h => have := lenT_le_sum h; simp; omega
-
-theorem freshV_not_mem (L : List VarName) (k : Nat) : Not (List.Mem (freshV L k) L) := fun h => by
-  have h1 := lenV_le_sum h
-  rw [freshV_len] at h1
+theorem fresh_not_mem {A : Type} [Nm A] (L : List A) (k : Nat) : Not (List.Mem (fresh L k) L) := fun h => by
+  have h1 := len_le_sum h
+  rw [fresh_len] at h1
   omega
 
-theorem freshT_not_mem (L : List TVarName) (k : Nat) : Not (List.Mem (freshT L k) L) := fun h => by
-  have h1 := lenT_le_sum h
-  rw [freshT_len] at h1
+theorem fresh_inj {A : Type} [Nm A] (L : List A) : Function.Injective (fresh L) := fun k j h => by
+  have := congrArg (fun v => (Nm.nm v).length) h
+  simp only [fresh_len] at this
   omega
 
-theorem freshV_inj (L : List VarName) : Function.Injective (freshV L) := fun k j h => by
-  have := congrArg (fun v => v.name.length) h
-  simp only [freshV_len] at this
-  omega
+def frs {A : Type} [Nm A] (L : List A) (d n : Nat) : List A := (List.range n).map fun i => fresh L (d + i)
 
-theorem freshT_inj (L : List TVarName) : Function.Injective (freshT L) := fun k j h => by
-  have := congrArg (fun v => v.name.length) h
-  simp only [freshT_len] at this
-  omega
+theorem frs_length {A : Type} [Nm A] {L : List A} {d n : Nat} : (frs L d n).length = n := by simp [frs]
 
-def frVs (L : List VarName) (d n : Nat) : List VarName := (List.range n).map fun i => freshV L (d + i)
-
-def frTs (L : List TVarName) (d n : Nat) : List TVarName := (List.range n).map fun i => freshT L (d + i)
-
-theorem frVs_length {L : List VarName} {d n : Nat} : (frVs L d n).length = n := by simp [frVs]
-
-theorem frTs_length {L : List TVarName} {d n : Nat} : (frTs L d n).length = n := by simp [frTs]
-
-theorem frVs_mem {L : List VarName} {d n : Nat} {y : VarName} (h : List.Mem y (frVs L d n)) :
-    exists i, i < n /\ y = freshV L (d + i) := by
+theorem frs_mem {A : Type} [Nm A] {L : List A} {d n : Nat} {y : A} (h : List.Mem y (frs L d n)) :
+    exists i, i < n /\ y = fresh L (d + i) := by
   rcases List.mem_map.mp h with ⟨i, hi, e⟩
   exact ⟨i, List.mem_range.mp hi, e.symm⟩
 
-theorem frTs_mem {L : List TVarName} {d n : Nat} {Y : TVarName} (h : List.Mem Y (frTs L d n)) :
-    exists i, i < n /\ Y = freshT L (d + i) := by
-  rcases List.mem_map.mp h with ⟨i, hi, e⟩
-  exact ⟨i, List.mem_range.mp hi, e.symm⟩
-
-theorem frVs_nodup {L : List VarName} {d n : Nat} : (frVs L d n).Nodup :=
-  List.Pairwise.map _ (fun a b h e => h (by have := freshV_inj L e; omega)) List.nodup_range
-
-theorem frTs_nodup {L : List TVarName} {d n : Nat} : (frTs L d n).Nodup :=
-  List.Pairwise.map _ (fun a b h e => h (by have := freshT_inj L e; omega)) List.nodup_range
+theorem frs_nodup {A : Type} [Nm A] {L : List A} {d n : Nat} : (frs L d n).Nodup :=
+  List.Pairwise.map _ (fun a b h e => h (by have := fresh_inj L e; omega)) List.nodup_range
 
 mutual
 def Expr.fr (LV : List VarName) (LT : List TVarName) (rv : VRen) (rt : TRen) (d : Nat) : Expr -> Expr
@@ -90,7 +62,7 @@ def Expr.fr (LV : List VarName) (LT : List TVarName) (rv : VRen) (rt : TRen) (d 
     .newLocal C (Fs.map (Funnel.ren rt)) C' (Ty.renList rt Ts) (Expr.frList LV LT rv rt d es)
       (Method.frList LV LT rv rt d Ms)
   | .ifInst e0 T x e1 e2 =>
-    .ifInst (e0.fr LV LT rv rt d) (T.ren rt) (freshV LV d) (e1.fr LV LT ((x, freshV LV d) :: rv) rt (d + 1))
+    .ifInst (e0.fr LV LT rv rt d) (T.ren rt) (fresh LV d) (e1.fr LV LT ((x, fresh LV d) :: rv) rt (d + 1))
       (e2.fr LV LT rv rt d)
 def Expr.frList (LV : List VarName) (LT : List TVarName) (rv : VRen) (rt : TRen) (d : Nat) :
     List Expr -> List Expr
@@ -98,13 +70,13 @@ def Expr.frList (LV : List VarName) (LT : List TVarName) (rv : VRen) (rt : TRen)
   | e :: es => e.fr LV LT rv rt d :: Expr.frList LV LT rv rt d es
 def Method.fr (LV : List VarName) (LT : List TVarName) (rv : VRen) (rt : TRen) (d : Nat) : Method -> Method
   | .mk Delta T0 m ps e =>
-    .mk ((Delta.zip (frTs LT d Delta.length)).map fun p =>
-          { X := p.2, T := p.1.T.ren ((dom Delta).zip (frTs LT d Delta.length) ++ rt) })
-      (T0.ren ((dom Delta).zip (frTs LT d Delta.length) ++ rt)) m
-      ((ps.zip (frVs LV d ps.length)).map fun p =>
-          { T := p.1.T.ren ((dom Delta).zip (frTs LT d Delta.length) ++ rt), x := p.2 })
-      (e.fr LV LT ((ps.map VarDecl.x).zip (frVs LV d ps.length) ++ rv)
-        ((dom Delta).zip (frTs LT d Delta.length) ++ rt) (d + (Delta.length + ps.length)))
+    .mk ((Delta.zip (frs LT d Delta.length)).map fun p =>
+          { X := p.2, T := p.1.T.ren ((dom Delta).zip (frs LT d Delta.length) ++ rt) })
+      (T0.ren ((dom Delta).zip (frs LT d Delta.length) ++ rt)) m
+      ((ps.zip (frs LV d ps.length)).map fun p =>
+          { T := p.1.T.ren ((dom Delta).zip (frs LT d Delta.length) ++ rt), x := p.2 })
+      (e.fr LV LT ((ps.map VarDecl.x).zip (frs LV d ps.length) ++ rv)
+        ((dom Delta).zip (frs LT d Delta.length) ++ rt) (d + (Delta.length + ps.length)))
 def Method.frList (LV : List VarName) (LT : List TVarName) (rv : VRen) (rt : TRen) (d : Nat) :
     List Method -> List Method
   | [] => []
@@ -129,35 +101,26 @@ theorem Expr.frList_ren {LV : List VarName} {LT : List TVarName} :
   | e :: es, rv, rt, d => RenEs.cons (Expr.fr_ren e rv rt d) (Expr.frList_ren es rv rt d)
 theorem Method.fr_ren {LV : List VarName} {LT : List TVarName} :
     forall (M : Method) (rv : VRen) (rt : TRen) (d : Nat), RenM rv rt M (M.fr LV LT rv rt d)
-  | .mk _ _ _ _ e, _, _, _ => RenM.mk frTs_length frVs_length (Expr.fr_ren e _ _ _)
+  | .mk _ _ _ _ e, _, _, _ => RenM.mk frs_length frs_length (Expr.fr_ren e _ _ _)
 theorem Method.frList_ren {LV : List VarName} {LT : List TVarName} :
     forall (Ms : List Method) (rv : VRen) (rt : TRen) (d : Nat), RenMs rv rt Ms (Method.frList LV LT rv rt d Ms)
   | [], _, _, _ => RenMs.nil
   | M :: Ms, rv, rt, d => RenMs.cons (Method.fr_ren M rv rt d) (Method.frList_ren Ms rv rt d)
 end
 
-abbrev AtV (LV : List VarName) (d : Nat) (y : VarName) : Prop := exists k, d <= k /\ y = freshV LV k
+abbrev At {A : Type} [Nm A] (L : List A) (d : Nat) (y : A) : Prop := exists k, d <= k /\ y = fresh L k
 
-abbrev AtT (LT : List TVarName) (d : Nat) (Y : TVarName) : Prop := exists k, d <= k /\ Y = freshT LT k
-
-theorem AtV.mono {LV : List VarName} {d d' : Nat} {y : VarName} (h : d <= d') : AtV LV d' y -> AtV LV d y :=
+theorem At.mono {A : Type} [Nm A] {L : List A} {d d' : Nat} {y : A} (h : d <= d') : At L d' y -> At L d y :=
   fun ⟨k, hk, e⟩ => ⟨k, by omega, e⟩
 
-theorem AtT.mono {LT : List TVarName} {d d' : Nat} {Y : TVarName} (h : d <= d') : AtT LT d' Y -> AtT LT d Y :=
-  fun ⟨k, hk, e⟩ => ⟨k, by omega, e⟩
-
-theorem frVs_at {L : List VarName} {d n : Nat} {y : VarName} (h : List.Mem y (frVs L d n)) : AtV L d y := by
-  rcases frVs_mem h with ⟨i, _, e⟩
-  exact ⟨d + i, by omega, e⟩
-
-theorem frTs_at {L : List TVarName} {d n : Nat} {Y : TVarName} (h : List.Mem Y (frTs L d n)) : AtT L d Y := by
-  rcases frTs_mem h with ⟨i, _, e⟩
+theorem frs_at {A : Type} [Nm A] {L : List A} {d n : Nat} {y : A} (h : List.Mem y (frs L d n)) : At L d y := by
+  rcases frs_mem h with ⟨i, _, e⟩
   exact ⟨d + i, by omega, e⟩
 
 mutual
 theorem Expr.fr_vb {LV : List VarName} {LT : List TVarName} :
     forall (e : Expr) {rv : VRen} {rt : TRen} {d : Nat} {y : VarName},
-    List.Mem y (e.fr LV LT rv rt d).vbinders -> AtV LV d y
+    List.Mem y (e.fr LV LT rv rt d).vbinders -> At LV d y
   | .var _, _, _, _, _, h => by simp [Expr.fr, Expr.vbinders] at h
   | .call e _ _ es, _, _, _, _, h => by
     simp only [Expr.fr, Expr.vbinders, listMem_iff, List.mem_append] at h
@@ -183,11 +146,11 @@ theorem Expr.fr_vb {LV : List VarName} {LT : List TVarName} :
     rcases h with ((h | h) | h) | h
     . exact ⟨d, Nat.le_refl _, h⟩
     . exact Expr.fr_vb e0 h
-    . exact AtV.mono (Nat.le_succ d) (Expr.fr_vb e1 h)
+    . exact At.mono (Nat.le_succ d) (Expr.fr_vb e1 h)
     . exact Expr.fr_vb e2 h
 theorem Expr.frList_vb {LV : List VarName} {LT : List TVarName} :
     forall (es : List Expr) {rv : VRen} {rt : TRen} {d : Nat} {y : VarName},
-    List.Mem y (Expr.vbindersList (Expr.frList LV LT rv rt d es)) -> AtV LV d y
+    List.Mem y (Expr.vbindersList (Expr.frList LV LT rv rt d es)) -> At LV d y
   | [], _, _, _, _, h => by simp [Expr.frList, Expr.vbindersList] at h
   | e :: es, _, _, _, _, h => by
     simp only [Expr.frList, Expr.vbindersList, listMem_iff, List.mem_append] at h
@@ -196,17 +159,17 @@ theorem Expr.frList_vb {LV : List VarName} {LT : List TVarName} :
     . exact Expr.frList_vb es h
 theorem Method.fr_vb {LV : List VarName} {LT : List TVarName} :
     forall (M : Method) {rv : VRen} {rt : TRen} {d : Nat} {y : VarName},
-    List.Mem y (M.fr LV LT rv rt d).vbinders -> AtV LV d y
+    List.Mem y (M.fr LV LT rv rt d).vbinders -> At LV d y
   | .mk _ _ _ _ e, _, _, _, _, h => by
     simp only [Method.fr, Method.vbinders] at h
-    rw [names_renParams frVs_length] at h
+    rw [names_renParams frs_length] at h
     simp only [listMem_iff, List.mem_append] at h
     rcases h with h | h
-    . exact frVs_at h
-    . exact AtV.mono (Nat.le_add_right _ _) (Expr.fr_vb e h)
+    . exact frs_at h
+    . exact At.mono (Nat.le_add_right _ _) (Expr.fr_vb e h)
 theorem Method.frList_vb {LV : List VarName} {LT : List TVarName} :
     forall (Ms : List Method) {rv : VRen} {rt : TRen} {d : Nat} {y : VarName},
-    List.Mem y (Method.vbindersList (Method.frList LV LT rv rt d Ms)) -> AtV LV d y
+    List.Mem y (Method.vbindersList (Method.frList LV LT rv rt d Ms)) -> At LV d y
   | [], _, _, _, _, h => by simp [Method.frList, Method.vbindersList] at h
   | M :: Ms, _, _, _, _, h => by
     simp only [Method.frList, Method.vbindersList, listMem_iff, List.mem_append] at h
@@ -218,7 +181,7 @@ end
 mutual
 theorem Expr.fr_tb {LV : List VarName} {LT : List TVarName} :
     forall (e : Expr) {rv : VRen} {rt : TRen} {d : Nat} {Y : TVarName},
-    List.Mem Y (e.fr LV LT rv rt d).tbinders -> AtT LT d Y
+    List.Mem Y (e.fr LV LT rv rt d).tbinders -> At LT d Y
   | .var _, _, _, _, _, h => by simp [Expr.fr, Expr.tbinders] at h
   | .call e _ _ es, _, _, _, _, h => by
     simp only [Expr.fr, Expr.tbinders, listMem_iff, List.mem_append] at h
@@ -243,11 +206,11 @@ theorem Expr.fr_tb {LV : List VarName} {LT : List TVarName} :
     simp only [Expr.fr, Expr.tbinders, listMem_iff, List.mem_append] at h
     rcases h with (h | h) | h
     . exact Expr.fr_tb e0 h
-    . exact AtT.mono (Nat.le_succ d) (Expr.fr_tb e1 h)
+    . exact At.mono (Nat.le_succ d) (Expr.fr_tb e1 h)
     . exact Expr.fr_tb e2 h
 theorem Expr.frList_tb {LV : List VarName} {LT : List TVarName} :
     forall (es : List Expr) {rv : VRen} {rt : TRen} {d : Nat} {Y : TVarName},
-    List.Mem Y (Expr.tbindersList (Expr.frList LV LT rv rt d es)) -> AtT LT d Y
+    List.Mem Y (Expr.tbindersList (Expr.frList LV LT rv rt d es)) -> At LT d Y
   | [], _, _, _, _, h => by simp [Expr.frList, Expr.tbindersList] at h
   | e :: es, _, _, _, _, h => by
     simp only [Expr.frList, Expr.tbindersList, listMem_iff, List.mem_append] at h
@@ -256,17 +219,17 @@ theorem Expr.frList_tb {LV : List VarName} {LT : List TVarName} :
     . exact Expr.frList_tb es h
 theorem Method.fr_tb {LV : List VarName} {LT : List TVarName} :
     forall (M : Method) {rv : VRen} {rt : TRen} {d : Nat} {Y : TVarName},
-    List.Mem Y (M.fr LV LT rv rt d).tbinders -> AtT LT d Y
+    List.Mem Y (M.fr LV LT rv rt d).tbinders -> At LT d Y
   | .mk _ _ _ _ e, _, _, _, _, h => by
     simp only [Method.fr, Method.tbinders] at h
-    rw [dom_renBounds frTs_length] at h
+    rw [dom_renBounds frs_length] at h
     simp only [listMem_iff, List.mem_append] at h
     rcases h with h | h
-    . exact frTs_at h
-    . exact AtT.mono (Nat.le_add_right _ _) (Expr.fr_tb e h)
+    . exact frs_at h
+    . exact At.mono (Nat.le_add_right _ _) (Expr.fr_tb e h)
 theorem Method.frList_tb {LV : List VarName} {LT : List TVarName} :
     forall (Ms : List Method) {rv : VRen} {rt : TRen} {d : Nat} {Y : TVarName},
-    List.Mem Y (Method.tbindersList (Method.frList LV LT rv rt d Ms)) -> AtT LT d Y
+    List.Mem Y (Method.tbindersList (Method.frList LV LT rv rt d Ms)) -> At LT d Y
   | [], _, _, _, _, h => by simp [Method.frList, Method.tbindersList] at h
   | M :: Ms, _, _, _, _, h => by
     simp only [Method.frList, Method.tbindersList, listMem_iff, List.mem_append] at h
@@ -275,46 +238,43 @@ theorem Method.frList_tb {LV : List VarName} {LT : List TVarName} :
     . exact Method.frList_tb Ms h
 end
 
-abbrev BelowV (LV : List VarName) (d : Nat) (S : List VarName) : Prop :=
-  forall y, List.Mem y S -> Not (AtV LV d y)
+abbrev Below {A : Type} [Nm A] (L : List A) (d : Nat) (S : List A) : Prop :=
+  forall y, List.Mem y S -> Not (At L d y)
 
-abbrev BelowT (LT : List TVarName) (d : Nat) (T : List TVarName) : Prop :=
-  forall Y, List.Mem Y T -> Not (AtT LT d Y)
+theorem Below.mono {A : Type} [Nm A] {L : List A} {d d' : Nat} {T : List A} (h : d <= d') (hb : Below L d T) :
+    Below L d' T := fun Y hY ha => hb Y hY (At.mono h ha)
 
-theorem BelowT.mono {LT : List TVarName} {d d' : Nat} {T : List TVarName} (h : d <= d') (hb : BelowT LT d T) :
-    BelowT LT d' T := fun Y hY ha => hb Y hY (AtT.mono h ha)
-
-theorem BelowV.ext {LV : List VarName} {d : Nat} {S : List VarName} (hb : BelowV LV d S) :
-    BelowV LV (d + 1) (freshV LV d :: S) := by
+theorem Below.ext {A : Type} [Nm A] {LV : List A} {d : Nat} {S : List A} (hb : Below LV d S) :
+    Below LV (d + 1) (fresh LV d :: S) := by
   intro y hy ha
   cases hy with
-  | head => rcases ha with ⟨k, hk, e⟩; have := freshV_inj LV e; omega
-  | tail _ hy => exact hb y hy (AtV.mono (Nat.le_succ d) ha)
+  | head => rcases ha with ⟨k, hk, e⟩; have := fresh_inj LV e; omega
+  | tail _ hy => exact hb y hy (At.mono (Nat.le_succ d) ha)
 
-theorem BelowV.meth {LV : List VarName} {d n m : Nat} {S : List VarName} (ht : List.Mem this LV)
-    (hb : BelowV LV d S) : BelowV LV (d + (n + m)) (this :: S ++ frVs LV d m) := by
+theorem Below.methV {LV : List VarName} {d n m : Nat} {S : List VarName} (ht : List.Mem this LV)
+    (hb : Below LV d S) : Below LV (d + (n + m)) (this :: S ++ frs LV d m) := by
   intro y hy ha
   simp only [listMem_iff, List.mem_append, List.mem_cons] at hy
   rcases hy with (hy | hy) | hy
   . rcases ha with ⟨k, _, e⟩
     subst hy
     rw [e] at ht
-    exact freshV_not_mem LV k ht
-  . exact hb y hy (AtV.mono (by omega) ha)
-  . rcases frVs_mem hy with ⟨i, hi, e1⟩
+    exact fresh_not_mem LV k ht
+  . exact hb y hy (At.mono (by omega) ha)
+  . rcases frs_mem hy with ⟨i, hi, e1⟩
     rcases ha with ⟨k, hk, e2⟩
-    have := freshV_inj LV (e1.symm.trans e2)
+    have := fresh_inj LV (e1.symm.trans e2)
     omega
 
-theorem BelowT.meth {LT : List TVarName} {d n m : Nat} {T : List TVarName} (hb : BelowT LT d T) :
-    BelowT LT (d + (n + m)) (T ++ frTs LT d n) := by
+theorem Below.meth {A : Type} [Nm A] {LT : List A} {d n m : Nat} {T : List A} (hb : Below LT d T) :
+    Below LT (d + (n + m)) (T ++ frs LT d n) := by
   intro Y hY ha
   simp only [listMem_iff, List.mem_append] at hY
   rcases hY with hY | hY
-  . exact hb Y hY (AtT.mono (by omega) ha)
-  . rcases frTs_mem hY with ⟨i, hi, e1⟩
+  . exact hb Y hY (At.mono (by omega) ha)
+  . rcases frs_mem hY with ⟨i, hi, e1⟩
     rcases ha with ⟨k, hk, e2⟩
-    have := freshT_inj LT (e1.symm.trans e2)
+    have := fresh_inj LT (e1.symm.trans e2)
     omega
 
 theorem not_contains_of {A : Type} [DecidableEq A] {l : List A} {x : A} (h : Not (List.Mem x l)) :
@@ -324,7 +284,7 @@ theorem not_contains_of {A : Type} [DecidableEq A] {l : List A} {x : A} (h : Not
 mutual
 theorem Expr.fr_noShadow {LV : List VarName} {LT : List TVarName} (ht : List.Mem this LV) :
     forall (e : Expr) {rv : VRen} {rt : TRen} {d : Nat} {Tb : List TVarName} {Sb : List VarName},
-    BelowV LV d Sb -> BelowT LT d Tb -> (e.fr LV LT rv rt d).noShadow Tb Sb = true
+    Below LV d Sb -> Below LT d Tb -> (e.fr LV LT rv rt d).noShadow Tb Sb = true
   | .var _, _, _, _, _, _, _, _ => rfl
   | .call e _ _ es, _, _, _, _, _, hS, hT => by
     simp only [Expr.fr, Expr.noShadow, Bool.and_eq_true]
@@ -346,22 +306,22 @@ theorem Expr.fr_noShadow {LV : List VarName} {LT : List TVarName} (ht : List.Mem
       Expr.fr_noShadow ht e1 hS.ext (hT.mono (Nat.le_succ d))⟩, Expr.fr_noShadow ht e2 hS hT⟩
 theorem Expr.frList_noShadow {LV : List VarName} {LT : List TVarName} (ht : List.Mem this LV) :
     forall (es : List Expr) {rv : VRen} {rt : TRen} {d : Nat} {Tb : List TVarName} {Sb : List VarName},
-    BelowV LV d Sb -> BelowT LT d Tb -> Expr.noShadowList Tb Sb (Expr.frList LV LT rv rt d es) = true
+    Below LV d Sb -> Below LT d Tb -> Expr.noShadowList Tb Sb (Expr.frList LV LT rv rt d es) = true
   | [], _, _, _, _, _, _, _ => rfl
   | e :: es, _, _, _, _, _, hS, hT => by
     simp only [Expr.frList, Expr.noShadowList, Bool.and_eq_true]
     exact ⟨Expr.fr_noShadow ht e hS hT, Expr.frList_noShadow ht es hS hT⟩
 theorem Method.fr_noShadow {LV : List VarName} {LT : List TVarName} (ht : List.Mem this LV) :
     forall (M : Method) {rv : VRen} {rt : TRen} {d : Nat} {Tb : List TVarName} {Sb : List VarName},
-    BelowV LV d Sb -> BelowT LT d Tb -> (M.fr LV LT rv rt d).noShadow Tb Sb = true
+    Below LV d Sb -> Below LT d Tb -> (M.fr LV LT rv rt d).noShadow Tb Sb = true
   | .mk _ _ _ _ e, _, _, _, _, _, hS, hT => by
     simp only [Method.fr, Method.noShadow, Bool.and_eq_true]
-    rw [dom_renBounds frTs_length, names_renParams frVs_length]
-    exact ⟨⟨all_not_contains_of (fun X hX hm => hT X hm (frTs_at hX)),
-      all_not_contains_of (fun y hy hm => hS y hm (frVs_at hy))⟩, Expr.fr_noShadow ht e (hS.meth ht) hT.meth⟩
+    rw [dom_renBounds frs_length, names_renParams frs_length]
+    exact ⟨⟨all_not_contains_of (fun X hX hm => hT X hm (frs_at hX)),
+      all_not_contains_of (fun y hy hm => hS y hm (frs_at hy))⟩, Expr.fr_noShadow ht e (hS.methV ht) hT.meth⟩
 theorem Method.frList_noShadow {LV : List VarName} {LT : List TVarName} (ht : List.Mem this LV) :
     forall (Ms : List Method) {rv : VRen} {rt : TRen} {d : Nat} {Tb : List TVarName} {Sb : List VarName},
-    BelowV LV d Sb -> BelowT LT d Tb -> Method.noShadowList Tb Sb (Method.frList LV LT rv rt d Ms) = true
+    Below LV d Sb -> Below LT d Tb -> Method.noShadowList Tb Sb (Method.frList LV LT rv rt d Ms) = true
   | [], _, _, _, _, _, _, _ => rfl
   | M :: Ms, _, _, _, _, _, hS, hT => by
     simp only [Method.frList, Method.noShadowList, Bool.and_eq_true]
@@ -393,8 +353,8 @@ theorem Method.fr_uniq {LV : List VarName} {LT : List TVarName} :
     forall (M : Method) {rv : VRen} {rt : TRen} {d : Nat}, (M.fr LV LT rv rt d).uniq
   | .mk _ _ _ _ e, _, _, _ => by
     simp only [Method.fr, Method.uniq]
-    rw [dom_renBounds frTs_length, names_renParams frVs_length]
-    exact ⟨frTs_nodup, frVs_nodup, Expr.fr_uniq e⟩
+    rw [dom_renBounds frs_length, names_renParams frs_length]
+    exact ⟨frs_nodup, frs_nodup, Expr.fr_uniq e⟩
 theorem Method.frList_uniq {LV : List VarName} {LT : List TVarName} :
     forall (Ms : List Method) {rv : VRen} {rt : TRen} {d : Nat}, Method.uniqList (Method.frList LV LT rv rt d Ms)
   | [], _, _, _ => by simp only [Method.frList, Method.uniqList]
@@ -729,11 +689,8 @@ theorem CompEnv.top (xs : List VarName) (Xs : List TVarName) : CompEnv [] [] [] 
   ⟨fun _ hw _ => ⟨hw, rfl⟩, fun _ hX => ⟨hX, rfl⟩, (fun p hp => by cases hp), (fun p hp => by cases hp),
     (fun p hp => by cases hp)⟩
 
-theorem not_atV_of_mem {L : List VarName} {d : Nat} {y : VarName} (h : List.Mem y L) : Not (AtV L d y) :=
-  fun ⟨k, _, e⟩ => freshV_not_mem L k (e ▸ h)
-
-theorem not_atT_of_mem {L : List TVarName} {d : Nat} {Y : TVarName} (h : List.Mem Y L) : Not (AtT L d Y) :=
-  fun ⟨k, _, e⟩ => freshT_not_mem L k (e ▸ h)
+theorem not_at_of_mem {A : Type} [Nm A] {L : List A} {d : Nat} {y : A} (h : List.Mem y L) : Not (At L d y) :=
+  fun ⟨k, _, e⟩ => fresh_not_mem L k (e ▸ h)
 
 theorem fresh_avoid (e : Expr) (LV : List VarName) (LT : List TVarName) {Xs : List TVarName} {xs : List VarName}
     (hk : forall k, List.Mem k e.locals -> KQ k) (hc : e.closed Xs xs = true) (ht : NoThis e) :
@@ -742,11 +699,11 @@ theorem fresh_avoid (e : Expr) (LV : List VarName) (LT : List TVarName) {Xs : Li
       e'.noShadow Xs xs = true /\ Not (List.Mem this e'.ifVars) /\ e'.closed Xs xs = true := by
   have hthis : List.Mem this (this :: LV ++ xs) := List.mem_append_left _ (List.Mem.head _)
   have hvb : forall y, List.Mem y (e.fr (this :: LV ++ xs) (LT ++ Xs) [] [] 0).vbinders ->
-      Not (List.Mem y (this :: LV ++ xs)) := fun y hy hm => not_atV_of_mem hm (Expr.fr_vb e hy)
+      Not (List.Mem y (this :: LV ++ xs)) := fun y hy hm => not_at_of_mem hm (Expr.fr_vb e hy)
   have htb : forall Y, List.Mem Y (e.fr (this :: LV ++ xs) (LT ++ Xs) [] [] 0).tbinders ->
-      Not (List.Mem Y (LT ++ Xs)) := fun Y hY hm => not_atT_of_mem hm (Expr.fr_tb e hY)
+      Not (List.Mem Y (LT ++ Xs)) := fun Y hY hm => not_at_of_mem hm (Expr.fr_tb e hY)
   have hns := Expr.fr_noShadow hthis e (LT := LT ++ Xs) (rv := []) (rt := []) (d := 0) (Tb := Xs) (Sb := xs)
-    (fun _ hy => not_atV_of_mem (List.mem_append_right _ hy)) (fun _ hY => not_atT_of_mem (List.mem_append_right _ hY))
+    (fun _ hy => not_at_of_mem (List.mem_append_right _ hy)) (fun _ hY => not_at_of_mem (List.mem_append_right _ hY))
   have hnt : NoThis (e.fr (this :: LV ++ xs) (LT ++ Xs) [] [] 0) := fun h => hvb this h hthis
   have r := RenE.inv (Expr.fr_ren e [] [] 0) (CompEnv.top xs Xs) (fun p hp => by cases hp)
     (fun p hp => by cases hp) id hc hns ht hnt (Expr.fr_uniq e) hk
@@ -761,11 +718,11 @@ theorem freshM_avoid (M : Method) (LV : List VarName) (LT : List TVarName) {Xs :
       M'.uniq := by
   have hthis : List.Mem this (this :: LV ++ xs) := List.mem_append_left _ (List.Mem.head _)
   have hvb : forall y, List.Mem y (M.fr (this :: LV ++ xs) (LT ++ Xs) [] [] 0).vbinders ->
-      Not (List.Mem y (this :: LV ++ xs)) := fun y hy hm => not_atV_of_mem hm (Method.fr_vb M hy)
+      Not (List.Mem y (this :: LV ++ xs)) := fun y hy hm => not_at_of_mem hm (Method.fr_vb M hy)
   have htb : forall Y, List.Mem Y (M.fr (this :: LV ++ xs) (LT ++ Xs) [] [] 0).tbinders ->
-      Not (List.Mem Y (LT ++ Xs)) := fun Y hY hm => not_atT_of_mem hm (Method.fr_tb M hY)
+      Not (List.Mem Y (LT ++ Xs)) := fun Y hY hm => not_at_of_mem hm (Method.fr_tb M hY)
   have hns := Method.fr_noShadow hthis M (LT := LT ++ Xs) (rv := []) (rt := []) (d := 0) (Tb := Xs) (Sb := xs)
-    (fun _ hy => not_atV_of_mem (List.mem_append_right _ hy)) (fun _ hY => not_atT_of_mem (List.mem_append_right _ hY))
+    (fun _ hy => not_at_of_mem (List.mem_append_right _ hy)) (fun _ hY => not_at_of_mem (List.mem_append_right _ hY))
   have hnt : NoThisM (M.fr (this :: LV ++ xs) (LT ++ Xs) [] [] 0) := fun h => hvb this h hthis
   have r := RenM.inv (Method.fr_ren M [] [] 0) (CompEnv.top xs Xs) (fun p hp => by cases hp)
     (fun p hp => by cases hp) hc hns ht hnt (Method.fr_uniq M) hk
