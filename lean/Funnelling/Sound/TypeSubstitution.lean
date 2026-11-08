@@ -93,6 +93,15 @@ theorem var_gsubst_some {X : TVarName} {s : GSubst} {G : GTy} (h : List.lookup X
     (Ty.var X).subst s.ty = G.ty := by
   simp only [Ty.subst, GSubst.lookup_ty, h, Option.map_some, Option.getD_some]
 
+theorem GOk.of_bounds {d : Decls} (hd : DeclOk d) {Delta : Bounds} {s : GSubst}
+    (hb : forall b, List.Mem b Delta ->
+      Sub d [] ((Ty.var b.X).subst s.ty) (b.T.subst s.ty) /\ Kind d [] ((Ty.var b.X).subst s.ty))
+    (hK : forall b, List.Mem b Delta -> Kind d Delta b.T) : GOk d Delta s := by
+  intro b hbm G hl
+  have hk := hb b hbm
+  rw [var_gsubst_some hl] at hk
+  exact And.intro hk.1 (And.intro hk.2 (Kind.subst hd (fun b h => (hb b h).1) (fun b h => (hb b h).2) (hK b hbm)))
+
 theorem abs_gsubst {s : GSubst} : forall {Fs : List Funnel}, abs (Fs.map (Funnel.gsubst s)) = Ty.substList s.ty (abs Fs)
   | [] => rfl
   | F :: Fs => by

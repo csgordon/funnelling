@@ -254,18 +254,12 @@ theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
         rw [hlook b hb U hm]
         exact hU.2
     have hgok : GOk d (D.bounds ++ Delta') (bind (D.bounds ++ Delta') (Gs ++ Gs')) := by
-      intro b hb G hl
-      have e := var_gsubst_some hl
-      have hk := hbF b hb
-      rw [e] at hk
-      refine And.intro hk.1 (And.intro hk.2 ?_)
-      have hKb : Kind d (D.bounds ++ Delta') b.T := by
-        simp only [listMem_iff, List.mem_append] at hb
-        rcases hb with hb | hb
-        . exact Kind.mono (fun x hx => by simp only [listMem_iff, List.mem_append]; exact Or.inl hx)
-            ((hok D hD.dec_mem).1 b.T (List.mem_map_of_mem (f := Bound.T) hb))
-        . exact hmi.1 b.T (List.mem_map_of_mem (f := Bound.T) hb)
-      exact Kind.subst hd (fun b hb => (hbF b hb).1) (fun b hb => (hbF b hb).2) hKb
+      refine GOk.of_bounds hd hbF (fun b hb => ?_)
+      simp only [listMem_iff, List.mem_append] at hb
+      rcases hb with hb | hb
+      . exact Kind.mono (fun x hx => by simp only [listMem_iff, List.mem_append]; exact Or.inl hx)
+          ((hok D hD.dec_mem).1 b.T (List.mem_map_of_mem (f := Bound.T) hb))
+      . exact hmi.1 b.T (List.mem_map_of_mem (f := Bound.T) hb)
     have hfst : (bind (D.bounds ++ Delta') (Gs ++ Gs')).map Prod.fst = dom (D.bounds ++ Delta') :=
       bind_fst (by simp [hG, f.lenT])
     have hs2 := hsig
@@ -375,13 +369,8 @@ theorem pres_innerFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
     simp only [Ty.subst, lookup_zip_nodup hN hU.1, Option.getD_some]
     rw [<- hsg]
     exact hU.2
-  have hgok : GOk d Delta' (bind Delta' Gs') := by
-    intro b hb G hl
-    have e := var_gsubst_some hl
-    have hk := hbF b hb
-    rw [e] at hk
-    exact And.intro hk.1 (And.intro hk.2 (Kind.subst hd (fun b hb => (hbF b hb).1) (fun b hb => (hbF b hb).2)
-      (hmi.1 b.T (List.mem_map_of_mem (f := Bound.T) hb))))
+  have hgok : GOk d Delta' (bind Delta' Gs') :=
+    GOk.of_bounds hd hbF (fun b hb => hmi.1 b.T (List.mem_map_of_mem (f := Bound.T) hb))
   have hfst : (bind Delta' Gs').map Prod.fst = dom Delta' := bind_fst f.lenT
   have htv0 : Typing d [] [] v0.expr (.cls C (GTy.tys Gs)) := by
     have := vt.2.1
