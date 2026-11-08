@@ -2,7 +2,7 @@ import Funnelling.Sound.RenT
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 mutual
 theorem Ty.ftv_subst_sub {s : TSubst} {A : List TVarName} : forall {T : Ty},
@@ -266,4 +266,4 @@ theorem OverrideOk.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Dec
     exact OverrideOkM.ren hwf hok (h M C Us hM.1 h0.2.1) hM.2
       (fun X hX => hdis M hM.1 X (h0.2.2 X (by simpa [Ty.ftv] using hX))) (hu M hM.1)
 
-end Funnelling.High
+end Funnelling

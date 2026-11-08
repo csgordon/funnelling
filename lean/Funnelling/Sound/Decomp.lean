@@ -2,7 +2,7 @@ import Funnelling.Sound.Basic
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 abbrev NonValue (a : Expr) : Prop := forall v : Value, Not (a = v.expr)
 
@@ -215,4 +215,4 @@ theorem Step.decomp {d : Decls} {E : ECtx} {a e2 : Expr} (h : Step d (E.plug a) 
   | hole => exact Exists.intro e2 (And.intro h rfl)
   | _ => exact Step.decompNonHole h _ a rfl ha (by simp)
 
-end Funnelling.High
+end Funnelling

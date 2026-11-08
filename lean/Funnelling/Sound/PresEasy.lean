@@ -2,7 +2,7 @@ import Funnelling.Sound.Values
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem value_new_declared {d : Decls} (hwf : WFDecls d) {C : ClassName} {Gs : List GTy} {vs : List Value} {T : Ty}
     (h : Typing d [] [] (Value.new C Gs vs).expr T) : exists D, Declared d (.dec D) /\ D.C = C := by
@@ -221,4 +221,4 @@ theorem pres_simpleFieldSuper {d : Decls} (hwf : WFDecls d) {D : Dec} {f : Field
         have hs3 := hs2.2
         exact hw.up.typing (Typing.declField (Typing.subs hnew hs.2 hs3) hw.decl hw.mem hw.len)
 
-end Funnelling.High
+end Funnelling

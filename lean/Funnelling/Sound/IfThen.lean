@@ -2,7 +2,7 @@ import Funnelling.Sound.RenTyping
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem all_not_contains_of {A : Type} [DecidableEq A] {l xs : List A} (h : forall x, List.Mem x l -> Not (List.Mem x xs)) :
     l.all (fun x => !(xs.contains x)) = true := by
@@ -158,4 +158,4 @@ theorem pres_ifThen' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclO
   rw [eg] at hsub
   exact hw.up.typing hsub
 
-end Funnelling.High
+end Funnelling

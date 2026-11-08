@@ -2,7 +2,7 @@ import Funnelling.Sound.Cast
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem Sub.dec_step {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : Declared d (.dec D))
     {Ts : List Ty} {T : Ty} (h : Sub d Delta (.cls D.C Ts) T) :
@@ -95,4 +95,4 @@ theorem abs_ground {Gs : List GTy} : abs (Gs.map Funnel.ground) = GTy.tys Gs := 
   rw [GTy.tys_eq_map]
   simp [abs, List.map_map, Function.comp_def, Funnel.abs]
 
-end Funnelling.High
+end Funnelling

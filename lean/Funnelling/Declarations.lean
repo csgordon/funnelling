@@ -1,6 +1,6 @@
-import Funnelling.High.Substitution
+import Funnelling.Substitution
 
-namespace Funnelling.High
+namespace Funnelling
 
 inductive ExprCtx where
   | hole
@@ -68,4 +68,4 @@ def typeOf : Value -> Ty
   | .new C Gs _ => .cls C Gs
   | .newLocal C Gs _ _ _ _ => .cls C Gs
 
-end Funnelling.High
+end Funnelling

@@ -2,7 +2,7 @@ import Funnelling.Sound.CastRun
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 abbrev gdom (gamma : Gamma) : List VarName := gamma.map VarDecl.x
 
@@ -138,4 +138,4 @@ theorem uniqList_append {es1 es2 : List Expr} :
   | nil => simp [Expr.uniqList]
   | cons e es ih => simp [Expr.uniqList, ih, and_assoc]
 
-end Funnelling.High
+end Funnelling

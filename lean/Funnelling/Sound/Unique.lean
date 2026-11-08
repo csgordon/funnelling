@@ -2,7 +2,7 @@ import Funnelling.Sound.ScopeFacts
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem superChain_stab {d : Decls} : forall (n : Nat) (C : ClassName),
     (exists D0, List.Mem D0 (superChain d n C) /\ D0.C = Object) -> superChain d (n + 1) C = superChain d n C
@@ -166,4 +166,4 @@ theorem sub_unique_dec {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {T1 : Ty}
   | subVar =>
     simp_all
 
-end Funnelling.High
+end Funnelling

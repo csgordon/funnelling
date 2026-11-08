@@ -1,6 +1,6 @@
-import Funnelling.High.Declarations
+import Funnelling.Declarations
 
-namespace Funnelling.High
+namespace Funnelling
 
 mutual
 def Expr.locals : Expr -> List K
@@ -139,4 +139,4 @@ abbrev WFExpr (e : Expr) : Prop :=
   A3 e.locals /\ A4 e.methods /\ A5 (e.methods.map Method.bounds) /\ A6 e.locals /\
   e.noShadow [] [] = true /\ A8 e.methods e.ifVars /\ e.closed [] [] = true
 
-end Funnelling.High
+end Funnelling

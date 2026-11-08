@@ -3,7 +3,7 @@ import Funnelling.Sound.IfThen
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem lookup_zip_vars {X : TVarName} : forall {Xs : List TVarName}, List.Mem X Xs ->
     List.lookup X (Xs.zip (vars Xs)) = some (Ty.var X)
@@ -416,4 +416,4 @@ theorem pres_simpleFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : 
     rw [hs2.1] at hres
     exact hw.up.typing hres
 
-end Funnelling.High
+end Funnelling

@@ -2,7 +2,7 @@ import Funnelling.Sound.Lookup
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem all_contains_iff {A : Type} [DecidableEq A] {l xs : List A} :
     l.all xs.contains = true <-> forall x, List.Mem x l -> List.Mem x xs := by
@@ -166,4 +166,4 @@ theorem Fresh.refl (e : Expr) : Fresh e e :=
   And.intro (RenE.refl (by intro p hp; cases hp) (by intro p hp; cases hp) e)
     (RenE.refl (by intro p hp; cases hp) (by intro p hp; cases hp) e)
 
-end Funnelling.High
+end Funnelling

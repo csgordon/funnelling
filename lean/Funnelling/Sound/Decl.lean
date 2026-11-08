@@ -2,7 +2,7 @@ import Funnelling.Sound.CtxTyping
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 abbrev LocClosed (L : List K) : Prop := forall k, List.Mem k L -> Sub1 (Method.localsList k.Ms) L
 
@@ -99,4 +99,4 @@ theorem names_unique {Ms : List Method} {M1 M2 : Method} (hn : (Ms.map Method.na
 theorem Declared.namesNodup {d : Decls} (hwf : WFDecls d) {k : K} (h : Declared d k) : (k.Ms.map Method.name).Nodup :=
   hwf.2.2.1 k h.mem
 
-end Funnelling.High
+end Funnelling

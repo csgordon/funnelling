@@ -2,7 +2,7 @@ import Funnelling.Sound.Progress
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 def KQ' (Ms : List Method) (Fs : List Funnel) : Prop := (Ms.map Method.name).Nodup /\ (domF Fs).Nodup /\
   forall M, List.Mem M Ms -> (M.params.map VarDecl.x).Nodup /\ (dom M.bounds).Nodup /\
@@ -457,4 +457,4 @@ theorem Method.noShadowList_vsubst {VB : List VarName} {TB : List TVarName} (hth
       Method.noShadowList_vsubst hthis h.2 hn hxs (fun y hy => he y (Or.inr hy)) hXs (fun X hX => hE X (Or.inr hX))⟩
 end
 
-end Funnelling.High
+end Funnelling

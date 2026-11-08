@@ -2,7 +2,7 @@ import Funnelling.Sound.Ren
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 mutual
 def Expr.uniq : Expr -> Prop
@@ -39,4 +39,4 @@ theorem rn_ne_this {rv : VRen} (h : forall p, List.Mem p rv -> Not (p.2 = this))
   | none => exact hw
   | some y => exact h (w, y) (lookup_mem hl)
 
-end Funnelling.High
+end Funnelling

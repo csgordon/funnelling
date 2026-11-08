@@ -2,7 +2,7 @@ import Funnelling.Sound.ReflS
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem rn_zip_indep {A : Type} [DecidableEq A] {xs ys : List A} {r1 r2 : List (Prod A A)} {w : A}
     (hl : xs.length = ys.length) (hw : List.Mem w xs) : rn (xs.zip ys ++ r1) w = rn (xs.zip ys ++ r2) w := by
@@ -239,4 +239,4 @@ theorem RenMs.vsub {rv rt Mas Mbs} : RenMs rv rt Mas Mbs -> forall {rvo n1 n2 S 
       (RenMs.vsub hs1 env hc.2 (notDom_append_right hd1) (notDom_append_right hd2) ha.2 hb.2 hn1 hn2)
 end
 
-end Funnelling.High
+end Funnelling

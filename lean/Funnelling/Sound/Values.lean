@@ -2,7 +2,7 @@ import Funnelling.Sound.Facts
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem object_declared {d : Decls} (hwf : WFDecls d) : exists D, Declared d (.dec D) /\ D.C = Object /\
     D.bounds = [] /\ D.C' = Object /\ D.Ts = [] /\ D.Ms = [] /\ D.Ss = [] := by
@@ -120,4 +120,4 @@ theorem kind_dec_args {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (
       exact Or.inl (Exists.intro D (And.intro hD.dec_mem rfl)))
     exact And.intro h3 (bounds_sat hn h3 h4 h2)
 
-end Funnelling.High
+end Funnelling

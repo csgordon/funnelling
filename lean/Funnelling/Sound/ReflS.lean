@@ -2,7 +2,7 @@ import Funnelling.Sound.Comp
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem rn_zip_self {A : Type} [DecidableEq A] : forall {xs : List A} {r : List (Prod A A)} {w : A},
     List.Mem w xs -> rn (xs.zip xs ++ r) w = w
@@ -145,4 +145,4 @@ theorem RenE.value {rv : VRen} {rt : TRen} {v : Value} (hc : v.expr.closed [] []
     . cases hw
     . subst hw; exact ht) (fun X hX => by cases hX)
 
-end Funnelling.High
+end Funnelling

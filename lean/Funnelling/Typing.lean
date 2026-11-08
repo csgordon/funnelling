@@ -1,6 +1,6 @@
-import Funnelling.High.Declarations
+import Funnelling.Declarations
 
-namespace Funnelling.High
+namespace Funnelling
 
 inductive Seq2 {A B : Type} (R : A -> B -> Prop) : List A -> List B -> Prop
   | nil : Seq2 R [] []
@@ -175,4 +175,4 @@ def DeclsOk (d : Decls) : Prop := forall D, List.Mem D d -> ClassOk d D
 def ProgOk (d : Decls) (e : Expr) : Prop :=
   DeclsOk d /\ exists T, Typing d [] [] e T
 
-end Funnelling.High
+end Funnelling

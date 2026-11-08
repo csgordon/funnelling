@@ -2,7 +2,7 @@ import Funnelling.Sound.WFPlug
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 abbrev MOk (M : Method) : Prop :=
   (dom M.bounds).Nodup /\ (M.params.map VarDecl.x).Nodup /\ Not (List.Mem this (M.params.map VarDecl.x))
@@ -164,4 +164,4 @@ theorem WFDecls.method {d : Decls} (h : WFDecls d) {D : Dec} (hD : List.Mem D d)
   refine And.intro (Method.uniq_of hmo hlm) (And.intro (Method.noThis_of hmo hlm hi) ?_)
   have h7 := h.2.2.2.2.2.2.1 D hD
   exact noShadowListM_mem hM h7
-end Funnelling.High
+end Funnelling

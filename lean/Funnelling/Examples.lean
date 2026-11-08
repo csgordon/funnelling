@@ -2,8 +2,6 @@ import Funnelling.Soundness
 
 namespace Funnelling.Examples
 
-open Funnelling.High
-
 def cn (s : String) : ClassName := { name := s }
 def mn (s : String) : MethName := { name := s }
 def fn (s : String) : FieldName := { name := s }

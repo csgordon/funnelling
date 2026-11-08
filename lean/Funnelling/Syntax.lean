@@ -1,4 +1,4 @@
-namespace Funnelling.High
+namespace Funnelling
 
 structure ClassName where
   name : String
@@ -197,4 +197,4 @@ def Funnel.isFunnel : Funnel -> Bool
   | .funnel _ => true
   | .ground _ => false
 
-end Funnelling.High
+end Funnelling

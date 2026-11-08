@@ -2,7 +2,7 @@ import Funnelling.Sound.BaseStep
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 abbrev Sub1 {A : Type} (l l' : List A) : Prop := forall x, List.Mem x l -> List.Mem x l'
 
@@ -283,4 +283,4 @@ theorem Method.closedList_of_gsubst : forall {Ms : List Method} {s : GSubst} {T 
     exact And.intro (Method.closed_of_gsubst hc.1) (Method.closedList_of_gsubst hc.2)
 end
 
-end Funnelling.High
+end Funnelling

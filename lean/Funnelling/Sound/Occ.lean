@@ -2,7 +2,7 @@ import Funnelling.Sound.Chain
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem occ_typing {d : Decls} {Delta : Bounds} {a : Expr} : forall (E : ExprCtx) {gamma : Gamma} {T : Ty},
     Typing d Delta gamma (E.plug a) T -> exists gamma' Ta, Typing d Delta gamma' a Ta
@@ -83,4 +83,4 @@ theorem abs_funnels {Fs : List Funnel} (h : forall F, List.Mem F Fs -> F.isFunne
       simp only [abs, List.map_cons, Funnel.abs, domF, List.filterMap_cons, vars] at ih' |-
       rw [ih']
 
-end Funnelling.High
+end Funnelling

@@ -1,6 +1,6 @@
-import Funnelling.High.Syntax
+import Funnelling.Syntax
 
-namespace Funnelling.High
+namespace Funnelling
 
 abbrev TSubst := List (Prod TVarName Ty)
 
@@ -192,4 +192,4 @@ abbrev VSubstDefined (xs : List VarName) (e : Expr) : Prop :=
 abbrev GSubstDefined (Xs : List TVarName) (e : Expr) : Prop :=
   forall X, List.Mem X e.tbinders -> Not (List.Mem X Xs)
 
-end Funnelling.High
+end Funnelling

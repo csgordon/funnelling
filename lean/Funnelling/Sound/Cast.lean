@@ -2,7 +2,7 @@ import Funnelling.Sound.Types
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 abbrev RenCtx (Delta Delta' : Bounds) (s : TSubst) : Prop :=
   forall b, List.Mem b Delta -> exists X', (Ty.var b.X).subst s = Ty.var X' /\ List.Mem { X := X', T := b.T.subst s } Delta'
@@ -79,4 +79,4 @@ theorem Cast.gsub {d : Decls} (hd : DeclOk d) {Delta Delta' : Bounds} {s : TSubs
     simp only [Ty.subst] at this |-
     exact Exists.intro _ (And.intro Sub.subRefl (And.intro (Cast.castDown this h2 h3 h4) (Or.inl rfl)))
 
-end Funnelling.High
+end Funnelling

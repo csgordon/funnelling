@@ -2,7 +2,7 @@ import Funnelling.Sound.RenOver
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 abbrev GOk (d : Decls) (Delta : Bounds) (s : GSubst) : Prop :=
   forall b, List.Mem b Delta -> forall G, List.lookup b.X s = some G ->
@@ -420,4 +420,4 @@ theorem Typing.gsub_newLocal {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd
       (by rw [Method.uniq_gsubst]; exact uniqList_mem hM.1 hu.2) (fun _ h => by cases h)
     rwa [Method.vsubst_nil] at hmo
 
-end Funnelling.High
+end Funnelling

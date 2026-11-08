@@ -1,7 +1,7 @@
-import Funnelling.High.Typing
-import Funnelling.High.WellFormed
+import Funnelling.Typing
+import Funnelling.WellFormed
 
-namespace Funnelling.High
+namespace Funnelling
 
 inductive ECtx where
   | hole
@@ -102,4 +102,4 @@ inductive Steps (d : Decls) : Expr -> Expr -> Prop
 
 def IsValue (e : Expr) : Prop := exists v : Value, e = v
 
-end Funnelling.High
+end Funnelling

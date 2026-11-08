@@ -2,7 +2,7 @@ import Funnelling.Sound.SimpleFound
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem bind_append_len {Dl1 Dl2 : Bounds} {as bs : List Ty} (h : as.length = Dl1.length) :
     bind (Dl1 ++ Dl2) (as ++ bs) = bind Dl1 as ++ bind Dl2 bs := by
@@ -204,4 +204,4 @@ theorem pres_innerFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
   rw [hs2.1] at hres
   exact hw.up.typing hres
 
-end Funnelling.High
+end Funnelling

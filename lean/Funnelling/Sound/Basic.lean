@@ -1,4 +1,4 @@
-import Funnelling.High.Reduction
+import Funnelling.Reduction
 
 namespace Funnelling.SoundSimp
 
@@ -8,7 +8,7 @@ end Funnelling.SoundSimp
 
 open Funnelling.SoundSimp
 
-namespace Funnelling.High
+namespace Funnelling
 
 theorem GTy.tys_eq_map : forall Gs : List GTy, GTy.tys Gs = Gs.map GTy.ty
   | [] => rfl
@@ -107,4 +107,4 @@ theorem Step.not_value {d : Decls} {e e' : Expr} (h : Step d e e') :
     intro v hv
     rcases ECtx.plug_value hv with ⟨v', hv'⟩; exact ih v' hv'
 
-end Funnelling.High
+end Funnelling
