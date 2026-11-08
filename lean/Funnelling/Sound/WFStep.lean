@@ -356,6 +356,72 @@ theorem wf_vsubst {e : Expr} {n : VSubst} (hk : forall k, List.Mem k e.locals ->
     rcases h with ⟨p, hp, h⟩
     exact (hd p hp).2 X h hX
 
+def freshV (L : List VarName) (k : Nat) : VarName :=
+  { name := String.ofList (List.replicate ((L.map fun v => v.name.length).sum + k + 1) 'a') }
+
+def freshT (L : List TVarName) (k : Nat) : TVarName :=
+  { name := String.ofList (List.replicate ((L.map fun v => v.name.length).sum + k + 1) 'a') }
+
+theorem freshV_len (L : List VarName) (k : Nat) :
+    (freshV L k).name.length = (L.map fun v => v.name.length).sum + k + 1 := by
+  simp [freshV]
+
+theorem freshT_len (L : List TVarName) (k : Nat) :
+    (freshT L k).name.length = (L.map fun v => v.name.length).sum + k + 1 := by
+  simp [freshT]
+
+theorem lenV_le_sum : forall {L : List VarName} {v : VarName}, List.Mem v L ->
+    v.name.length <= (L.map fun v => v.name.length).sum
+  | [], _, h => by cases h
+  | _ :: _, _, h => by
+    cases h with
+    | head => simp
+    | tail _ h => have := lenV_le_sum h; simp; omega
+
+theorem lenT_le_sum : forall {L : List TVarName} {v : TVarName}, List.Mem v L ->
+    v.name.length <= (L.map fun v => v.name.length).sum
+  | [], _, h => by cases h
+  | _ :: _, _, h => by
+    cases h with
+    | head => simp
+    | tail _ h => have := lenT_le_sum h; simp; omega
+
+theorem freshV_not_mem (L : List VarName) (k : Nat) : Not (List.Mem (freshV L k) L) := fun h => by
+  have h1 := lenV_le_sum h
+  rw [freshV_len] at h1
+  omega
+
+theorem freshT_not_mem (L : List TVarName) (k : Nat) : Not (List.Mem (freshT L k) L) := fun h => by
+  have h1 := lenT_le_sum h
+  rw [freshT_len] at h1
+  omega
+
+theorem freshV_inj (L : List VarName) : Function.Injective (freshV L) := fun k j h => by
+  have := congrArg (fun v => v.name.length) h
+  simp only [freshV_len] at this
+  omega
+
+theorem freshT_inj (L : List TVarName) : Function.Injective (freshT L) := fun k j h => by
+  have := congrArg (fun v => v.name.length) h
+  simp only [freshT_len] at this
+  omega
+
+theorem freshVs (L : List VarName) (n : Nat) :
+    exists ys : List VarName, ys.length = n /\ ys.Nodup /\ forall y, List.Mem y ys -> Not (List.Mem y L) := by
+  refine ⟨(List.range n).map (freshV L), by simp, List.Pairwise.map (freshV L) (fun _ _ h e => h (freshV_inj L e)) List.nodup_range, ?_⟩
+  intro y hy
+  rcases List.mem_map.mp hy with ⟨k, _, e⟩
+  subst e
+  exact freshV_not_mem L k
+
+theorem freshTs (L : List TVarName) (n : Nat) :
+    exists Ys : List TVarName, Ys.length = n /\ Ys.Nodup /\ forall Y, List.Mem Y Ys -> Not (List.Mem Y L) := by
+  refine ⟨(List.range n).map (freshT L), by simp, List.Pairwise.map (freshT L) (fun _ _ h e => h (freshT_inj L e)) List.nodup_range, ?_⟩
+  intro Y hY
+  rcases List.mem_map.mp hY with ⟨k, _, e⟩
+  subst e
+  exact freshT_not_mem L k
+
 theorem fresh_avoid (e : Expr) (LV : List VarName) (LT : List TVarName) {Xs : List TVarName} {xs : List VarName}
     (hk : forall k, List.Mem k e.locals -> KQ k) (hn : e.noShadow Xs xs = true) (hi : Not (List.Mem this e.ifVars))
     (hc : e.closed Xs xs = true) (ht : NoThis e) :
