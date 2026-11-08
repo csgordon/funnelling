@@ -66,16 +66,6 @@ theorem innerG_dom {gamma : Gamma} {xs : List VarName} (h : Sub1 (gdom gamma) xs
       . rw [<- hz.2]; exact hz.1.2
   . left; exact hy
 
-theorem innerG_dom2 {gamma : Gamma} (Fs : List Funnel) (C : ClassName) :
-    Sub1 (gdom (innerG gamma Fs C)) (this :: gdom gamma) := by
-  intro y hy
-  simp only [innerG, gdom, withoutThis, restrict, listMem_iff, List.map_append, List.mem_append, List.mem_map,
-    List.mem_filter, List.map_cons, List.map_nil, List.mem_cons, List.not_mem_nil, or_false] at hy |-
-  rcases hy with hy | hy
-  . cases hy with
-    | intro z hz => right; exact Exists.intro z (And.intro hz.1.1.1 hz.2)
-  . left; exact hy
-
 theorem gdom_append_single {gamma : Gamma} {T : Ty} {x : VarName} :
     gdom (gamma ++ [{ T := T, x := x }]) = gdom gamma ++ [x] := by simp [gdom]
 

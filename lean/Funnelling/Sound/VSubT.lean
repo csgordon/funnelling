@@ -119,8 +119,6 @@ theorem mem_gsub {n : VSubst} {gamma : Gamma} {y : VarDecl} (h : List.Mem y gamm
 abbrev VOk (n : VSubst) : Prop :=
   forall p, List.Mem p n -> p.2.expr.noShadow [] [] = true /\ NoThis p.2.expr /\ p.2.expr.uniq
 
-theorem VOk.nthis {n : VSubst} (h : VOk n) : VOk (nthis n) := fun p hp => h p (List.mem_filter.mp hp).1
-
 mutual
 theorem Typing.vmap {d : Decls} : forall {Delta gamma e T}, Typing d Delta gamma e T ->
     forall {n Delta2 gamma2 Xs Xs' xs xs'}, Sub1 Delta Delta2 -> Sub1 (gsub n gamma) gamma2 -> (gdom gamma2).Nodup ->
