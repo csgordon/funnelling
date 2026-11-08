@@ -18,6 +18,11 @@ theorem Value.exprs_eq_map : forall vs : List Value, Value.exprs vs = vs.map Val
   | [] => rfl
   | v :: vs => by simp [Value.exprs, Value.exprs_eq_map vs]
 
+theorem gtys_length {Gs : List GTy} : (GTy.tys Gs).length = Gs.length := by rw [GTy.tys_eq_map]; simp
+
+theorem exprs_append {vs1 vs : List Value} : Value.exprs (vs1 ++ vs) = Value.exprs vs1 ++ Value.exprs vs := by
+  simp [Value.exprs_eq_map]
+
 theorem Value.mem_exprs {v : Value} {vs : List Value} (h : List.Mem v vs) : List.Mem v.expr (Value.exprs vs) := by
   rw [Value.exprs_eq_map]; exact List.mem_map_of_mem h
 
