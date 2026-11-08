@@ -273,22 +273,9 @@ theorem pres_innerFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
     (ha : WFExpr (.call v0.expr (GTy.tys Gs') m (Value.exprs vs)))
     (h : Typing d [] [] (.call v0.expr (GTy.tys Gs') m (Value.exprs vs)) T) :
     Typing d [] [] ((e0.gsubst (bind Delta' Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs))) T := by
-  have han := ha.2.2.2.2.1
-  simp only [Expr.noShadow, Bool.and_eq_true] at han
-  have hat := WFExpr.noThis ha
-  simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at hat
-  have hau := WFExpr.uniq ha
-  have hv0n := han.1
-  have hv0t := hat.1
-  have hv0u := hau.1
-  rw [hv] at hv0n hv0t hv0u
-  simp only [Value.expr, Expr.noShadow, Bool.and_eq_true, Expr.vbinders, List.mem_append, not_or,
-    Expr.uniq] at hv0n hv0t hv0u
-  have hnM : M.noShadow [] [] = true := by
-    have := Method.noShadowList_mem hM hv0n.2
-    simpa using this
-  have htM : NoThisM M := fun h => hv0t.2 (Method.mem_vbindersList hM h)
-  have huM : M.uniq := Method.uniqList_mem hM hv0u.2
+  have hv0 : WFExpr v0.expr := WFExpr.plug (E := .callRecv .hole Gs' m (Value.exprs vs)) ha
+  rw [hv] at hv0
+  rcases WFExpr.local_method hv0 hM with ⟨hnM, htM, huM, -⟩
   rcases inv_call h rfl with ⟨⟨C0, Ts0, Delta0, Ts2, Delta1, T0c, psc, body, T0', Ts'⟩, hw⟩
   have vt := value_typing hwf hw.ty0
   have hsv : Sub d [] (typeOf v0) (.cls C0 Ts0) := by

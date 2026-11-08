@@ -508,6 +508,18 @@ theorem WFExpr.uniq {e : Expr} (h : WFExpr e) : e.uniq := Expr.uniq_of h.locOk
 
 theorem WFExpr.noThis {e : Expr} (h : WFExpr e) : NoThis e := Expr.noThis_of h.locOk h.2.2.2.2.2.1.2
 
+theorem WFExpr.local_method {C C' : ClassName} {Gs Gs'' : List GTy} {vs0 : List Value} {Ms : List Method} {M : Method}
+    (h : WFExpr (Value.newLocal C Gs C' Gs'' vs0 Ms).expr) (hM : List.Mem M Ms) :
+    M.noShadow [] [] = true /\ NoThisM M /\ M.uniq /\ M.closed [] [] = true := by
+  have hn := h.2.2.2.2.1
+  have ht := WFExpr.noThis h
+  have hu := WFExpr.uniq h
+  have hc := h.2.2.2.2.2.2
+  simp only [Value.expr, Expr.noShadow, Expr.closed, Bool.and_eq_true, NoThis, Expr.vbinders, listMem_iff,
+    List.mem_append, not_or, Expr.uniq] at hn ht hu hc
+  exact ⟨by simpa using Method.noShadowList_mem hM hn.2, fun h => ht.2 (Method.mem_vbindersList hM h),
+    Method.uniqList_mem hM hu.2, Method.closedList_mem hM hc.2⟩
+
 theorem classes_mem_dec {d : Decls} {D : Dec} (h : List.Mem D d) : List.Mem (K.dec D) (classes d) := by
   simp only [classes, listMem_iff, List.mem_flatMap]
   exact Exists.intro D (And.intro h (List.Mem.head _))

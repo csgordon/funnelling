@@ -310,15 +310,10 @@ theorem wf_innerFound {C C' : ClassName} {Ms : List Method} {M : Method} {m : Me
     WFExpr.plug (E := .callRecv .hole Gs' m (Value.exprs vs)) ha
   have hvs : forall v, List.Mem v vs -> WFExpr v.expr := fun v hv => wf_call_arg ha (Value.mem_exprs hv)
   have hk0 := hv0.nodup
-  have hc0 := hv0.2.2.2.2.2.2
-  have ht0 := WFExpr.noThis hv0
   simp only [Value.expr, Expr.locals, listMem_iff, List.mem_cons, List.mem_append, or_imp, forall_and,
     forall_eq] at hk0
-  simp only [Value.expr, Expr.closed, Bool.and_eq_true] at hc0
-  simp only [NoThis, Value.expr, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ht0
   have hkM : forall k, List.Mem k M.locals -> K.Nodup k := fun k hk => hk0.2.2 k (Method.mem_localsList hM hk)
-  have hcM : M.closed [] [] = true := Method.closedList_mem hM hc0.2
-  have htM : NoThisM M := fun h => ht0.2 (Method.mem_vbindersList hM h)
+  rcases WFExpr.local_method hv0 hM with ⟨-, htM, -, hcM⟩
   exact wf_found (B0 := []) (Gs := []) hF rfl hG' hp List.nodup_nil hkM hcM htM hv0 hvs
 
 theorem WFDecls.nodup {d : Decls} (hwf : WFDecls d) : forall k, List.Mem k (classes d) -> K.Nodup k := by

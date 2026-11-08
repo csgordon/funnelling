@@ -497,17 +497,10 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
     rename_i hN hN' hgs hvs _ _ _ _ _ _ _ _ _ _ _ _ _ _ hM2 hF2 hG2 hp2 hN2 hN2' hgs2 hvs2 hF hG hp hM
     obtain rfl := nodup_map_inj (ha.1 _ (List.mem_append_left _ (List.Mem.head _))) hM hM2
       (by rw [FreshM.name hF, FreshM.name hF2])
-    have hu := ha.uniq
-    have ht := ha.noThis
-    have hn := ha.2.2.2.2.1
     have hc := ha.2.2.2.2.2.2
-    simp only [NoThis, Expr.vbinders, Value.expr, listMem_iff, List.mem_append, not_or, Expr.noShadow,
-      Bool.and_eq_true] at ht hn
     simp only [Expr.closed, Bool.and_eq_true] at hc
     have hvals := closed_cons_vals hc.1.1 hc.2
-    have hMu := Method.uniqList_mem hM hu.1.2
-    have hMt : NoThisM _ := fun h => ht.1.2 (Method.mem_vbindersList hM h)
-    have hMn : Method.noShadow (dom []) [] _ = true := Method.noShadowList_mem hM hn.1.2
+    rcases WFExpr.local_method (WFExpr.plug (E := .callRecv .hole _ _ _) ha) hM with ⟨hMn, hMt, hMu, -⟩
     exact And.intro
       (renE_meth (B := []) (Gs := []) hF.2 hF2.1 hMu hMt hMn rfl hG hG2 hp hp2 hN hN2 hN' hN2' hgs hgs2 hvs hvs2
         hw1.2.2.2.2.2.2 hvals)
