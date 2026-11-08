@@ -31,8 +31,8 @@ theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : De
       ((this :: ps.map VarDecl.x).zip (v0 :: vs))))
     (h : Typing d [] [] (.superCall v0.expr (.cls D.C (GTy.tys Gs)) (GTy.tys Gs') m (Value.exprs vs)) T) :
     Typing d [] [] ((e0.gsubst (bind (D.bounds ++ Delta') (Gs ++ Gs'))).vsubst
-      ((this :: ps.map VarDecl.x).zip (v0 :: vs))) T := by
-  sorry
+      ((this :: ps.map VarDecl.x).zip (v0 :: vs))) T :=
+  pres_simpleFound' hwf hok (declOk hwf hok) hD hM hF hG hG' hN hN' hp hgs hvs ha ha' h
 
 theorem pres_innerFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {C C' : ClassName} {Ms : List Method}
     {M : Method} {m : MethName} {Delta' : Bounds} {T0 : Ty} {ps : List VarDecl} {e0 : Expr} {v0 : Value}
