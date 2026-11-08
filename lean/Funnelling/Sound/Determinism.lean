@@ -23,9 +23,9 @@ theorem Declared.dec_mem {d : Decls} {D : Dec} (h : Declared d (.dec D)) : List.
   cases h with
   | dec h => exact h
 
-theorem dec_unique {d : Decls} (hwf : WFDecls d) {D1 D2 : Dec} (h1 : List.Mem D1 d) (h2 : List.Mem D2 d)
-    (he : D1.C = D2.C) : D1 = D2 := by
-  have := nodup_map_inj hwf.1 (classes_mem_dec h1) (classes_mem_dec h2) he
+theorem dec_unique {d : Decls} (hwf : WFDecls d) {D1 D2 : Dec} (he : D1.C = D2.C) (h1 : Declared d (.dec D1))
+    (h2 : Declared d (.dec D2)) : D1 = D2 := by
+  have := nodup_map_inj hwf.1 (classes_mem_dec h1.dec_mem) (classes_mem_dec h2.dec_mem) he
   cases this; rfl
 
 theorem find_unique {A : Type} {p : A -> Bool} {x : A} : forall {l : List A},
@@ -42,7 +42,7 @@ theorem find_unique {A : Type} {p : A -> Bool} {x : A} : forall {l : List A},
 theorem findDec_self {d : Decls} (hwf : WFDecls d) {D : Dec} (h : List.Mem D d) : findDec d D.C = some D := by
   apply find_unique
   . intro y hy hp
-    exact dec_unique hwf hy h (by simpa using hp)
+    exact dec_unique hwf (by simpa using hp) (.dec hy) (.dec h)
   . exact h
   . simp
 
@@ -77,6 +77,10 @@ theorem FreshM.name {M : Method} {D : Bounds} {T : Ty} {m : MethName} {ps : List
   cases M with
   | mk D' T' m' ps' e' => exact (RenM.body h.1).2.2.2
 
+theorem FreshM.mem_names {M : Method} {Ms : List Method} {D T m ps e} (hM : List.Mem M Ms)
+    (h : FreshM M (.mk D T m ps e)) : List.Mem m (Ms.map Method.name) :=
+  FreshM.name h ▸ List.mem_map_of_mem hM
+
 theorem uniqList_mem {M : Method} : forall {Ms : List Method}, List.Mem M Ms -> Method.uniqList Ms -> M.uniq
   | _, .head _, hu => by simp only [Method.uniqList] at hu; exact hu.1
   | _, .tail _ h, hu => by simp only [Method.uniqList] at hu; exact uniqList_mem h hu.2
@@ -105,228 +109,67 @@ theorem closed_cons_vals {v0 : Value} {vs : List Value} (h0 : v0.expr.closed [] 
 
 theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr a) (hw1 : WFExpr b1)
     (hw2 : WFExpr b2) (h1 : BaseStep d a b1) (h2 : BaseStep d a' b2) (he : a = a') : Fresh b1 b2 := by
-  cases h1 with
-  | @simpleFieldFound D f Gs vs1 vs v hD hl hm =>
-    cases h2 with
-    | @simpleFieldFound D' f' Gs' vs1' vs' v' hD' hl' hm' =>
-      simp only [Expr.field.injEq] at he
-      have e1 := Value.expr_inj he.1
-      simp only [Value.new.injEq] at e1
-      have eD := dec_unique hwf hD.dec_mem hD'.dec_mem e1.1
-      subst eD
-      have ev := List.append_inj e1.2.2 (by rw [hl, hl'])
-      rw [ev.1, he.2] at hm
-      rw [zip_unique (fields_nodup hwf hD.dec_mem) hm hm']
-      exact Fresh.refl _
-    | @simpleFieldSuper D' f' Gs' vs1' vs' hD' hl' hn' hO' hG' =>
-      simp only [Expr.field.injEq] at he
-      have e1 := Value.expr_inj he.1
-      simp only [Value.new.injEq] at e1
-      have eD := dec_unique hwf hD.dec_mem hD'.dec_mem e1.1
-      subst eD
-      rw [he.2] at hm
-      exact absurd (zip_mem_fst hm) hn'
-    | innerFieldSuper => simp [Value.expr] at he
-    | _ => simp at he
-  | @simpleFieldSuper D f Gs vs1 vs hD hl hn hO hG =>
-    cases h2 with
-    | @simpleFieldFound D' f' Gs' vs1' vs' v' hD' hl' hm' =>
-      simp only [Expr.field.injEq] at he
-      have e1 := Value.expr_inj he.1
-      simp only [Value.new.injEq] at e1
-      have eD := dec_unique hwf hD.dec_mem hD'.dec_mem e1.1
-      subst eD
-      rw [<- he.2] at hm'
-      exact absurd (zip_mem_fst hm') hn
-    | @simpleFieldSuper D' f' Gs' vs1' vs' hD' hl' hn' hO' hG' =>
-      simp only [Expr.field.injEq] at he
-      have e1 := Value.expr_inj he.1
-      simp only [Value.new.injEq] at e1
-      have eD := dec_unique hwf hD.dec_mem hD'.dec_mem e1.1
-      subst eD
-      have ev := List.append_inj e1.2.2 (by rw [hl, hl'])
-      rw [ev.2, he.2, e1.2.1]
-      exact Fresh.refl _
-    | innerFieldSuper => simp [Value.expr] at he
-    | _ => simp at he
-  | @innerFieldSuper C C' Ms f Gs Gs' vs =>
-    cases h2 with
-    | @innerFieldSuper C2 C2' Ms2 f2 Gs2 Gs2' vs2 =>
-      simp only [Expr.field.injEq] at he
-      have e1 := Value.expr_inj he.1
-      simp only [Value.newLocal.injEq] at e1
-      rw [e1.2.2.1, e1.2.2.2.1, e1.2.2.2.2.1, he.2]
-      exact Fresh.refl _
-    | simpleFieldFound => simp [Value.expr] at he
-    | simpleFieldSuper => simp [Value.expr] at he
-    | _ => simp at he
-  | @ifThen C' Ts Ts' x e1 e1' e2 v hs hf hd =>
-    cases h2 with
-    | @ifThen C2 Ts2 Ts2' x2 e12 e12' e22 v2 hs2 hf2 hd2 =>
-      simp only [Expr.ifInst.injEq] at he
-      have ev := Value.expr_inj he.1
-      subst ev
-      rw [<- he.2.2.1] at hd2 hw2
-      rw [<- he.2.2.2.1] at hf2
-      rw [<- he.2.2.1]
-      have hn := ha.2.2.2.2.1
-      simp only [Expr.noShadow, Bool.and_eq_true] at hn
-      have hu := ha.uniq
-      have ht := ha.noThis
-      simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ht
-      have hc := ha.2.2.2.2.2.2
-      simp only [Expr.closed, Bool.and_eq_true] at hc
-      exact fresh_if hf hf2 hd hd2 hw1 hw2 hn.1.2 hu.2.1 ht.1.2 hc.1.1.1
-    | @ifElse C2 Ts2 x2 e12 e22 v2 hn2 =>
-      simp only [Expr.ifInst.injEq] at he
-      have ev := Value.expr_inj he.1
-      subst ev
-      simp only [Ty.cls.injEq] at he
-      rw [<- he.2.1.1] at hn2
-      exact absurd (Exists.intro Ts' hs) hn2
-    | _ => simp at he
-  | @ifElse C' Ts x e1 e2 v hn =>
-    cases h2 with
-    | @ifThen C2 Ts2 Ts2' x2 e12 e12' e22 v2 hs2 hf2 hd2 =>
-      simp only [Expr.ifInst.injEq] at he
-      have ev := Value.expr_inj he.1
-      subst ev
-      simp only [Ty.cls.injEq] at he
-      rw [he.2.1.1] at hn
-      exact absurd (Exists.intro Ts2' hs2) hn
-    | @ifElse C2 Ts2 x2 e12 e22 v2 hn2 =>
-      simp only [Expr.ifInst.injEq] at he
-      rw [he.2.2.2.2]
-      exact Fresh.refl _
-    | _ => simp at he
-  | @simpleAddSuper C m v Gs Gs' vs0 vs hv =>
-    cases h2 with
-    | @simpleAddSuper C2 m2 v2 Gs2 Gs2' vs02 vs2 hv2 =>
-      simp only [Expr.call.injEq] at he
-      have ev := Value.expr_inj he.1
-      subst ev
-      rw [hv] at hv2
-      simp only [Value.new.injEq] at hv2
-      rw [hv2.1, hv2.2.1, GTy.tys_inj he.2.1, he.2.2.1, Value.exprs_inj he.2.2.2]
-      exact Fresh.refl _
-    | @innerFound C2 C2' Ms2 M2 m2 D2 T2 ps2 e02 e2 v02 Gs2 Gs2'' Gs2' vs02 vs2 hv2 =>
-      exact Value.noConfusion (hv.symm.trans ((Value.expr_inj (Expr.call.inj he).1).trans hv2))
-    | @innerSuper C2 C2' Ms2 m2 v02 Gs20 Gs2 Gs2' vs02 vs2 hv2 =>
-      exact Value.noConfusion (hv.symm.trans ((Value.expr_inj (Expr.call.inj he).1).trans hv2))
-    | _ => simp at he
-  | @innerFound C C' Ms M m Delta' T0 ps e0 e v0 Gs Gs'' Gs' vs0 vs hv hM hF hG hp hN hN' hgs hvs hres =>
-    cases h2 with
-    | @simpleAddSuper C2 m2 v2 Gs2 Gs2' vs02 vs2 hv2 =>
-      exact Value.noConfusion (hv2.symm.trans ((Value.expr_inj (Expr.call.inj he).1).symm.trans hv))
-    | @innerFound C2 C2' Ms2 M2 m2 D2 T2 ps2 e02 e2 v02 Gs2 Gs2'' Gs2' vs02 vs2 hv2 hM2 hF2 hG2 hp2 hN2 hN2' hgs2 hvs2 hres2 =>
-      simp only [Expr.call.injEq] at he
-      have ev := Value.expr_inj he.1
-      subst ev
-      have eG := GTy.tys_inj he.2.1
-      have evs := Value.exprs_inj he.2.2.2
-      subst eG evs
-      rw [hv] at hv2
-      simp only [Value.newLocal.injEq] at hv2
-      rw [<- hv2.2.2.2.2.2] at hM2
-      rw [<- he.2.2.1] at hF2
-      subst hv hres hres2
-      have hloc := ha.1 (K.loc C (Gs.map Funnel.ground) C' (GTy.tys Gs'') (Value.exprs vs0) Ms)
-        (List.mem_append_left _ (List.Mem.head _))
-      have eM : M = M2 := nodup_map_inj hloc hM hM2 (by rw [FreshM.name hF, FreshM.name hF2])
-      subst eM
-      have hu := ha.uniq
-      have hMu := uniqList_mem hM hu.1.2
-      have ht := ha.noThis
-      simp only [NoThis, Expr.vbinders, Value.expr, listMem_iff, List.mem_append, not_or] at ht
-      have hMt : NoThisM M := fun h => ht.1.2 (vbindersListM_mem hM h)
-      have hn := ha.2.2.2.2.1
-      simp only [Expr.noShadow, Value.expr, Bool.and_eq_true] at hn
-      have hMn : Method.noShadow (dom []) [] M = true := noShadowListM_mem hM hn.1.2
-      have hc := ha.2.2.2.2.2.2
-      simp only [Expr.closed, Bool.and_eq_true] at hc
-      have hvals := closed_cons_vals hc.1.1 hc.2
-      exact And.intro
-        (renE_meth (B := []) (Gs := []) hF.2 hF2.1 hMu hMt hMn rfl hG hG2 hp hp2 hN hN2 hN' hN2' hgs hgs2 hvs hvs2
-          hw1.2.2.2.2.2.2 hvals)
-        (renE_meth (B := []) (Gs := []) hF2.2 hF.1 hMu hMt hMn rfl hG2 hG hp2 hp hN2 hN hN2' hN' hgs2 hgs hvs2 hvs
-          hw2.2.2.2.2.2.2 hvals)
-    | @innerSuper C2 C2' Ms2 m2 v02 Gs20 Gs2 Gs2' vs02 vs2 hv2 hm2 =>
-      simp only [Expr.call.injEq] at he
-      have ev := Value.expr_inj he.1
-      subst ev
-      rw [hv] at hv2
-      simp only [Value.newLocal.injEq] at hv2
-      rw [<- hv2.2.2.2.2.2, <- he.2.2.1] at hm2
-      exact absurd (by rw [<- FreshM.name hF]; exact List.mem_map_of_mem hM) hm2
-    | _ => simp at he
-  | @innerSuper C C' Ms m v0 Gs0 Gs Gs' vs0 vs hv hm =>
-    cases h2 with
-    | @simpleAddSuper C2 m2 v2 Gs2 Gs2' vs02 vs2 hv2 =>
-      exact Value.noConfusion (hv2.symm.trans ((Value.expr_inj (Expr.call.inj he).1).symm.trans hv))
-    | @innerFound C2 C2' Ms2 M2 m2 D2 T2 ps2 e02 e2 v02 Gs2 Gs2'' Gs2' vs02 vs2 hv2 hM2 hF2 =>
-      simp only [Expr.call.injEq] at he
-      have ev := Value.expr_inj he.1
-      subst ev
-      rw [hv] at hv2
-      simp only [Value.newLocal.injEq] at hv2
-      rw [<- hv2.2.2.2.2.2] at hM2
-      rw [he.2.2.1] at hm
-      exact absurd (by rw [<- FreshM.name hF2]; exact List.mem_map_of_mem hM2) hm
-    | @innerSuper C2 C2' Ms2 m2 v02 Gs20 Gs2 Gs2' vs02 vs2 hv2 hm2 =>
-      simp only [Expr.call.injEq] at he
-      have ev := Value.expr_inj he.1
-      subst ev
-      rw [hv] at hv2
-      simp only [Value.newLocal.injEq] at hv2
-      rw [hv2.2.2.1, hv2.2.2.2.1, GTy.tys_inj he.2.1, he.2.2.1, Value.exprs_inj he.2.2.2]
-      exact Fresh.refl _
-    | _ => simp at he
-  | @simpleFound D M m Delta' T0 ps e0 e v0 Gs Gs' vs hD hM hF hG hG' hN hN' hp hgs hvs hres =>
-    cases h2 with
-    | @simpleFound D2 M2 m2 D2' T2 ps2 e02 e2 v02 Gs2 Gs2' vs2 hD2 hM2 hF2 hG2 hG2' hN2 hN2' hp2 hgs2 hvs2 hres2 =>
-      simp only [Expr.superCall.injEq, Ty.cls.injEq] at he
-      have eD := dec_unique hwf hD.dec_mem hD2.dec_mem he.2.1.1
-      subst eD
-      have ev := Value.expr_inj he.1
-      have eG := GTy.tys_inj he.2.1.2
-      have eG' := GTy.tys_inj he.2.2.1
-      have evs := Value.exprs_inj he.2.2.2.2
-      subst ev eG eG' evs hres hres2
-      rw [<- he.2.2.2.1] at hF2
-      have hA3 := hwf.2.2.1 (K.dec D) (classes_mem_dec hD.dec_mem)
-      have eM : M = M2 := nodup_map_inj hA3 hM hM2 (by rw [FreshM.name hF, FreshM.name hF2])
-      subst eM
-      have hMf := hwf.method hD.dec_mem hM
-      have hc := ha.2.2.2.2.2.2
-      simp only [Expr.closed, Bool.and_eq_true] at hc
-      have hvals := closed_cons_vals hc.1.1 hc.2
-      exact And.intro
-        (renE_meth hF.2 hF2.1 hMf.1 hMf.2.1 hMf.2.2 hG hG' hG2' hp hp2 hN hN2 hN' hN2' hgs hgs2 hvs hvs2
-          hw1.2.2.2.2.2.2 hvals)
-        (renE_meth hF2.2 hF.1 hMf.1 hMf.2.1 hMf.2.2 hG hG2' hG' hp2 hp hN2 hN hN2' hN' hgs2 hgs hvs2 hvs
-          hw2.2.2.2.2.2.2 hvals)
-    | @searchSuper D2 m2 v2 Gs2 Gs2' vs2 hD2 hm2 hO2 hG2 =>
-      simp only [Expr.superCall.injEq, Ty.cls.injEq] at he
-      have eD := dec_unique hwf hD.dec_mem hD2.dec_mem he.2.1.1
-      subst eD
-      rw [<- he.2.2.2.1] at hm2
-      exact absurd (by rw [<- FreshM.name hF]; exact List.mem_map_of_mem hM) hm2
-    | _ => simp at he
-  | @searchSuper D m v Gs Gs' vs hD hm hO hG =>
-    cases h2 with
-    | @simpleFound D2 M2 m2 D2' T2 ps2 e02 e2 v02 Gs2 Gs2' vs2 hD2 hM2 hF2 =>
-      simp only [Expr.superCall.injEq, Ty.cls.injEq] at he
-      have eD := dec_unique hwf hD.dec_mem hD2.dec_mem he.2.1.1
-      subst eD
-      rw [he.2.2.2.1] at hm
-      exact absurd (by rw [<- FreshM.name hF2]; exact List.mem_map_of_mem hM2) hm
-    | @searchSuper D2 m2 v2 Gs2 Gs2' vs2 hD2 hm2 hO2 hG2 =>
-      simp only [Expr.superCall.injEq, Ty.cls.injEq] at he
-      have eD := dec_unique hwf hD.dec_mem hD2.dec_mem he.2.1.1
-      subst eD
-      rw [Value.expr_inj he.1, GTy.tys_inj he.2.1.2, GTy.tys_inj he.2.2.1, he.2.2.2.1, Value.exprs_inj he.2.2.2.2]
-      exact Fresh.refl _
-    | _ => simp at he
+  revert he
+  cases h1 <;> cases h2 <;> simp only [Function.Injective.eq_iff (f := Value.expr) (fun _ _ => Value.expr_inj),
+    Function.Injective.eq_iff (f := GTy.tys) (fun _ _ => GTy.tys_inj), Function.Injective.eq_iff (f := Value.exprs)
+    (fun _ _ => Value.exprs_inj), Expr.field.injEq, Expr.ifInst.injEq, Expr.call.injEq, Expr.superCall.injEq,
+    Ty.cls.injEq, Value.new.injEq, Value.newLocal.injEq, reduceCtorEq, false_and, false_implies, and_imp] <;>
+    intros <;> subst_vars <;> injections <;> subst_vars <;>
+    (try obtain rfl := dec_unique hwf ‹Dec.C _ = Dec.C _› ‹_› ‹_›) <;>
+    (try obtain ⟨rfl, rfl⟩ := List.append_inj ‹_ ++ _ = _ ++ _› (by omega)) <;>
+    first
+    | exact Fresh.refl _
+    | exact absurd (zip_mem_fst ‹List.Mem (_, _) _›) ‹_›
+    | exact absurd (FreshM.mem_names ‹_› ‹_›) ‹_›
+    | exact absurd ‹Sub _ _ _ _› (fun h => ‹¬exists _, _› ⟨_, h⟩)
+    | skip
+  case simpleFieldFound.simpleFieldFound =>
+    rename_i hm _ _ _ hm' _
+    exact zip_unique (fields_nodup hwf ‹Declared d _›.dec_mem) hm hm' ▸ Fresh.refl _
+  case ifThen.ifThen =>
+    rename_i hf2 hd2 hd hf _
+    have hn := ha.2.2.2.2.1
+    have hu := ha.uniq
+    have ht := ha.noThis
+    have hc := ha.2.2.2.2.2.2
+    simp only [Expr.noShadow, Expr.closed, Bool.and_eq_true, NoThis, Expr.vbinders, listMem_iff, List.mem_append,
+      List.mem_cons, not_or] at hn ht hc
+    exact fresh_if hf hf2 hd hd2 hw1 hw2 hn.1.2 hu.2.1 ht.1.2 hc.1.1.1
+  case ifThen.ifElse => exact (‹¬exists Ts', Sub d [] _ (.cls _ Ts')› ⟨_, ‹_›⟩).elim
+  case ifElse.ifThen => exact (‹¬exists Ts', Sub d [] _ (.cls _ Ts')› ⟨_, ‹_›⟩).elim
+  case simpleFound.simpleFound =>
+    rename_i hD hM hN hN' hgs hvs _ _ _ _ _ _ _ _ _ _ hF2 hG2' hN2' hp2 hvs2 hF hG hG' hp _ hM2 _ hN2 hgs2 _
+    obtain rfl := nodup_map_inj (hwf.2.2.1 _ (classes_mem_dec hD.dec_mem)) hM hM2
+      (by rw [FreshM.name hF, FreshM.name hF2])
+    have hMf := hwf.method hD.dec_mem hM
+    have hc := ha.2.2.2.2.2.2
+    simp only [Expr.closed, Bool.and_eq_true] at hc
+    have hvals := closed_cons_vals hc.1.1 hc.2
+    exact And.intro
+      (renE_meth hF.2 hF2.1 hMf.1 hMf.2.1 hMf.2.2 hG hG' hG2' hp hp2 hN hN2 hN' hN2' hgs hgs2 hvs hvs2
+        hw1.2.2.2.2.2.2 hvals)
+      (renE_meth hF2.2 hF.1 hMf.1 hMf.2.1 hMf.2.2 hG hG2' hG' hp2 hp hN2 hN hN2' hN' hgs2 hgs hvs2 hvs
+        hw2.2.2.2.2.2.2 hvals)
+  case innerFound.innerFound =>
+    rename_i hN hN' hgs hvs _ _ _ _ _ _ _ _ _ _ _ _ _ _ hM2 hF2 hG2 hp2 hN2 hN2' hgs2 hvs2 hF hG hp hM
+    obtain rfl := nodup_map_inj (ha.1 _ (List.mem_append_left _ (List.Mem.head _))) hM hM2
+      (by rw [FreshM.name hF, FreshM.name hF2])
+    have hu := ha.uniq
+    have ht := ha.noThis
+    have hn := ha.2.2.2.2.1
+    have hc := ha.2.2.2.2.2.2
+    simp only [NoThis, Expr.vbinders, Value.expr, listMem_iff, List.mem_append, not_or, Expr.noShadow,
+      Bool.and_eq_true] at ht hn
+    simp only [Expr.closed, Bool.and_eq_true] at hc
+    have hvals := closed_cons_vals hc.1.1 hc.2
+    have hMu := uniqList_mem hM hu.1.2
+    have hMt : NoThisM _ := fun h => ht.1.2 (vbindersListM_mem hM h)
+    have hMn : Method.noShadow (dom []) [] _ = true := noShadowListM_mem hM hn.1.2
+    exact And.intro
+      (renE_meth (B := []) (Gs := []) hF.2 hF2.1 hMu hMt hMn rfl hG hG2 hp hp2 hN hN2 hN' hN2' hgs hgs2 hvs hvs2
+        hw1.2.2.2.2.2.2 hvals)
+      (renE_meth (B := []) (Gs := []) hF2.2 hF.1 hMu hMt hMn rfl hG2 hG hp2 hp hN2 hN hN2' hN' hgs2 hgs hvs2 hvs
+        hw2.2.2.2.2.2.2 hvals)
 
 theorem determinismHigh {d : Decls} {e e1 e2 : Expr} (hwf : WFDecls d) (he : WFExpr e) (h1 : Reduces d e e1)
     (h2 : Reduces d e e2) : Fresh e1 e2 := by
