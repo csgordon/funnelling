@@ -115,17 +115,17 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
     (fun _ _ => Value.exprs_inj), Expr.field.injEq, Expr.ifInst.injEq, Expr.call.injEq, Expr.superCall.injEq,
     Ty.cls.injEq, Value.new.injEq, Value.newLocal.injEq, reduceCtorEq, false_and, false_implies, and_imp] <;>
     intros <;> subst_vars <;> injections <;> subst_vars <;>
-    (try obtain rfl := dec_unique hwf ‹Dec.C _ = Dec.C _› ‹_› ‹_›) <;>
-    (try obtain ⟨rfl, rfl⟩ := List.append_inj ‹_ ++ _ = _ ++ _› (by omega)) <;>
+    (try obtain rfl := dec_unique hwf (by assumption : Dec.C _ = Dec.C _) (by assumption) (by assumption)) <;>
+    (try obtain ⟨rfl, rfl⟩ := List.append_inj (by assumption : _ ++ _ = _ ++ _) (by omega)) <;>
     first
     | exact Fresh.refl _
-    | exact absurd (zip_mem_fst ‹List.Mem (_, _) _›) ‹_›
-    | exact absurd (FreshM.mem_names ‹_› ‹_›) ‹_›
-    | exact absurd ‹Sub _ _ _ _› (fun h => ‹¬exists _, _› ⟨_, h⟩)
+    | exact absurd (zip_mem_fst (by assumption : List.Mem (_, _) _)) (by assumption)
+    | exact absurd (FreshM.mem_names (by assumption) (by assumption)) (by assumption)
+    | exact ((by assumption : Not (exists Ts', Sub d [] _ (.cls _ Ts'))) ⟨_, (by assumption)⟩).elim
     | skip
   case simpleFieldFound.simpleFieldFound =>
     rename_i hm _ _ _ hm' _
-    exact zip_unique (fields_nodup hwf ‹Declared d _›.dec_mem) hm hm' ▸ Fresh.refl _
+    exact zip_unique (fields_nodup hwf (by assumption : Declared d _).dec_mem) hm hm' ▸ Fresh.refl _
   case ifThen.ifThen =>
     rename_i hf2 hd2 hd hf _
     have hn := ha.2.2.2.2.1
@@ -135,8 +135,6 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
     simp only [Expr.noShadow, Expr.closed, Bool.and_eq_true, NoThis, Expr.vbinders, listMem_iff, List.mem_append,
       List.mem_cons, not_or] at hn ht hc
     exact fresh_if hf hf2 hd hd2 hw1 hw2 hn.1.2 hu.2.1 ht.1.2 hc.1.1.1
-  case ifThen.ifElse => exact (‹¬exists Ts', Sub d [] _ (.cls _ Ts')› ⟨_, ‹_›⟩).elim
-  case ifElse.ifThen => exact (‹¬exists Ts', Sub d [] _ (.cls _ Ts')› ⟨_, ‹_›⟩).elim
   case simpleFound.simpleFound =>
     rename_i hD hM hN hN' hgs hvs _ _ _ _ _ _ _ _ _ _ hF2 hG2' hN2' hp2 hvs2 hF hG hG' hp _ hM2 _ hN2 hgs2 _
     obtain rfl := nodup_map_inj (hwf.2.2.1 _ (classes_mem_dec hD.dec_mem)) hM hM2
