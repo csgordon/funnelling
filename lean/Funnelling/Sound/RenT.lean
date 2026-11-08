@@ -37,8 +37,7 @@ end
 mutual
 theorem Ty.ftv_ren {rt : TRen} : forall (T : Ty), (T.ren rt).ftv = T.ftv.map (rn rt)
   | .var X => rfl
-  | .cls C Ts => by
-    exact Ty.ftvList_ren Ts
+  | .cls C Ts => Ty.ftvList_ren Ts
 theorem Ty.ftvList_ren {rt : TRen} : forall (Ts : List Ty), Ty.ftvList (Ty.renList rt Ts) = (Ty.ftvList Ts).map (rn rt)
   | [] => rfl
   | T :: Ts => by
@@ -342,10 +341,7 @@ theorem REnv.meth {rv : VRen} {rt : TRen} {Delta Delta' : Bounds} {gamma gamma' 
     . exact Or.inr hX
   dT := by
     intro b hb X hX
-    simp only [listMem_iff, List.mem_append] at hb
-    rcases hb with hb | hb
-    . exact List.mem_append_left _ (env.dT b hb X hX)
-    . exact hc1 b hb X hX
+    exact (List.mem_append.mp hb).elim (fun hb => List.mem_append_left _ (env.dT b hb X hX)) (fun hb => hc1 b hb X hX)
   g := by
     intro z U hlk
     cases hg : Gamma.lookup gamma z with
@@ -380,10 +376,7 @@ theorem REnv.meth {rv : VRen} {rt : TRen} {Delta Delta' : Bounds} {gamma gamma' 
       . exact List.mem_map_of_mem (f := fun p => ({ T := p.1.T.ren ((dom Dm).zip Ys ++ rt), x := p.2 } : VarDecl)) hy
   gT := by
     intro y hy X hX
-    simp only [listMem_iff, List.mem_append] at hy
-    rcases hy with hy | hy
-    . exact List.mem_append_left _ (env.gT y hy X hX)
-    . exact hc2 y hy X hX
+    exact (List.mem_append.mp hy).elim (fun hy => List.mem_append_left _ (env.gT y hy X hX)) (fun hy => hc2 y hy X hX)
   gN := nodup_params env.gN env.gx hnp hpt hpx
   gx := scope_params env.gx
   gx' := by

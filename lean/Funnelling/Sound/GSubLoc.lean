@@ -42,10 +42,7 @@ where
 theorem GOk.append {d : Decls} {Delta Dm : Bounds} {s : GSubst} (h : GOk d Delta s)
     (hm : forall b, List.Mem b Dm -> Not (List.Mem b.X (s.map Prod.fst))) : GOk d (Delta ++ Dm) s := by
   intro b hb G hl
-  simp only [listMem_iff, List.mem_append] at hb
-  rcases hb with hb | hb
-  . exact h b hb G hl
-  . exact absurd (lookup_some_mem_dom hl) (hm b hb)
+  exact (List.mem_append.mp hb).elim (fun hb => h b hb G hl) (fun hb => absurd (lookup_some_mem_dom hl) (hm b hb))
 
 theorem GOk.mono {d : Decls} {Delta Delta2 : Bounds} {s : GSubst} (h : GOk d Delta s) (hs : Sub1 Delta2 Delta) :
     GOk d Delta2 s := fun b hb => h b (hs b hb)

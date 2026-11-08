@@ -261,10 +261,8 @@ theorem MethodOk.vmap {d : Decls} : forall {Delta gamma M}, MethodOk d Delta gam
       (fun x v U hx hl {_ _ _ _} => by
         have hxp : Not (List.Mem x (ps.map VarDecl.x)) := fun h => hdef x (Or.inl h) (lookup_some_mem_dom hx)
         have hm := lookup_mem_g hl
-        simp only [listMem_iff, List.mem_append] at hm
-        rcases hm with hm | hm
-        . exact hv x v U hx (lookup_of_mem_g n1 hm)
-        . exact absurd (List.mem_map_of_mem (f := VarDecl.x) hm) hxp)
+        exact (List.mem_append.mp hm).elim (fun hm => hv x v U hx (lookup_of_mem_g n1 hm))
+          (fun hm => absurd (List.mem_map_of_mem (f := VarDecl.x) hm) hxp))
       (fun y hy => hdef y (Or.inr hy)) (nodup_params n1 sc hu.2.1 ht.1 hn.1.2) (scope_params sc) (scope_params sc')
       hn.2 hn'.2 ht.2 hu.2.2)
 end

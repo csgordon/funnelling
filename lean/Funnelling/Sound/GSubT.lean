@@ -13,10 +13,8 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
   | _, _, _, _, .subs h hk hs, _, _, _, hg, hdis, n1, sc, hn, ht, hu =>
     Typing.subs (Typing.gsub hwf hok hd h hg hdis n1 sc hn ht hu) (Kind.subst hd hg.substCtx.sub hg.substCtx.kind hk)
       (Sub.subst hd hg.substCtx.sub hs)
-  | _, _, _, _, .var hl, _, _, _, _, _, _, _, _, _, _ => by
-    exact Typing.var (Gamma.lookup_gsubG hl)
-  | _, _, _, _, .newObject, _, _, _, _, _, _, _, _, _, _ => by
-    exact Typing.newObject
+  | _, _, _, _, .var hl, _, _, _, _, _, _, _, _, _, _ => Typing.var (Gamma.lookup_gsubG hl)
+  | _, _, _, _, .newObject, _, _, _, _, _, _, _, _, _, _ => Typing.newObject
   | _, _, _, _, .declField h1 h2 h3 h4, s, _, _, hg, hdis, n1, sc, hn, ht, hu => by
     have ih := Typing.gsub hwf hok hd h1 hg hdis n1 sc hn ht hu
     rw [subst_bind_comp h4 (field_closed hok h2 h3)]
@@ -65,7 +63,6 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
     simp only [Expr.gsubst] at ih2
     rw [substList_bind_comp h3 (hd.supD D h1)] at ih2
     have hk2 := Kind.subst hd hg.substCtx.sub hg.substCtx.kind h2
-    simp only [Ty.subst] at hk2
     simp only [Expr.gsubst, Expr.gsubstList_append, Ty.subst]
     exact Typing.newTop h1 hk2 (by rw [substList_length, h3]) ih1 ih2
   | _, gamma, _, _, .newLocal (C := C) (Fs := Fs) (Ms := Ms) (Delta' := Dp) h1 h2 h3 h4 h5 h6 h7 h8, s, Xs, xs,
@@ -95,7 +92,6 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
       hn.1.2 ht.1.2 hu.2.1
     have ih2 := Typing.gsub hwf hok hd h2 hg (fun X hX => hdis X (Or.inr hX)) n1 sc hn.2 ht.2 hu.2.2
     simp only [gsubG, List.map_append, List.map_cons, List.map_nil, VarDecl.subst] at ih1
-    simp only [Expr.gsubst]
     rcases Cast.gsub hd hg.substCtx hc with ⟨T1, hT1⟩
     have ty0 : Typing d (gsubB s Delta) (gsubG s gamma) (Expr.gsubst s e0) T1 := by
       rcases hT1.2.2 with e | hk1
@@ -113,7 +109,6 @@ theorem TypingSeq.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Dec
   | _, _, _, _, .cons h hs, _, _, _, hg, hdis, n1, sc, hn, ht, hu => by
     simp only [Expr.noShadowList, Bool.and_eq_true, Expr.tbindersList, listMem_iff, List.mem_append,
       Expr.vbindersList, not_or, Expr.uniqList] at hn hdis ht hu
-    simp only [Expr.gsubstList, Ty.substList]
     exact TypingSeq.cons (Typing.gsub hwf hok hd h hg (fun X hX => hdis X (Or.inl hX)) n1 sc hn.1 ht.1 hu.1)
       (TypingSeq.gsub hwf hok hd hs hg (fun X hX => hdis X (Or.inr hX)) n1 sc hn.2 ht.2 hu.2)
 theorem MethodOk.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) :
@@ -133,11 +128,9 @@ theorem MethodOk.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Decl
       (nodup_params n1 sc hu.2.1 ht.1 hn.1.2) (scope_params sc) hn.2 ht.2 hu.2.2
     rw [gsubB_append hdm] at hb
     simp only [gsubG, List.map_append] at hb
-    simp only [Method.gsubst]
     refine MethodOk.methodOk ?_ ?_ hb
     . rw [cod_subst]; exact KindSeq.substC hd hc2 h1
     . have := KindSeq.substC hd hc2 h2
-      simp only [Ty.substList] at this
       rw [params_T_subst]
       exact this
 end
