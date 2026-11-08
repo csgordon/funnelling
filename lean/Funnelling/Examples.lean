@@ -363,10 +363,56 @@ theorem r13 : Steps d5 (.call (Value.new (cn "Fixed") [] []) [tA] (mn "mk") [vMy
   (Steps.step (red (sThen rfl .subRefl (by decide)) (by decide))
     Steps.refl))
 
+theorem fixedMk {T R : Ty} {es : List Expr}
+    (h : Typing d5 [] [] (.call (Value.new (cn "Fixed") [] []) [T] (mn "mk") es) R) :
+    TypingSeq d5 [] [] es [tFoo T, T] /\ Up d5 [] (tFoo T) R := by
+  cases inv_callTop w8 (D := decFixed) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) rfl rfl rfl (by decide)
+    (by decide) h with
+  | intro Delta1 h =>
+  cases h with
+  | intro T0 h =>
+  cases h with
+  | intro ps h =>
+  cases h with
+  | intro body h =>
+  cases h with
+  | intro T0' h =>
+  cases h with
+  | intro Ts' h =>
+  cases h.1 with
+  | tail _ h1 => cases h1
+  | head =>
+  have hs := h.2.2.1
+  injection hs with e1 e2
+  subst e1 e2
+  exact And.intro h.2.2.2.1 h.2.2.2.2
+
 -- N2: the main expression of Example 1, with Fixed, is ill typed: a Foo<A<>> is passed where a Foo<B<>> is expected.
 theorem n2 : Not (exists T, Typing d5 [] []
     (call0 (call0 (.call (Value.new (cn "Fixed") [] []) [tB] (mn "mk") [fixedCallA, vB]) "x" []) "onlyB" []) T) := by
-  sorry
+  intro h
+  cases h with
+  | intro T h =>
+  cases inv_call h rfl with
+  | intro w1 hw1 =>
+  cases inv_call hw1.ty0 rfl with
+  | intro w2 hw2 =>
+  cases (fixedMk hw2.ty0).1 with
+  | cons ha _ =>
+  cases (fixedMk ha).2 with
+  | inl e =>
+    injection e with _ e
+    injection e with e
+    injection e with e
+    exact absurd e (by decide)
+  | inr h2 =>
+    cases Sub.dec_step w8 (D := decFoo) (.dec (.tail _ (.tail _ (.tail _ (.head _))))) h2.1 with
+    | inl e =>
+      injection e with _ e
+      injection e with e
+      injection e with e
+      exact absurd e (by decide)
+    | inr h3 => exact notSub [Object] (by decide) (.head _) (by decide) h3.2
 
 -- Examples 2 and 3: no generic supertype; the lambdas of the paper are subclasses of Fun.
 
@@ -638,8 +684,75 @@ theorem p3 : ClassOk d4F decLeakerF := by
   sorry
 
 -- N8: funnelled, the main expression of the leak is ill typed: a MyFoo2F<A<>> is passed where a MyFoo2F<B<>> is expected.
+theorem leakFMem {T R : Ty} {es : List Expr} {m : String}
+    (h : Typing d4F [] [] (.call (Value.new (cn "LeakerF") [] []) [T] (mn m) es) R) :
+    exists Delta1 T0 ps body T0' Ts', List.Mem (Method.mk Delta1 T0 (mn m) ps body) decLeakerF.Ms /\
+      [T].length = Delta1.length /\ T0' :: Ts' = Ty.substList (bind Delta1 [T]) (T0 :: ps.map VarDecl.T) /\
+      TypingSeq d4F [] [] es Ts' /\ Up d4F [] T0' R :=
+  inv_callTop w13 (D := decLeakerF) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) rfl rfl rfl (by decide)
+    (by decide) h
+
+theorem myFoo2FDeclared : Declared d4F
+    (.loc (cn "MyFoo2F") [.funnel (tn "Y")] (cn "Foo") [tv "Y"] [] [meth [] (tv "Y") "x" [] (ev "y")]) :=
+  Declared.loc (k := .dec decLeakerF) (.dec (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))) (.head _)
+    (Exists.intro .hole rfl)
+
 theorem n8 : Not (exists T, Typing d4F [] [] leakMainF T) := by
-  sorry
+  intro h
+  cases h with
+  | intro T h =>
+  cases inv_call h rfl with
+  | intro w1 hw1 =>
+  cases inv_call hw1.ty0 rfl with
+  | intro w2 hw2 =>
+  cases leakFMem hw2.ty0 with
+  | intro Delta1 h =>
+  cases h with
+  | intro T0 h =>
+  cases h with
+  | intro ps h =>
+  cases h with
+  | intro body h =>
+  cases h with
+  | intro T0' h =>
+  cases h with
+  | intro Ts' h =>
+  cases names_unique (by decide) h.1 (.tail _ (.head _)) rfl
+  have hs := h.2.2.1
+  injection hs with e1 e2
+  subst e1 e2
+  cases h.2.2.2.1 with
+  | cons ha _ =>
+  cases leakFMem ha with
+  | intro Delta1 h =>
+  cases h with
+  | intro T0 h =>
+  cases h with
+  | intro ps h =>
+  cases h with
+  | intro body h =>
+  cases h with
+  | intro T0' h =>
+  cases h with
+  | intro Ts' h =>
+  cases names_unique (by decide) h.1 (.head _) rfl
+  have hs := h.2.2.1
+  injection hs with e1 e2
+  subst e1 e2
+  cases h.2.2.2.2 with
+  | inl e =>
+    injection e with _ e
+    injection e with e
+    injection e with e
+    exact absurd e (by decide)
+  | inr h2 =>
+    cases Sub.loc_step w13 myFoo2FDeclared h2.1 with
+    | inl e =>
+      injection e with _ e
+      injection e with e
+      injection e with e
+      exact absurd e (by decide)
+    | inr h3 => exact notSub [cn "Foo", Object] (by decide) (.head _) (by decide) h3.2
 
 -- Nested local classes: Inner is written in a method of Outer.
 
