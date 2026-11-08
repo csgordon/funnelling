@@ -173,8 +173,7 @@ theorem substList_agree {s1 s2 : TSubst} : forall {Ts : List Ty}, Ty.substList s
     forall X, List.Mem X (Ty.ftvList Ts) -> (Ty.var X).subst s1 = (Ty.var X).subst s2
   | [], _, _, hX => by cases hX
   | T :: Ts, h, X, hX => by
-    simp only [Ty.substList, List.cons.injEq] at h
-    simp only [Ty.ftvList, listMem_iff, List.mem_append] at hX
+    simp only [Ty.substList, List.cons.injEq, Ty.ftvList, listMem_iff, List.mem_append] at h hX
     rcases hX with hX | hX
     . exact subst_agree h.1 X hX
     . exact substList_agree h.2 X hX

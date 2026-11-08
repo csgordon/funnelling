@@ -442,10 +442,8 @@ theorem Typing.gsub_newLocal {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd
     (ht : NoThis (Expr.newLocal C Fs C0 Ts es Ms)) (hu : (Expr.newLocal C Fs C0 Ts es Ms).uniq) :
     Typing d (gsubB s Delta) (gsubG s gamma) ((Expr.newLocal C Fs C0 Ts es Ms).gsubst s)
       ((Ty.cls C (abs Fs)).subst s.ty) := by
-  simp only [Expr.noShadow, Bool.and_eq_true] at hn
-  simp only [Expr.tbinders, listMem_iff, List.mem_append] at hdis
-  simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ht
-  simp only [Expr.uniq] at hu
+  simp only [Expr.noShadow, Bool.and_eq_true, Expr.tbinders, listMem_iff, List.mem_append, NoThis, Expr.vbinders,
+    not_or, Expr.uniq] at hn hdis ht hu
   have hdisM : forall M, List.Mem M Ms -> forall X, List.Mem X (dom M.bounds) -> Not (List.Mem X (s.map Prod.fst)) :=
     fun M hM X hX => hdis X (Or.inr (tbindersListM_mem hM (dom_mem_tbinders hX)))
   have hg' := hg.mono h2.sub

@@ -234,8 +234,7 @@ theorem RenE.comp {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 c rv3 rt3 
   | .call (Ts := Ts) (m := m) h1 hs1, rv2, rt2, c, rv3, rt3, Sa, Sb, Ta, Tb, h2, env, hc, hn, ha, hb, hu => by
     cases h2 with
     | call h2 hs2 =>
-      simp only [Expr.closed, Bool.and_eq_true] at hc
-      simp only [Expr.noShadow, Bool.and_eq_true] at hn
+      simp only [Expr.closed, Bool.and_eq_true, Expr.noShadow] at hc hn
       simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ha hb
       simp only [Expr.uniq] at hu
       rw [env.tys hc.1.2]
@@ -244,8 +243,7 @@ theorem RenE.comp {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 c rv3 rt3 
   | .superCall (T := T) (Ts := Ts) h1 hs1, rv2, rt2, c, rv3, rt3, Sa, Sb, Ta, Tb, h2, env, hc, hn, ha, hb, hu => by
     cases h2 with
     | superCall h2 hs2 =>
-      simp only [Expr.closed, Bool.and_eq_true] at hc
-      simp only [Expr.noShadow, Bool.and_eq_true] at hn
+      simp only [Expr.closed, Bool.and_eq_true, Expr.noShadow] at hc hn
       simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ha hb
       simp only [Expr.uniq] at hu
       have hT : T.ftv.all Ta.contains = true := by
@@ -258,16 +256,14 @@ theorem RenE.comp {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 c rv3 rt3 
   | .field h1, rv2, rt2, c, rv3, rt3, Sa, Sb, Ta, Tb, h2, env, hc, hn, ha, hb, hu => by
     cases h2 with
     | field h2 =>
-      simp only [Expr.closed] at hc
-      simp only [Expr.noShadow] at hn
+      simp only [Expr.closed, Expr.noShadow] at hc hn
       simp only [NoThis, Expr.vbinders] at ha hb
       simp only [Expr.uniq] at hu
       exact RenE.field (RenE.comp h1 h2 env hc hn ha hb hu)
   | .new (Ts := Ts) hs1, rv2, rt2, c, rv3, rt3, Sa, Sb, Ta, Tb, h2, env, hc, hn, ha, hb, hu => by
     cases h2 with
     | new hs2 =>
-      simp only [Expr.closed, Bool.and_eq_true] at hc
-      simp only [Expr.noShadow] at hn
+      simp only [Expr.closed, Bool.and_eq_true, Expr.noShadow] at hc hn
       simp only [NoThis, Expr.vbinders] at ha hb
       simp only [Expr.uniq] at hu
       rw [env.tys hc.1]
@@ -275,8 +271,7 @@ theorem RenE.comp {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 c rv3 rt3 
   | .newLocal (Fs := Fs) (Ts := Ts) hs1 hm1, rv2, rt2, c, rv3, rt3, Sa, Sb, Ta, Tb, h2, env, hc, hn, ha, hb, hu => by
     cases h2 with
     | newLocal hs2 hm2 =>
-      simp only [Expr.closed, Bool.and_eq_true, List.all_append] at hc
-      simp only [Expr.noShadow, Bool.and_eq_true] at hn
+      simp only [Expr.closed, Bool.and_eq_true, List.all_append, Expr.noShadow] at hc hn
       simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ha hb
       simp only [Expr.uniq] at hu
       rw [env.tys hc.1.1.2, Funnels.ren_comp (fun X hX => (env.st X (all_contains_iff.mp hc.1.1.1 X hX)).2)]
@@ -285,8 +280,7 @@ theorem RenE.comp {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 c rv3 rt3 
   | .ifInst (T := T) (x := x) (y := y) h01 h11 h21, rv2, rt2, c, rv3, rt3, Sa, Sb, Ta, Tb, h2, env, hc, hn, ha, hb, hu => by
     cases h2 with
     | ifInst h02 h12 h22 =>
-      simp only [Expr.closed, Bool.and_eq_true] at hc
-      simp only [Expr.noShadow, Bool.and_eq_true, Bool.not_eq_true'] at hn
+      simp only [Expr.closed, Bool.and_eq_true, Expr.noShadow, Bool.not_eq_true'] at hc hn
       simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ha hb
       simp only [Expr.uniq] at hu
       have hyS : Not (List.Mem y Sb) := by
@@ -306,8 +300,7 @@ theorem RenEs.comp {rv1 rt1 as bs} : RenEs rv1 rt1 as bs -> forall {rv2 rt2 cs r
   | .cons h1 hs1, rv2, rt2, c, rv3, rt3, Sa, Sb, Ta, Tb, h2, env, hc, hn, ha, hb, hu => by
     cases h2 with
     | cons h2 hs2 =>
-      simp only [Expr.closedList, Bool.and_eq_true] at hc
-      simp only [Expr.noShadowList, Bool.and_eq_true] at hn
+      simp only [Expr.closedList, Bool.and_eq_true, Expr.noShadowList] at hc hn
       simp only [Expr.vbindersList, listMem_iff, List.mem_append, not_or] at ha hb
       simp only [Expr.uniqList] at hu
       exact RenEs.cons (RenE.comp h1 h2 env hc.1 hn.1 ha.1 hb.1 hu.1)
@@ -321,8 +314,7 @@ theorem RenM.comp {rv1 rt1 Ma Mb} : RenM rv1 rt1 Ma Mb -> forall {rv2 rt2 Mc rv3
     | @mk _ _ _ _ _ _ _ _ Xs2 xs2 hL2 hl2 h2 =>
       rw [dom_renBounds hL1] at h2
       rw [names_renParams hl1] at h2
-      simp only [Method.closed, Bool.and_eq_true] at hc
-      simp only [Method.noShadow, Bool.and_eq_true] at hn
+      simp only [Method.closed, Bool.and_eq_true, Method.noShadow] at hc hn
       simp only [NoThisM, Method.vbinders, listMem_iff, List.mem_append, not_or] at ha hb
       simp only [Method.uniq] at hu
       rw [dom_renBounds hL1] at hn hu
@@ -358,8 +350,7 @@ theorem RenMs.comp {rv1 rt1 Mas Mbs} : RenMs rv1 rt1 Mas Mbs -> forall {rv2 rt2 
   | .cons h1 hs1, rv2, rt2, c, rv3, rt3, Sa, Sb, Ta, Tb, h2, env, hc, hn, ha, hb, hu => by
     cases h2 with
     | cons h2 hs2 =>
-      simp only [Method.closedList, Bool.and_eq_true] at hc
-      simp only [Method.noShadowList, Bool.and_eq_true] at hn
+      simp only [Method.closedList, Bool.and_eq_true, Method.noShadowList] at hc hn
       simp only [Method.vbindersList, listMem_iff, List.mem_append, not_or] at ha hb
       simp only [Method.uniqList] at hu
       exact RenMs.cons (RenM.comp h1 h2 env hc.1 hn.1 ha.1 hb.1 hu.1)

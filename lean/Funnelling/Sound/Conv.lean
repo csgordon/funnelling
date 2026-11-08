@@ -64,36 +64,30 @@ mutual
 theorem Expr.noThis_of : forall {e : Expr}, LocOk e.locals -> Not (List.Mem this e.ifVars) -> NoThis e
   | .var _, _, _ => by simp [NoThis, Expr.vbinders]
   | .call e _ _ es, h, hi => by
-    simp only [Expr.locals] at h
-    simp only [Expr.ifVars, listMem_iff, List.mem_append, not_or] at hi
+    simp only [Expr.locals, Expr.ifVars, listMem_iff, List.mem_append, not_or] at h hi
     simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or]
     exact And.intro (Expr.noThis_of h.append_left hi.1) (Expr.noThisList_of h.append_right hi.2)
   | .superCall e _ _ _ es, h, hi => by
-    simp only [Expr.locals] at h
-    simp only [Expr.ifVars, listMem_iff, List.mem_append, not_or] at hi
+    simp only [Expr.locals, Expr.ifVars, listMem_iff, List.mem_append, not_or] at h hi
     simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or]
     exact And.intro (Expr.noThis_of h.append_left hi.1) (Expr.noThisList_of h.append_right hi.2)
   | .field e _, h, hi => by
-    simp only [Expr.locals] at h
-    simp only [Expr.ifVars] at hi
+    simp only [Expr.locals, Expr.ifVars] at h hi
     simp only [NoThis, Expr.vbinders]
     exact Expr.noThis_of h hi
   | .new _ _ es, h, hi => by
-    simp only [Expr.locals] at h
-    simp only [Expr.ifVars] at hi
+    simp only [Expr.locals, Expr.ifVars] at h hi
     simp only [NoThis, Expr.vbinders]
     exact Expr.noThisList_of h hi
   | .newLocal C Fs C' Ts es Ms, h, hi => by
-    simp only [Expr.locals] at h
-    simp only [Expr.ifVars, listMem_iff, List.mem_append, not_or] at hi
+    simp only [Expr.locals, Expr.ifVars, listMem_iff, List.mem_append, not_or] at h hi
     simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or]
     have hk := h _ (List.Mem.head _)
     have h' : LocOk (Expr.localsList es ++ Method.localsList Ms) := h.sub (fun _ hk => List.Mem.tail _ hk)
     exact And.intro (Expr.noThisList_of h'.append_left hi.1)
       (Method.noThisList_of (fun M hM => hk M hM) h'.append_right hi.2)
   | .ifInst e0 _ x e1 e2, h, hi => by
-    simp only [Expr.locals] at h
-    simp only [Expr.ifVars, listMem_iff, List.mem_append, List.mem_cons, not_or] at hi
+    simp only [Expr.locals, Expr.ifVars, listMem_iff, List.mem_append, List.mem_cons, not_or] at h hi
     simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or]
     exact And.intro (And.intro (And.intro hi.1.1.1 (Expr.noThis_of h.append_left.append_left hi.1.1.2))
       (Expr.noThis_of h.append_left.append_right hi.1.2)) (Expr.noThis_of h.append_right hi.2)
@@ -101,14 +95,12 @@ theorem Expr.noThisList_of : forall {es : List Expr}, LocOk (Expr.localsList es)
     Not (List.Mem this (Expr.ifVarsList es)) -> Not (List.Mem this (Expr.vbindersList es))
   | [], _, _ => by simp [Expr.vbindersList]
   | e :: es, h, hi => by
-    simp only [Expr.localsList] at h
-    simp only [Expr.ifVarsList, listMem_iff, List.mem_append, not_or] at hi
+    simp only [Expr.localsList, Expr.ifVarsList, listMem_iff, List.mem_append, not_or] at h hi
     simp only [Expr.vbindersList, listMem_iff, List.mem_append, not_or]
     exact And.intro (Expr.noThis_of h.append_left hi.1) (Expr.noThisList_of h.append_right hi.2)
 theorem Method.noThis_of : forall {M : Method}, MOk M -> LocOk M.locals -> Not (List.Mem this M.ifVars) -> NoThisM M
   | .mk Delta T0 m ps e, h1, h2, hi => by
-    simp only [Method.locals] at h2
-    simp only [Method.ifVars] at hi
+    simp only [Method.locals, Method.ifVars] at h2 hi
     simp only [NoThisM, Method.vbinders, listMem_iff, List.mem_append, not_or]
     exact And.intro h1.2.2 (Expr.noThis_of h2 hi)
 theorem Method.noThisList_of : forall {Ms : List Method}, (forall M, List.Mem M Ms -> MOk M) ->
@@ -116,8 +108,7 @@ theorem Method.noThisList_of : forall {Ms : List Method}, (forall M, List.Mem M 
     Not (List.Mem this (Method.vbindersList Ms))
   | [], _, _, _ => by simp [Method.vbindersList]
   | M :: Ms, h1, h2, hi => by
-    simp only [Method.localsList] at h2
-    simp only [Method.ifVarsList, listMem_iff, List.mem_append, not_or] at hi
+    simp only [Method.localsList, Method.ifVarsList, listMem_iff, List.mem_append, not_or] at h2 hi
     simp only [Method.vbindersList, listMem_iff, List.mem_append, not_or]
     exact And.intro (Method.noThis_of (h1 M (List.Mem.head _)) h2.append_left hi.1)
       (Method.noThisList_of (fun M' hM' => h1 M' (List.Mem.tail _ hM')) h2.append_right hi.2)

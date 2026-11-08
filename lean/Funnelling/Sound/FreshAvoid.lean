@@ -554,11 +554,9 @@ theorem RenE.inv {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 rv3 rt3 Sa 
       simp [Expr.locals] at hk
   | .call (Ts := Ts) (m := m) h1 hs1, rv2, rt2, rv3, rt3, Sa, Sb, Ta, Tb, env, h3, h3t, hS, hc, hn, ha, hb, hu,
       hk => by
-    simp only [Expr.closed, Bool.and_eq_true] at hc
-    simp only [Expr.noShadow, Bool.and_eq_true] at hn
+    simp only [Expr.closed, Bool.and_eq_true, Expr.noShadow] at hc hn
     simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ha hb
-    simp only [Expr.uniq] at hu
-    simp only [Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at hk
+    simp only [Expr.uniq, Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at hu hk
     have r1 := RenE.inv h1 env h3 h3t hS hc.1.1 hn.1 ha.1 hb.1 hu.1 hk.1
     have r2 := RenEs.inv hs1 env h3 h3t hS hc.2 hn.2 ha.2 hb.2 hu.2 hk.2
     refine ⟨?_, ?_, ?_⟩
@@ -570,11 +568,9 @@ theorem RenE.inv {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 rv3 rt3 Sa 
       exact ⟨r1.2.2, r2.2.2⟩
   | .superCall (T := T) (Ts := Ts) (m := m) h1 hs1, rv2, rt2, rv3, rt3, Sa, Sb, Ta, Tb, env, h3, h3t, hS, hc, hn,
       ha, hb, hu, hk => by
-    simp only [Expr.closed, Ty.ftvList, List.all_append, Bool.and_eq_true] at hc
-    simp only [Expr.noShadow, Bool.and_eq_true] at hn
+    simp only [Expr.closed, Ty.ftvList, List.all_append, Bool.and_eq_true, Expr.noShadow] at hc hn
     simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ha hb
-    simp only [Expr.uniq] at hu
-    simp only [Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at hk
+    simp only [Expr.uniq, Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at hu hk
     have r1 := RenE.inv h1 env h3 h3t hS hc.1.1 hn.1 ha.1 hb.1 hu.1 hk.1
     have r2 := RenEs.inv hs1 env h3 h3t hS hc.2 hn.2 ha.2 hb.2 hu.2 hk.2
     refine ⟨?_, ?_, ?_⟩
@@ -585,19 +581,15 @@ theorem RenE.inv {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 rv3 rt3 Sa 
     . simp only [Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and]
       exact ⟨r1.2.2, r2.2.2⟩
   | .field (f := f) h1, rv2, rt2, rv3, rt3, Sa, Sb, Ta, Tb, env, h3, h3t, hS, hc, hn, ha, hb, hu, hk => by
-    simp only [Expr.closed] at hc
-    simp only [Expr.noShadow] at hn
+    simp only [Expr.closed, Expr.noShadow] at hc hn
     simp only [NoThis, Expr.vbinders] at ha hb
-    simp only [Expr.uniq] at hu
-    simp only [Expr.locals] at hk
+    simp only [Expr.uniq, Expr.locals] at hu hk
     have r1 := RenE.inv h1 env h3 h3t hS hc hn ha hb hu hk
     exact ⟨RenE.field r1.1, r1.2.1, r1.2.2⟩
   | .new (C := C) (Ts := Ts) hs1, rv2, rt2, rv3, rt3, Sa, Sb, Ta, Tb, env, h3, h3t, hS, hc, hn, ha, hb, hu, hk => by
-    simp only [Expr.closed, Bool.and_eq_true] at hc
-    simp only [Expr.noShadow] at hn
+    simp only [Expr.closed, Bool.and_eq_true, Expr.noShadow] at hc hn
     simp only [NoThis, Expr.vbinders] at ha hb
-    simp only [Expr.uniq] at hu
-    simp only [Expr.locals] at hk
+    simp only [Expr.uniq, Expr.locals] at hu hk
     have r2 := RenEs.inv hs1 env h3 h3t hS hc.2 hn ha hb hu hk
     refine ⟨?_, ?_, r2.2.2⟩
     . have := RenE.new (C := C) (Ts := Ty.renList rt1 Ts) r2.1
@@ -606,8 +598,7 @@ theorem RenE.inv {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 rv3 rt3 Sa 
       exact ⟨env.tysIn hc.1, r2.2.1⟩
   | .newLocal (C := C) (Fs := Fs) (C' := C') (Ts := Ts) (Ms := Ms) (Ms' := Ms') hs1 hm1, rv2, rt2, rv3, rt3, Sa, Sb,
       Ta, Tb, env, h3, h3t, hS, hc, hn, ha, hb, hu, hk => by
-    simp only [Expr.closed, Bool.and_eq_true, List.all_append] at hc
-    simp only [Expr.noShadow, Bool.and_eq_true] at hn
+    simp only [Expr.closed, Bool.and_eq_true, List.all_append, Expr.noShadow] at hc hn
     simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ha hb
     simp only [Expr.uniq] at hu
     simp only [Expr.locals, listMem_iff, List.mem_append, List.mem_cons, or_imp, forall_and, forall_eq] at hk
@@ -641,17 +632,14 @@ theorem RenE.inv {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 rv3 rt3 Sa 
         have hMt : Not (List.Mem this M.vbinders) := fun h => hb.2 (vbindersListM_mem hM h)
         cases M with
         | mk D T0 m ps body =>
-          simp only [Method.uniq] at hMu
-          simp only [Method.vbinders, listMem_iff, List.mem_append, not_or] at hMt
+          simp only [Method.uniq, Method.vbinders, listMem_iff, List.mem_append, not_or] at hMu hMt
           simp only [Method.params, Method.bounds]
           exact ⟨hMu.2.1, hMu.1, hMt.1⟩
   | .ifInst (T := T) (x := x) (y := y) h01 h11 h21, rv2, rt2, rv3, rt3, Sa, Sb, Ta, Tb, env, h3, h3t, hS, hc, hn,
       ha, hb, hu, hk => by
-    simp only [Expr.closed, Bool.and_eq_true] at hc
-    simp only [Expr.noShadow, Bool.and_eq_true, Bool.not_eq_true'] at hn
+    simp only [Expr.closed, Bool.and_eq_true, Expr.noShadow, Bool.not_eq_true'] at hc hn
     simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ha hb
-    simp only [Expr.uniq] at hu
-    simp only [Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at hk
+    simp only [Expr.uniq, Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at hu hk
     have hyS : Not (List.Mem y Sb) := by
       have := hn.1.1.2
       simp at this
@@ -680,11 +668,9 @@ theorem RenEs.inv {rv1 rt1 as bs} : RenEs rv1 rt1 as bs -> forall {rv2 rt2 rv3 r
   | .nil, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ =>
     ⟨RenEs.nil, rfl, fun k hk => by simp [Expr.localsList] at hk⟩
   | .cons h1 hs1, rv2, rt2, rv3, rt3, Sa, Sb, Ta, Tb, env, h3, h3t, hS, hc, hn, ha, hb, hu, hk => by
-    simp only [Expr.closedList, Bool.and_eq_true] at hc
-    simp only [Expr.noShadowList, Bool.and_eq_true] at hn
+    simp only [Expr.closedList, Bool.and_eq_true, Expr.noShadowList] at hc hn
     simp only [Expr.vbindersList, listMem_iff, List.mem_append, not_or] at ha hb
-    simp only [Expr.uniqList] at hu
-    simp only [Expr.localsList, listMem_iff, List.mem_append, or_imp, forall_and] at hk
+    simp only [Expr.uniqList, Expr.localsList, listMem_iff, List.mem_append, or_imp, forall_and] at hu hk
     have r1 := RenE.inv h1 env h3 h3t hS hc.1 hn.1 ha.1 hb.1 hu.1 hk.1
     have r2 := RenEs.inv hs1 env h3 h3t hS hc.2 hn.2 ha.2 hb.2 hu.2 hk.2
     refine ⟨RenEs.cons r1.1 r2.1, ?_, ?_⟩
@@ -698,11 +684,9 @@ theorem RenM.inv {rv1 rt1 Ma Mb} : RenM rv1 rt1 Ma Mb -> forall {rv2 rt2 rv3 rt3
     RenM rv2 rt2 Mb Ma /\ Mb.closed Tb Sb = true /\ (forall k, List.Mem k Mb.locals -> KQ k)
   | .mk (Delta := Da) (T0 := T0) (m := m) (ps := psa) (Xs' := Xs1) (xs' := xs1) hL1 hl1 h1,
       rv2, rt2, rv3, rt3, Sa, Sb, Ta, Tb, env, h3, h3t, hc, hn, ha, hb, hu, hk => by
-    simp only [Method.closed, Bool.and_eq_true] at hc
-    simp only [Method.noShadow, Bool.and_eq_true] at hn
+    simp only [Method.closed, Bool.and_eq_true, Method.noShadow] at hc hn
     simp only [NoThisM, Method.vbinders, listMem_iff, List.mem_append, not_or] at ha hb
-    simp only [Method.uniq] at hu
-    simp only [Method.locals] at hk
+    simp only [Method.uniq, Method.locals] at hu hk
     rw [dom_renBounds hL1] at hn hu
     rw [names_renParams hl1] at hn hb hu
     have hla : (psa.map VarDecl.x).length = xs1.length := by simp [hl1]
@@ -746,11 +730,9 @@ theorem RenMs.inv {rv1 rt1 Mas Mbs} : RenMs rv1 rt1 Mas Mbs -> forall {rv2 rt2 r
   | .nil, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ =>
     ⟨RenMs.nil, rfl, fun k hk => by simp [Method.localsList] at hk⟩
   | .cons h1 hs1, rv2, rt2, rv3, rt3, Sa, Sb, Ta, Tb, env, h3, h3t, hc, hn, ha, hb, hu, hk => by
-    simp only [Method.closedList, Bool.and_eq_true] at hc
-    simp only [Method.noShadowList, Bool.and_eq_true] at hn
+    simp only [Method.closedList, Bool.and_eq_true, Method.noShadowList] at hc hn
     simp only [Method.vbindersList, listMem_iff, List.mem_append, not_or] at ha hb
-    simp only [Method.uniqList] at hu
-    simp only [Method.localsList, listMem_iff, List.mem_append, or_imp, forall_and] at hk
+    simp only [Method.uniqList, Method.localsList, listMem_iff, List.mem_append, or_imp, forall_and] at hu hk
     have r1 := RenM.inv h1 env h3 h3t hc.1 hn.1 ha.1 hb.1 hu.1 hk.1
     have r2 := RenMs.inv hs1 env h3 h3t hc.2 hn.2 ha.2 hb.2 hu.2 hk.2
     refine ⟨RenMs.cons r1.1 r2.1, ?_, ?_⟩

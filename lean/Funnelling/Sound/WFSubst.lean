@@ -442,43 +442,32 @@ theorem Expr.noShadow_vsubst {VB : List VarName} {TB : List TVarName} (hthis : N
       have h1 := Expr.noShadow_tscope (Xs2 := Xs) hv.1 (fun X hX hm => absurd (hv.2.2 X hX) (hXs X hm))
       exact Expr.noShadow_scope h1 (fun y hy hm => absurd (hv.2.1 y hy) (hxs y hm))
   | .call _ _ _ _, _, _, _, h, hn, hxs, he, hXs, hE => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at h
-    simp only [Expr.vbinders, listMem_iff, List.mem_append] at he
-    simp only [Expr.tbinders, listMem_iff, List.mem_append] at hE
+    simp only [Expr.noShadow, Bool.and_eq_true, Expr.vbinders, listMem_iff, List.mem_append, Expr.tbinders] at h he hE
     simp only [Expr.vsubst, Expr.noShadow, Bool.and_eq_true]
     exact ⟨Expr.noShadow_vsubst hthis h.1 hn hxs (fun y hy => he y (Or.inl hy)) hXs (fun X hX => hE X (Or.inl hX)),
       Expr.noShadowList_vsubst hthis h.2 hn hxs (fun y hy => he y (Or.inr hy)) hXs (fun X hX => hE X (Or.inr hX))⟩
   | .superCall _ _ _ _ _, _, _, _, h, hn, hxs, he, hXs, hE => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at h
-    simp only [Expr.vbinders, listMem_iff, List.mem_append] at he
-    simp only [Expr.tbinders, listMem_iff, List.mem_append] at hE
+    simp only [Expr.noShadow, Bool.and_eq_true, Expr.vbinders, listMem_iff, List.mem_append, Expr.tbinders] at h he hE
     simp only [Expr.vsubst, Expr.noShadow, Bool.and_eq_true]
     exact ⟨Expr.noShadow_vsubst hthis h.1 hn hxs (fun y hy => he y (Or.inl hy)) hXs (fun X hX => hE X (Or.inl hX)),
       Expr.noShadowList_vsubst hthis h.2 hn hxs (fun y hy => he y (Or.inr hy)) hXs (fun X hX => hE X (Or.inr hX))⟩
   | .field _ _, _, _, _, h, hn, hxs, he, hXs, hE => by
-    simp only [Expr.noShadow] at h
-    simp only [Expr.vbinders] at he
-    simp only [Expr.tbinders] at hE
+    simp only [Expr.noShadow, Expr.vbinders, Expr.tbinders] at h he hE
     simp only [Expr.vsubst, Expr.noShadow]
     exact Expr.noShadow_vsubst hthis h hn hxs he hXs hE
   | .new _ _ _, _, _, _, h, hn, hxs, he, hXs, hE => by
-    simp only [Expr.noShadow] at h
-    simp only [Expr.vbinders] at he
-    simp only [Expr.tbinders] at hE
+    simp only [Expr.noShadow, Expr.vbinders, Expr.tbinders] at h he hE
     simp only [Expr.vsubst, Expr.noShadow]
     exact Expr.noShadowList_vsubst hthis h hn hxs he hXs hE
   | .newLocal _ _ _ _ _ _, _, _, _, h, hn, hxs, he, hXs, hE => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at h
-    simp only [Expr.vbinders, listMem_iff, List.mem_append] at he
-    simp only [Expr.tbinders, listMem_iff, List.mem_append] at hE
+    simp only [Expr.noShadow, Bool.and_eq_true, Expr.vbinders, listMem_iff, List.mem_append, Expr.tbinders] at h he hE
     simp only [Expr.vsubst, Expr.noShadow, Bool.and_eq_true]
     exact ⟨Expr.noShadowList_vsubst hthis h.1 hn hxs (fun y hy => he y (Or.inl hy)) hXs (fun X hX => hE X (Or.inl hX)),
       Method.noShadowList_vsubst hthis h.2 hn.filt (fun y hy => hxs y (List.mem_filter.mp hy).1)
         (fun y hy => he y (Or.inr hy)) hXs (fun X hX => hE X (Or.inr hX))⟩
   | .ifInst _ _ x _ _, _, _, _, h, hn, hxs, he, hXs, hE => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at h
-    simp only [Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons] at he
-    simp only [Expr.tbinders, listMem_iff, List.mem_append] at hE
+    simp only [Expr.noShadow, Bool.and_eq_true, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons,
+      Expr.tbinders] at h he hE
     simp only [Expr.vsubst, Expr.noShadow, Bool.and_eq_true]
     refine ⟨⟨⟨Expr.noShadow_vsubst hthis h.1.1.1 hn hxs (fun y hy => he y (Or.inl (Or.inl (Or.inr hy)))) hXs
       (fun X hX => hE X (Or.inl (Or.inl hX))), h.1.1.2⟩, ?_⟩,
@@ -498,9 +487,8 @@ theorem Expr.noShadowList_vsubst {VB : List VarName} {TB : List TVarName} (hthis
     Expr.noShadowList Xs xs (Expr.vsubstList n es) = true
   | [], _, _, _, _, _, _, _, _, _ => rfl
   | _ :: _, _, _, _, h, hn, hxs, he, hXs, hE => by
-    simp only [Expr.noShadowList, Bool.and_eq_true] at h
-    simp only [Expr.vbindersList, listMem_iff, List.mem_append] at he
-    simp only [Expr.tbindersList, listMem_iff, List.mem_append] at hE
+    simp only [Expr.noShadowList, Bool.and_eq_true, Expr.vbindersList, listMem_iff, List.mem_append,
+      Expr.tbindersList] at h he hE
     simp only [Expr.vsubstList, Expr.noShadowList, Bool.and_eq_true]
     exact ⟨Expr.noShadow_vsubst hthis h.1 hn hxs (fun y hy => he y (Or.inl hy)) hXs (fun X hX => hE X (Or.inl hX)),
       Expr.noShadowList_vsubst hthis h.2 hn hxs (fun y hy => he y (Or.inr hy)) hXs (fun X hX => hE X (Or.inr hX))⟩
@@ -511,9 +499,8 @@ theorem Method.noShadow_vsubst {VB : List VarName} {TB : List TVarName} (hthis :
     (forall X, List.Mem X Xs -> Not (List.Mem X TB)) -> (forall X, List.Mem X M.tbinders -> Not (List.Mem X TB)) ->
     (M.vsubst n).noShadow Xs xs = true
   | .mk _ _ _ _ _, _, _, _, h, hn, hxs, he, hXs, hE => by
-    simp only [Method.noShadow, Bool.and_eq_true] at h
-    simp only [Method.vbinders, listMem_iff, List.mem_append] at he
-    simp only [Method.tbinders, listMem_iff, List.mem_append] at hE
+    simp only [Method.noShadow, Bool.and_eq_true, Method.vbinders, listMem_iff, List.mem_append,
+      Method.tbinders] at h he hE
     simp only [Method.vsubst, Method.noShadow, Bool.and_eq_true]
     refine ⟨h.1, Expr.noShadow_vsubst hthis h.2 hn ?_ (fun y hy => he y (Or.inr hy)) ?_ (fun X hX => hE X (Or.inr hX))⟩
     . intro y hy
@@ -536,9 +523,8 @@ theorem Method.noShadowList_vsubst {VB : List VarName} {TB : List TVarName} (hth
     Method.noShadowList Xs xs (Method.vsubstList n Ms) = true
   | [], _, _, _, _, _, _, _, _, _ => rfl
   | _ :: _, _, _, _, h, hn, hxs, he, hXs, hE => by
-    simp only [Method.noShadowList, Bool.and_eq_true] at h
-    simp only [Method.vbindersList, listMem_iff, List.mem_append] at he
-    simp only [Method.tbindersList, listMem_iff, List.mem_append] at hE
+    simp only [Method.noShadowList, Bool.and_eq_true, Method.vbindersList, listMem_iff, List.mem_append,
+      Method.tbindersList] at h he hE
     simp only [Method.vsubstList, Method.noShadowList, Bool.and_eq_true]
     exact ⟨Method.noShadow_vsubst hthis h.1 hn hxs (fun y hy => he y (Or.inl hy)) hXs (fun X hX => hE X (Or.inl hX)),
       Method.noShadowList_vsubst hthis h.2 hn hxs (fun y hy => he y (Or.inr hy)) hXs (fun X hX => hE X (Or.inr hX))⟩

@@ -116,34 +116,28 @@ theorem Expr.noShadow_tb : forall {e : Expr} {Xs : List TVarName} {xs : List Var
     e.noShadow Xs xs = true -> forall X, List.Mem X e.tbinders -> Not (List.Mem X Xs)
   | .var _, _, _, _, X, hX => by cases hX
   | .call e _ _ es, _, _, hn, X, hX => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at hn
-    simp only [Expr.tbinders, listMem_iff, List.mem_append] at hX
+    simp only [Expr.noShadow, Bool.and_eq_true, Expr.tbinders, listMem_iff, List.mem_append] at hn hX
     rcases hX with hX | hX
     . exact Expr.noShadow_tb hn.1 X hX
     . exact Expr.noShadowList_tb hn.2 X hX
   | .superCall e _ _ _ es, _, _, hn, X, hX => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at hn
-    simp only [Expr.tbinders, listMem_iff, List.mem_append] at hX
+    simp only [Expr.noShadow, Bool.and_eq_true, Expr.tbinders, listMem_iff, List.mem_append] at hn hX
     rcases hX with hX | hX
     . exact Expr.noShadow_tb hn.1 X hX
     . exact Expr.noShadowList_tb hn.2 X hX
   | .field e _, _, _, hn, X, hX => by
-    simp only [Expr.noShadow] at hn
-    simp only [Expr.tbinders] at hX
+    simp only [Expr.noShadow, Expr.tbinders] at hn hX
     exact Expr.noShadow_tb hn X hX
   | .new _ _ es, _, _, hn, X, hX => by
-    simp only [Expr.noShadow] at hn
-    simp only [Expr.tbinders] at hX
+    simp only [Expr.noShadow, Expr.tbinders] at hn hX
     exact Expr.noShadowList_tb hn X hX
   | .newLocal _ _ _ _ es Ms, _, _, hn, X, hX => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at hn
-    simp only [Expr.tbinders, listMem_iff, List.mem_append] at hX
+    simp only [Expr.noShadow, Bool.and_eq_true, Expr.tbinders, listMem_iff, List.mem_append] at hn hX
     rcases hX with hX | hX
     . exact Expr.noShadowList_tb hn.1 X hX
     . exact Method.noShadowList_tb hn.2 X hX
   | .ifInst e0 _ _ e1 e2, _, _, hn, X, hX => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at hn
-    simp only [Expr.tbinders, listMem_iff, List.mem_append] at hX
+    simp only [Expr.noShadow, Bool.and_eq_true, Expr.tbinders, listMem_iff, List.mem_append] at hn hX
     rcases hX with (hX | hX) | hX
     . exact Expr.noShadow_tb hn.1.1.1 X hX
     . exact Expr.noShadow_tb hn.1.2 X hX
@@ -152,16 +146,14 @@ theorem Expr.noShadowList_tb : forall {es : List Expr} {Xs : List TVarName} {xs 
     Expr.noShadowList Xs xs es = true -> forall X, List.Mem X (Expr.tbindersList es) -> Not (List.Mem X Xs)
   | [], _, _, _, X, hX => by cases hX
   | e :: es, _, _, hn, X, hX => by
-    simp only [Expr.noShadowList, Bool.and_eq_true] at hn
-    simp only [Expr.tbindersList, listMem_iff, List.mem_append] at hX
+    simp only [Expr.noShadowList, Bool.and_eq_true, Expr.tbindersList, listMem_iff, List.mem_append] at hn hX
     rcases hX with hX | hX
     . exact Expr.noShadow_tb hn.1 X hX
     . exact Expr.noShadowList_tb hn.2 X hX
 theorem Method.noShadow_tb : forall {M : Method} {Xs : List TVarName} {xs : List VarName},
     M.noShadow Xs xs = true -> forall X, List.Mem X M.tbinders -> Not (List.Mem X Xs)
   | .mk Delta _ _ ps e, _, _, hn, X, hX => by
-    simp only [Method.noShadow, Bool.and_eq_true] at hn
-    simp only [Method.tbinders, listMem_iff, List.mem_append] at hX
+    simp only [Method.noShadow, Bool.and_eq_true, Method.tbinders, listMem_iff, List.mem_append] at hn hX
     rcases hX with hX | hX
     . exact not_mem_of_all_not_contains hn.1.1 hX
     . intro hm
@@ -170,8 +162,7 @@ theorem Method.noShadowList_tb : forall {Ms : List Method} {Xs : List TVarName} 
     Method.noShadowList Xs xs Ms = true -> forall X, List.Mem X (Method.tbindersList Ms) -> Not (List.Mem X Xs)
   | [], _, _, _, X, hX => by cases hX
   | M :: Ms, _, _, hn, X, hX => by
-    simp only [Method.noShadowList, Bool.and_eq_true] at hn
-    simp only [Method.tbindersList, listMem_iff, List.mem_append] at hX
+    simp only [Method.noShadowList, Bool.and_eq_true, Method.tbindersList, listMem_iff, List.mem_append] at hn hX
     rcases hX with hX | hX
     . exact Method.noShadow_tb hn.1 X hX
     . exact Method.noShadowList_tb hn.2 X hX
@@ -286,17 +277,15 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         have hv0n := han.1
         have hv0t := hat.1
         have hv0u := hau.1
-        simp only [Value.expr, Expr.noShadow, Bool.and_eq_true] at hv0n
-        simp only [Value.expr, Expr.vbinders, List.mem_append, not_or] at hv0t
-        simp only [Value.expr, Expr.uniq] at hv0u
+        simp only [Value.expr, Expr.noShadow, Bool.and_eq_true, Expr.vbinders, List.mem_append, not_or,
+          Expr.uniq] at hv0n hv0t hv0u
         have hnM : (Method.mk Delta' T0 m' ps e0).noShadow [] [] = true := by
           have := noShadowListM_mem hM hv0n.2
           simpa using this
         have htM : NoThisM (Method.mk Delta' T0 m' ps e0) := fun h => hv0t.2 (vbindersListM_mem hM h)
         have huM : (Method.mk Delta' T0 m' ps e0).uniq := uniqList_mem hM hv0u.2
-        simp only [Method.noShadow, Bool.and_eq_true, List.nil_append, List.cons_append] at hnM
-        simp only [NoThisM, Method.vbinders, listMem_iff, List.mem_append, not_or] at htM
-        simp only [Method.uniq] at huM
+        simp only [Method.noShadow, Bool.and_eq_true, List.nil_append, List.cons_append, NoThisM, Method.vbinders,
+          listMem_iff, List.mem_append, not_or, Method.uniq] at hnM htM huM
         exact ⟨_, Step.innerFound (v0 := Value.newLocal C Gs C' Gs'' vs0 Ms) rfl hM (FreshM.refl _) hl.1 hl.2
           huM.1 (List.nodup_cons.mpr ⟨htM.1, huM.2.1⟩) (fun X hX => Expr.noShadow_tb hnM.2 X hX)
           (fun y hy => Expr.noShadow_binders hnM.2 htM.2 y hy) rfl⟩
@@ -336,9 +325,8 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
           simp only [listMem_iff, List.mem_append, List.mem_map]
           exact Or.inl (Exists.intro w.D (And.intro hw'.decl.dec_mem rfl)))
         have hdis := Method.noShadow_dom hnM
-        simp only [Method.noShadow, Bool.and_eq_true, List.nil_append, List.cons_append] at hnM
-        simp only [NoThisM, Method.vbinders, listMem_iff, List.mem_append, not_or] at htM
-        simp only [Method.uniq] at huM
+        simp only [Method.noShadow, Bool.and_eq_true, List.nil_append, List.cons_append, NoThisM, Method.vbinders,
+          listMem_iff, List.mem_append, not_or, Method.uniq] at hnM htM huM
         have hN : (dom w.D.bounds ++ dom Delta').Nodup := by
           apply List.nodup_append.mpr
           refine And.intro hnD (And.intro huM.1 ?_)

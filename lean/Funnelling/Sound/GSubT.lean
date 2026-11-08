@@ -20,10 +20,7 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
     simp only [Expr.gsubst, Expr.gsubstList, Ty.substList, Ty.subst]
     exact Typing.newObject
   | _, _, _, _, .declField h1 h2 h3 h4, s, _, _, hg, hdis, n1, sc, hn, ht, hu => by
-    simp only [Expr.noShadow] at hn
-    simp only [Expr.tbinders] at hdis
-    simp only [NoThis, Expr.vbinders] at ht
-    simp only [Expr.uniq] at hu
+    simp only [Expr.noShadow, Expr.tbinders, NoThis, Expr.vbinders, Expr.uniq] at hn hdis ht hu
     have ih := Typing.gsub hwf hok hd h1 hg hdis n1 sc hn ht hu
     simp only [Ty.subst] at ih
     simp only [Expr.gsubst]
@@ -31,10 +28,8 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
     exact Typing.declField ih h2 h3 (by rw [substList_length, h4])
   | _, _, _, _, .call (Delta0 := Delta0) (Delta1 := Delta1) (Ts2 := Ts2) (Ts1 := Ts1) h1 h2 h3 h4 h5 h6 h7 h8 h9, s, _, _,
       hg, hdis, n1, sc, hn, ht, hu => by
-    simp only [Expr.noShadow, Bool.and_eq_true] at hn
-    simp only [Expr.tbinders, listMem_iff, List.mem_append] at hdis
-    simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ht
-    simp only [Expr.uniq] at hu
+    simp only [Expr.noShadow, Bool.and_eq_true, Expr.tbinders, listMem_iff, List.mem_append, NoThis, Expr.vbinders,
+      not_or, Expr.uniq] at hn hdis ht hu
     have hcl := methodIn_closed hwf hok h2 h3
     have ih1 := Typing.gsub hwf hok hd h1 hg (fun X hX => hdis X (Or.inl hX)) n1 sc hn.1 ht.1 hu.1
     simp only [Ty.subst] at ih1
@@ -71,10 +66,9 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
     have := SubSeq.subst hd hg.substCtx.sub h10
     rwa [substList_bind_comp hlen hcl.2, substList_app] at this
   | _, _, _, _, .newTop (D := D) h1 h2 h3 h4 h5, s, _, _, hg, hdis, n1, sc, hn, ht, hu => by
-    simp only [Expr.noShadow, noShadowList_append, Bool.and_eq_true] at hn
-    simp only [Expr.tbinders, tbindersList_append, listMem_iff, List.mem_append] at hdis
-    simp only [NoThis, Expr.vbinders, vbindersList_append, listMem_iff, List.mem_append, not_or] at ht
-    simp only [Expr.uniq, uniqList_append] at hu
+    simp only [Expr.noShadow, noShadowList_append, Bool.and_eq_true, Expr.tbinders, tbindersList_append, listMem_iff,
+      List.mem_append, NoThis, Expr.vbinders, vbindersList_append, not_or, Expr.uniq,
+      uniqList_append] at hn hdis ht hu
     have ih1 := TypingSeq.gsub hwf hok hd h4 hg (fun X hX => hdis X (Or.inl hX)) n1 sc hn.1 ht.1 hu.1
     have ih2 := Typing.gsub hwf hok hd h5 hg (fun X hX => hdis X (Or.inr (by simpa [Expr.tbinders] using hX))) n1 sc
       (by simpa [Expr.noShadow] using hn.2) (by simpa [NoThis, Expr.vbinders] using ht.2)
@@ -92,10 +86,8 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
     have hdis0 := hdis
     have ht0 := ht
     have hu0 := hu
-    simp only [Expr.noShadow, Bool.and_eq_true] at hn
-    simp only [Expr.tbinders, listMem_iff, List.mem_append] at hdis
-    simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ht
-    simp only [Expr.uniq] at hu
+    simp only [Expr.noShadow, Bool.and_eq_true, Expr.tbinders, listMem_iff, List.mem_append, NoThis, Expr.vbinders,
+      not_or, Expr.uniq] at hn hdis ht hu
     have ih6 := Typing.gsub hwf hok hd h6 hg (fun X hX => hdis X (Or.inl (by simpa [Expr.tbinders] using hX))) n1 sc
       (by simpa [Expr.noShadow] using hn.1) (by simpa [NoThis, Expr.vbinders] using ht.1)
       (by simpa [Expr.uniq] using hu.1)
@@ -105,10 +97,8 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
       (fun X hX => hdis X (Or.inr (tbindersListM_mem hM hX))) (innerG_nodup n1 _ _) (innerG_dom sc _ _)
       (noShadowListM_mem hM hn.2) (fun h => ht.2 (vbindersListM_mem hM h)) (uniqList_mem hM hu.2)
   | Delta, gamma, _, _, .ifInstanceof (e0 := e0) (x := x) h0 hk hc h1 h2, s, _, xs, hg, hdis, n1, sc, hn, ht, hu => by
-    simp only [Expr.noShadow, Bool.and_eq_true, Bool.not_eq_true'] at hn
-    simp only [Expr.tbinders, listMem_iff, List.mem_append] at hdis
-    simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ht
-    simp only [Expr.uniq] at hu
+    simp only [Expr.noShadow, Bool.and_eq_true, Bool.not_eq_true', Expr.tbinders, listMem_iff, List.mem_append,
+      NoThis, Expr.vbinders, List.mem_cons, not_or, Expr.uniq] at hn hdis ht hu
     have hxs : Not (List.Mem x xs) := by have := hn.1.1.2; simp at this; exact this
     have ih0 := Typing.gsub hwf hok hd h0 hg (fun X hX => hdis X (Or.inl (Or.inl hX))) n1 sc hn.1.1.1 ht.1.1.2 hu.1
     have ih1 := Typing.gsub hwf hok hd h1 (xs := x :: xs) hg (fun X hX => hdis X (Or.inl (Or.inr hX)))
@@ -139,10 +129,8 @@ theorem TypingSeq.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Dec
     TypingSeq d (gsubB s Delta) (gsubG s gamma) (Expr.gsubstList s es) (Ty.substList s.ty Ts)
   | _, _, _, _, .nil, _, _, _, _, _, _, _, _, _, _ => TypingSeq.nil
   | _, _, _, _, .cons h hs, _, _, _, hg, hdis, n1, sc, hn, ht, hu => by
-    simp only [Expr.noShadowList, Bool.and_eq_true] at hn
-    simp only [Expr.tbindersList, listMem_iff, List.mem_append] at hdis
-    simp only [Expr.vbindersList, listMem_iff, List.mem_append, not_or] at ht
-    simp only [Expr.uniqList] at hu
+    simp only [Expr.noShadowList, Bool.and_eq_true, Expr.tbindersList, listMem_iff, List.mem_append,
+      Expr.vbindersList, not_or, Expr.uniqList] at hn hdis ht hu
     simp only [Expr.gsubstList, Ty.substList]
     exact TypingSeq.cons (Typing.gsub hwf hok hd h hg (fun X hX => hdis X (Or.inl hX)) n1 sc hn.1 ht.1 hu.1)
       (TypingSeq.gsub hwf hok hd hs hg (fun X hX => hdis X (Or.inr hX)) n1 sc hn.2 ht.2 hu.2)
@@ -152,10 +140,8 @@ theorem MethodOk.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Decl
     (gdom gamma).Nodup -> Sub1 (gdom gamma) (this :: xs) -> M.noShadow Xs xs = true -> NoThisM M -> M.uniq ->
     MethodOk d (gsubB s Delta) (gsubG s gamma) (M.gsubst s)
   | _, gamma, _, .methodOk (Delta' := Dm) (ps := ps) h1 h2 h3, s, Xs, xs, hg, hdis, n1, sc, hn, ht, hu => by
-    simp only [Method.noShadow, Bool.and_eq_true] at hn
-    simp only [Method.tbinders, listMem_iff, List.mem_append] at hdis
-    simp only [NoThisM, Method.vbinders, listMem_iff, List.mem_append, not_or] at ht
-    simp only [Method.uniq] at hu
+    simp only [Method.noShadow, Bool.and_eq_true, Method.tbinders, listMem_iff, List.mem_append, NoThisM,
+      Method.vbinders, not_or, Method.uniq] at hn hdis ht hu
     have hdm : forall b, List.Mem b Dm -> Not (List.Mem b.X (s.map Prod.fst)) :=
       fun b hb => hdis b.X (Or.inl (List.mem_map_of_mem (f := Bound.X) hb))
     have hpx : forall p, List.Mem p (ps.map VarDecl.x) -> Not (List.Mem p xs) :=

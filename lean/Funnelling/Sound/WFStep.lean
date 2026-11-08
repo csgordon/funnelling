@@ -123,8 +123,7 @@ theorem wf_new_mem {C : ClassName} {Ts : List Ty} {es : List Expr} {e : Expr} (h
     (he : List.Mem e es) : WFExpr e := by
   have hn := h.2.2.2.2.1
   have hc := h.2.2.2.2.2.2
-  simp only [Expr.noShadow] at hn
-  simp only [Expr.closed, Bool.and_eq_true] at hc
+  simp only [Expr.noShadow, Expr.closed, Bool.and_eq_true] at hn hc
   exact WFExpr.sub h (fun _ hk => mem_localsList he hk) (fun _ hx => mem_ifVarsList he hx)
     (noShadowList_mem he hn) (closedList_mem he hc.2)
 
@@ -132,8 +131,7 @@ theorem wf_new_suffix {C C' : ClassName} {Ts Ts' : List Ty} {l r : List Expr} (h
     (hT : Ty.ftvList Ts' = []) : WFExpr (.new C' Ts' r) := by
   have hn := h.2.2.2.2.1
   have hc := h.2.2.2.2.2.2
-  simp only [Expr.noShadow, noShadowList_eq, List.all_append, Bool.and_eq_true] at hn
-  simp only [Expr.closed, closedList_eq, List.all_append, Bool.and_eq_true] at hc
+  simp only [Expr.noShadow, noShadowList_eq, List.all_append, Bool.and_eq_true, Expr.closed, closedList_eq] at hn hc
   refine WFExpr.sub h ?_ ?_ ?_ ?_
   . intro k hk
     simp only [Expr.locals, localsList_eq, List.flatMap_append, listMem_iff, List.mem_append] at hk ⊢
@@ -148,8 +146,7 @@ theorem wf_local_new {C C' : ClassName} {Fs : List Funnel} {Ts : List Ty} {es : 
     (h : WFExpr (.newLocal C Fs C' Ts es Ms)) : WFExpr (.new C' Ts es) := by
   have hn := h.2.2.2.2.1
   have hc := h.2.2.2.2.2.2
-  simp only [Expr.noShadow, Bool.and_eq_true] at hn
-  simp only [Expr.closed, List.all_append, Bool.and_eq_true] at hc
+  simp only [Expr.noShadow, Bool.and_eq_true, Expr.closed, List.all_append] at hn hc
   refine WFExpr.sub h ?_ ?_ ?_ ?_
   . intro k hk; simp only [Expr.locals, listMem_iff, List.mem_cons, List.mem_append]; exact Or.inr (Or.inl hk)
   . intro x hx; simp only [Expr.ifVars, listMem_iff, List.mem_append]; exact Or.inl hx
@@ -160,8 +157,7 @@ theorem wf_if_else {e0 : Expr} {T : Ty} {x : VarName} {e1 e2 : Expr} (h : WFExpr
     WFExpr e2 := by
   have hn := h.2.2.2.2.1
   have hc := h.2.2.2.2.2.2
-  simp only [Expr.noShadow, Bool.and_eq_true] at hn
-  simp only [Expr.closed, Bool.and_eq_true] at hc
+  simp only [Expr.noShadow, Bool.and_eq_true, Expr.closed] at hn hc
   refine WFExpr.sub h ?_ ?_ hn.2 hc.2
   . intro k hk; simp only [Expr.locals, listMem_iff, List.mem_append, or_assoc]; exact Or.inr (Or.inr hk)
   . intro y hy; simp only [Expr.ifVars, listMem_iff, List.mem_cons, List.mem_append, or_assoc]; exact Or.inr (Or.inr (Or.inr hy))
@@ -221,10 +217,8 @@ theorem wf_ifThen {C' : ClassName} {Ts : List Ty} {x : VarName} {e1 e2 : Expr} {
   have hn := ha.2.2.2.2.1
   have hc := ha.2.2.2.2.2.2
   have ht := WFExpr.noThis ha
-  simp only [Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at hk
-  simp only [Expr.noShadow, Bool.and_eq_true] at hn
-  simp only [Expr.closed, Bool.and_eq_true] at hc
-  simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ht
+  simp only [Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and, Expr.noShadow, Bool.and_eq_true,
+    Expr.closed, NoThis, Expr.vbinders, List.mem_cons, not_or] at hk hn hc ht
   have hv : WFExpr v.expr := by
     refine WFExpr.sub ha ?_ ?_ hn.1.1.1 hc.1.1.1
     . intro k hk'; simp only [Expr.locals, listMem_iff, List.mem_append]; exact Or.inl (Or.inl hk')
@@ -256,8 +250,7 @@ theorem wf_call_arg {e0 : Expr} {Ts : List Ty} {m : MethName} {es : List Expr} {
     (h : WFExpr (.call e0 Ts m es)) (he : List.Mem e es) : WFExpr e := by
   have hn := h.2.2.2.2.1
   have hc := h.2.2.2.2.2.2
-  simp only [Expr.noShadow, Bool.and_eq_true] at hn
-  simp only [Expr.closed, Bool.and_eq_true] at hc
+  simp only [Expr.noShadow, Bool.and_eq_true, Expr.closed] at hn hc
   exact WFExpr.sub h (fun _ hk => List.mem_append_right _ (mem_localsList he hk))
     (fun _ hx => List.mem_append_right _ (mem_ifVarsList he hx)) (noShadowList_mem he hn.2) (closedList_mem he hc.2)
 
@@ -464,8 +457,7 @@ theorem wf_super_arg {e0 : Expr} {T : Ty} {Ts : List Ty} {m : MethName} {es : Li
     (h : WFExpr (.superCall e0 T Ts m es)) (he : List.Mem e es) : WFExpr e := by
   have hn := h.2.2.2.2.1
   have hc := h.2.2.2.2.2.2
-  simp only [Expr.noShadow, Bool.and_eq_true] at hn
-  simp only [Expr.closed, Bool.and_eq_true] at hc
+  simp only [Expr.noShadow, Bool.and_eq_true, Expr.closed] at hn hc
   exact WFExpr.sub h (fun _ hk => List.mem_append_right _ (mem_localsList he hk))
     (fun _ hx => List.mem_append_right _ (mem_ifVarsList he hx)) (noShadowList_mem he hn.2) (closedList_mem he hc.2)
 

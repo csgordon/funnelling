@@ -83,9 +83,8 @@ theorem renE_meth {M : Method} {B : Bounds} {Gs Gs' : List GTy} {v0 : Value} {vs
   | mk Da Ta m ps e =>
     have b1 := RenM.body h1
     have b2 := RenM.body h2
-    simp only [Method.uniq] at hu
-    simp only [NoThisM, Method.vbinders, listMem_iff, List.mem_append, not_or] at ht
-    simp only [Method.noShadow, Bool.and_eq_true] at hn
+    simp only [Method.uniq, NoThisM, Method.vbinders, listMem_iff, List.mem_append, not_or, Method.noShadow,
+      Bool.and_eq_true] at hu ht hn
     have hlen1 : (p1.map VarDecl.x).length = (ps.map VarDecl.x).length := by simp [b1.2.2.1]
     have hlen2 : (ps.map VarDecl.x).length = (p2.map VarDecl.x).length := by simp [b2.2.2.1]
     have hLen1 : (dom D1).length = (dom Da).length := by simp [dom, b1.2.1]

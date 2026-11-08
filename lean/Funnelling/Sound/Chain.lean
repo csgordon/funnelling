@@ -149,9 +149,7 @@ theorem field_typing {d : Decls} {Delta : Bounds} {gamma : Gamma} {s : TSubst} {
   | [], _, _, h, _, _ => by cases h
   | _ :: _, [], _, h, _, _ => by cases h
   | S :: Ss, w :: vs1, ht, hm, hS, hn => by
-    simp only [Value.exprs, List.map_cons, Ty.substList] at ht
-    simp only [List.map_cons, List.zip_cons_cons] at hm
-    simp only [List.map_cons, List.nodup_cons] at hn
+    simp only [Value.exprs, List.map_cons, Ty.substList, List.zip_cons_cons, List.nodup_cons] at ht hm hn
     cases ht with
     | cons h1 h2 =>
       rcases List.mem_cons.mp hm with e | hm'

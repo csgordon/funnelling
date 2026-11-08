@@ -80,8 +80,7 @@ theorem no_cycle {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : 
     (h : Sub d Delta ((Ty.cls D.C' D.Ts).subst (bind D.bounds Ts)) (.cls D.C U)) : False := by
   rcases Declared.super hwf hD with ⟨D'', hD''⟩
   have hsup := hD''.2
-  simp only [K.sup] at hsup
-  simp only [Ty.subst] at h
+  simp only [K.sup, Ty.subst] at hsup h
   rw [<- hsup] at h
   have r := rank_sub hwf hD''.1 h
   rw [rank_super hwf hD ho, hsup] at r

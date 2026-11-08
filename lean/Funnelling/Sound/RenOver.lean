@@ -187,8 +187,7 @@ theorem OverrideOkM.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {rv : VR
     OverrideOkM d (.cls C (Ty.renList rt Us)) M' := by
   cases hr with
   | @mk _ _ Dp T0p m psp ep ep' Xs' xs' hL hl hb =>
-    simp only [Method.bounds] at hdis
-    simp only [Method.uniq] at hu
+    simp only [Method.bounds, Method.uniq] at hdis hu
     have hcod : cod ((Dp.zip Xs').map fun p => ({ X := p.2, T := p.1.T.ren ((dom Dp).zip Xs' ++ rt) } : Bound)) =
         (cod Dp).map (Ty.ren ((dom Dp).zip Xs' ++ rt)) := by
       simp only [cod, List.map_map]; exact map_zip_fst (f := fun b => b.T.ren ((dom Dp).zip Xs' ++ rt)) hL
