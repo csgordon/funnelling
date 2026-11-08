@@ -517,9 +517,128 @@ theorem wfdecls_kq {d : Decls} (hwf : WFDecls d) : forall k, List.Mem k (classes
   exact And.intro (hwf.2.2.1 k hk) (And.intro (hwf.2.2.2.2.2.1 k hk)
     (fun M hM => And.intro (hl M hM).2.1 (And.intro (hl M hM).1 (hl M hM).2.2)))
 
-theorem dec_method_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec} (hD : Declared d (.dec D))
-    {M : Method} (hM : List.Mem M D.Ms) : M.closed (dom D.bounds) [] = true := by
-  sorry
+theorem kinds_all {d : Decls} {Delta : Bounds} {Ts : List Ty} (h : forall T, List.Mem T Ts -> Kind d Delta T) :
+    (Ty.ftvList Ts).all (dom Delta).contains = true := by
+  apply all_contains_iff.mpr
+  intro X hX
+  rcases ftvList_mem.mp hX with ⟨T, hT, hX⟩
+  exact Kind.ftv (h T hT) X hX
+
+theorem Method.closed_this {M : Method} {T : List TVarName} {S : List VarName} (h : M.closed T (this :: S) = true) :
+    M.closed T S = true := by
+  cases M with
+  | mk D T0 m ps e =>
+    simp only [Method.closed, Bool.and_eq_true] at h ⊢
+    refine ⟨h.1, Expr.closed_mono h.2 (fun _ h => h) ?_⟩
+    intro y hy
+    simp only [listMem_iff, List.mem_append, List.mem_cons] at hy ⊢
+    rcases hy with (hy | hy | hy) | hy
+    . exact Or.inl (Or.inl hy)
+    . exact Or.inl (Or.inl hy)
+    . exact Or.inl (Or.inr hy)
+    . exact Or.inr hy
+
+theorem closedListM_of {T : List TVarName} {S : List VarName} : forall {Ms : List Method},
+    (forall M, List.Mem M Ms -> M.closed T S = true) -> Method.closedList T S Ms = true
+  | [], _ => rfl
+  | M :: Ms, h => by
+    simp only [Method.closedList, Bool.and_eq_true]
+    exact ⟨h M (List.Mem.head _), closedListM_of (fun M' hM' => h M' (List.Mem.tail _ hM'))⟩
+
+mutual
+theorem Typing.closed {d : Decls} : forall {Delta gamma e T}, Typing d Delta gamma e T ->
+    e.closed (dom Delta) (gdom gamma) = true
+  | _, _, _, _, .subs h _ _ => Typing.closed h
+  | _, _, _, _, .var hl => by
+    simp only [Expr.closed]
+    exact List.contains_iff_mem.mpr (List.mem_map_of_mem (f := VarDecl.x) (lookup_mem_g hl))
+  | _, _, _, _, .newObject => rfl
+  | _, _, _, _, .declField h1 _ _ _ => by
+    simp only [Expr.closed]
+    exact Typing.closed h1
+  | _, _, _, _, .call h1 _ _ _ _ _ h7 _ h9 => by
+    simp only [Expr.closed, Bool.and_eq_true]
+    exact ⟨⟨Typing.closed h1, kinds_all h7⟩, TypingSeq.closed h9⟩
+  | _, _, _, _, .callLbRuntime _ _ _ _ _ _ _ h8 h9 _ h11 => by
+    have hs := TypingSeq.closed h11
+    simp only [Expr.closedList, Bool.and_eq_true] at hs
+    simp only [Expr.closed, Bool.and_eq_true]
+    refine ⟨⟨hs.1, kinds_all (d := d) ?_⟩, hs.2⟩
+    intro T hT
+    cases hT with
+    | head => exact h8
+    | tail _ hT => exact h9 T hT
+  | _, _, _, _, .newTop _ h2 _ h4 h5 => by
+    have h5c := Typing.closed h5
+    simp only [Expr.closed, Bool.and_eq_true] at h5c
+    simp only [Expr.closed, Bool.and_eq_true, closedList_eq, List.all_append]
+    rw [closedList_eq] at h5c
+    have h4c := TypingSeq.closed h4
+    rw [closedList_eq] at h4c
+    refine ⟨?_, h4c, h5c.2⟩
+    apply all_contains_iff.mpr
+    intro X hX
+    exact Kind.ftv h2 X hX
+  | _, _, _, _, .newLocal (Fs := Fs) _ h2 _ _ h5 h6 h7 _ => by
+    have h6c := Typing.closed h6
+    simp only [Expr.closed, Bool.and_eq_true] at h6c
+    have hsD := Pairing.sub h2
+    simp only [Expr.closed, Bool.and_eq_true, List.all_append]
+    refine ⟨⟨⟨?_, ?_⟩, h6c.2⟩, closedListM_of (fun M hM => Method.closed_this
+      (Method.closed_mono (MethodOk.closed (h7 M hM)) (dom_sub1 hsD) ?_))⟩
+    . apply all_contains_iff.mpr
+      intro X hX
+      rw [<- Pairing.dom_eq h2] at hX
+      exact dom_sub1 hsD X hX
+    . apply all_contains_iff.mpr
+      intro X hX
+      exact dom_sub1 hsD X (Kind.ftv h5 X hX)
+    . intro y hy
+      simp only [gdom, withoutThis, restrict, List.map_append, listMem_iff, List.mem_append, List.mem_map,
+        List.mem_filter, List.mem_singleton] at hy
+      simp only [gdom, listMem_iff, List.mem_cons, List.mem_map]
+      rcases hy with ⟨a, ha, e⟩ | ⟨a, ha, e⟩
+      . exact Or.inr ⟨a, ha.1.1, e⟩
+      . subst ha; exact Or.inl e.symm
+  | _, _, _, _, .ifInstanceof h0 hk _ h1 h2 => by
+    simp only [Expr.closed, Bool.and_eq_true]
+    refine ⟨⟨⟨Typing.closed h0, ?_⟩, Expr.closed_mono (Typing.closed h1) (fun _ h => h) ?_⟩, Typing.closed h2⟩
+    . apply all_contains_iff.mpr
+      exact Kind.ftv hk
+    . intro y hy
+      rw [gdom_append_single] at hy
+      simp only [listMem_iff, List.mem_append, List.mem_cons, List.not_mem_nil, or_false] at hy ⊢
+      rcases hy with hy | hy
+      . exact Or.inr hy
+      . exact Or.inl hy
+theorem TypingSeq.closed {d : Decls} : forall {Delta gamma es Ts}, TypingSeq d Delta gamma es Ts ->
+    Expr.closedList (dom Delta) (gdom gamma) es = true
+  | _, _, _, _, .nil => rfl
+  | _, _, _, _, .cons h hs => by
+    simp only [Expr.closedList, Bool.and_eq_true]
+    exact ⟨Typing.closed h, TypingSeq.closed hs⟩
+theorem MethodOk.closed {d : Decls} : forall {Delta gamma M}, MethodOk d Delta gamma M ->
+    M.closed (dom Delta) (gdom gamma) = true
+  | _, _, _, .methodOk h1 h2 h3 => by
+    simp only [Method.closed, Bool.and_eq_true]
+    rw [<- dom_append]
+    refine ⟨kinds_all (d := d) ?_, Expr.closed_mono (Typing.closed h3) (fun _ h => h) ?_⟩
+    . intro T hT
+      simp only [listMem_iff, List.mem_append, List.mem_cons] at hT
+      rcases hT with (hT | hT) | hT
+      . exact h2 T (by rw [hT]; exact List.Mem.head _)
+      . exact h1 T hT
+      . exact h2 T (List.Mem.tail _ hT)
+    . intro y hy
+      simp only [gdom, List.map_append, listMem_iff, List.mem_append, List.mem_cons] at hy ⊢
+      rcases hy with hy | hy
+      . exact Or.inl (Or.inr hy)
+      . exact Or.inr hy
+end
+
+theorem dec_method_closed {d : Decls} (hok : DeclsOk d) {D : Dec} (hD : Declared d (.dec D))
+    {M : Method} (hM : List.Mem M D.Ms) : M.closed (dom D.bounds) [] = true :=
+  Method.closed_this (MethodOk.closed ((hok D hD.dec_mem).2.2.1 M hM))
 
 theorem wf_super_arg {e0 : Expr} {T : Ty} {Ts : List Ty} {m : MethName} {es : List Expr} {e : Expr}
     (h : WFExpr (.superCall e0 T Ts m es)) (he : List.Mem e es) : WFExpr e := by
@@ -546,7 +665,7 @@ theorem wf_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec}
     fun k hk => wfdecls_kq hwf k (classes_mem_loc hd (mem_localsListM hM hk))
   have hiM : Not (List.Mem this M.ifVars) := fun h => hwf.2.2.2.2.2.2.2.1.2 (by
     simp only [listMem_iff, List.mem_flatMap]; exact ⟨D, hd, mem_ifVarsListM hM h⟩)
-  have hcM := dec_method_closed hwf hok hD hM
+  have hcM := dec_method_closed hok hD hM
   have hv0 : WFExpr v0.expr := WFExpr.plug (E := .superRecv .hole (GTy.cls D.C Gs) Gs' m (Value.exprs vs)) ha
   have hvs : forall v, List.Mem v vs -> WFExpr v.expr := fun v hv => wf_super_arg ha (exprs_mem hv)
   rcases freshM_avoid M (v0.expr.vbinders ++ Expr.vbindersList (Value.exprs vs))
