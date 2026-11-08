@@ -4,14 +4,6 @@ open Funnelling.SoundSimp
 
 namespace Funnelling.High
 
-theorem declOk {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) : DeclOk d := declOk' hwf hok
-
-theorem pres_fieldFound {d : Decls} (hwf : WFDecls d) {D : Dec} {f : FieldName} {Gs : List GTy}
-    {vs1 vs : List Value} {v : Value} {T : Ty} (hD : Declared d (.dec D)) (hl : vs1.length = D.Ss.length)
-    (hm : List.Mem (f, v) ((D.Ss.map Slot.f).zip vs1))
-    (h : Typing d [] [] (.field (Value.new D.C Gs (vs1 ++ vs)).expr f) T) : Typing d [] [] v.expr T :=
-  pres_fieldFound' hwf hD hl hm h
-
 theorem pres_ifThen {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {C' : ClassName} {Ts Ts' : List Ty}
     {x : VarName} {e1 e1' e2 : Expr} {v : Value} {T : Ty} (hs : Sub d [] (typeOf v) (.cls C' Ts'))
     (hf : Fresh e1 e1') (hd : VSubstDefined [x] e1') (ha : WFExpr (.ifInst v.expr (.cls C' Ts) x e1 e2))

@@ -163,6 +163,15 @@ theorem mem_ifVarsListM {M : Method} {x : VarName} : forall {Ms : List Method}, 
     | head => exact Or.inl hk
     | tail _ h => exact Or.inr (mem_ifVarsListM h hk)
 
+theorem noShadowListM_mem {M : Method} {Xs : List TVarName} {xs : List VarName} : forall {Ms : List Method},
+    List.Mem M Ms -> Method.noShadowList Xs xs Ms = true -> M.noShadow Xs xs = true
+  | [], h, _ => by cases h
+  | M' :: Ms, h, hn => by
+    simp only [Method.noShadowList, Bool.and_eq_true] at hn
+    cases h with
+    | head => exact hn.1
+    | tail _ h => exact noShadowListM_mem h hn.2
+
 theorem WFDecls.method {d : Decls} (h : WFDecls d) {D : Dec} (hD : List.Mem D d) {M : Method}
     (hM : List.Mem M D.Ms) : M.uniq /\ NoThisM M /\ Method.noShadow (dom D.bounds) [] M = true := by
   have hl := h.locOk
@@ -176,14 +185,4 @@ theorem WFDecls.method {d : Decls} (h : WFDecls d) {D : Dec} (hD : List.Mem D d)
   refine And.intro (Method.uniq_of hmo hlm) (And.intro (Method.noThis_of hmo hlm hi) ?_)
   have h7 := h.2.2.2.2.2.2.1 D hD
   exact noShadowListM_mem hM h7
-where
-  noShadowListM_mem {M : Method} {Xs : List TVarName} {xs : List VarName} : forall {Ms : List Method},
-      List.Mem M Ms -> Method.noShadowList Xs xs Ms = true -> M.noShadow Xs xs = true
-    | [], h, _ => by cases h
-    | M' :: Ms, h, hn => by
-      simp only [Method.noShadowList, Bool.and_eq_true] at hn
-      cases h with
-      | head => exact hn.1
-      | tail _ h => exact noShadowListM_mem h hn.2
-
 end Funnelling.High

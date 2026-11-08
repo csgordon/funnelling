@@ -325,12 +325,6 @@ theorem not_contains_of {A : Type} [DecidableEq A] {l : List A} {x : A} (h : Not
     (!(l.contains x)) = true := by
   simpa using h
 
-theorem all_not_contains {A : Type} [DecidableEq A] {l xs : List A}
-    (h : forall x, List.Mem x l -> Not (List.Mem x xs)) : l.all (fun x => !(xs.contains x)) = true := by
-  rw [List.all_eq_true]
-  intro x hx
-  simpa using h x hx
-
 mutual
 theorem Expr.fr_noShadow {LV : List VarName} {LT : List TVarName} (ht : List.Mem this LV) :
     forall (e : Expr) {rv : VRen} {rt : TRen} {d : Nat} {Tb : List TVarName} {Sb : List VarName},
@@ -369,8 +363,8 @@ theorem Method.fr_noShadow {LV : List VarName} {LT : List TVarName} (ht : List.M
   | .mk _ _ _ _ e, _, _, _, _, _, hS, hT => by
     simp only [Method.fr, Method.noShadow, Bool.and_eq_true]
     rw [dom_renBounds frTs_length, names_renParams frVs_length]
-    exact ⟨⟨all_not_contains (fun X hX hm => hT X hm (frTs_at hX)),
-      all_not_contains (fun y hy hm => hS y hm (frVs_at hy))⟩, Expr.fr_noShadow ht e (hS.meth ht) hT.meth⟩
+    exact ⟨⟨all_not_contains_of (fun X hX hm => hT X hm (frTs_at hX)),
+      all_not_contains_of (fun y hy hm => hS y hm (frVs_at hy))⟩, Expr.fr_noShadow ht e (hS.meth ht) hT.meth⟩
 theorem Method.frList_noShadow {LV : List VarName} {LT : List TVarName} (ht : List.Mem this LV) :
     forall (Ms : List Method) {rv : VRen} {rt : TRen} {d : Nat} {Tb : List TVarName} {Sb : List VarName},
     BelowV LV d Sb -> BelowT LT d Tb -> Method.noShadowList Tb Sb (Method.frList LV LT rv rt d Ms) = true
@@ -511,15 +505,6 @@ theorem meth_tys_ren {r : TRen} {Delta : Bounds} {Xs : List TVarName} {ps : List
   rw [cod_renBounds hL, tys_renParams hl]
   simp only [List.map_cons, List.map_append, List.cons_append]
 
-theorem vbindersList_memM {M : Method} {y : VarName} : forall {Ms : List Method}, List.Mem M Ms ->
-    List.Mem y M.vbinders -> List.Mem y (Method.vbindersList Ms)
-  | [], h, _ => by cases h
-  | _ :: _, h, hy => by
-    simp only [Method.vbindersList, listMem_iff, List.mem_append]
-    cases h with
-    | head => exact Or.inl hy
-    | tail _ h => exact Or.inr (vbindersList_memM h hy)
-
 theorem CompEnv.varsIn {rv1 rv2 rv3 : VRen} {rt1 rt2 rt3 : TRen} {Sa Sb Ta Tb}
     (env : CompEnv rv1 rv2 rv3 rt1 rt2 rt3 Sa Sb Ta Tb) {Ys : List TVarName}
     (h : Ys.all Ta.contains = true) : (Ys.map (rn rt1)).all Tb.contains = true := by
@@ -653,7 +638,7 @@ theorem RenE.inv {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 rv3 rt3 Sa 
           (fun hX hY hne e => hne ((hinv _ hX).symm.trans ((congrArg (rn rt2) e).trans (hinv _ hY)))) hk1.2.1)
       . intro M hM
         have hMu := uniqList_mem hM hu.2
-        have hMt : Not (List.Mem this M.vbinders) := fun h => hb.2 (vbindersList_memM hM h)
+        have hMt : Not (List.Mem this M.vbinders) := fun h => hb.2 (vbindersListM_mem hM h)
         cases M with
         | mk D T0 m ps body =>
           simp only [Method.uniq] at hMu

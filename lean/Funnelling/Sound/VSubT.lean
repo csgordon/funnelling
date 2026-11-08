@@ -212,8 +212,8 @@ theorem Typing.vsub {d : Decls} : forall {Delta gamma e T}, Typing d Delta gamma
         have hyt : Not (y = this) := fun e => ht.2 (e ▸ vbindersListM_mem hM.1 hy)
         exact hdef y (Or.inr (vbindersListM_mem hM.1 hy)) ((nthis_dom hyt).mp hm))
       (innerG_nodup n1 _ _) (innerG_dom sc _ _) (by rw [<- innerG_gsub]; exact innerG_dom sc' _ _)
-      (noShadowListM_all hn.2 hM.1)
-      (by have := noShadowListM_all hn'.2 hM'; rw [hM.2] at this; exact this)
+      (noShadowListM_mem hM.1 hn.2)
+      (by have := noShadowListM_mem hM' hn'.2; rw [hM.2] at this; exact this)
       (fun h => ht.2 (vbindersListM_mem hM.1 h)) (uniqList_mem hM.1 hu.2) filter_this_no
     show MethodOk _ _ (innerG (gsub n gamma) Fs C) _
     rw [innerG_gsub]

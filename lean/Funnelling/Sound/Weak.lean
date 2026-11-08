@@ -137,7 +137,7 @@ theorem Typing.weak {d : Decls} : forall {Delta gamma e T}, Typing d Delta gamma
         (by simpa [NoThis, Expr.vbinders] using ht.1) (by simpa [Expr.uniq] using hu.1)) ?_ h8
     intro M hM
     exact MethodOk.weak (h7 M hM) (fun _ h => h) (innerG_sub hG _ _) (innerG_nodup n1 _ _) (innerG_nodup n2 _ _)
-      (innerG_dom sc _ _) (noShadowListM_all hn.2 hM)
+      (innerG_dom sc _ _) (noShadowListM_mem hM hn.2)
       (fun y hy hm => by
         have hm2 := innerG_dom2 _ _ y hm
         cases hm2 with

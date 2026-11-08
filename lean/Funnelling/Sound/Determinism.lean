@@ -97,15 +97,6 @@ theorem vbindersListM_mem {M : Method} {x : VarName} : forall {Ms : List Method}
     | head => exact Or.inl hx
     | tail _ h => exact Or.inr (vbindersListM_mem h hx)
 
-theorem noShadowListM_mem' {M : Method} {Xs : List TVarName} {xs : List VarName} : forall {Ms : List Method},
-    List.Mem M Ms -> Method.noShadowList Xs xs Ms = true -> M.noShadow Xs xs = true
-  | [], h, _ => by cases h
-  | M' :: Ms, h, hn => by
-    simp only [Method.noShadowList, Bool.and_eq_true] at hn
-    cases h with
-    | head => exact hn.1
-    | tail _ h => exact noShadowListM_mem' h hn.2
-
 theorem closedList_vals {T : List TVarName} {S : List VarName} : forall {vs : List Value},
     Expr.closedList T S (Value.exprs vs) = true -> forall v, List.Mem v vs -> v.expr.closed T S = true
   | [], _, _, h => by cases h
@@ -275,7 +266,7 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
       have hMt : NoThisM M := fun h => ht.1.2 (vbindersListM_mem hM h)
       have hn := ha.2.2.2.2.1
       simp only [Expr.noShadow, Value.expr, Bool.and_eq_true] at hn
-      have hMn : Method.noShadow (dom []) [] M = true := noShadowListM_mem' hM hn.1.2
+      have hMn : Method.noShadow (dom []) [] M = true := noShadowListM_mem hM hn.1.2
       have hc := ha.2.2.2.2.2.2
       simp only [Expr.closed, Bool.and_eq_true] at hc
       have hvals := closed_cons_vals hc.1.1 hc.2

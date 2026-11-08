@@ -165,7 +165,7 @@ theorem field_typing {d : Decls} {Delta : Bounds} {gamma : Gamma} {s : TSubst} {
           rw [this] at hn
           exact absurd (List.of_mem_zip hm').1 hn.1
         . exact field_typing h2 hm' hS' hn.2
-theorem pres_fieldFound' {d : Decls} (hwf : WFDecls d) {D : Dec} {f : FieldName} {Gs : List GTy}
+theorem pres_fieldFound {d : Decls} (hwf : WFDecls d) {D : Dec} {f : FieldName} {Gs : List GTy}
     {vs1 vs : List Value} {v : Value} {T : Ty} (hD : Declared d (.dec D)) (hl : vs1.length = D.Ss.length)
     (hm : List.Mem (f, v) ((D.Ss.map Slot.f).zip vs1))
     (h : Typing d [] [] (.field (Value.new D.C Gs (vs1 ++ vs)).expr f) T) : Typing d [] [] v.expr T := by

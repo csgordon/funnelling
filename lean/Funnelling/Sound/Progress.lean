@@ -290,7 +290,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         simp only [Value.expr, Expr.vbinders, List.mem_append, not_or] at hv0t
         simp only [Value.expr, Expr.uniq] at hv0u
         have hnM : (Method.mk Delta' T0 m' ps e0).noShadow [] [] = true := by
-          have := noShadowListM_all hv0n.2 hM
+          have := noShadowListM_mem hM hv0n.2
           simpa using this
         have htM : NoThisM (Method.mk Delta' T0 m' ps e0) := fun h => hv0t.2 (vbindersListM_mem hM h)
         have huM : (Method.mk Delta' T0 m' ps e0).uniq := uniqList_mem hM hv0u.2

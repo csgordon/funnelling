@@ -103,7 +103,7 @@ theorem pres_innerFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
   simp only [Value.expr, Expr.vbinders, listMem_iff, List.mem_append, not_or] at hv0t
   simp only [Value.expr, Expr.uniq] at hv0u
   have hnM : M.noShadow [] [] = true := by
-    have := noShadowListM_all hv0n.2 hM
+    have := noShadowListM_mem hM hv0n.2
     simpa using this
   have htM : NoThisM M := fun h => hv0t.2 (vbindersListM_mem hM h)
   have huM : M.uniq := uniqList_mem hM hv0u.2

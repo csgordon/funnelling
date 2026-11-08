@@ -484,7 +484,7 @@ theorem Typing.gsub_newLocal {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd
   . intro M' hM'
     rcases gsubstList_mem hM' with ⟨M, hM⟩
     rw [hM.2]
-    have hnM := noShadowListM_all hn.2 hM.1
+    have hnM := noShadowListM_mem hM.1 hn.2
     have htM : NoThisM M := fun h => ht.2 (vbindersListM_mem hM.1 h)
     have sc2 : Sub1 (gdom (gsubG s gamma)) xs := by rw [gdom_gsubG]; exact sc
     refine MethodOk.weak (ih7 M hM.1) (fun _ h => h) innerG_gsub_sub

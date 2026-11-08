@@ -103,7 +103,7 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
     intro M hM
     exact MethodOk.gsub hwf hok hd (h7 M hM) (hg.mono h2.sub)
       (fun X hX => hdis X (Or.inr (tbindersListM_mem hM hX))) (innerG_nodup n1 _ _) (innerG_dom sc _ _)
-      (noShadowListM_all hn.2 hM) (fun h => ht.2 (vbindersListM_mem hM h)) (uniqList_mem hM hu.2)
+      (noShadowListM_mem hM hn.2) (fun h => ht.2 (vbindersListM_mem hM h)) (uniqList_mem hM hu.2)
   | Delta, gamma, _, _, .ifInstanceof (e0 := e0) (x := x) h0 hk hc h1 h2, s, _, xs, hg, hdis, n1, sc, hn, ht, hu => by
     simp only [Expr.noShadow, Bool.and_eq_true, Bool.not_eq_true'] at hn
     simp only [Expr.tbinders, listMem_iff, List.mem_append] at hdis

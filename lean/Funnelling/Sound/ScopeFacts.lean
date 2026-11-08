@@ -17,15 +17,6 @@ structure SF (d : Decls) (k : K) (Delta0 : Bounds) : Prop where
   sup : forall C Fs C' Ts es Ms, k = .loc C Fs C' Ts es Ms -> forall X, List.Mem X (Ty.ftvList Ts) -> List.Mem X (domF Fs)
   supK : forall C Fs C' Ts es Ms, k = .loc C Fs C' Ts es Ms -> Kind d Delta0 (.cls C' Ts)
 
-theorem noShadowListM_all {Xs : List TVarName} {xs : List VarName} {M : Method} : forall {Ms : List Method},
-    Method.noShadowList Xs xs Ms = true -> List.Mem M Ms -> Method.noShadow Xs xs M = true
-  | [], _, h => by cases h
-  | M' :: Ms, hn, h => by
-    simp only [Method.noShadowList, Bool.and_eq_true] at hn
-    cases h with
-    | head => exact hn.1
-    | tail _ h => exact noShadowListM_all hn.2 h
-
 theorem methodOk_inv {d : Decls} {Delta : Bounds} {gamma : Gamma} {Delta' : Bounds} {T0 : Ty} {m : MethName}
     {ps : List VarDecl} {e : Expr} (h : MethodOk d Delta gamma (.mk Delta' T0 m ps e)) :
     KindSeq d (Delta ++ Delta') (cod Delta') /\ KindSeq d (Delta ++ Delta') (T0 :: ps.map VarDecl.T) /\
@@ -45,7 +36,7 @@ theorem sf_dec {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec} (hD : D
   . intro M hM; exact Exists.intro _ (hc.2.2.1 M hM)
   . intro M hM
     exact Exists.intro (dom D.bounds) (Exists.intro [] (And.intro (fun _ h => h)
-      (noShadowListM_all (hwf.2.2.2.2.2.2.1 D hD.dec_mem) hM)))
+      (noShadowListM_mem hM (hwf.2.2.2.2.2.2.1 D hD.dec_mem))))
   . intro _ _ _ _ _ _ e; cases e
   . intro _ _ _ _ _ _ e; cases e
 
@@ -103,7 +94,7 @@ theorem scopeFacts {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {T : Ty} {Del
       have hn2 := hns.2
       rw [hE] at hn2
       rcases occ_noShadow E hn2 with ⟨xs', hxs'⟩
-      refine Exists.intro (Xs ++ dom Delta') (Exists.intro xs' (And.intro ?_ (noShadowListM_all hxs' hM')))
+      refine Exists.intro (Xs ++ dom Delta') (Exists.intro xs' (And.intro ?_ (noShadowListM_mem hM' hxs')))
       intro X hX
       have hX2 : List.Mem X (dom (Delta ++ Delta')) := by
         have := h5.sub
@@ -160,7 +151,7 @@ theorem scopeExists {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {k : K} (hk 
     exact Exists.intro _ (Exists.intro _ (Scope.loc (Exists.intro k' (And.intro hk (And.intro rfl hM)))
       (Exists.intro E hE) hk.generic hs hp))
 
-theorem declOk' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) : DeclOk d where
+theorem declOk {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) : DeclOk d where
   supD := by
     intro D hD X hX
     exact Kind.ftv ((hok D hD.dec_mem).2.1 _ (List.Mem.head _)) X (by simpa [Ty.ftv] using hX)
