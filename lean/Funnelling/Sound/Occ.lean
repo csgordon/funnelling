@@ -6,72 +6,32 @@ namespace Funnelling.High
 
 theorem occ_typing {d : Decls} {Delta : Bounds} {a : Expr} : forall (E : ExprCtx) {gamma : Gamma} {T : Ty},
     Typing d Delta gamma (E.plug a) T -> exists gamma' Ta, Typing d Delta gamma' a Ta
-  | .hole, gamma, T, h => Exists.intro gamma (Exists.intro T h)
-  | .callRecv E _ _ _, _, _, h => by
-    cases inv_call h rfl with
-    | intro w hw => exact occ_typing E hw.ty0
-  | .callArg _ _ _ _ E _, _, _, h => by
-    cases inv_call h rfl with
-    | intro w hw =>
-      cases TypingSeq.mid hw.args with
-      | intro Tx hx => exact occ_typing E hx.1
+  | .hole, gamma, T, h => ⟨gamma, T, h⟩
+  | .callRecv E _ _ _, _, _, h => let ⟨_, hw⟩ := inv_call h rfl; occ_typing E hw.ty0
+  | .callArg _ _ _ _ E _, _, _, h => let ⟨_, hw⟩ := inv_call h rfl; let ⟨_, hx⟩ := TypingSeq.mid hw.args; occ_typing E hx.1
   | .superRecv E _ _ _ _, _, _, h => by
-    cases inv_super h rfl with
-    | intro w hw =>
-      cases hw.args with
-      | cons h0 _ => exact occ_typing E h0
+    rcases inv_super h rfl with ⟨_, hw⟩; cases hw.args with | cons h0 _ => exact occ_typing E h0
   | .superArg _ _ _ _ _ E _, _, _, h => by
-    cases inv_super h rfl with
-    | intro w hw =>
-      cases hw.args with
-      | cons _ hs =>
-        cases TypingSeq.mid hs with
-        | intro Tx hx => exact occ_typing E hx.1
-  | .field E _, _, _, h => by
-    cases inv_field h rfl with
-    | intro w hw => exact occ_typing E hw.ty
-  | .newArg _ _ _ E _, _, _, h => by
-    cases typing_new_mid h rfl with
-    | intro Tx hx => exact occ_typing E hx.1
-  | .localArg _ _ _ _ _ E _ _, _, _, h => by
-    cases inv_local h rfl with
-    | intro w hw =>
-      cases typing_new_mid hw.tyNew rfl with
-      | intro Tx hx => exact occ_typing E hx.1
-  | .ifCond E _ _ _ _, _, _, h => by
-    cases inv_if h rfl with
-    | intro w hw => exact occ_typing E hw.ty0
-  | .ifThen _ _ _ E _, _, _, h => by
-    cases inv_if h rfl with
-    | intro w hw => exact occ_typing E hw.ty1
-  | .ifElse _ _ _ _ E, _, _, h => by
-    cases inv_if h rfl with
-    | intro w hw => exact occ_typing E hw.ty2
+    rcases inv_super h rfl with ⟨_, hw⟩
+    cases hw.args with | cons _ hs => exact let ⟨_, hx⟩ := TypingSeq.mid hs; occ_typing E hx.1
+  | .field E _, _, _, h => let ⟨_, hw⟩ := inv_field h rfl; occ_typing E hw.ty
+  | .newArg _ _ _ E _, _, _, h => let ⟨_, hx⟩ := typing_new_mid h rfl; occ_typing E hx.1
+  | .localArg _ _ _ _ _ E _ _, _, _, h =>
+    let ⟨_, hw⟩ := inv_local h rfl; let ⟨_, hx⟩ := typing_new_mid hw.tyNew rfl; occ_typing E hx.1
+  | .ifCond E _ _ _ _, _, _, h => let ⟨_, hw⟩ := inv_if h rfl; occ_typing E hw.ty0
+  | .ifThen _ _ _ E _, _, _, h => let ⟨_, hw⟩ := inv_if h rfl; occ_typing E hw.ty1
+  | .ifElse _ _ _ _ E, _, _, h => let ⟨_, hw⟩ := inv_if h rfl; occ_typing E hw.ty2
 
 theorem occ_noShadow {Xs : List TVarName} {C Fs C' Ts es Ms} : forall (E : ExprCtx) {xs : List VarName},
-    (E.plug (.newLocal C Fs C' Ts es Ms)).noShadow Xs xs = true -> exists xs', Method.noShadowList Xs xs' Ms = true
-  | .hole, xs, h => by
-    simp only [ExprCtx.plug, Expr.noShadow, Bool.and_eq_true] at h
-    exact Exists.intro _ h.2
-  | .callRecv E _ _ _, _, h => by
-    simp only [ExprCtx.plug, Expr.noShadow, Bool.and_eq_true] at h; exact occ_noShadow E h.1
-  | .callArg _ _ _ _ E _, _, h => by
-    simp only [ExprCtx.plug, Expr.noShadow, Bool.and_eq_true] at h; exact occ_noShadow E (noShadowList_mem mem_mid h.2)
-  | .superRecv E _ _ _ _, _, h => by
-    simp only [ExprCtx.plug, Expr.noShadow, Bool.and_eq_true] at h; exact occ_noShadow E h.1
-  | .superArg _ _ _ _ _ E _, _, h => by
-    simp only [ExprCtx.plug, Expr.noShadow, Bool.and_eq_true] at h; exact occ_noShadow E (noShadowList_mem mem_mid h.2)
-  | .field E _, _, h => by simp only [ExprCtx.plug, Expr.noShadow] at h; exact occ_noShadow E h
-  | .newArg _ _ _ E _, _, h => by
-    simp only [ExprCtx.plug, Expr.noShadow] at h; exact occ_noShadow E (noShadowList_mem mem_mid h)
-  | .localArg _ _ _ _ _ E _ _, _, h => by
-    simp only [ExprCtx.plug, Expr.noShadow, Bool.and_eq_true] at h; exact occ_noShadow E (noShadowList_mem mem_mid h.1)
-  | .ifCond E _ _ _ _, _, h => by
-    simp only [ExprCtx.plug, Expr.noShadow, Bool.and_eq_true] at h; exact occ_noShadow E h.1.1.1
-  | .ifThen _ _ _ E _, _, h => by
-    simp only [ExprCtx.plug, Expr.noShadow, Bool.and_eq_true] at h; exact occ_noShadow E h.1.2
-  | .ifElse _ _ _ _ E, _, h => by
-    simp only [ExprCtx.plug, Expr.noShadow, Bool.and_eq_true] at h; exact occ_noShadow E h.2
+    (E.plug (.newLocal C Fs C' Ts es Ms)).noShadow Xs xs = true -> exists xs', Method.noShadowList Xs xs' Ms = true := by
+  intro E
+  induction E <;> intro xs h <;> simp only [ExprCtx.plug, Expr.noShadow, Bool.and_eq_true] at h
+  case hole => exact Exists.intro _ h.2
+  all_goals
+    rename_i ih
+    first | exact ih h | exact ih h.1 | exact ih h.2 | exact ih h.1.1.1 | exact ih h.1.2
+          | exact ih (noShadowList_mem mem_mid h) | exact ih (noShadowList_mem mem_mid h.1)
+          | exact ih (noShadowList_mem mem_mid h.2)
 
 theorem Pairing.dom_eq {Delta : Bounds} {Fs : List Funnel} {Ts : List Ty} {Delta0 : Bounds} {Ts0 : List Ty}
     (h : Pairing Delta Fs Ts Delta0 Ts0) : dom Delta0 = domF Fs := by

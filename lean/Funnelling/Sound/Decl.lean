@@ -51,31 +51,17 @@ theorem classes_locClosed (d : Decls) : LocClosed (classes d) := by
     | tail _ hk => exact List.Mem.tail _ (Method.locClosedList D.Ms k hk x hx)
 
 theorem ExprCtx.locals_plug {a : Expr} {k : K} (hk : List.Mem k a.locals) :
-    forall (E : ExprCtx), List.Mem k (E.plug a).locals
-  | .hole => hk
-  | .callRecv E _ _ _ => by
-    simp only [ExprCtx.plug, Expr.locals]; exact List.mem_append_left _ (ExprCtx.locals_plug hk E)
-  | .callArg _ _ _ _ E _ => by
-    simp only [ExprCtx.plug, Expr.locals]; exact List.mem_append_right _ (mem_localsList mem_mid (ExprCtx.locals_plug hk E))
-  | .superRecv E _ _ _ _ => by
-    simp only [ExprCtx.plug, Expr.locals]; exact List.mem_append_left _ (ExprCtx.locals_plug hk E)
-  | .superArg _ _ _ _ _ E _ => by
-    simp only [ExprCtx.plug, Expr.locals]; exact List.mem_append_right _ (mem_localsList mem_mid (ExprCtx.locals_plug hk E))
-  | .field E _ => by simp only [ExprCtx.plug, Expr.locals]; exact ExprCtx.locals_plug hk E
-  | .newArg _ _ _ E _ => by
-    simp only [ExprCtx.plug, Expr.locals]; exact mem_localsList mem_mid (ExprCtx.locals_plug hk E)
-  | .localArg _ _ _ _ _ E _ _ => by
-    simp only [ExprCtx.plug, Expr.locals]
-    exact List.Mem.tail _ (List.mem_append_left _ (mem_localsList mem_mid (ExprCtx.locals_plug hk E)))
-  | .ifCond E _ _ _ _ => by
-    simp only [ExprCtx.plug, Expr.locals]
-    exact List.mem_append_left _ (List.mem_append_left _ (ExprCtx.locals_plug hk E))
-  | .ifThen _ _ _ E _ => by
-    simp only [ExprCtx.plug, Expr.locals]
-    exact List.mem_append_left _ (List.mem_append_right _ (ExprCtx.locals_plug hk E))
-  | .ifElse _ _ _ _ E => by
-    simp only [ExprCtx.plug, Expr.locals]
-    exact List.mem_append_right _ (ExprCtx.locals_plug hk E)
+    forall (E : ExprCtx), List.Mem k (E.plug a).locals := by
+  intro E
+  induction E <;> simp only [ExprCtx.plug, Expr.locals]
+  case hole => exact hk
+  all_goals
+    rename_i ih
+    first | exact List.mem_append_left _ ih | exact ih | exact mem_localsList mem_mid ih
+          | exact List.mem_append_right _ (mem_localsList mem_mid ih) | exact List.mem_append_right _ ih
+          | exact List.Mem.tail _ (List.mem_append_left _ (mem_localsList mem_mid ih))
+          | exact List.mem_append_left _ (List.mem_append_left _ ih)
+          | exact List.mem_append_left _ (List.mem_append_right _ ih)
 
 theorem OccursIn.locals {C Fs C' Ts es Ms} {e : Expr} (h : OccursIn (.newLocal C Fs C' Ts es Ms) e) :
     List.Mem (K.loc C Fs C' Ts es Ms) e.locals := by

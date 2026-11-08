@@ -53,84 +53,48 @@ theorem mem_mid {A : Type} {l r : List A} {x : A} : List.Mem x (l ++ x :: r) :=
   List.mem_append_right _ (List.Mem.head _)
 
 theorem ECtx.locals_plug {a : Expr} {k : K} (hk : List.Mem k a.locals) :
-    forall (E : ECtx), List.Mem k (E.plug a).locals
-  | .hole => hk
-  | .callRecv E _ _ _ => by
-    simp only [ECtx.plug, Expr.locals]; exact List.mem_append_left _ (ECtx.locals_plug hk E)
-  | .callArg _ _ _ _ E _ => by
-    simp only [ECtx.plug, Expr.locals]; exact List.mem_append_right _ (mem_localsList mem_mid (ECtx.locals_plug hk E))
-  | .superRecv E _ _ _ _ => by
-    simp only [ECtx.plug, Expr.locals]; exact List.mem_append_left _ (ECtx.locals_plug hk E)
-  | .superArg _ _ _ _ _ E _ => by
-    simp only [ECtx.plug, Expr.locals]; exact List.mem_append_right _ (mem_localsList mem_mid (ECtx.locals_plug hk E))
-  | .field E _ => by simp only [ECtx.plug, Expr.locals]; exact ECtx.locals_plug hk E
-  | .newArg _ _ _ E _ => by
-    simp only [ECtx.plug, Expr.locals]; exact mem_localsList mem_mid (ECtx.locals_plug hk E)
-  | .localArg _ _ _ _ _ E _ _ => by
-    simp only [ECtx.plug, Expr.locals]
-    exact List.Mem.tail _ (List.mem_append_left _ (mem_localsList mem_mid (ECtx.locals_plug hk E)))
-  | .ifCond E _ _ _ _ => by
-    simp only [ECtx.plug, Expr.locals]
-    exact List.mem_append_left _ (List.mem_append_left _ (ECtx.locals_plug hk E))
+    forall (E : ECtx), List.Mem k (E.plug a).locals := by
+  intro E
+  induction E <;> simp only [ECtx.plug, Expr.locals]
+  case hole => exact hk
+  all_goals
+    rename_i ih
+    first | exact List.mem_append_left _ ih | exact ih | exact mem_localsList mem_mid ih
+          | exact List.mem_append_right _ (mem_localsList mem_mid ih)
+          | exact List.Mem.tail _ (List.mem_append_left _ (mem_localsList mem_mid ih))
+          | exact List.mem_append_left _ (List.mem_append_left _ ih)
 
 theorem ECtx.ifVars_plug {a : Expr} {x : VarName} (hk : List.Mem x a.ifVars) :
-    forall (E : ECtx), List.Mem x (E.plug a).ifVars
-  | .hole => hk
-  | .callRecv E _ _ _ => by
-    simp only [ECtx.plug, Expr.ifVars]; exact List.mem_append_left _ (ECtx.ifVars_plug hk E)
-  | .callArg _ _ _ _ E _ => by
-    simp only [ECtx.plug, Expr.ifVars]; exact List.mem_append_right _ (mem_ifVarsList mem_mid (ECtx.ifVars_plug hk E))
-  | .superRecv E _ _ _ _ => by
-    simp only [ECtx.plug, Expr.ifVars]; exact List.mem_append_left _ (ECtx.ifVars_plug hk E)
-  | .superArg _ _ _ _ _ E _ => by
-    simp only [ECtx.plug, Expr.ifVars]; exact List.mem_append_right _ (mem_ifVarsList mem_mid (ECtx.ifVars_plug hk E))
-  | .field E _ => by simp only [ECtx.plug, Expr.ifVars]; exact ECtx.ifVars_plug hk E
-  | .newArg _ _ _ E _ => by
-    simp only [ECtx.plug, Expr.ifVars]; exact mem_ifVarsList mem_mid (ECtx.ifVars_plug hk E)
-  | .localArg _ _ _ _ _ E _ _ => by
-    simp only [ECtx.plug, Expr.ifVars]
-    exact List.mem_append_left _ (mem_ifVarsList mem_mid (ECtx.ifVars_plug hk E))
-  | .ifCond E _ _ _ _ => by
-    simp only [ECtx.plug, Expr.ifVars]
-    exact List.Mem.tail _ (List.mem_append_left _ (List.mem_append_left _ (ECtx.ifVars_plug hk E)))
+    forall (E : ECtx), List.Mem x (E.plug a).ifVars := by
+  intro E
+  induction E <;> simp only [ECtx.plug, Expr.ifVars]
+  case hole => exact hk
+  all_goals
+    rename_i ih
+    first | exact List.mem_append_left _ ih | exact ih | exact mem_ifVarsList mem_mid ih
+          | exact List.mem_append_right _ (mem_ifVarsList mem_mid ih)
+          | exact List.mem_append_left _ (mem_ifVarsList mem_mid ih)
+          | exact List.Mem.tail _ (List.mem_append_left _ (List.mem_append_left _ ih))
 
 theorem ECtx.noShadow_plug {a : Expr} {Xs : List TVarName} {xs : List VarName} :
-    forall (E : ECtx), (E.plug a).noShadow Xs xs = true -> a.noShadow Xs xs = true
-  | .hole, h => h
-  | .callRecv E _ _ _, h => by
-    simp only [ECtx.plug, Expr.noShadow, Bool.and_eq_true] at h; exact ECtx.noShadow_plug E h.1
-  | .callArg _ _ _ _ E _, h => by
-    simp only [ECtx.plug, Expr.noShadow, Bool.and_eq_true] at h; exact ECtx.noShadow_plug E (noShadowList_mem mem_mid h.2)
-  | .superRecv E _ _ _ _, h => by
-    simp only [ECtx.plug, Expr.noShadow, Bool.and_eq_true] at h; exact ECtx.noShadow_plug E h.1
-  | .superArg _ _ _ _ _ E _, h => by
-    simp only [ECtx.plug, Expr.noShadow, Bool.and_eq_true] at h; exact ECtx.noShadow_plug E (noShadowList_mem mem_mid h.2)
-  | .field E _, h => by simp only [ECtx.plug, Expr.noShadow] at h; exact ECtx.noShadow_plug E h
-  | .newArg _ _ _ E _, h => by
-    simp only [ECtx.plug, Expr.noShadow] at h; exact ECtx.noShadow_plug E (noShadowList_mem mem_mid h)
-  | .localArg _ _ _ _ _ E _ _, h => by
-    simp only [ECtx.plug, Expr.noShadow, Bool.and_eq_true] at h; exact ECtx.noShadow_plug E (noShadowList_mem mem_mid h.1)
-  | .ifCond E _ _ _ _, h => by
-    simp only [ECtx.plug, Expr.noShadow, Bool.and_eq_true] at h; exact ECtx.noShadow_plug E h.1.1.1
+    forall (E : ECtx), (E.plug a).noShadow Xs xs = true -> a.noShadow Xs xs = true := by
+  intro E
+  induction E <;> intro h <;> simp only [ECtx.plug, Expr.noShadow, Bool.and_eq_true] at h
+  case hole => exact h
+  all_goals
+    rename_i ih
+    first | exact ih h | exact ih h.1 | exact ih h.1.1.1 | exact ih (noShadowList_mem mem_mid h)
+          | exact ih (noShadowList_mem mem_mid h.1) | exact ih (noShadowList_mem mem_mid h.2)
 
 theorem ECtx.closed_plug {a : Expr} {Xs : List TVarName} {xs : List VarName} :
-    forall (E : ECtx), (E.plug a).closed Xs xs = true -> a.closed Xs xs = true
-  | .hole, h => h
-  | .callRecv E _ _ _, h => by
-    simp only [ECtx.plug, Expr.closed, Bool.and_eq_true] at h; exact ECtx.closed_plug E h.1.1
-  | .callArg _ _ _ _ E _, h => by
-    simp only [ECtx.plug, Expr.closed, Bool.and_eq_true] at h; exact ECtx.closed_plug E (closedList_mem mem_mid h.2)
-  | .superRecv E _ _ _ _, h => by
-    simp only [ECtx.plug, Expr.closed, Bool.and_eq_true] at h; exact ECtx.closed_plug E h.1.1
-  | .superArg _ _ _ _ _ E _, h => by
-    simp only [ECtx.plug, Expr.closed, Bool.and_eq_true] at h; exact ECtx.closed_plug E (closedList_mem mem_mid h.2)
-  | .field E _, h => by simp only [ECtx.plug, Expr.closed] at h; exact ECtx.closed_plug E h
-  | .newArg _ _ _ E _, h => by
-    simp only [ECtx.plug, Expr.closed, Bool.and_eq_true] at h; exact ECtx.closed_plug E (closedList_mem mem_mid h.2)
-  | .localArg _ _ _ _ _ E _ _, h => by
-    simp only [ECtx.plug, Expr.closed, Bool.and_eq_true] at h; exact ECtx.closed_plug E (closedList_mem mem_mid h.1.2)
-  | .ifCond E _ _ _ _, h => by
-    simp only [ECtx.plug, Expr.closed, Bool.and_eq_true] at h; exact ECtx.closed_plug E h.1.1.1
+    forall (E : ECtx), (E.plug a).closed Xs xs = true -> a.closed Xs xs = true := by
+  intro E
+  induction E <;> intro h <;> simp only [ECtx.plug, Expr.closed, Bool.and_eq_true] at h
+  case hole => exact h
+  all_goals
+    rename_i ih
+    first | exact ih h | exact ih h.1.1 | exact ih h.1.1.1 | exact ih (closedList_mem mem_mid h.2)
+          | exact ih (closedList_mem mem_mid h.1.2)
 
 theorem methods_sub {e e' : Expr} (h : forall k, List.Mem k e.locals -> List.Mem k e'.locals) :
     forall M, List.Mem M e.methods -> List.Mem M e'.methods := by
