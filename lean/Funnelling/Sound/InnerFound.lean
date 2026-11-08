@@ -208,69 +208,18 @@ theorem pres_innerFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
     exact And.intro hk.1 (And.intro hk.2 (Kind.subst hd (fun b hb => (hbF b hb).1) (fun b hb => (hbF b hb).2)
       (hmi.1 b.T (List.mem_map_of_mem (f := Bound.T) hb))))
   have hfst : (bind Delta' Gs').map Prod.fst = dom Delta' := bind_fst hG'
-  have hgt := Typing.gsub hwf hok hd hmi.2.2 (s := bind Delta' Gs') (Xs := [])
-    (xs := this :: ps.map VarDecl.x) hgok (fun X hX hm => hgs X hX (by rw [hfst] at hm; exact hm))
-    (by simpa [gdom] using hN') (fun y hy => by simpa [gdom] using hy) hnx ht0 hu0
-  have eB : gsubB (bind Delta' Gs') Delta' = [] := by
-    simp only [gsubB, Bounds.subst]
-    rw [List.filter_eq_nil_iff.mpr]
-    . rfl
-    . intro b hb
-      rw [hfst]
-      have hc : (dom Delta').contains b.X = true :=
-        List.contains_iff_mem.mpr (List.mem_map_of_mem (f := Bound.X) hb)
-      rw [hc]; decide
-  rw [eB] at hgt
-  have hgd : gdom (gsubG (bind Delta' Gs') ([{ T := .cls C (GTy.tys Gs), x := this }] ++ ps)) =
-      this :: ps.map VarDecl.x := by
-    rw [gdom_gsubG]; simp [gdom]
-  have hg1T : (gsubG (bind Delta' Gs') ([{ T := .cls C (GTy.tys Gs), x := this }] ++ ps)).map VarDecl.T =
-      Ty.cls C (GTy.tys Gs) :: Ts' := by
-    have hs2 := hsig
-    simp only [Ty.substList, List.cons.injEq] at hs2
-    simp only [gsubG, List.singleton_append, List.map_cons, VarDecl.subst]
-    have eg : (Ty.cls C (GTy.tys Gs)).subst (GSubst.ty (bind Delta' Gs')) = Ty.cls C (GTy.tys Gs) :=
-      GTy.subst_ty (GTy.cls C Gs)
-    rw [eg, params_T_subst, hs2.2]
-  have hlen1 : (this :: ps.map VarDecl.x).length = (v0 :: vs).length := by simp [hp]
-  have hnf : ((this :: ps.map VarDecl.x).zip (v0 :: vs)).map Prod.fst = this :: ps.map VarDecl.x :=
-    zip_map_fst hlen1
-  have eG : gsub ((this :: ps.map VarDecl.x).zip (v0 :: vs))
-      (gsubG (bind Delta' Gs') ([{ T := .cls C (GTy.tys Gs), x := this }] ++ ps)) = [] := by
-    apply List.filter_eq_nil_iff.mpr
-    intro a ha
-    have hax : List.Mem a.x (gdom (gsubG (bind Delta' Gs') ([{ T := .cls C (GTy.tys Gs), x := this }] ++ ps))) :=
-      List.mem_map_of_mem (f := VarDecl.x) ha
-    rw [hgd, <- hnf] at hax
-    have hc := List.contains_iff_mem.mpr hax
-    show Not ((!(List.contains _ a.x)) = true)
-    rw [hc]; decide
   have htv0 : Typing d [] [] v0.expr (.cls C (GTy.tys Gs)) := by
     have := vt.2.1
     rw [hv] at this |-
     simpa [typeOf] using this
-  have hres := Typing.vsub hgt (n := (this :: ps.map VarDecl.x).zip (v0 :: vs)) (Xs := [])
-    (xs := this :: ps.map VarDecl.x) (xs' := [])
-    (fun x v U h1 h2 => typingSeq_lookup (vs := v0 :: vs) (by rw [hgd]; exact hN')
-      (by rw [hg1T]; exact TypingSeq.cons htv0 hw.args) x v U (by rw [hgd]; exact h1) h2)
-    (fun p hp => by
-      rcases p with ⟨px, pv⟩
-      have hvm := (List.of_mem_zip hp).2
-      cases hvm with
-      | head => exact And.intro han.1 (And.intro hat.1 hau.1)
-      | tail _ hvm =>
-        exact And.intro (noShadowList_mem (exprs_mem hvm) han.2)
-          (And.intro (fun h => hat.2 (vbindersList_mem_e (exprs_mem hvm) h)) (uniqList_mem_e (exprs_mem hvm) hau.2)))
-    (fun y hy => by rw [hnf]; rw [Expr.vbinders_gsubst] at hy; exact hvs y hy)
-    (by rw [hgd]; exact hN')
-    (by rw [hgd]; exact fun y hy => hy)
-    (by rw [eG]; intro y hy; cases hy)
-    (by rw [Expr.noShadow_gsubst]; exact hnx) ha'.2.2.2.2.1
-    (by simpa [NoThis, Expr.vbinders_gsubst] using ht0) (by rw [Expr.uniq_gsubst]; exact hu0)
-  rw [eG] at hres
-  have hs0 := hsig
-  simp only [Ty.substList, List.cons.injEq] at hs0
-  rw [hs0.1] at hres
+  have hs2 := hsig
+  simp only [Ty.substList, List.cons.injEq] at hs2
+  have eg : (Ty.cls C (GTy.tys Gs)).subst (GSubst.ty (bind Delta' Gs')) = Ty.cls C (GTy.tys Gs) :=
+    GTy.subst_ty (GTy.cls C Gs)
+  have hres := found_tail hwf hok hd hmi.2.2 hgok hfst hN' hp hgs hvs hnx ht0 hu0 ha'
+    (by simp only [Ty.substList]; rw [eg, hs2.2]; exact TypingSeq.cons htv0 hw.args) ha.2.2.2.2.1 (WFExpr.noThis ha)
+    (WFExpr.uniq ha)
+  rw [hs2.1] at hres
   exact hw.up.typing hres
 
 end Funnelling.High

@@ -174,6 +174,63 @@ theorem vbindersList_mem_e {e : Expr} {x : VarName} : forall {es : List Expr}, L
   | _, .tail _ h, hx => by simp only [Expr.vbindersList, listMem_iff, List.mem_append]; exact Or.inr (vbindersList_mem_e h hx)
 
 
+theorem found_tail {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {B : Bounds} {Gall : List GTy}
+    {Tt T0 : Ty} {ps : List VarDecl} {e0 : Expr} {v0 : Value} {vs : List Value}
+    (hb : Typing d B ([{ T := Tt, x := this }] ++ ps) e0 T0) (hgok : GOk d B (bind B Gall))
+    (hfst : (bind B Gall).map Prod.fst = dom B) (hN' : (this :: ps.map VarDecl.x).Nodup) (hp : ps.length = vs.length)
+    (hgs : GSubstDefined (dom B) e0) (hvs : VSubstDefined (this :: ps.map VarDecl.x) e0)
+    (hnx : e0.noShadow [] (this :: ps.map VarDecl.x) = true) (ht0 : NoThis e0) (hu0 : e0.uniq)
+    (ha' : WFExpr ((e0.gsubst (bind B Gall)).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs))))
+    (hargs : TypingSeq d [] [] (Value.exprs (v0 :: vs)) (Ty.substList (GSubst.ty (bind B Gall)) (Tt :: ps.map VarDecl.T)))
+    (hn : Expr.noShadowList [] [] (Value.exprs (v0 :: vs)) = true)
+    (ht : Not (List.Mem this (Expr.vbindersList (Value.exprs (v0 :: vs))))) (hu : Expr.uniqList (Value.exprs (v0 :: vs))) :
+    Typing d [] [] ((e0.gsubst (bind B Gall)).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)))
+      (T0.subst (GSubst.ty (bind B Gall))) := by
+  have hgt := Typing.gsub hwf hok hd hb (s := bind B Gall) (Xs := []) (xs := this :: ps.map VarDecl.x) hgok
+    (fun X hX hm => hgs X hX (by rw [hfst] at hm; exact hm)) (by simpa [gdom] using hN')
+    (fun y hy => by simpa [gdom] using hy) hnx ht0 hu0
+  have eB : gsubB (bind B Gall) B = [] := by
+    simp only [gsubB, Bounds.subst]
+    rw [List.filter_eq_nil_iff.mpr]
+    . rfl
+    . intro b hb
+      rw [hfst]
+      have hc : (dom B).contains b.X = true := List.contains_iff_mem.mpr (List.mem_map_of_mem (f := Bound.X) hb)
+      rw [hc]; decide
+  rw [eB] at hgt
+  have hgd : gdom (gsubG (bind B Gall) ([{ T := Tt, x := this }] ++ ps)) = this :: ps.map VarDecl.x := by
+    rw [gdom_gsubG]; simp [gdom]
+  have hg1T : (gsubG (bind B Gall) ([{ T := Tt, x := this }] ++ ps)).map VarDecl.T =
+      Ty.substList (GSubst.ty (bind B Gall)) (Tt :: ps.map VarDecl.T) := by
+    simp only [gsubG, List.singleton_append, List.map_cons, VarDecl.subst, Ty.substList]
+    rw [params_T_subst]
+  have hnf : ((this :: ps.map VarDecl.x).zip (v0 :: vs)).map Prod.fst = this :: ps.map VarDecl.x :=
+    zip_map_fst (by simp [hp])
+  have eG : gsub ((this :: ps.map VarDecl.x).zip (v0 :: vs)) (gsubG (bind B Gall) ([{ T := Tt, x := this }] ++ ps)) =
+      [] := by
+    apply List.filter_eq_nil_iff.mpr
+    intro a ha
+    have hax : List.Mem a.x (gdom (gsubG (bind B Gall) ([{ T := Tt, x := this }] ++ ps))) :=
+      List.mem_map_of_mem (f := VarDecl.x) ha
+    rw [hgd, <- hnf] at hax
+    have hc := List.contains_iff_mem.mpr hax
+    show Not ((!(List.contains _ a.x)) = true)
+    rw [hc]; decide
+  have hres := Typing.vsub hgt (n := (this :: ps.map VarDecl.x).zip (v0 :: vs)) (Xs := [])
+    (xs := this :: ps.map VarDecl.x) (xs' := [])
+    (fun x v U h1 h2 => typingSeq_lookup (vs := v0 :: vs) (by rw [hgd]; exact hN') (by rw [hg1T]; exact hargs) x v U
+      (by rw [hgd]; exact h1) h2)
+    (fun p hp => by
+      have hv := exprs_mem (List.of_mem_zip hp).2
+      exact And.intro (noShadowList_mem hv hn) (And.intro (fun h => ht (vbindersList_mem_e hv h)) (uniqList_mem_e hv hu)))
+    (fun y hy => by rw [hnf]; rw [Expr.vbinders_gsubst] at hy; exact hvs y hy)
+    (by rw [hgd]; exact hN')
+    (by rw [hgd]; exact fun y hy => hy)
+    (by rw [eG]; intro y hy; cases hy)
+    (by rw [Expr.noShadow_gsubst]; exact hnx) ha'.2.2.2.2.1
+    (by simpa [NoThis, Expr.vbinders_gsubst] using ht0) (by rw [Expr.uniq_gsubst]; exact hu0)
+  rwa [eG] at hres
+
 theorem pres_simpleFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {D : Dec} {M : Method}
     {m : MethName} {Delta' : Bounds} {T0 : Ty} {ps : List VarDecl} {e0 : Expr} {v0 : Value} {Gs Gs' : List GTy}
     {vs : List Value} {T : Ty} (hD : Declared d (.dec D)) (hM : List.Mem M D.Ms)
@@ -345,72 +402,14 @@ theorem pres_simpleFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : 
             ((hok D hD.dec_mem).1 b.T (List.mem_map_of_mem (f := Bound.T) hb))
         . exact hmi.1 b.T (List.mem_map_of_mem (f := Bound.T) hb)
       exact Kind.subst hd (fun b hb => (hbF b hb).1) (fun b hb => (hbF b hb).2) hKb
-    have hfst : (bind (D.bounds ++ Delta') (Gs ++ Gs')).map Prod.fst = dom D.bounds ++ dom Delta' := by
-      rw [bind_fst (by simp [hG, hG']), dom_append]
-    have hgt := Typing.gsub hwf hok hd hmi.2.2 (s := bind (D.bounds ++ Delta') (Gs ++ Gs')) (Xs := [])
-      (xs := this :: ps.map VarDecl.x) hgok (fun X hX hm => hgs X hX (by rw [hfst] at hm; exact hm))
-      (by simpa [gdom] using hN') (fun y hy => by simpa [gdom] using hy) hnx ht0 hu0
-    have eB : gsubB (bind (D.bounds ++ Delta') (Gs ++ Gs')) (D.bounds ++ Delta') = [] := by
-      simp only [gsubB, Bounds.subst]
-      rw [List.filter_eq_nil_iff.mpr]
-      . rfl
-      . intro b hb
-        rw [hfst]
-        have : List.Mem b.X (dom D.bounds ++ dom Delta') := by
-          rw [<- dom_append]; exact List.mem_map_of_mem (f := Bound.X) hb
-        have hc : (dom D.bounds ++ dom Delta').contains b.X = true := List.contains_iff_mem.mpr this
-        rw [hc]; decide
-    rw [eB] at hgt
-    have hgd : gdom (gsubG (bind (D.bounds ++ Delta') (Gs ++ Gs'))
-        ([{ T := .cls D.C (vars (dom D.bounds)), x := this }] ++ ps)) = this :: ps.map VarDecl.x := by
-      rw [gdom_gsubG]; simp [gdom]
-    have hg1T : (gsubG (bind (D.bounds ++ Delta') (Gs ++ Gs'))
-        ([{ T := .cls D.C (vars (dom D.bounds)), x := this }] ++ ps)).map VarDecl.T =
-        Ty.cls D.C (GTy.tys Gs) :: Ts' := by
-      have hs2 := hsig
-      simp only [Ty.substList, List.cons.injEq] at hs2
-      simp only [gsubG, List.singleton_append, List.map_cons, VarDecl.subst, Ty.subst]
-      rw [hv1.1, params_T_subst, hs2.2]
-    have hlen1 : (this :: ps.map VarDecl.x).length = (v0 :: vs).length := by simp [hp]
-    have hnf : ((this :: ps.map VarDecl.x).zip (v0 :: vs)).map Prod.fst = this :: ps.map VarDecl.x :=
-      zip_map_fst hlen1
-    have eG : gsub ((this :: ps.map VarDecl.x).zip (v0 :: vs)) (gsubG (bind (D.bounds ++ Delta') (Gs ++ Gs'))
-        ([{ T := .cls D.C (vars (dom D.bounds)), x := this }] ++ ps)) = [] := by
-      apply List.filter_eq_nil_iff.mpr
-      intro a ha
-      have hax : List.Mem a.x (gdom (gsubG (bind (D.bounds ++ Delta') (Gs ++ Gs'))
-          ([{ T := .cls D.C (vars (dom D.bounds)), x := this }] ++ ps))) := List.mem_map_of_mem (f := VarDecl.x) ha
-      rw [hgd, <- hnf] at hax
-      have hc := List.contains_iff_mem.mpr hax
-      show Not ((!(List.contains _ a.x)) = true)
-      rw [hc]; decide
-    have hres := Typing.vsub hgt (n := (this :: ps.map VarDecl.x).zip (v0 :: vs)) (Xs := [])
-      (xs := this :: ps.map VarDecl.x) (xs' := [])
-      (fun x v U h1 h2 => typingSeq_lookup (vs := v0 :: vs) (by rw [hgd]; exact hN') (by rw [hg1T]; exact hw.args) x v U
-        (by rw [hgd]; exact h1) h2)
-      (fun p hp => by
-        rcases p with ⟨px, pv⟩
-        have hv := (List.of_mem_zip hp).2
-        have hn := ha.2.2.2.2.1
-        simp only [Expr.noShadow, Bool.and_eq_true] at hn
-        have ht := WFExpr.noThis ha
-        simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ht
-        have hu := WFExpr.uniq ha
-        cases hv with
-        | head => exact And.intro hn.1 (And.intro ht.1 hu.1)
-        | tail _ hv =>
-          exact And.intro (noShadowList_mem (exprs_mem hv) hn.2)
-            (And.intro (fun h => ht.2 (vbindersList_mem_e (exprs_mem hv) h)) (uniqList_mem_e (exprs_mem hv) hu.2)))
-      (fun y hy => by rw [hnf]; rw [Expr.vbinders_gsubst] at hy; exact hvs y hy)
-      (by rw [hgd]; exact hN')
-      (by rw [hgd]; exact fun y hy => hy)
-      (by rw [eG]; intro y hy; cases hy)
-      (by rw [Expr.noShadow_gsubst]; exact hnx) ha'.2.2.2.2.1
-      (by simpa [NoThis, Expr.vbinders_gsubst] using ht0) (by rw [Expr.uniq_gsubst]; exact hu0)
-    rw [eG] at hres
-    have hs0 := hsig
-    simp only [Ty.substList, List.cons.injEq] at hs0
-    rw [hs0.1] at hres
+    have hfst : (bind (D.bounds ++ Delta') (Gs ++ Gs')).map Prod.fst = dom (D.bounds ++ Delta') :=
+      bind_fst (by simp [hG, hG'])
+    have hs2 := hsig
+    simp only [Ty.substList, List.cons.injEq] at hs2
+    have hres := found_tail hwf hok hd hmi.2.2 hgok hfst hN' hp (by rw [dom_append]; exact hgs) hvs hnx ht0 hu0 ha'
+      (by simp only [Ty.substList, Ty.subst]; rw [hv1.1, hs2.2]; exact hw.args) ha.2.2.2.2.1 (WFExpr.noThis ha)
+      (WFExpr.uniq ha)
+    rw [hs2.1] at hres
     exact hw.up.typing hres
 
 end Funnelling.High
