@@ -99,8 +99,7 @@ theorem KindSeq.renT {d : Decls} (hd : DeclOk d) {rt : TRen} {Delta Delta' : Bou
     {Ts : List Ty} (h : KindSeq d Delta Ts) : KindSeq d Delta' (Ty.renList rt Ts) := by
   intro T hT
   rw [Ty.renList_eq_map] at hT
-  cases List.mem_map.mp hT with
-  | intro U hU => rw [<- hU.2]; exact Kind.renT hd hb (h U hU.1)
+  rcases List.mem_map.mp hT with ⟨U, hU⟩; rw [<- hU.2]; exact Kind.renT hd hb (h U hU.1)
 
 theorem Scope.renT {d : Decls} {rt : TRen} {C : ClassName} {Ts : List Ty} {Delta0 : Bounds} {Ts0 : List Ty}
     (h : Scope d (.cls C Ts) Delta0 Ts0) : Scope d (.cls C (Ty.renList rt Ts)) Delta0 (Ty.renList rt Ts0) := by
@@ -189,12 +188,10 @@ theorem RenEs.split {rv : VRen} {rt : TRen} : forall {es1 es2 es' : List Expr}, 
     rw [List.cons_append] at h
     cases h with
     | cons h1 h2 =>
-      cases RenEs.split h2 with
-      | intro a h =>
-        cases h with
-        | intro b h =>
-          rw [h.1]
-          exact Exists.intro (_ :: a) (Exists.intro b (And.intro rfl (And.intro (RenEs.cons h1 h.2.1) h.2.2)))
+      rcases RenEs.split h2 with ⟨a, h⟩
+      rcases h with ⟨b, h⟩
+      rw [h.1]
+      exact Exists.intro (_ :: a) (Exists.intro b (And.intro rfl (And.intro (RenEs.cons h1 h.2.1) h.2.2)))
 
 theorem RenMs.mem_inv {rv : VRen} {rt : TRen} {M' : Method} : forall {Ms Ms' : List Method}, RenMs rv rt Ms Ms' ->
     List.Mem M' Ms' -> exists M, List.Mem M Ms /\ RenM rv rt M M'
@@ -203,8 +200,7 @@ theorem RenMs.mem_inv {rv : VRen} {rt : TRen} {M' : Method} : forall {Ms Ms' : L
     cases h with
     | head => exact Exists.intro _ (And.intro (List.Mem.head _) h1)
     | tail _ h =>
-      cases RenMs.mem_inv h2 h with
-      | intro M hM => exact Exists.intro M (And.intro (List.Mem.tail _ hM.1) hM.2)
+      rcases RenMs.mem_inv h2 h with ⟨M, hM⟩; exact Exists.intro M (And.intro (List.Mem.tail _ hM.1) hM.2)
 
 theorem RenM.name {rv : VRen} {rt : TRen} {M M' : Method} (h : RenM rv rt M M') : M'.name = M.name := by
   cases h; rfl
@@ -217,8 +213,7 @@ theorem RenMs.names {rv : VRen} {rt : TRen} : forall {Ms Ms' : List Method}, Ren
 theorem dom_sub1 {A B : Bounds} (h : Sub1 A B) : Sub1 (dom A) (dom B) := by
   intro X hX
   simp only [dom] at hX |-
-  cases List.mem_map.mp hX with
-  | intro b hb => rw [<- hb.2]; exact List.mem_map_of_mem (h b hb.1)
+  rcases List.mem_map.mp hX with ⟨b, hb⟩; rw [<- hb.2]; exact List.mem_map_of_mem (h b hb.1)
 
 theorem field_closed {d : Decls} (hok : DeclsOk d) {D : Dec} {T : Ty} {f : FieldName} (hD : Declared d (.dec D))
     (hm : List.Mem { T := T, f := f } D.Ss) : forall X, List.Mem X T.ftv -> List.Mem X (dom D.bounds) :=
@@ -227,33 +222,26 @@ theorem field_closed {d : Decls} (hok : DeclsOk d) {D : Dec} {T : Ty} {f : Field
 theorem slots_closed {d : Decls} (hok : DeclsOk d) {D : Dec} (hD : Declared d (.dec D)) :
     forall X, List.Mem X (Ty.ftvList (D.Ss.map Slot.T)) -> List.Mem X (dom D.bounds) := by
   intro X hX
-  cases ftvList_mem.mp hX with
-  | intro T hT => exact Kind.ftv ((hok D hD.dec_mem).2.1 T (List.Mem.tail _ hT.1)) X hT.2
+  rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv ((hok D hD.dec_mem).2.1 T (List.Mem.tail _ hT.1)) X hT.2
 
 theorem methodIn_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {C0 : ClassName} {Ts0 : List Ty}
     {Delta0 : Bounds} {Ts2 : List Ty} {Delta1 : Bounds} {T0 : Ty} {m : MethName} {ps : List VarDecl} {body : Expr}
     (hs : Scope d (.cls C0 Ts0) Delta0 Ts2) (hm : MethodIn d (.mk Delta1 T0 m ps body) C0) :
     (forall X, List.Mem X (Ty.ftvList (T0 :: ps.map VarDecl.T)) -> List.Mem X (dom (Delta0 ++ Delta1))) /\
       (forall X, List.Mem X (Ty.ftvList (cod Delta1)) -> List.Mem X (dom (Delta0 ++ Delta1))) := by
-  cases scopeFacts hwf hok hs with
-  | intro k hk =>
-    cases hm with
-    | intro k' hk' =>
-      have hname : k.name = k'.name := by
-        cases hk.2.1 with
-        | intro Us hUs => simp only [Ty.cls.injEq] at hUs; rw [<- hUs.1, hk'.2.1]
-      have ek := Declared.unique hwf hk.1 hk'.1 hname
-      subst ek
-      cases hk.2.2.meths _ hk'.2.2 with
-      | intro gamma hmo =>
-        have hmi := methodOk_inv hmo
-        refine And.intro ?_ ?_
-        . intro X hX
-          cases ftvList_mem.mp hX with
-          | intro T hT => exact Kind.ftv (hmi.2.1 T hT.1) X hT.2
-        . intro X hX
-          cases ftvList_mem.mp hX with
-          | intro T hT => exact Kind.ftv (hmi.1 T hT.1) X hT.2
+  rcases scopeFacts hwf hok hs with ⟨k, hk⟩
+  rcases hm with ⟨k', hk'⟩
+  have hname : k.name = k'.name := by
+    rcases hk.2.1 with ⟨Us, hUs⟩; simp only [Ty.cls.injEq] at hUs; rw [<- hUs.1, hk'.2.1]
+  have ek := Declared.unique hwf hk.1 hk'.1 hname
+  subst ek
+  rcases hk.2.2.meths _ hk'.2.2 with ⟨gamma, hmo⟩
+  have hmi := methodOk_inv hmo
+  refine And.intro ?_ ?_
+  . intro X hX
+    rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.2.1 T hT.1) X hT.2
+  . intro X hX
+    rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.1 T hT.1) X hT.2
 
 theorem Method.noShadow_dom {Xs : List TVarName} {xs : List VarName} {M : Method} (h : M.noShadow Xs xs = true) :
     forall X, List.Mem X (dom M.bounds) -> Not (List.Mem X Xs) := by
@@ -355,14 +343,13 @@ theorem REnv.meth {rv : VRen} {rt : TRen} {Delta Delta' : Bounds} {gamma gamma' 
       rw [rn_zip_not_mem hbX, Ty.ren_congr (r2 := rt) (fun X hX => rn_zip_not_mem (fun h => hdis X h (env.dT b hb X hX)))]
       exact env.bD b hb
     . right
-      cases mem_zip_fst hL.symm hb with
-      | intro Y hY =>
-        have hY2 : List.Mem (b.X, Y) ((dom Dm).zip Ys) := by
-          simp only [dom]
-          rw [List.zip_map_left]
-          exact List.mem_map_of_mem (f := Prod.map Bound.X id) hY
-        rw [rn_zip_pair hnd hY2]
-        exact List.mem_map_of_mem (f := fun p => ({ X := p.2, T := p.1.T.ren ((dom Dm).zip Ys ++ rt) } : Bound)) hY
+      rcases mem_zip_fst hL.symm hb with ⟨Y, hY⟩
+      have hY2 : List.Mem (b.X, Y) ((dom Dm).zip Ys) := by
+        simp only [dom]
+        rw [List.zip_map_left]
+        exact List.mem_map_of_mem (f := Prod.map Bound.X id) hY
+      rw [rn_zip_pair hnd hY2]
+      exact List.mem_map_of_mem (f := fun p => ({ X := p.2, T := p.1.T.ren ((dom Dm).zip Ys ++ rt) } : Bound)) hY
   dX := by
     intro X hX
     rw [dom_append] at hX
@@ -394,21 +381,20 @@ theorem REnv.meth {rv : VRen} {rt : TRen} {Delta Delta' : Bounds} {gamma gamma' 
     | none =>
       rw [Gamma.lookup_append_right hg] at hlk
       have hm := lookup_mem_g hlk
-      cases mem_zip_fst hl.symm hm with
-      | intro y hy =>
-        have hy2 : List.Mem (z, y) ((ps.map VarDecl.x).zip ys) := by
-          rw [List.zip_map_left]
-          exact List.mem_map_of_mem (f := Prod.map VarDecl.x id) hy
-        rw [rn_zip_pair hnp hy2]
-        have hyy : List.Mem y ys := (List.of_mem_zip hy).2
-        have hn0 : Gamma.lookup gamma' y = none := Gamma.lookup_none (fun h => by
-          cases env.gx' y h with
-          | head => exact hyt hyy
-          | tail _ h2 => exact hyx y hyy h2)
-        rw [Gamma.lookup_append_right hn0]
-        refine lookup_of_mem_g ?_ ?_
-        . simp only [gdom]; rw [names_renParams hl]; exact hny
-        . exact List.mem_map_of_mem (f := fun p => ({ T := p.1.T.ren ((dom Dm).zip Ys ++ rt), x := p.2 } : VarDecl)) hy
+      rcases mem_zip_fst hl.symm hm with ⟨y, hy⟩
+      have hy2 : List.Mem (z, y) ((ps.map VarDecl.x).zip ys) := by
+        rw [List.zip_map_left]
+        exact List.mem_map_of_mem (f := Prod.map VarDecl.x id) hy
+      rw [rn_zip_pair hnp hy2]
+      have hyy : List.Mem y ys := (List.of_mem_zip hy).2
+      have hn0 : Gamma.lookup gamma' y = none := Gamma.lookup_none (fun h => by
+        cases env.gx' y h with
+        | head => exact hyt hyy
+        | tail _ h2 => exact hyx y hyy h2)
+      rw [Gamma.lookup_append_right hn0]
+      refine lookup_of_mem_g ?_ ?_
+      . simp only [gdom]; rw [names_renParams hl]; exact hny
+      . exact List.mem_map_of_mem (f := fun p => ({ T := p.1.T.ren ((dom Dm).zip Ys ++ rt), x := p.2 } : VarDecl)) hy
   gT := by
     intro y hy X hX
     simp only [listMem_iff, List.mem_append] at hy
@@ -469,11 +455,10 @@ theorem REnv.inner {rv : VRen} {rt : TRen} {Delta Delta' : Bounds} {gamma gamma'
       apply Gamma.lookup_none
       intro h
       simp only [gdom, withoutThis, listMem_iff, List.mem_map, List.mem_filter] at h
-      cases h with
-      | intro w hw =>
-        have := hw.1.2
-        rw [hw.2] at this
-        simp at this
+      rcases h with ⟨w, hw⟩
+      have := hw.1.2
+      rw [hw.2] at this
+      simp at this
     by_cases hz : z = this
     . subst hz
       simp only [innerG] at hl |-
@@ -500,8 +485,7 @@ theorem REnv.inner {rv : VRen} {rt : TRen} {Delta Delta' : Bounds} {gamma gamma'
           simp only [List.all_eq_true, List.contains_iff_mem] at hr |-
           rw [Ty.ftv_ren, abs_ren, Ty.ftvList_ren]
           intro X hX
-          cases List.mem_map.mp hX with
-          | intro Y hY => rw [<- hY.2]; exact List.mem_map_of_mem (hr Y hY.1)
+          rcases List.mem_map.mp hX with ⟨Y, hY⟩; rw [<- hY.2]; exact List.mem_map_of_mem (hr Y hY.1)
         . simpa using hzt
   gT := by
     intro y hy X hX

@@ -43,12 +43,11 @@ end
 theorem classes_locClosed (d : Decls) : LocClosed (classes d) := by
   intro k hk x hx
   simp only [classes, listMem_iff, List.mem_flatMap] at hk |-
-  cases hk with
-  | intro D hD =>
-    refine Exists.intro D (And.intro hD.1 ?_)
-    cases hD.2 with
-    | head => exact List.Mem.tail _ hx
-    | tail _ hk => exact List.Mem.tail _ (Method.locClosedList D.Ms k hk x hx)
+  rcases hk with ⟨D, hD⟩
+  refine Exists.intro D (And.intro hD.1 ?_)
+  cases hD.2 with
+  | head => exact List.Mem.tail _ hx
+  | tail _ hk => exact List.Mem.tail _ (Method.locClosedList D.Ms k hk x hx)
 
 theorem ExprCtx.locals_plug {a : Expr} {k : K} (hk : List.Mem k a.locals) :
     forall (E : ExprCtx), List.Mem k (E.plug a).locals := by
@@ -65,8 +64,7 @@ theorem ExprCtx.locals_plug {a : Expr} {k : K} (hk : List.Mem k a.locals) :
 
 theorem OccursIn.locals {C Fs C' Ts es Ms} {e : Expr} (h : OccursIn (.newLocal C Fs C' Ts es Ms) e) :
     List.Mem (K.loc C Fs C' Ts es Ms) e.locals := by
-  cases h with
-  | intro E hE => rw [hE]; exact ExprCtx.locals_plug (List.Mem.head _) E
+  rcases h with ⟨E, hE⟩; rw [hE]; exact ExprCtx.locals_plug (List.Mem.head _) E
 
 theorem Declared.mem {d : Decls} {k : K} (h : Declared d k) : List.Mem k (classes d) := by
   induction h with
@@ -85,19 +83,17 @@ theorem Declared.dec_loc {d : Decls} (hwf : WFDecls d) {D : Dec} {C Fs C' Ts es 
 
 theorem MethodIn.dec {d : Decls} (hwf : WFDecls d) {M : Method} {D : Dec} (hD : Declared d (.dec D))
     (h : MethodIn d M D.C) : List.Mem M D.Ms := by
-  cases h with
-  | intro k hk =>
-    have := Declared.unique hwf hk.1 hD hk.2.1
-    subst this
-    exact hk.2.2
+  rcases h with ⟨k, hk⟩
+  have := Declared.unique hwf hk.1 hD hk.2.1
+  subst this
+  exact hk.2.2
 
 theorem MethodIn.loc {d : Decls} (hwf : WFDecls d) {M : Method} {C Fs C' Ts es Ms}
     (hD : Declared d (.loc C Fs C' Ts es Ms)) (h : MethodIn d M C) : List.Mem M Ms := by
-  cases h with
-  | intro k hk =>
-    have := Declared.unique hwf hk.1 hD hk.2.1
-    subst this
-    exact hk.2.2
+  rcases h with ⟨k, hk⟩
+  have := Declared.unique hwf hk.1 hD hk.2.1
+  subst this
+  exact hk.2.2
 
 theorem names_unique {Ms : List Method} {M1 M2 : Method} (hn : (Ms.map Method.name).Nodup) (h1 : List.Mem M1 Ms)
     (h2 : List.Mem M2 Ms) (he : M1.name = M2.name) : M1 = M2 :=

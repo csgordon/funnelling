@@ -106,11 +106,10 @@ theorem Sub.inv_subst {d : Decls} (hd : DeclOk d) {Delta Delta2 : Bounds} {s : T
       intro T hT
       show _ = (T.subst (bindF Fs Ts)).subst s
       exact (subst_bindF_comp hl' (fun X hX => hcl X (ftvList_mem.mpr (Exists.intro T (And.intro hT hX))))).symm
-    cases ih heq (fun X hX => by exact hA X (ftv_bindF_sub hl' hcl X hX)) with
-    | intro T0 h0 =>
-      refine Exists.intro T0 (And.intro h0.1 (And.intro (Sub.subInheritLocal hD hl' ?_) h0.2.2))
-      simp only [Ty.subst]
-      exact h0.2.1
+    rcases ih heq (fun X hX => by exact hA X (ftv_bindF_sub hl' hcl X hX)) with ⟨T0, h0⟩
+    refine Exists.intro T0 (And.intro h0.1 (And.intro (Sub.subInheritLocal hD hl' ?_) h0.2.2))
+    simp only [Ty.subst]
+    exact h0.2.1
   | subVar _ _ _ =>
     intro C Ts he
     cases he
@@ -168,26 +167,20 @@ theorem declMeth_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {k : K} 
   cases scopeExists hwf hok hk with
   | intro Dk h => cases h with
     | intro Tk hs =>
-      cases scopeFacts hwf hok hs with
-      | intro k' hk' =>
-        have hname : k'.name = k.name := by
-          cases hk'.2.1 with
-          | intro Us hUs =>
-            cases K.generic_name k with
-            | intro Vs hVs => rw [hVs] at hUs; simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
-        have ek := Declared.unique hwf hk'.1 hk hname
-        subst ek
-        cases hk'.2.2.meths _ hM with
-        | intro gamma hmo =>
-          have hmi := methodOk_inv hmo
-          rw [<- hk'.2.2.gv, <- dom_append]
-          refine And.intro ?_ ?_
-          . intro X hX
-            cases ftvList_mem.mp hX with
-            | intro T hT => exact Kind.ftv (hmi.1 T hT.1) X hT.2
-          . intro X hX
-            cases ftvList_mem.mp hX with
-            | intro T hT => exact Kind.ftv (hmi.2.1 T hT.1) X hT.2
+      rcases scopeFacts hwf hok hs with ⟨k', hk'⟩
+      have hname : k'.name = k.name := by
+        rcases hk'.2.1 with ⟨Us, hUs⟩
+        rcases K.generic_name k with ⟨Vs, hVs⟩; rw [hVs] at hUs; simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
+      have ek := Declared.unique hwf hk'.1 hk hname
+      subst ek
+      rcases hk'.2.2.meths _ hM with ⟨gamma, hmo⟩
+      have hmi := methodOk_inv hmo
+      rw [<- hk'.2.2.gv, <- dom_append]
+      refine And.intro ?_ ?_
+      . intro X hX
+        rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.1 T hT.1) X hT.2
+      . intro X hX
+        rcases ftvList_mem.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.2.1 T hT.1) X hT.2
 
 theorem OverrideOkM.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {rv : VRen} {rt : TRen} {C : ClassName}
     {Us : List Ty} {M M' : Method} (h : OverrideOkM d (.cls C Us) M) (hr : RenM rv rt M M')
@@ -269,23 +262,21 @@ theorem OverrideOk.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Dec
     (hu : forall M, List.Mem M Ms -> M.uniq) :
     OverrideOk d Delta' (.cls C0 (Ty.renList rt Ts)) Ms' := by
   intro M' C Ts' hM' hs
-  cases RenMs.mem_inv hr hM' with
-  | intro M hM =>
-    rw [Ty.renList_subst] at hs
-    cases Sub.inv_subst hd (Delta2 := Delta) (A := Ty.ftvList Ts) hs rfl (fun _ h => h) with
-    | intro T0 h0 =>
-      cases T0 with
-      | var X =>
-        have e := h0.1
-        rw [lookup_tS] at e
-        cases e
-      | cls C1 Us =>
-        have e := h0.1
-        simp only [Ty.subst, Ty.cls.injEq] at e
-        have e1 := e.1
-        subst e1
-        rw [e.2, <- Ty.renList_subst]
-        exact OverrideOkM.ren hwf hok (h M C Us hM.1 h0.2.1) hM.2
-          (fun X hX => hdis M hM.1 X (h0.2.2 X (by simpa [Ty.ftv] using hX))) (hu M hM.1)
+  rcases RenMs.mem_inv hr hM' with ⟨M, hM⟩
+  rw [Ty.renList_subst] at hs
+  rcases Sub.inv_subst hd (Delta2 := Delta) (A := Ty.ftvList Ts) hs rfl (fun _ h => h) with ⟨T0, h0⟩
+  cases T0 with
+  | var X =>
+    have e := h0.1
+    rw [lookup_tS] at e
+    cases e
+  | cls C1 Us =>
+    have e := h0.1
+    simp only [Ty.subst, Ty.cls.injEq] at e
+    have e1 := e.1
+    subst e1
+    rw [e.2, <- Ty.renList_subst]
+    exact OverrideOkM.ren hwf hok (h M C Us hM.1 h0.2.1) hM.2
+      (fun X hX => hdis M hM.1 X (h0.2.2 X (by simpa [Ty.ftv] using hX))) (hu M hM.1)
 
 end Funnelling.High

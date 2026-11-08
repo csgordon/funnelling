@@ -72,25 +72,23 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
   | _, _, _, _, .newTop (D := D) h1 h2 h3 h4 h5, _, _, _, _, _, _, _, _, _, hr, env, hn, hn', ht, ht', hu, hu' => by
     cases hr with
     | new hr1 =>
-      cases RenEs.split hr1 with
-      | intro a h =>
-        cases h with
-        | intro b h =>
-          have e := h.1
-          subst e
-          simp only [Expr.noShadow, noShadowList_append, Bool.and_eq_true] at hn hn'
-          simp only [NoThis, Expr.vbinders, vbindersList_append, listMem_iff, List.mem_append, not_or] at ht ht'
-          simp only [Expr.uniq, uniqList_append] at hu hu'
-          have ih1 := TypingSeq.ren hwf hok hd h4 h.2.1 env hn.1 hn'.1 ht.1 ht'.1 hu.1 hu'.1
-          have ih2 := Typing.ren hwf hok hd h5 (RenE.new h.2.2) env (by simpa [Expr.noShadow] using hn.2)
-            (by simpa [Expr.noShadow] using hn'.2) (by simpa [NoThis, Expr.vbinders] using ht.2)
-            (by simpa [NoThis, Expr.vbinders] using ht'.2) (by simpa [Expr.uniq] using hu.2)
-            (by simpa [Expr.uniq] using hu'.2)
-          rw [renList_bind h3 (slots_closed hok h1)] at ih1
-          rw [renList_bind h3 (hd.supD D h1)] at ih2
-          have hk2 := Kind.renT hd env.bD h2
-          simp only [Ty.ren] at hk2 |-
-          exact Typing.newTop h1 hk2 (by rw [renList_length, h3]) ih1 ih2
+      rcases RenEs.split hr1 with ⟨a, h⟩
+      rcases h with ⟨b, h⟩
+      have e := h.1
+      subst e
+      simp only [Expr.noShadow, noShadowList_append, Bool.and_eq_true] at hn hn'
+      simp only [NoThis, Expr.vbinders, vbindersList_append, listMem_iff, List.mem_append, not_or] at ht ht'
+      simp only [Expr.uniq, uniqList_append] at hu hu'
+      have ih1 := TypingSeq.ren hwf hok hd h4 h.2.1 env hn.1 hn'.1 ht.1 ht'.1 hu.1 hu'.1
+      have ih2 := Typing.ren hwf hok hd h5 (RenE.new h.2.2) env (by simpa [Expr.noShadow] using hn.2)
+        (by simpa [Expr.noShadow] using hn'.2) (by simpa [NoThis, Expr.vbinders] using ht.2)
+        (by simpa [NoThis, Expr.vbinders] using ht'.2) (by simpa [Expr.uniq] using hu.2)
+        (by simpa [Expr.uniq] using hu'.2)
+      rw [renList_bind h3 (slots_closed hok h1)] at ih1
+      rw [renList_bind h3 (hd.supD D h1)] at ih2
+      have hk2 := Kind.renT hd env.bD h2
+      simp only [Ty.ren] at hk2 |-
+      exact Typing.newTop h1 hk2 (by rw [renList_length, h3]) ih1 ih2
   | _, _, _, _, .newLocal (C := C) (Fs := Fs) (C0 := C0) (Ts := Ts) (Ms := Ms) (Delta' := Dp) h1 h2 h3 h4 h5 h6 h7 h8,
       rv, rt, _, Delta', gamma', Xs, xs, Xs', xs', hr, env, hn, hn', ht, ht', hu, hu' => by
     cases hr with
@@ -125,14 +123,12 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
           simp [dom]
         rw [ec, Ty.ftvList_ren] at hX
         rw [ed]
-        cases List.mem_map.mp hX with
-        | intro Y hY => rw [<- hY.2]; exact List.mem_map_of_mem (h3 Y hY.1)
+        rcases List.mem_map.mp hX with ⟨Y, hY⟩; rw [<- hY.2]; exact List.mem_map_of_mem (h3 Y hY.1)
       . intro M' hM'
-        cases RenMs.mem_inv hr2 hM' with
-        | intro M hM =>
-          exact MethodOk.ren hwf hok hd (h7 M hM.1) hM.2 (env.inner h2 hFs C) (noShadowListM_all hn.2 hM.1)
-            (noShadowListM_all hn'.2 hM') (fun h => ht.2 (vbindersListM_mem hM.1 h))
-            (fun h => ht'.2 (vbindersListM_mem hM' h)) (huM M hM.1) (uniqList_mem hM' hu'.2)
+        rcases RenMs.mem_inv hr2 hM' with ⟨M, hM⟩
+        exact MethodOk.ren hwf hok hd (h7 M hM.1) hM.2 (env.inner h2 hFs C) (noShadowListM_all hn.2 hM.1)
+          (noShadowListM_all hn'.2 hM') (fun h => ht.2 (vbindersListM_mem hM.1 h))
+          (fun h => ht'.2 (vbindersListM_mem hM' h)) (huM M hM.1) (uniqList_mem hM' hu'.2)
   | _, _, _, _, .ifInstanceof (x := x) h0 hk hc h1 h2, _, _, _, _, _, _, xs, _, xs', hr, env, hn, hn', ht, ht', hu,
       hu' => by
     cases hr with

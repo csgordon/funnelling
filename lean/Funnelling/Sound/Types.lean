@@ -41,8 +41,7 @@ end
 
 theorem var_subst_comp_of_some {s s' : TSubst} {X : TVarName} (h : exists T, List.lookup X s = some T) :
     ((Ty.var X).subst s).subst s' = (Ty.var X).subst (s.map fun p => (p.1, p.2.subst s')) := by
-  cases h with
-  | intro T hT => simp only [Ty.subst, lookup_map_snd, hT, Option.map_some, Option.getD_some]
+  rcases h with ⟨T, hT⟩; simp only [Ty.subst, lookup_map_snd, hT, Option.map_some, Option.getD_some]
 
 theorem bind_map {A : Type} {f : A -> A} {Delta : Bounds} {Us : List A} :
     bind Delta (Us.map f) = (bind Delta Us).map fun p => (p.1, f p.2) := by
@@ -192,8 +191,7 @@ theorem Kind.ftv {d : Decls} {Delta : Bounds} {T : Ty} (h : Kind d Delta T) :
   | @wfClass C Ts Delta0 Ts0 _ _ _ _ ih =>
     intro Y hY
     simp only [Ty.ftv] at hY
-    cases (ftvList_mem.mp hY) with
-    | intro T hT => exact ih T hT.1 Y hT.2
+    rcases (ftvList_mem.mp hY) with ⟨T, hT⟩; exact ih T hT.1 Y hT.2
 
 theorem Kind.mono {d : Decls} {Delta Delta' : Bounds} (hs : Sub1 Delta Delta') {T : Ty}
     (h : Kind d Delta T) : Kind d Delta' T := by
@@ -225,8 +223,7 @@ theorem Kind.subst {d : Decls} (hd : DeclOk d) {Delta Delta' : Bounds} {s : TSub
     refine Kind.wfClass hsc ?_ (by rw [substList_length, h3]) ?_
     . intro T hT
       rw [substList_eq_map] at hT
-      cases List.mem_map.mp hT with
-      | intro U hU => rw [<- hU.2]; exact ih U hU.1
+      rcases List.mem_map.mp hT with ⟨U, hU⟩; rw [<- hU.2]; exact ih U hU.1
     . have := SubSeq.subst hd hb h4
       rwa [substList_bind_comp h3 (hd.scopeB _ _ _ h1)] at this
 

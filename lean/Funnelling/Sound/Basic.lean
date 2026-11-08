@@ -60,14 +60,12 @@ theorem Value.mem_exprs {vs : List Value} {e : Expr} (h : List.Mem e (Value.expr
     exists v : Value, List.Mem v vs /\ e = v.expr := by
   rw [Value.exprs_eq_map] at h
   have h' := List.mem_map.mp h
-  cases h' with
-  | intro v hv => exact Exists.intro v (And.intro hv.1 hv.2.symm)
+  rcases h' with ⟨v, hv⟩; exact Exists.intro v (And.intro hv.1 hv.2.symm)
 
 theorem Value.exprs_append_cons {vs : List Value} {es1 es2 : List Expr} {e : Expr}
     (h : Value.exprs vs = es1 ++ e :: es2) : exists v : Value, e = v.expr := by
   have hm : List.Mem e (Value.exprs vs) := by rw [h]; exact List.mem_append_right _ (List.Mem.head _)
-  cases Value.mem_exprs hm with
-  | intro v hv => exact Exists.intro v hv.2
+  rcases Value.mem_exprs hm with ⟨v, hv⟩; exact Exists.intro v hv.2
 
 theorem ECtx.plug_value {E : ECtx} {a : Expr} {v : Value} (h : E.plug a = v.expr) :
     exists v' : Value, a = v'.expr := by
@@ -83,16 +81,14 @@ theorem ECtx.plug_value {E : ECtx} {a : Expr} {v : Value} (h : E.plug a = v.expr
     cases v with
     | new C' Gs' vs' =>
       simp only [ECtx.plug, Value.expr, Expr.new.injEq] at h
-      cases Value.exprs_append_cons h.2.2.symm with
-      | intro v1 hv1 => exact ih hv1
+      rcases Value.exprs_append_cons h.2.2.symm with ⟨v1, hv1⟩; exact ih hv1
     | newLocal => simp [ECtx.plug, Value.expr] at h
   | localArg C Gs C' Gs' vs E es Ms ih =>
     cases v with
     | new => simp [ECtx.plug, Value.expr] at h
     | newLocal D Hs D' Hs' ws Ns =>
       simp only [ECtx.plug, Value.expr, Expr.newLocal.injEq] at h
-      cases Value.exprs_append_cons h.2.2.2.2.1.symm with
-      | intro v1 hv1 => exact ih hv1
+      rcases Value.exprs_append_cons h.2.2.2.2.1.symm with ⟨v1, hv1⟩; exact ih hv1
 
 theorem Step.not_value {d : Decls} {e e' : Expr} (h : Step d e e') :
     forall v : Value, Not (e = v.expr) := by
@@ -109,7 +105,6 @@ theorem Step.not_value {d : Decls} {e e' : Expr} (h : Step d e e') :
   | searchSuper => intro v hv; cases v <;> simp [Value.expr] at hv
   | ctx _ ih =>
     intro v hv
-    cases ECtx.plug_value hv with
-    | intro v' hv' => exact ih v' hv'
+    rcases ECtx.plug_value hv with ⟨v', hv'⟩; exact ih v' hv'
 
 end Funnelling.High

@@ -51,8 +51,7 @@ structure FieldP (d : Decls) (Delta : Bounds) (gamma : Gamma) (e : Expr) (f : Fi
 theorem inv_field {d Delta gamma e0 f} : forall {e T}, Typing d Delta gamma e T -> e = .field e0 f ->
     exists w, FieldP d Delta gamma e0 f T w
   | _, _, .subs h hk hs, he => by
-    cases inv_field h he with
-    | intro w hw => exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
+    rcases inv_field h he with ⟨w, hw⟩; exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
   | _, _, .declField h1 h2 h3 h4, he => by
     cases he
     exact Exists.intro { D := _, Ts' := _, T0 := _ } { ty := h1, decl := h2, mem := h3, len := h4, up := Up.refl }
@@ -80,8 +79,7 @@ structure IfP (d : Decls) (Delta : Bounds) (gamma : Gamma) (e0 : Expr) (T : Ty) 
 theorem inv_if {d Delta gamma e0 T x e1 e2} : forall {e T'}, Typing d Delta gamma e T' ->
     e = .ifInst e0 T x e1 e2 -> exists w, IfP d Delta gamma e0 T x e1 e2 T' w
   | _, _, .subs h hk hs, he => by
-    cases inv_if h he with
-    | intro w hw => exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
+    rcases inv_if h he with ⟨w, hw⟩; exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
   | _, _, .ifInstanceof h0 hk hc h1 h2, he => by
     cases he
     exact Exists.intro { T0 := _, T1 := _ } { ty0 := h0, kind := hk, cast := hc, ty1 := h1, ty2 := h2, up := Up.refl }
@@ -121,8 +119,7 @@ structure CallP (d : Decls) (Delta : Bounds) (gamma : Gamma) (e0 : Expr) (Ts1 : 
 theorem inv_call {d Delta gamma e0 Ts1 m es} : forall {e T}, Typing d Delta gamma e T ->
     e = .call e0 Ts1 m es -> exists w, CallP d Delta gamma e0 Ts1 m es T w
   | _, _, .subs h hk hs, he => by
-    cases inv_call h he with
-    | intro w hw => exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
+    rcases inv_call h he with ⟨w, hw⟩; exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
   | _, _, .call h1 h2 h3 h4 h5 h6 h7 h8 h9, he => by
     cases he
     exact Exists.intro (CallW.mk _ _ _ _ _ _ _ _ _ _) (CallP.mk h1 h2 h3 h4 h5 h6 h7 h8 h9 Up.refl)
@@ -165,8 +162,7 @@ structure SuperP (d : Decls) (Delta : Bounds) (gamma : Gamma) (e0 : Expr) (T : T
 theorem inv_super {d Delta gamma e0 T0 Ts1 m es} : forall {e T}, Typing d Delta gamma e T ->
     e = .superCall e0 T0 Ts1 m es -> exists w, SuperP d Delta gamma e0 T0 Ts1 m es T w
   | _, _, .subs h hk hs, he => by
-    cases inv_super h he with
-    | intro w hw => exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
+    rcases inv_super h he with ⟨w, hw⟩; exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
   | _, _, .callLbRuntime h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11, he => by
     cases he
     exact Exists.intro (SuperW.mk _ _ _ _ _ _ _ _ _ _) (SuperP.mk rfl h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11 Up.refl)
@@ -199,8 +195,7 @@ structure LocalP (d : Decls) (Delta : Bounds) (gamma : Gamma) (C : ClassName) (F
 theorem inv_local {d Delta gamma C Fs C0 Ts es Ms} : forall {e T}, Typing d Delta gamma e T ->
     e = .newLocal C Fs C0 Ts es Ms -> exists w, LocalP d Delta gamma C Fs C0 Ts es Ms T w
   | _, _, .subs h hk hs, he => by
-    cases inv_local h he with
-    | intro w hw => exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
+    rcases inv_local h he with ⟨w, hw⟩; exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
   | _, _, .newLocal h1 h2 h3 h4 h5 h6 h7 h8, he => by
     cases he
     exact Exists.intro (LocalW.mk _ _ _) (LocalP.mk h1 h2 h3 h4 h5 h6 h7 h8 Up.refl)

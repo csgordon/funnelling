@@ -8,8 +8,7 @@ abbrev NonValue (a : Expr) : Prop := forall v : Value, Not (a = v.expr)
 
 theorem ECtx.plug_nonvalue {E : ECtx} {a : Expr} (ha : NonValue a) : NonValue (E.plug a) := by
   intro v hv
-  cases ECtx.plug_value hv with
-  | intro v' hv' => exact ha v' hv'
+  rcases ECtx.plug_value hv with ⟨v', hv'⟩; exact ha v' hv'
 
 theorem exprs_split {vs1 vs2 : List Value} {x y : Expr} {es1 es2 : List Expr}
     (h : Value.exprs vs1 ++ x :: es1 = Value.exprs vs2 ++ y :: es2) (hx : NonValue x)
@@ -47,10 +46,9 @@ theorem Step.decompAux {d : Decls} {b b2 : Expr} (hb : Step d b b2) (hbn : NonVa
     | hole => simp only [ECtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .callRecv E2 Gs m es) hb) rfl)
     | callRecv E Gs' m' es' =>
       simp only [ECtx.plug, Expr.call.injEq] at h
-      cases ih E a h.1 ha with
-      | intro a2 h2 =>
-        refine Exists.intro a2 (And.intro h2.1 ?_)
-        simp only [ECtx.plug]; rw [h2.2, h.2.1, h.2.2.1, h.2.2.2]
+      rcases ih E a h.1 ha with ⟨a2, h2⟩
+      refine Exists.intro a2 (And.intro h2.1 ?_)
+      simp only [ECtx.plug]; rw [h2.2, h.2.1, h.2.2.1, h.2.2.2]
     | callArg v Gs' m' vs E es' =>
       simp only [ECtx.plug, Expr.call.injEq] at h
       exact absurd h.1 (ECtx.plug_nonvalue hbn v)
@@ -65,10 +63,9 @@ theorem Step.decompAux {d : Decls} {b b2 : Expr} (hb : Step d b b2) (hbn : NonVa
     | callArg v' Gs' m' vs' E es' =>
       simp only [ECtx.plug, Expr.call.injEq] at h
       have r := exprs_split h.2.2.2 (ECtx.plug_nonvalue hbn) (ECtx.plug_nonvalue ha)
-      cases ih E a r.2.1 ha with
-      | intro a2 h2 =>
-        refine Exists.intro a2 (And.intro h2.1 ?_)
-        simp only [ECtx.plug]; rw [h2.2, Value.expr_inj h.1, GTy.tys_inj h.2.1, h.2.2.1, r.1, r.2.2]
+      rcases ih E a r.2.1 ha with ⟨a2, h2⟩
+      refine Exists.intro a2 (And.intro h2.1 ?_)
+      simp only [ECtx.plug]; rw [h2.2, Value.expr_inj h.1, GTy.tys_inj h.2.1, h.2.2.1, r.1, r.2.2]
     | _ => simp [ECtx.plug] at h
   | superRecv E2 G Gs m es ih =>
     intro E a h ha
@@ -76,10 +73,9 @@ theorem Step.decompAux {d : Decls} {b b2 : Expr} (hb : Step d b b2) (hbn : NonVa
     | hole => simp only [ECtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .superRecv E2 G Gs m es) hb) rfl)
     | superRecv E G' Gs' m' es' =>
       simp only [ECtx.plug, Expr.superCall.injEq] at h
-      cases ih E a h.1 ha with
-      | intro a2 h2 =>
-        refine Exists.intro a2 (And.intro h2.1 ?_)
-        simp only [ECtx.plug]; rw [h2.2, GTy.ty_inj h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2]
+      rcases ih E a h.1 ha with ⟨a2, h2⟩
+      refine Exists.intro a2 (And.intro h2.1 ?_)
+      simp only [ECtx.plug]; rw [h2.2, GTy.ty_inj h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2]
     | superArg v G' Gs' m' vs E es' =>
       simp only [ECtx.plug, Expr.superCall.injEq] at h
       exact absurd h.1 (ECtx.plug_nonvalue hbn v)
@@ -94,11 +90,10 @@ theorem Step.decompAux {d : Decls} {b b2 : Expr} (hb : Step d b b2) (hbn : NonVa
     | superArg v' G' Gs' m' vs' E es' =>
       simp only [ECtx.plug, Expr.superCall.injEq] at h
       have r := exprs_split h.2.2.2.2 (ECtx.plug_nonvalue hbn) (ECtx.plug_nonvalue ha)
-      cases ih E a r.2.1 ha with
-      | intro a2 h2 =>
-        refine Exists.intro a2 (And.intro h2.1 ?_)
-        simp only [ECtx.plug]
-        rw [h2.2, Value.expr_inj h.1, GTy.ty_inj h.2.1, GTy.tys_inj h.2.2.1, h.2.2.2.1, r.1, r.2.2]
+      rcases ih E a r.2.1 ha with ⟨a2, h2⟩
+      refine Exists.intro a2 (And.intro h2.1 ?_)
+      simp only [ECtx.plug]
+      rw [h2.2, Value.expr_inj h.1, GTy.ty_inj h.2.1, GTy.tys_inj h.2.2.1, h.2.2.2.1, r.1, r.2.2]
     | _ => simp [ECtx.plug] at h
   | field E2 f ih =>
     intro E a h ha
@@ -106,10 +101,9 @@ theorem Step.decompAux {d : Decls} {b b2 : Expr} (hb : Step d b b2) (hbn : NonVa
     | hole => simp only [ECtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .field E2 f) hb) rfl)
     | field E f' =>
       simp only [ECtx.plug, Expr.field.injEq] at h
-      cases ih E a h.1 ha with
-      | intro a2 h2 =>
-        refine Exists.intro a2 (And.intro h2.1 ?_)
-        simp only [ECtx.plug]; rw [h2.2, h.2]
+      rcases ih E a h.1 ha with ⟨a2, h2⟩
+      refine Exists.intro a2 (And.intro h2.1 ?_)
+      simp only [ECtx.plug]; rw [h2.2, h.2]
     | _ => simp [ECtx.plug] at h
   | newArg C Gs vs E2 es ih =>
     intro E a h ha
@@ -118,10 +112,9 @@ theorem Step.decompAux {d : Decls} {b b2 : Expr} (hb : Step d b b2) (hbn : NonVa
     | newArg C' Gs' vs' E es' =>
       simp only [ECtx.plug, Expr.new.injEq] at h
       have r := exprs_split h.2.2 (ECtx.plug_nonvalue hbn) (ECtx.plug_nonvalue ha)
-      cases ih E a r.2.1 ha with
-      | intro a2 h2 =>
-        refine Exists.intro a2 (And.intro h2.1 ?_)
-        simp only [ECtx.plug]; rw [h2.2, h.1, GTy.tys_inj h.2.1, r.1, r.2.2]
+      rcases ih E a r.2.1 ha with ⟨a2, h2⟩
+      refine Exists.intro a2 (And.intro h2.1 ?_)
+      simp only [ECtx.plug]; rw [h2.2, h.1, GTy.tys_inj h.2.1, r.1, r.2.2]
     | _ => simp [ECtx.plug] at h
   | localArg C Gs C' Gs' vs E2 es Ms ih =>
     intro E a h ha
@@ -135,11 +128,10 @@ theorem Step.decompAux {d : Decls} {b b2 : Expr} (hb : Step d b b2) (hbn : NonVa
         rw [GTy.tys_eq_map, GTy.tys_eq_map]
         have := congrArg (List.map Funnel.abs) h.2.1
         simpa [List.map_map, Function.comp_def, Funnel.abs] using this
-      cases ih E a r.2.1 ha with
-      | intro a2 h2 =>
-        refine Exists.intro a2 (And.intro h2.1 ?_)
-        simp only [ECtx.plug]
-        rw [h2.2, h.1, hG, h.2.2.1, GTy.tys_inj h.2.2.2.1, r.1, r.2.2, h.2.2.2.2.2]
+      rcases ih E a r.2.1 ha with ⟨a2, h2⟩
+      refine Exists.intro a2 (And.intro h2.1 ?_)
+      simp only [ECtx.plug]
+      rw [h2.2, h.1, hG, h.2.2.1, GTy.tys_inj h.2.2.2.1, r.1, r.2.2, h.2.2.2.2.2]
     | _ => simp [ECtx.plug] at h
   | ifCond E2 G x e1 e2 ih =>
     intro E a h ha
@@ -147,10 +139,9 @@ theorem Step.decompAux {d : Decls} {b b2 : Expr} (hb : Step d b b2) (hbn : NonVa
     | hole => simp only [ECtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .ifCond E2 G x e1 e2) hb) rfl)
     | ifCond E G' x' e1' e2' =>
       simp only [ECtx.plug, Expr.ifInst.injEq] at h
-      cases ih E a h.1 ha with
-      | intro a2 h2 =>
-        refine Exists.intro a2 (And.intro h2.1 ?_)
-        simp only [ECtx.plug]; rw [h2.2, GTy.ty_inj h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2]
+      rcases ih E a h.1 ha with ⟨a2, h2⟩
+      refine Exists.intro a2 (And.intro h2.1 ?_)
+      simp only [ECtx.plug]; rw [h2.2, GTy.ty_inj h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2]
     | _ => simp [ECtx.plug] at h
 
 theorem redex_field {E : ECtx} {a : Expr} {v : Value} {f : FieldName} (ha : NonValue a)
@@ -181,8 +172,7 @@ theorem redex_call {E : ECtx} {a : Expr} {v : Value} {Ts : List Ty} {m : MethNam
     exact ECtx.plug_nonvalue ha v h.1.symm
   | callArg v' Gs m' vs' E es =>
     simp only [ECtx.plug, Expr.call.injEq] at h
-    cases Value.exprs_append_cons h.2.2.2 with
-    | intro w hw => exact ECtx.plug_nonvalue ha w hw
+    rcases Value.exprs_append_cons h.2.2.2 with ⟨w, hw⟩; exact ECtx.plug_nonvalue ha w hw
   | _ => simp [ECtx.plug] at h
 
 theorem redex_super {E : ECtx} {a : Expr} {v : Value} {T : Ty} {Ts : List Ty} {m : MethName}
@@ -195,8 +185,7 @@ theorem redex_super {E : ECtx} {a : Expr} {v : Value} {T : Ty} {Ts : List Ty} {m
     exact ECtx.plug_nonvalue ha v h.1.symm
   | superArg v' G Gs m' vs' E es =>
     simp only [ECtx.plug, Expr.superCall.injEq] at h
-    cases Value.exprs_append_cons h.2.2.2.2 with
-    | intro w hw => exact ECtx.plug_nonvalue ha w hw
+    rcases Value.exprs_append_cons h.2.2.2.2 with ⟨w, hw⟩; exact ECtx.plug_nonvalue ha w hw
   | _ => simp [ECtx.plug] at h
 
 theorem Step.decompNonHole {d : Decls} {e e2 : Expr} (h : Step d e e2) :

@@ -37,8 +37,7 @@ theorem GOk.substCtx {d : Decls} {Delta : Bounds} {s : GSubst} (h : GOk d Delta 
 where
   lookup_none_not_dom' {X : TVarName} {s : GSubst} (h : List.lookup X s = none) : Not (List.Mem X (s.map Prod.fst)) := by
     intro hm
-    cases lookup_isSome hm with
-    | intro v hv => rw [hv] at h; cases h
+    rcases lookup_isSome hm with ⟨v, hv⟩; rw [hv] at h; cases h
 
 theorem GOk.append {d : Decls} {Delta Dm : Bounds} {s : GSubst} (h : GOk d Delta s)
     (hm : forall b, List.Mem b Dm -> Not (List.Mem b.X (s.map Prod.fst))) : GOk d (Delta ++ Dm) s := by
@@ -111,8 +110,7 @@ theorem KindSeq.substC {d : Decls} (hd : DeclOk d) {Delta Delta' : Bounds} {s : 
     {Ts : List Ty} (h : KindSeq d Delta Ts) : KindSeq d Delta' (Ty.substList s Ts) := by
   intro T hT
   rw [substList_eq_map] at hT
-  cases List.mem_map.mp hT with
-  | intro U hU => rw [<- hU.2]; exact Kind.subst hd hc.sub hc.kind (h U hU.1)
+  rcases List.mem_map.mp hT with ⟨U, hU⟩; rw [<- hU.2]; exact Kind.subst hd hc.sub hc.kind (h U hU.1)
 
 
 theorem lookup_none_of_not_dom {X : TVarName} {s : GSubst} (h : Not (List.Mem X (s.map Prod.fst))) :
@@ -201,11 +199,9 @@ theorem vars_gsubst {s : GSubst} {Xs : List TVarName} (h : forall X, List.Mem X 
   intro X hX
   apply var_gsubst_none
   apply h
-  cases ftvList_mem.mp hX with
-  | intro T hT =>
-    simp only [vars, listMem_iff, List.mem_map] at hT
-    cases hT.1 with
-    | intro Y hY => rw [<- hY.2] at hT; have := hT.2; simp [Ty.ftv] at this; rw [this]; exact hY.1
+  rcases ftvList_mem.mp hX with ⟨T, hT⟩
+  simp only [vars, listMem_iff, List.mem_map] at hT
+  rcases hT.1 with ⟨Y, hY⟩; rw [<- hY.2] at hT; have := hT.2; simp [Ty.ftv] at this; rw [this]; exact hY.1
 
 theorem Sub.cls_target {d : Decls} {Delta : Bounds} {T1 T : Ty} (h : Sub d Delta T1 T) :
     forall {C Ts}, T1 = .cls C Ts -> exists C' Ts', T = .cls C' Ts' := by
@@ -223,8 +219,7 @@ theorem gsubstList_mem {s : GSubst} {M' : Method} : forall {Ms : List Method}, L
     cases h with
     | head => exact Exists.intro M (And.intro (List.Mem.head _) rfl)
     | tail _ h =>
-      cases gsubstList_mem h with
-      | intro M0 hM0 => exact Exists.intro M0 (And.intro (List.Mem.tail _ hM0.1) hM0.2)
+      rcases gsubstList_mem h with ⟨M0, hM0⟩; exact Exists.intro M0 (And.intro (List.Mem.tail _ hM0.1) hM0.2)
 
 theorem names_gsubst {s : GSubst} : forall {Ms : List Method}, (Method.gsubstList s Ms).map Method.name = Ms.map Method.name
   | [] => rfl
@@ -347,26 +342,24 @@ theorem Pairing.gsub {s : GSubst} {Delta : Bounds} {Fs : List Funnel} {Ts : List
   | @funnel X T T0 Fs Ts Delta' Ts' hm _ ih =>
     intro he
     simp only [abs, List.map_cons, Funnel.abs, List.cons.injEq] at he
-    cases ih he.2 with
-    | intro Ts3 hp =>
-      cases hl : List.lookup X s with
-      | none =>
-        have hX : Not (List.Mem X (s.map Prod.fst)) := fun hm' => by
-          cases lookup_isSome hm' with | intro v hv => rw [hv] at hl; cases hl
-        rw [gsubB_cons_none (b := { X := X, T := T }) hX]
-        simp only [List.map_cons, Funnel.gsubst, hl, abs, Funnel.abs]
-        exact Exists.intro _ (Pairing.funnel (mem_gsubB (b := { X := X, T := T }) hm hX) hp)
-      | some G =>
-        rw [gsubB_cons_some (b := { X := X, T := T }) (lookup_some_mem_dom hl)]
-        simp only [List.map_cons, Funnel.gsubst, hl, abs, Funnel.abs]
-        exact Exists.intro _ (Pairing.ground hp)
+    rcases ih he.2 with ⟨Ts3, hp⟩
+    cases hl : List.lookup X s with
+    | none =>
+      have hX : Not (List.Mem X (s.map Prod.fst)) := fun hm' => by
+        cases lookup_isSome hm' with | intro v hv => rw [hv] at hl; cases hl
+      rw [gsubB_cons_none (b := { X := X, T := T }) hX]
+      simp only [List.map_cons, Funnel.gsubst, hl, abs, Funnel.abs]
+      exact Exists.intro _ (Pairing.funnel (mem_gsubB (b := { X := X, T := T }) hm hX) hp)
+    | some G =>
+      rw [gsubB_cons_some (b := { X := X, T := T }) (lookup_some_mem_dom hl)]
+      simp only [List.map_cons, Funnel.gsubst, hl, abs, Funnel.abs]
+      exact Exists.intro _ (Pairing.ground hp)
   | @ground G Fs Ts Delta' Ts' _ ih =>
     intro he
     simp only [abs, List.map_cons, Funnel.abs, List.cons.injEq] at he
-    cases ih he.2 with
-    | intro Ts3 hp =>
-      simp only [List.map_cons, Funnel.gsubst, abs, Funnel.abs]
-      exact Exists.intro _ (Pairing.ground hp)
+    rcases ih he.2 with ⟨Ts3, hp⟩
+    simp only [List.map_cons, Funnel.gsubst, abs, Funnel.abs]
+    exact Exists.intro _ (Pairing.ground hp)
 
 theorem innerG_gsub_sub {s : GSubst} {gamma : Gamma} {Fs : List Funnel} {C : ClassName} :
     Sub1 (gsubG s (innerG gamma Fs C)) (innerG (gsubG s gamma) (Fs.map (Funnel.gsubst s)) C) := by
@@ -418,21 +411,19 @@ theorem OverrideOk.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
     (hdis : forall M, List.Mem M Ms -> forall X, List.Mem X (dom M.bounds) -> Not (List.Mem X (s.map Prod.fst))) :
     OverrideOk d Delta2 (.cls C0 (Ty.substList s.ty Ts)) (Method.gsubstList s Ms) := by
   intro M' C' Ts' hM' hs
-  cases gsubstList_mem hM' with
-  | intro M hM =>
-    rw [hM.2]
-    cases Sub.inv_subst hd (Delta2 := Delta) (A := Ty.ftvList Ts) hs rfl (fun _ h => h) with
-    | intro T0 h0 =>
-      cases Sub.cls_target h0.2.1 rfl with
-      | intro C1 h1 => cases h1 with
-        | intro U0 e0 =>
-          subst e0
-          have e := h0.1
-          simp only [Ty.subst, Ty.cls.injEq] at e
-          have e1 := e.1
-          subst e1
-          rw [e.2]
-          exact OverrideOkM.gsubst hwf hok (h M C' U0 hM.1 h0.2.1) (hdis M hM.1)
+  rcases gsubstList_mem hM' with ⟨M, hM⟩
+  rw [hM.2]
+  rcases Sub.inv_subst hd (Delta2 := Delta) (A := Ty.ftvList Ts) hs rfl (fun _ h => h) with ⟨T0, h0⟩
+  cases Sub.cls_target h0.2.1 rfl with
+  | intro C1 h1 => cases h1 with
+    | intro U0 e0 =>
+      subst e0
+      have e := h0.1
+      simp only [Ty.subst, Ty.cls.injEq] at e
+      have e1 := e.1
+      subst e1
+      rw [e.2]
+      exact OverrideOkM.gsubst hwf hok (h M C' U0 hM.1 h0.2.1) (hdis M hM.1)
 
 
 theorem dom_mem_tbinders {X : TVarName} : forall {M : Method}, List.Mem X (dom M.bounds) -> List.Mem X M.tbinders
@@ -468,53 +459,48 @@ theorem Typing.gsub_newLocal {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd
   simp only [Expr.gsubst] at ih6 |-
   simp only [Ty.subst]
   rw [<- abs_gsubst]
-  cases Pairing.gsub (s := s) h2 rfl with
-  | intro Ts3 hp =>
-    refine Typing.newLocal (Consistent.gsub hwf hok hd h1 hdisM) hp ?_ ?_ ?_ ih6 ?_ (OverrideOk.gsub hwf hok hd h8 hdisM)
-    . intro X hX
-      rw [cod_subst] at hX
-      have h1' := Ty.ftvList_gsubst hX
-      have h2' : List.Mem X (dom Delta') := by
-        apply h3
-        cases ftvList_mem.mp h1'.1 with
-        | intro T hT =>
-          refine ftvList_mem.mpr (Exists.intro T (And.intro ?_ hT.2))
-          simp only [cod, listMem_iff, List.mem_map, List.mem_filter] at hT |-
-          cases hT.1 with
-          | intro b hb => exact Exists.intro b (And.intro hb.1.1 hb.2)
-      simp only [dom, listMem_iff, List.mem_map] at h2'
-      cases h2' with
-      | intro b hb =>
-        have := mem_gsubB (s := s) hb.1 (by rw [hb.2]; exact h1'.2)
-        rw [<- hb.2]
-        show List.Mem (({ X := b.X, T := Ty.subst s.ty b.T } : Bound).X) (dom (gsubB s Delta'))
-        exact List.mem_map_of_mem (f := Bound.X) this
-    . have := Kind.subst hd sc'.sub sc'.kind h4
-      simp only [Ty.subst] at this
-      rw [abs_gsubst]
-      exact this
-    . have := Kind.subst hd sc'.sub sc'.kind h5
-      simp only [Ty.subst] at this
-      exact this
-    . intro M' hM'
-      cases gsubstList_mem hM' with
-      | intro M hM =>
-        rw [hM.2]
-        have hnM := noShadowListM_all hn.2 hM.1
-        have htM : NoThisM M := fun h => ht.2 (vbindersListM_mem hM.1 h)
-        have sc2 : Sub1 (gdom (gsubG s gamma)) xs := by rw [gdom_gsubG]; exact sc
-        refine MethodOk.weak (ih7 M hM.1) (fun _ h => h) innerG_gsub_sub
-          (by rw [gdom_gsubG]; exact innerG_nodup n1 _ _)
-          (innerG_nodup (by rw [gdom_gsubG]; exact n1) _ _)
-          (by rw [gdom_gsubG]; exact innerG_dom sc _ _)
-          (by rw [Method.noShadow_gsubst]; exact hnM) ?_
-          (by simp only [NoThisM]; rw [Method.vbinders_gsubst]; exact htM)
-          (by rw [Method.uniq_gsubst]; exact uniqList_mem hM.1 hu.2)
-        intro y hy hm
-        rw [Method.vbinders_gsubst] at hy
-        have hyt : Not (y = this) := fun e => htM (e ▸ hy)
-        cases innerG_dom sc2 (Fs.map (Funnel.gsubst s)) C y hm with
-        | head => exact hyt rfl
-        | tail _ h => exact Method.noShadow_binders hnM htM y hy h
+  rcases Pairing.gsub (s := s) h2 rfl with ⟨Ts3, hp⟩
+  refine Typing.newLocal (Consistent.gsub hwf hok hd h1 hdisM) hp ?_ ?_ ?_ ih6 ?_ (OverrideOk.gsub hwf hok hd h8 hdisM)
+  . intro X hX
+    rw [cod_subst] at hX
+    have h1' := Ty.ftvList_gsubst hX
+    have h2' : List.Mem X (dom Delta') := by
+      apply h3
+      rcases ftvList_mem.mp h1'.1 with ⟨T, hT⟩
+      refine ftvList_mem.mpr (Exists.intro T (And.intro ?_ hT.2))
+      simp only [cod, listMem_iff, List.mem_map, List.mem_filter] at hT |-
+      rcases hT.1 with ⟨b, hb⟩; exact Exists.intro b (And.intro hb.1.1 hb.2)
+    simp only [dom, listMem_iff, List.mem_map] at h2'
+    rcases h2' with ⟨b, hb⟩
+    have := mem_gsubB (s := s) hb.1 (by rw [hb.2]; exact h1'.2)
+    rw [<- hb.2]
+    show List.Mem (({ X := b.X, T := Ty.subst s.ty b.T } : Bound).X) (dom (gsubB s Delta'))
+    exact List.mem_map_of_mem (f := Bound.X) this
+  . have := Kind.subst hd sc'.sub sc'.kind h4
+    simp only [Ty.subst] at this
+    rw [abs_gsubst]
+    exact this
+  . have := Kind.subst hd sc'.sub sc'.kind h5
+    simp only [Ty.subst] at this
+    exact this
+  . intro M' hM'
+    rcases gsubstList_mem hM' with ⟨M, hM⟩
+    rw [hM.2]
+    have hnM := noShadowListM_all hn.2 hM.1
+    have htM : NoThisM M := fun h => ht.2 (vbindersListM_mem hM.1 h)
+    have sc2 : Sub1 (gdom (gsubG s gamma)) xs := by rw [gdom_gsubG]; exact sc
+    refine MethodOk.weak (ih7 M hM.1) (fun _ h => h) innerG_gsub_sub
+      (by rw [gdom_gsubG]; exact innerG_nodup n1 _ _)
+      (innerG_nodup (by rw [gdom_gsubG]; exact n1) _ _)
+      (by rw [gdom_gsubG]; exact innerG_dom sc _ _)
+      (by rw [Method.noShadow_gsubst]; exact hnM) ?_
+      (by simp only [NoThisM]; rw [Method.vbinders_gsubst]; exact htM)
+      (by rw [Method.uniq_gsubst]; exact uniqList_mem hM.1 hu.2)
+    intro y hy hm
+    rw [Method.vbinders_gsubst] at hy
+    have hyt : Not (y = this) := fun e => htM (e ▸ hy)
+    cases innerG_dom sc2 (Fs.map (Funnel.gsubst s)) C y hm with
+    | head => exact hyt rfl
+    | tail _ h => exact Method.noShadow_binders hnM htM y hy h
 
 end Funnelling.High

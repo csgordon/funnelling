@@ -100,8 +100,7 @@ theorem methods_sub {e e' : Expr} (h : forall k, List.Mem k e.locals -> List.Mem
     forall M, List.Mem M e.methods -> List.Mem M e'.methods := by
   intro M hM
   simp only [Expr.methods, listMem_iff, List.mem_flatMap] at hM |-
-  cases hM with
-  | intro k hk => exact Exists.intro k (And.intro (h k hk.1) hk.2)
+  rcases hM with ⟨k, hk⟩; exact Exists.intro k (And.intro (h k hk.1) hk.2)
 
 theorem WFExpr.sub {e e' : Expr} (h : WFExpr e') (hl : forall k, List.Mem k e.locals -> List.Mem k e'.locals)
     (hi : forall x, List.Mem x e.ifVars -> List.Mem x e'.ifVars) (hn : e.noShadow [] [] = true)

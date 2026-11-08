@@ -47,11 +47,10 @@ theorem innerG_nodup {gamma : Gamma} (h : (gdom gamma).Nodup) (Fs : List Funnel)
   simp only [listMem_iff, List.mem_singleton] at hb
   subst hb
   simp only [listMem_iff, List.mem_map, withoutThis, List.mem_filter] at ha
-  cases ha with
-  | intro y hy =>
-    have := hy.1.2
-    rw [hy.2, e] at this
-    simp at this
+  rcases ha with ⟨y, hy⟩
+  have := hy.1.2
+  rw [hy.2, e] at this
+  simp at this
 
 theorem innerG_dom {gamma : Gamma} {xs : List VarName} (h : Sub1 (gdom gamma) xs) (Fs : List Funnel) (C : ClassName) :
     Sub1 (gdom (innerG gamma Fs C)) (this :: xs.filter fun x => x != this) := by

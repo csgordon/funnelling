@@ -201,12 +201,11 @@ theorem pres_innerFound' {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
     intro b hb
     have hss := hw.subs
     rw [<- hcod] at hss
-    cases bounds_sat_aux (by rw [gtys_length]; exact hG') hss hw.kinds b hb with
-    | intro U hU =>
-      rw [hσ]
-      simp only [Ty.subst, lookup_zip_nodup hN hU.1, Option.getD_some]
-      rw [<- hσ]
-      exact hU.2
+    rcases bounds_sat_aux (by rw [gtys_length]; exact hG') hss hw.kinds b hb with ⟨U, hU⟩
+    rw [hσ]
+    simp only [Ty.subst, lookup_zip_nodup hN hU.1, Option.getD_some]
+    rw [<- hσ]
+    exact hU.2
   have hgok : GOk d Delta' (bind Delta' Gs') := by
     intro b hb G hl
     have e := var_gsubst_some hl

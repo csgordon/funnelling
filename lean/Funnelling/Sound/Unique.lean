@@ -21,12 +21,11 @@ theorem superChain_stab {d : Decls} : forall (n : Nat) (C : ClassName),
         rw [h1, h2]
         rw [h2] at h
         have h' : exists D0, List.Mem D0 (superChain d n D.C') /\ D0.C = Object := by
-          cases h with
-          | intro D0 hD0 =>
-            refine Exists.intro D0 (And.intro ?_ hD0.2)
-            cases hD0.1 with
-            | head => rw [hDC] at hD0; exact absurd hD0.2 ho
-            | tail _ h => exact h
+          rcases h with ⟨D0, hD0⟩
+          refine Exists.intro D0 (And.intro ?_ hD0.2)
+          cases hD0.1 with
+          | head => rw [hDC] at hD0; exact absurd hD0.2 ho
+          | tail _ h => exact h
         rw [superChain_stab n D.C' h']
 
 def rank (d : Decls) (C : ClassName) : Nat := (superChain d (d.length + 1) C).length
@@ -38,12 +37,11 @@ theorem rank_super {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : Declared d (.de
   have hA9 := hwf.2.2.2.2.2.2.2.2.1.2 D hD.dec_mem
   rw [h1] at hA9
   have h' : exists D0, List.Mem D0 (superChain d d.length D.C') /\ D0.C = Object := by
-    cases hA9 with
-    | intro D0 hD0 =>
-      refine Exists.intro D0 (And.intro ?_ hD0.2)
-      cases hD0.1 with
-      | head => exact absurd hD0.2 ho
-      | tail _ h => exact h
+    rcases hA9 with ⟨D0, hD0⟩
+    refine Exists.intro D0 (And.intro ?_ hD0.2)
+    cases hD0.1 with
+    | head => exact absurd hD0.2 ho
+    | tail _ h => exact h
   simp only [rank]
   rw [h1, superChain_stab d.length D.C' h']
   simp
@@ -62,17 +60,16 @@ theorem rank_sub {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : 
     simp only [Ty.cls.injEq] at he
     have e := K.dec.inj (Declared.unique hwf hD' hD he.1.symm)
     subst e
-    cases Declared.super hwf hD' with
-    | intro D'' hD'' =>
-      have hsup := hD''.2
-      simp only [K.sup] at hsup
-      have r := ih hD''.1 (Ts := Ty.substList (bind D'.bounds Ts0') D'.Ts) (by simp only [Ty.subst]; rw [hsup]) ht
-      rw [hsup] at r
-      by_cases ho : D'.C = Object
-      . have ho2 := (object_unique hwf hD' ho).1
-        rw [ho2, <- ho] at r
-        exact r
-      . rw [rank_super hwf hD' ho]; exact Nat.le_succ_of_le r
+    rcases Declared.super hwf hD' with ⟨D'', hD''⟩
+    have hsup := hD''.2
+    simp only [K.sup] at hsup
+    have r := ih hD''.1 (Ts := Ty.substList (bind D'.bounds Ts0') D'.Ts) (by simp only [Ty.subst]; rw [hsup]) ht
+    rw [hsup] at r
+    by_cases ho : D'.C = Object
+    . have ho2 := (object_unique hwf hD' ho).1
+      rw [ho2, <- ho] at r
+      exact r
+    . rw [rank_super hwf hD' ho]; exact Nat.le_succ_of_le r
   | subInheritLocal hD' _ _ =>
     simp only [Ty.cls.injEq] at he
     exact absurd (Declared.dec_loc hwf hD hD' he.1) id
@@ -81,15 +78,14 @@ theorem rank_sub {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : 
 theorem no_cycle {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : Declared d (.dec D))
     (ho : Not (D.C = Object)) {Ts U : List Ty} (hl : Ts.length = D.bounds.length)
     (h : Sub d Delta ((Ty.cls D.C' D.Ts).subst (bind D.bounds Ts)) (.cls D.C U)) : False := by
-  cases Declared.super hwf hD with
-  | intro D'' hD'' =>
-    have hsup := hD''.2
-    simp only [K.sup] at hsup
-    simp only [Ty.subst] at h
-    rw [<- hsup] at h
-    have r := rank_sub hwf hD''.1 h
-    rw [rank_super hwf hD ho, hsup] at r
-    exact Nat.lt_irrefl _ (Nat.lt_of_lt_of_le (Nat.lt_succ_self _) r)
+  rcases Declared.super hwf hD with ⟨D'', hD''⟩
+  have hsup := hD''.2
+  simp only [K.sup] at hsup
+  simp only [Ty.subst] at h
+  rw [<- hsup] at h
+  have r := rank_sub hwf hD''.1 h
+  rw [rank_super hwf hD ho, hsup] at r
+  exact Nat.lt_irrefl _ (Nat.lt_of_lt_of_le (Nat.lt_succ_self _) r)
 
 theorem object_args {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {U0 U : List Ty}
     (h : Sub d Delta (.cls Object U0) (.cls Object U)) : U = U0 \/ U = [] := by
@@ -105,16 +101,14 @@ theorem object_args {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {U0 U : List 
     . exact Or.inr e
   | subInheritLocal hD _ _ =>
     simp only [Ty.cls.injEq] at he
-    cases object_declared hwf with
-    | intro D0 hD0 => exact absurd (Declared.dec_loc hwf hD0.1 hD (by rw [hD0.2.1, he.1])) id
+    rcases object_declared hwf with ⟨D0, hD0⟩; exact absurd (Declared.dec_loc hwf hD0.1 hD (by rw [hD0.2.1, he.1])) id
   | subVar => cases he
 
 theorem object_bounds {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : Declared d (.dec D)) (ho : D.C = Object) :
     D.bounds = [] := by
-  cases object_declared hwf with
-  | intro D0 hD0 =>
-    have e := K.dec.inj (Declared.unique hwf hD hD0.1 (by show D.C = D0.C; rw [ho, hD0.2.1]))
-    rw [e]; exact hD0.2.2.1
+  rcases object_declared hwf with ⟨D0, hD0⟩
+  have e := K.dec.inj (Declared.unique hwf hD hD0.1 (by show D.C = D0.C; rw [ho, hD0.2.1]))
+  rw [e]; exact hD0.2.2.1
 
 theorem sub_unique_dec {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {T1 : Ty}
     (h1 : exists D Ts, Declared d (.dec D) /\ T1 = .cls D.C Ts) {C' : ClassName} {U1 : List Ty}
@@ -163,11 +157,10 @@ theorem sub_unique_dec {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {T1 : Ty}
         . exact e2
       . exact absurd (no_cycle hwf hD ho hl hs) id
     . refine ih ?_ ht hs3.2
-      cases Declared.super hwf hD with
-      | intro D'' hD'' =>
-        refine Exists.intro D'' (Exists.intro (Ty.substList (bind D.bounds Ts0) D.Ts) (And.intro hD''.1 ?_))
-        simp only [Ty.subst]
-        rw [hD''.2]; rfl
+      rcases Declared.super hwf hD with ⟨D'', hD''⟩
+      refine Exists.intro D'' (Exists.intro (Ty.substList (bind D.bounds Ts0) D.Ts) (And.intro hD''.1 ?_))
+      simp only [Ty.subst]
+      rw [hD''.2]; rfl
   | subInheritLocal hD _ _ =>
     intro _ _
     cases h1 with

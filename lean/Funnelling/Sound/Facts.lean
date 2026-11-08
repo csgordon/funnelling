@@ -49,12 +49,11 @@ theorem Scope.loc_declared {d : Decls} {Delta0 : Bounds} {Ts0 : List Ty} {C0 : C
     exact Or.inl (Exists.intro D (And.intro hD (And.intro he.1.symm (And.intro rfl he.2.symm))))
   | @loc C Delta' T0 m ps e C1 Fs C' Ts' es Ms T Delta Ts'' Ts2 Delta0 Ts0 h1 h2 h3 h4 h5 =>
     simp only [Ty.cls.injEq] at he
-    cases h1 with
-    | intro k hk =>
-      have hd := Declared.loc hk.1 (by rw [hk.2.1] at hk; exact hk.2.2) h2
-      rw [he.1, he.2] at *
-      exact Or.inr (Exists.intro Fs (Exists.intro C' (Exists.intro Ts' (Exists.intro es (Exists.intro Ms
-        (Exists.intro _ (And.intro hd h5)))))))
+    rcases h1 with ⟨k, hk⟩
+    have hd := Declared.loc hk.1 (by rw [hk.2.1] at hk; exact hk.2.2) h2
+    rw [he.1, he.2] at *
+    exact Or.inr (Exists.intro Fs (Exists.intro C' (Exists.intro Ts' (Exists.intro es (Exists.intro Ms
+      (Exists.intro _ (And.intro hd h5)))))))
 
 theorem Scope.dec_eq {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : Declared d (.dec D)) {Ts Ts0 : List Ty}
     {Delta0 : Bounds} (h : Scope d (.cls D.C Ts) Delta0 Ts0) : Delta0 = D.bounds /\ Ts0 = Ts := by

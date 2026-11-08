@@ -10,24 +10,21 @@ abbrev RenCtx (Delta Delta' : Bounds) (s : TSubst) : Prop :=
 theorem RenCtx.sub {d : Decls} {Delta Delta' : Bounds} {s : TSubst} (h : RenCtx Delta Delta' s) :
     forall b, List.Mem b Delta -> Sub d Delta' ((Ty.var b.X).subst s) (b.T.subst s) := by
   intro b hb
-  cases h b hb with
-  | intro X' hX => rw [hX.1]; exact Sub.subVar hX.2 Sub.subRefl
+  rcases h b hb with ⟨X', hX⟩; rw [hX.1]; exact Sub.subVar hX.2 Sub.subRefl
 
 theorem RenCtx.kind {d : Decls} {Delta Delta' : Bounds} {s : TSubst} (h : RenCtx Delta Delta' s) :
     forall b, List.Mem b Delta -> Kind d Delta' ((Ty.var b.X).subst s) := by
   intro b hb
-  cases h b hb with
-  | intro X' hX => rw [hX.1]; exact Kind.wfVar hX.2
+  rcases h b hb with ⟨X', hX⟩; rw [hX.1]; exact Kind.wfVar hX.2
 
 theorem Cast.ren {d : Decls} (hd : DeclOk d) {Delta Delta' : Bounds} {s : TSubst} (hr : RenCtx Delta Delta' s)
     {T0 T : Ty} (h : Cast d Delta T0 T) : Cast d Delta' (T0.subst s) (T.subst s) := by
   induction h with
   | castUp h1 => exact Cast.castUp (Sub.subst hd hr.sub h1)
   | @castVar X T T' hm _ ih =>
-    cases hr { X := X, T := T } hm with
-    | intro X' hX =>
-      rw [hX.1]
-      exact Cast.castVar hX.2 ih
+    rcases hr { X := X, T := T } hm with ⟨X', hX⟩
+    rw [hX.1]
+    exact Cast.castVar hX.2 ih
   | castDown h1 h2 h3 h4 =>
     have := Sub.subst hd hr.sub h1
     simp only [Ty.subst] at this |-
@@ -62,23 +59,22 @@ theorem Cast.gsub {d : Decls} (hd : DeclOk d) {Delta Delta' : Bounds} {s : TSubs
   | castUp h1 =>
     exact Exists.intro _ (And.intro Sub.subRefl (And.intro (Cast.castUp (Sub.subst hd hc.sub h1)) (Or.inl rfl)))
   | @castVar X T T' hm _ ih =>
-    cases ih with
-    | intro T1 hT1 =>
-      rcases hc { X := X, T := T } hm with h' | h'
-      . cases h' with
-        | intro X' hX =>
-          rcases hT1.2.2 with e | hk
-          . rw [hX.1]
-            refine Exists.intro (Ty.var X') (And.intro Sub.subRefl (And.intro ?_ (Or.inl rfl)))
-            rw [e] at hT1
-            exact Cast.castVar hX.2 hT1.2.1
-          . refine Exists.intro T1 (And.intro ?_ (And.intro hT1.2.1 (Or.inr hk)))
-            rw [hX.1]
-            exact Sub.subVar hX.2 hT1.1
-      . refine Exists.intro T1 (And.intro (h'.1.trans hT1.1) (And.intro hT1.2.1 ?_))
+    rcases ih with ⟨T1, hT1⟩
+    rcases hc { X := X, T := T } hm with h' | h'
+    . cases h' with
+      | intro X' hX =>
         rcases hT1.2.2 with e | hk
-        . rw [e]; exact Or.inr h'.2.2
-        . exact Or.inr hk
+        . rw [hX.1]
+          refine Exists.intro (Ty.var X') (And.intro Sub.subRefl (And.intro ?_ (Or.inl rfl)))
+          rw [e] at hT1
+          exact Cast.castVar hX.2 hT1.2.1
+        . refine Exists.intro T1 (And.intro ?_ (And.intro hT1.2.1 (Or.inr hk)))
+          rw [hX.1]
+          exact Sub.subVar hX.2 hT1.1
+    . refine Exists.intro T1 (And.intro (h'.1.trans hT1.1) (And.intro hT1.2.1 ?_))
+      rcases hT1.2.2 with e | hk
+      . rw [e]; exact Or.inr h'.2.2
+      . exact Or.inr hk
   | castDown h1 h2 h3 h4 =>
     have := Sub.subst hd hc.sub h1
     simp only [Ty.subst] at this |-

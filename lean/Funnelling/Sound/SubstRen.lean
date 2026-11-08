@@ -147,8 +147,7 @@ theorem notDom_filter {xs : List VarName} {n : VSubst} (h : NotDom xs n) :
   intro x hx hm
   apply h x hx
   have := List.mem_map.mp hm
-  cases this with
-  | intro p hp => rw [<- hp.2]; exact List.mem_map_of_mem (List.mem_filter.mp hp.1).1
+  rcases this with ⟨p, hp⟩; rw [<- hp.2]; exact List.mem_map_of_mem (List.mem_filter.mp hp.1).1
 
 theorem notDom_append_left {xs ys : List VarName} {n : VSubst} (h : NotDom (xs ++ ys) n) : NotDom xs n :=
   fun x hx => h x (List.mem_append_left _ hx)

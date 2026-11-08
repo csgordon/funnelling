@@ -6,18 +6,16 @@ namespace Funnelling.High
 
 theorem object_declared {d : Decls} (hwf : WFDecls d) : exists D, Declared d (.dec D) /\ D.C = Object /\
     D.bounds = [] /\ D.C' = Object /\ D.Ts = [] /\ D.Ms = [] /\ D.Ss = [] := by
-  cases hwf.2.2.2.2.2.2.2.2.1.1 with
-  | intro D hD =>
-    exact Exists.intro D (And.intro (Declared.dec hD.1) (And.intro hD.2.1
-      (And.intro (by simpa using hD.2.2.1) (And.intro hD.2.2.2.1 (And.intro (by simpa using hD.2.2.2.2.1)
-      (And.intro (by simpa using hD.2.2.2.2.2.1) (by simpa using hD.2.2.2.2.2.2)))))))
+  rcases hwf.2.2.2.2.2.2.2.2.1.1 with ⟨D, hD⟩
+  exact Exists.intro D (And.intro (Declared.dec hD.1) (And.intro hD.2.1
+    (And.intro (by simpa using hD.2.2.1) (And.intro hD.2.2.2.1 (And.intro (by simpa using hD.2.2.2.2.1)
+    (And.intro (by simpa using hD.2.2.2.2.2.1) (by simpa using hD.2.2.2.2.2.2)))))))
 
 theorem kind_object {d : Decls} (hwf : WFDecls d) {Delta : Bounds} : Kind d Delta (.cls Object []) := by
-  cases object_declared hwf with
-  | intro D hD =>
-    have hs : Scope d (.cls D.C []) D.bounds [] := Scope.dec hD.1
-    rw [hD.2.1, hD.2.2.1] at hs
-    exact Kind.wfClass hs (fun _ h => by cases h) rfl Seq2.nil
+  rcases object_declared hwf with ⟨D, hD⟩
+  have hs : Scope d (.cls D.C []) D.bounds [] := Scope.dec hD.1
+  rw [hD.2.1, hD.2.2.1] at hs
+  exact Kind.wfClass hs (fun _ h => by cases h) rfl Seq2.nil
 
 theorem value_typing {d : Decls} (hwf : WFDecls d) {v : Value} {T : Ty} (h : Typing d [] [] v.expr T) :
     Up d [] (typeOf v) T /\ Typing d [] [] v.expr (typeOf v) /\ Kind d [] (typeOf v) := by
@@ -40,17 +38,16 @@ theorem value_typing {d : Decls} (hwf : WFDecls d) {v : Value} {T : Ty} (h : Typ
         exact Typing.newTop hw.decl hw.kind hw.len hw.fields hw.sup
   | newLocal C Gs C' Gs' vs Ms =>
     simp only [Value.expr] at h |-
-    cases inv_local h rfl with
-    | intro w hw =>
-      simp only [typeOf]
-      have hD := pairing_ground_nil hw.pair
-      have hk := hw.kindC
-      rw [hD, abs_ground] at hk
-      have hup := hw.up
-      rw [abs_ground] at hup
-      refine And.intro hup (And.intro ?_ hk)
-      have := Typing.newLocal hw.cons hw.pair hw.closedB hw.kindC hw.kindS hw.tyNew hw.meths hw.over
-      rwa [abs_ground] at this
+    rcases inv_local h rfl with ⟨w, hw⟩
+    simp only [typeOf]
+    have hD := pairing_ground_nil hw.pair
+    have hk := hw.kindC
+    rw [hD, abs_ground] at hk
+    have hup := hw.up
+    rw [abs_ground] at hup
+    refine And.intro hup (And.intro ?_ hk)
+    have := Typing.newLocal hw.cons hw.pair hw.closedB hw.kindC hw.kindS hw.tyNew hw.meths hw.over
+    rwa [abs_ground] at this
 
 theorem Sub.top_target {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : Declared d (.dec D))
     {Ts : List Ty} {C0 : ClassName} {Ts0 : List Ty} (h : Sub d Delta (.cls D.C Ts) (.cls C0 Ts0)) :
@@ -63,9 +60,8 @@ theorem Sub.top_target {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} 
     simp only [Ty.cls.injEq] at he
     exact Exists.intro D (And.intro hD he.1)
   | @subInherit D' Ts0' T' hD' hl _ ih =>
-    cases Declared.super hwf hD' with
-    | intro D'' hD'' =>
-      exact ih hD''.1 (Ts := Ty.substList (bind D'.bounds Ts0') D'.Ts) (by simp only [Ty.subst]; rw [hD''.2]; rfl) ht
+    rcases Declared.super hwf hD' with ⟨D'', hD''⟩
+    exact ih hD''.1 (Ts := Ty.substList (bind D'.bounds Ts0') D'.Ts) (by simp only [Ty.subst]; rw [hD''.2]; rfl) ht
   | subInheritLocal hD' _ _ =>
     simp only [Ty.cls.injEq] at he
     exact absurd (Declared.dec_loc hwf hD hD' he.1) id
@@ -106,12 +102,11 @@ theorem bounds_sat {d : Decls} {Delta Dl : Bounds} {Ts : List Ty} (hn : (dom Dl)
     forall b, List.Mem b Dl -> Sub d Delta ((Ty.var b.X).subst (bind Dl Ts)) (b.T.subst (bind Dl Ts)) /\
       Kind d Delta ((Ty.var b.X).subst (bind Dl Ts)) := by
   intro b hb
-  cases bounds_sat_aux hl hs hk b hb with
-  | intro T hT =>
-    have e : (Ty.var b.X).subst (bind Dl Ts) = T := by
-      simp only [Ty.subst, bind, lookup_zip_nodup hn hT.1, Option.getD_some]
-    rw [e]
-    exact hT.2
+  rcases bounds_sat_aux hl hs hk b hb with ⟨T, hT⟩
+  have e : (Ty.var b.X).subst (bind Dl Ts) = T := by
+    simp only [Ty.subst, bind, lookup_zip_nodup hn hT.1, Option.getD_some]
+  rw [e]
+  exact hT.2
 
 theorem kind_dec_args {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : Declared d (.dec D))
     {Ts : List Ty} (h : Kind d Delta (.cls D.C Ts)) :

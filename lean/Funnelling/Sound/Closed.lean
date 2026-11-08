@@ -116,8 +116,7 @@ theorem Expr.closed_of_vsubst : forall {e : Expr} {n : VSubst} {T : List TVarNam
     . exact Or.inl hx
     . refine Or.inr ?_
       have := List.mem_map.mp hx
-      cases this with
-      | intro p hp => rw [<- hp.2]; exact List.mem_map_of_mem (List.mem_filter.mp hp.1).1
+      rcases this with ⟨p, hp⟩; rw [<- hp.2]; exact List.mem_map_of_mem (List.mem_filter.mp hp.1).1
   | .ifInst e0 T0 x e1 e2, n, T, S, hc => by
     simp only [Expr.vsubst, Expr.closed, Bool.and_eq_true] at hc |-
     exact And.intro (And.intro (And.intro (Expr.closed_of_vsubst hc.1.1.1) hc.1.1.2)

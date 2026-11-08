@@ -114,24 +114,23 @@ theorem renE_meth {M : Method} {B : Bounds} {Gs Gs' : List GTy} {v0 : Value} {vs
       st := fun X hX => by
         left
         have hXd : List.Mem X ((bind (B ++ D1) (Gs ++ Gs')).map Prod.fst) := by rw [hdom1]; exact hX
-        cases lookup_isSome hXd with
-        | intro G hGl =>
-          refine Exists.intro G (And.intro hGl ?_)
-          rw [<- hGl]
-          simp only [bind, dom_append]
-          refine (lookup_zip_ren ?_ hN2 ?_ hX).symm
-          . simp [dom, b2.2.1, b1.2.1]
-          . intro p hp
-            rw [List.zip_append (by simp)] at hp
-            simp only [listMem_iff, List.mem_append] at hp
-            rcases hp with hp | hp
-            . have e := zip_self_eq hp
-              have hp1 : List.Mem p.1 (dom B) := by
-                have := (List.of_mem_zip hp).1
-                exact this
-              have hnot : Not (List.Mem p.1 (dom D1)) := fun h => nodup_append_disj hN1 hp1 h
-              rw [rn_zip_not_mem hnot, rn_nil, e]
-            . exact rn_zip_pair (nodup_append_right hN1) hp }
+        rcases lookup_isSome hXd with ⟨G, hGl⟩
+        refine Exists.intro G (And.intro hGl ?_)
+        rw [<- hGl]
+        simp only [bind, dom_append]
+        refine (lookup_zip_ren ?_ hN2 ?_ hX).symm
+        . simp [dom, b2.2.1, b1.2.1]
+        . intro p hp
+          rw [List.zip_append (by simp)] at hp
+          simp only [listMem_iff, List.mem_append] at hp
+          rcases hp with hp | hp
+          . have e := zip_self_eq hp
+            have hp1 : List.Mem p.1 (dom B) := by
+              have := (List.of_mem_zip hp).1
+              exact this
+            have hnot : Not (List.Mem p.1 (dom D1)) := fun h => nodup_append_disj hN1 hp1 h
+            rw [rn_zip_not_mem hnot, rn_nil, e]
+          . exact rn_zip_pair (nodup_append_right hN1) hp }
     have hgd1 : NotDomT e1.tbinders (bind (B ++ D1) (Gs ++ Gs')) := by
       intro X hX hm; rw [hdom1] at hm; exact hgs1 X hX hm
     have hgd2 : NotDomT e2.tbinders (bind (B ++ D2) (Gs ++ Gs')) := by
@@ -145,17 +144,16 @@ theorem renE_meth {M : Method} {B : Bounds} {Gs Gs' : List GTy} {v0 : Value} {vs
         have hw' : List.Mem w (this :: p1.map VarDecl.x) := by simpa using hw
         have hwd : List.Mem w (((this :: p1.map VarDecl.x).zip (v0 :: vs)).map Prod.fst) := by
           rw [hndom1]; exact hw'
-        cases lookup_isSome hwd with
-        | intro v hvl =>
-          refine Exists.intro v (And.intro hvl ?_)
-          rw [<- hvl]
-          refine (lookup_zip_ren ?_ hn2 ?_ hw').symm
-          . simp [hl1, hl2]
-          . intro p hp
-            simp only [List.zip_cons_cons] at hp
-            cases hp with
-            | head => rw [rn_zip_not_mem htp1]; rfl
-            | tail _ hp => exact rn_zip_pair (List.nodup_cons.mp hn1).2 hp
+        rcases lookup_isSome hwd with ⟨v, hvl⟩
+        refine Exists.intro v (And.intro hvl ?_)
+        rw [<- hvl]
+        refine (lookup_zip_ren ?_ hn2 ?_ hw').symm
+        . simp [hl1, hl2]
+        . intro p hp
+          simp only [List.zip_cons_cons] at hp
+          cases hp with
+          | head => rw [rn_zip_not_mem htp1]; rfl
+          | tail _ hp => exact rn_zip_pair (List.nodup_cons.mp hn1).2 hp
       k := fun p hp => by
         simp only [List.append_nil] at hp
         have h12 := List.of_mem_zip hp

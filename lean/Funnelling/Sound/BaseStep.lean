@@ -164,14 +164,11 @@ theorem Step.toBase {d : Decls} {e e' : Expr} (h : Step d e e') :
   | searchSuper h1 h2 h3 h4 =>
     exact Exists.intro ECtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.searchSuper h1 h2 h3 h4)))))
   | @ctx E c c2 _ ih =>
-    cases ih with
-    | intro E' h' =>
-      cases h' with
-      | intro a h' =>
-        cases h' with
-        | intro a' h' =>
-          refine Exists.intro (E.comp E') (Exists.intro a (Exists.intro a' (And.intro ?_ (And.intro ?_ h'.2.2))))
-          . rw [ECtx.comp_plug, h'.1]
-          . rw [ECtx.comp_plug, h'.2.1]
+    rcases ih with ⟨E', h'⟩
+    rcases h' with ⟨a, h'⟩
+    rcases h' with ⟨a', h'⟩
+    refine Exists.intro (E.comp E') (Exists.intro a (Exists.intro a' (And.intro ?_ (And.intro ?_ h'.2.2))))
+    . rw [ECtx.comp_plug, h'.1]
+    . rw [ECtx.comp_plug, h'.2.1]
 
 end Funnelling.High

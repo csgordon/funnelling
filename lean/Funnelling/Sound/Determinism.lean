@@ -367,22 +367,18 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
 
 theorem determinismHigh {d : Decls} {e e1 e2 : Expr} (hwf : WFDecls d) (he : WFExpr e) (h1 : Reduces d e e1)
     (h2 : Reduces d e e2) : Fresh e1 e2 := by
-  cases Step.toBase h1.1 with
-  | intro E h =>
-    cases h with
-    | intro a h =>
-      cases h with
-      | intro a' h =>
-        have hb := h.2.2
-        have hna : NonValue a := Step.not_value hb.toStep
-        have h2s := h2.1
-        rw [h.1] at h2s he
-        cases Step.decomp h2s hna with
-        | intro a2 h3 =>
-          have hb2 := Step.strip h3.1 hb
-          have hw1 : WFExpr a' := by have := h1.2; rw [h.2.1] at this; exact WFExpr.plug this
-          have hw2 : WFExpr a2 := by have := h2.2; rw [h3.2] at this; exact WFExpr.plug this
-          rw [h.2.1, h3.2]
-          exact Fresh.plug (det_base hwf (WFExpr.plug he) hw1 hw2 hb hb2 rfl) E
+  rcases Step.toBase h1.1 with ⟨E, h⟩
+  rcases h with ⟨a, h⟩
+  rcases h with ⟨a', h⟩
+  have hb := h.2.2
+  have hna : NonValue a := Step.not_value hb.toStep
+  have h2s := h2.1
+  rw [h.1] at h2s he
+  rcases Step.decomp h2s hna with ⟨a2, h3⟩
+  have hb2 := Step.strip h3.1 hb
+  have hw1 : WFExpr a' := by have := h1.2; rw [h.2.1] at this; exact WFExpr.plug this
+  have hw2 : WFExpr a2 := by have := h2.2; rw [h3.2] at this; exact WFExpr.plug this
+  rw [h.2.1, h3.2]
+  exact Fresh.plug (det_base hwf (WFExpr.plug he) hw1 hw2 hb hb2 rfl) E
 
 end Funnelling.High

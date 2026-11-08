@@ -51,8 +51,7 @@ theorem kind_chain {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
       . cases scopeFacts hwf hok h1 with
         | intro k' hk' =>
           have hname : k'.name = C1 := by
-            cases hk'.2.1 with
-            | intro Us hUs => simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
+            rcases hk'.2.1 with ⟨Us, hUs⟩; simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
           have ek := Declared.unique hwf hk'.1 hD hname
           subst ek
           have sf := hk'.2.2
@@ -120,25 +119,23 @@ theorem sub_unique {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {k : K} (hk : 
   | dec D => exact sub_unique_dec hwf (Exists.intro D (Exists.intro Ts (And.intro hk rfl))) h1 h2
   | loc C Fs C0 Ts0 es Ms =>
     simp only [K.name] at h1 h2
-    cases Declared.super hwf hk with
-    | intro D' hD' =>
-      have hsup := hD'.2
-      simp only [K.sup] at hsup
-      have back : forall {U : List Ty}, Sub d Delta ((Ty.cls C0 Ts0).subst (bindF Fs Ts)) (.cls C U) -> False := by
-        intro U hs
-        simp only [Ty.subst] at hs
-        rw [<- hsup] at hs
-        cases Sub.top_target hwf hD'.1 hs with
-        | intro D0 hD0 => exact Declared.dec_loc hwf hD0.1 hk hD0.2
-      rcases Sub.loc_step hwf hk h1 with e1 | s1
-      . rcases Sub.loc_step hwf hk h2 with e2 | s2
-        . simp only [Ty.cls.injEq] at e1 e2; rw [e1.2, e2.2]
-        . simp only [Ty.cls.injEq] at e1; rw [e1.1] at s2; exact absurd (back s2.2) id
-      . rcases Sub.loc_step hwf hk h2 with e2 | s2
-        . simp only [Ty.cls.injEq] at e2; rw [e2.1] at s1; exact absurd (back s1.2) id
-        . refine sub_unique_dec hwf ?_ s1.2 s2.2
-          refine Exists.intro D' (Exists.intro (Ty.substList (bindF Fs Ts) Ts0) (And.intro hD'.1 ?_))
-          simp only [Ty.subst]; rw [hsup]
+    rcases Declared.super hwf hk with ⟨D', hD'⟩
+    have hsup := hD'.2
+    simp only [K.sup] at hsup
+    have back : forall {U : List Ty}, Sub d Delta ((Ty.cls C0 Ts0).subst (bindF Fs Ts)) (.cls C U) -> False := by
+      intro U hs
+      simp only [Ty.subst] at hs
+      rw [<- hsup] at hs
+      rcases Sub.top_target hwf hD'.1 hs with ⟨D0, hD0⟩; exact Declared.dec_loc hwf hD0.1 hk hD0.2
+    rcases Sub.loc_step hwf hk h1 with e1 | s1
+    . rcases Sub.loc_step hwf hk h2 with e2 | s2
+      . simp only [Ty.cls.injEq] at e1 e2; rw [e1.2, e2.2]
+      . simp only [Ty.cls.injEq] at e1; rw [e1.1] at s2; exact absurd (back s2.2) id
+    . rcases Sub.loc_step hwf hk h2 with e2 | s2
+      . simp only [Ty.cls.injEq] at e2; rw [e2.1] at s1; exact absurd (back s1.2) id
+      . refine sub_unique_dec hwf ?_ s1.2 s2.2
+        refine Exists.intro D' (Exists.intro (Ty.substList (bindF Fs Ts) Ts0) (And.intro hD'.1 ?_))
+        simp only [Ty.subst]; rw [hsup]
 
 theorem var_subst_cons_ne {X Y : TVarName} {U : Ty} {r : TSubst} (h : Not (Y = X)) :
     (Ty.var Y).subst ((X, U) :: r) = (Ty.var Y).subst r := by
@@ -159,10 +156,9 @@ theorem vars_subst : forall {Xs : List TVarName} {Us : List Ty}, Xs.Nodup -> Us.
       rw [substList_eq_map, substList_eq_map]
       apply List.map_congr_left
       intro T hT
-      cases List.mem_map.mp hT with
-      | intro Y hY =>
-        rw [<- hY.2]
-        exact var_subst_cons_ne (fun e => (List.nodup_cons.mp hn).1 (e ▸ hY.1))
+      rcases List.mem_map.mp hT with ⟨Y, hY⟩
+      rw [<- hY.2]
+      exact var_subst_cons_ne (fun e => (List.nodup_cons.mp hn).1 (e ▸ hY.1))
     rw [h2, ih]
 
 mutual
@@ -254,17 +250,16 @@ theorem cast_runtime {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclO
     simp only [Ty.subst] at hs1 hs2
     rw [vars_subst hg.1 l1] at hs1
     rw [vars_subst hg.1 l2] at hs2
-    cases hg.2 with
-    | intro k hk' =>
-      have hkn := hk'.2
-      rw [<- hkn] at hs1 hs2 h1
-      have e1 := sub_unique hwf hk'.1 h1 hs1
-      have hr' := hr
-      rw [<- hkn] at hr'
-      have e2 := sub_unique hwf hk1d hv (hr'.trans hs2)
-      have eq : Ty.substList (Xs.zip Ts) Ts' = Ty.substList (Xs.zip Ts'') Ts' := by rw [<- e1, <- e2]
-      have hts := list_eq_of_pointwise hg.1 l1 l2 (fun X hX => substList_agree eq X (h4 X hX))
-      rw [hts]
-      exact hr
+    rcases hg.2 with ⟨k, hk'⟩
+    have hkn := hk'.2
+    rw [<- hkn] at hs1 hs2 h1
+    have e1 := sub_unique hwf hk'.1 h1 hs1
+    have hr' := hr
+    rw [<- hkn] at hr'
+    have e2 := sub_unique hwf hk1d hv (hr'.trans hs2)
+    have eq : Ty.substList (Xs.zip Ts) Ts' = Ty.substList (Xs.zip Ts'') Ts' := by rw [<- e1, <- e2]
+    have hts := list_eq_of_pointwise hg.1 l1 l2 (fun X hX => substList_agree eq X (h4 X hX))
+    rw [hts]
+    exact hr
 
 end Funnelling.High

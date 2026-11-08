@@ -53,20 +53,18 @@ theorem typing_new_mid {d Delta gamma} {x : Expr} : forall {C Ts l r T} {e : Exp
     . cases h with
       | intro r1 h =>
         rw [h.1] at h4
-        cases TypingSeq.mid h4 with
-        | intro Tx hx =>
-          refine Exists.intro Tx (And.intro hx.1 (fun x' h' => ?_))
-          rw [h.2]
-          have e : l ++ x' :: (r1 ++ es2) = (l ++ x' :: r1) ++ es2 := by simp
-          rw [e]
-          exact Typing.newTop h1 h2 h3 (hx.2 x' h') h5
+        rcases TypingSeq.mid h4 with ⟨Tx, hx⟩
+        refine Exists.intro Tx (And.intro hx.1 (fun x' h' => ?_))
+        rw [h.2]
+        have e : l ++ x' :: (r1 ++ es2) = (l ++ x' :: r1) ++ es2 := by simp
+        rw [e]
+        exact Typing.newTop h1 h2 h3 (hx.2 x' h') h5
     . cases h with
       | intro l2 h =>
-        cases typing_new_mid h5 (by rw [h.1]) with
-        | intro Tx hx =>
-          refine Exists.intro Tx (And.intro hx.1 (fun x' h' => ?_))
-          rw [h.2, List.append_assoc]
-          exact Typing.newTop h1 h2 h3 h4 (hx.2 x' h')
+        rcases typing_new_mid h5 (by rw [h.1]) with ⟨Tx, hx⟩
+        refine Exists.intro Tx (And.intro hx.1 (fun x' h' => ?_))
+        rw [h.2, List.append_assoc]
+        exact Typing.newTop h1 h2 h3 h4 (hx.2 x' h')
   | _, _, _, _, _, _, .var .., he => by cases he
   | _, _, _, _, _, _, .declField .., he => by cases he
   | _, _, _, _, _, _, .call .., he => by cases he
@@ -79,76 +77,58 @@ theorem typing_plug {d Delta gamma} {a : Expr} : forall (E : ECtx) {T : Ty},
       forall a', Typing d Delta gamma a' Ta -> Typing d Delta gamma (E.plug a') T
   | .hole, T, h => Exists.intro T (And.intro h (fun _ h' => h'))
   | .callRecv E Gs m es, T, h => by
-    cases inv_call h rfl with
-    | intro w hw =>
-      cases typing_plug E hw.ty0 with
-      | intro Ta hTa =>
-        exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hw.up.typing
-          (Typing.call (hTa.2 a' h') hw.scope hw.meth hw.len2 hw.len1 hw.sig hw.kinds hw.subs hw.args)))
+    rcases inv_call h rfl with ⟨w, hw⟩
+    rcases typing_plug E hw.ty0 with ⟨Ta, hTa⟩
+    exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hw.up.typing
+      (Typing.call (hTa.2 a' h') hw.scope hw.meth hw.len2 hw.len1 hw.sig hw.kinds hw.subs hw.args)))
   | .callArg v Gs m vs E es, T, h => by
-    cases inv_call h rfl with
-    | intro w hw =>
-      cases TypingSeq.mid hw.args with
-      | intro Tx hx =>
-        cases typing_plug E hx.1 with
-        | intro Ta hTa =>
-          exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hw.up.typing
-            (Typing.call hw.ty0 hw.scope hw.meth hw.len2 hw.len1 hw.sig hw.kinds hw.subs (hx.2 _ (hTa.2 a' h')))))
+    rcases inv_call h rfl with ⟨w, hw⟩
+    rcases TypingSeq.mid hw.args with ⟨Tx, hx⟩
+    rcases typing_plug E hx.1 with ⟨Ta, hTa⟩
+    exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hw.up.typing
+      (Typing.call hw.ty0 hw.scope hw.meth hw.len2 hw.len1 hw.sig hw.kinds hw.subs (hx.2 _ (hTa.2 a' h')))))
   | .superRecv E G Gs m es, T, h => by
-    cases inv_super h rfl with
-    | intro w hw =>
-      have hann := hw.ann
-      cases hw.args with
-      | cons h0 hs =>
-        cases typing_plug E h0 with
-        | intro Ta hTa =>
-          refine Exists.intro Ta (And.intro hTa.1 (fun a' h' => ?_))
-          simp only [ECtx.plug]
-          rw [hann]
-          exact hw.up.typing (Typing.callLbRuntime hw.sub hw.decl0 hw.meth hw.len0 hw.len1 hw.sig hw.decl hw.kind
-            hw.kinds hw.subs (TypingSeq.cons (hTa.2 a' h') hs))
+    rcases inv_super h rfl with ⟨w, hw⟩
+    have hann := hw.ann
+    cases hw.args with
+    | cons h0 hs =>
+      rcases typing_plug E h0 with ⟨Ta, hTa⟩
+      refine Exists.intro Ta (And.intro hTa.1 (fun a' h' => ?_))
+      simp only [ECtx.plug]
+      rw [hann]
+      exact hw.up.typing (Typing.callLbRuntime hw.sub hw.decl0 hw.meth hw.len0 hw.len1 hw.sig hw.decl hw.kind
+        hw.kinds hw.subs (TypingSeq.cons (hTa.2 a' h') hs))
   | .superArg v G Gs m vs E es, T, h => by
-    cases inv_super h rfl with
-    | intro w hw =>
-      have hann := hw.ann
-      cases hw.args with
-      | cons h0 hs =>
-        cases TypingSeq.mid hs with
-        | intro Tx hx =>
-          cases typing_plug E hx.1 with
-          | intro Ta hTa =>
-            refine Exists.intro Ta (And.intro hTa.1 (fun a' h' => ?_))
-            simp only [ECtx.plug]
-            rw [hann]
-            exact hw.up.typing (Typing.callLbRuntime hw.sub hw.decl0 hw.meth hw.len0 hw.len1 hw.sig hw.decl hw.kind
-              hw.kinds hw.subs (TypingSeq.cons h0 (hx.2 _ (hTa.2 a' h'))))
+    rcases inv_super h rfl with ⟨w, hw⟩
+    have hann := hw.ann
+    cases hw.args with
+    | cons h0 hs =>
+      rcases TypingSeq.mid hs with ⟨Tx, hx⟩
+      rcases typing_plug E hx.1 with ⟨Ta, hTa⟩
+      refine Exists.intro Ta (And.intro hTa.1 (fun a' h' => ?_))
+      simp only [ECtx.plug]
+      rw [hann]
+      exact hw.up.typing (Typing.callLbRuntime hw.sub hw.decl0 hw.meth hw.len0 hw.len1 hw.sig hw.decl hw.kind
+        hw.kinds hw.subs (TypingSeq.cons h0 (hx.2 _ (hTa.2 a' h'))))
   | .field E f, T, h => by
-    cases inv_field h rfl with
-    | intro w hw =>
-      cases typing_plug E hw.ty with
-      | intro Ta hTa =>
-        exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hw.up.typing
-          (Typing.declField (hTa.2 a' h') hw.decl hw.mem hw.len)))
+    rcases inv_field h rfl with ⟨w, hw⟩
+    rcases typing_plug E hw.ty with ⟨Ta, hTa⟩
+    exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hw.up.typing
+      (Typing.declField (hTa.2 a' h') hw.decl hw.mem hw.len)))
   | .newArg C Gs vs E es, T, h => by
-    cases typing_new_mid h rfl with
-    | intro Tx hx =>
-      cases typing_plug E hx.1 with
-      | intro Ta hTa => exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hx.2 _ (hTa.2 a' h')))
+    rcases typing_new_mid h rfl with ⟨Tx, hx⟩
+    cases typing_plug E hx.1 with
+    | intro Ta hTa => exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hx.2 _ (hTa.2 a' h')))
   | .localArg C Gs C' Gs' vs E es Ms, T, h => by
-    cases inv_local h rfl with
-    | intro w hw =>
-      cases typing_new_mid hw.tyNew rfl with
-      | intro Tx hx =>
-        cases typing_plug E hx.1 with
-        | intro Ta hTa =>
-          exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hw.up.typing
-            (Typing.newLocal hw.cons hw.pair hw.closedB hw.kindC hw.kindS (hx.2 _ (hTa.2 a' h')) hw.meths hw.over)))
+    rcases inv_local h rfl with ⟨w, hw⟩
+    rcases typing_new_mid hw.tyNew rfl with ⟨Tx, hx⟩
+    rcases typing_plug E hx.1 with ⟨Ta, hTa⟩
+    exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hw.up.typing
+      (Typing.newLocal hw.cons hw.pair hw.closedB hw.kindC hw.kindS (hx.2 _ (hTa.2 a' h')) hw.meths hw.over)))
   | .ifCond E G x e1 e2, T, h => by
-    cases inv_if h rfl with
-    | intro w hw =>
-      cases typing_plug E hw.ty0 with
-      | intro Ta hTa =>
-        exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hw.up.typing
-          (Typing.ifInstanceof (hTa.2 a' h') hw.kind hw.cast hw.ty1 hw.ty2)))
+    rcases inv_if h rfl with ⟨w, hw⟩
+    rcases typing_plug E hw.ty0 with ⟨Ta, hTa⟩
+    exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hw.up.typing
+      (Typing.ifInstanceof (hTa.2 a' h') hw.kind hw.cast hw.ty1 hw.ty2)))
 
 end Funnelling.High

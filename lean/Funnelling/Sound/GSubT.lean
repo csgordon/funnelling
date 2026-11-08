@@ -124,13 +124,12 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
     have ih2 := Typing.gsub hwf hok hd h2 hg (fun X hX => hdis X (Or.inr hX)) n1 sc hn.2 ht.2 hu.2.2
     simp only [gsubG, List.map_append, List.map_cons, List.map_nil, VarDecl.subst] at ih1
     simp only [Expr.gsubst]
-    cases Cast.gsub hd hg.substCtx hc with
-    | intro T1 hT1 =>
-      have ty0 : Typing d (gsubB s Delta) (gsubG s gamma) (Expr.gsubst s e0) T1 := by
-        rcases hT1.2.2 with e | hk1
-        . rw [e]; exact ih0
-        . exact Typing.subs ih0 hk1 hT1.1
-      exact Typing.ifInstanceof ty0 (Kind.subst hd hg.substCtx.sub hg.substCtx.kind hk) hT1.2.1 ih1 ih2
+    rcases Cast.gsub hd hg.substCtx hc with ⟨T1, hT1⟩
+    have ty0 : Typing d (gsubB s Delta) (gsubG s gamma) (Expr.gsubst s e0) T1 := by
+      rcases hT1.2.2 with e | hk1
+      . rw [e]; exact ih0
+      . exact Typing.subs ih0 hk1 hT1.1
+    exact Typing.ifInstanceof ty0 (Kind.subst hd hg.substCtx.sub hg.substCtx.kind hk) hT1.2.1 ih1 ih2
 theorem TypingSeq.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) :
     forall {Delta gamma es Ts}, TypingSeq d Delta gamma es Ts ->
     forall {s Xs xs}, GOk d Delta s ->

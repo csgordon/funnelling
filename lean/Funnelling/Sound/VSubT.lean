@@ -35,10 +35,9 @@ theorem nthis_dom {n : VSubst} {y : VarName} (hy : Not (y = this)) :
   constructor
   . intro h; cases h with | intro p hp => exact Exists.intro p (And.intro hp.1.1 hp.2)
   . intro h
-    cases h with
-    | intro p hp =>
-      refine Exists.intro p (And.intro (And.intro hp.1 ?_) hp.2)
-      rw [hp.2]; simpa using hy
+    rcases h with ⟨p, hp⟩
+    refine Exists.intro p (And.intro (And.intro hp.1 ?_) hp.2)
+    rw [hp.2]; simpa using hy
 
 theorem innerG_gsub {n : VSubst} {gamma : Gamma} {Fs : List Funnel} {C : ClassName} :
     innerG (gsub n gamma) Fs C = gsub (nthis n) (innerG gamma Fs C) := by
@@ -81,8 +80,7 @@ theorem vsubstList_mem {n : VSubst} {M : Method} : forall {Ms : List Method}, Li
     cases h with
     | head => exact Exists.intro M' (And.intro (List.Mem.head _) rfl)
     | tail _ h =>
-      cases vsubstList_mem h with
-      | intro M0 hM0 => exact Exists.intro M0 (And.intro (List.Mem.tail _ hM0.1) hM0.2)
+      rcases vsubstList_mem h with ⟨M0, hM0⟩; exact Exists.intro M0 (And.intro (List.Mem.tail _ hM0.1) hM0.2)
 
 theorem names_vsubst {n : VSubst} : forall {Ms : List Method},
     (Method.vsubstList n Ms).map Method.name = Ms.map Method.name
@@ -103,20 +101,17 @@ theorem Consistent.vsubst {d : Decls} {n n' : VSubst} {C : ClassName} {Fs : List
             (And.intro h.2.1 (And.intro h.2.2.1 (And.intro ?_ ?_)))))))
           . intro m; rw [names_vsubst]; exact h.2.2.2.1 m
           . intro M hM
-            cases vsubstList_mem hM with
-            | intro M0 hM0 => rw [hM0.2]; exact (h.2.2.2.2 M0 hM0.1).vsubst
+            rcases vsubstList_mem hM with ⟨M0, hM0⟩; rw [hM0.2]; exact (h.2.2.2.2 M0 hM0.1).vsubst
 
 theorem OverrideOk.vsubst {d : Decls} {Delta : Bounds} {T : Ty} {n : VSubst} {Ms : List Method}
     (h : OverrideOk d Delta T Ms) : OverrideOk d Delta T (Method.vsubstList n Ms) := by
   intro M C Ts hM hs
-  cases vsubstList_mem hM with
-  | intro M0 hM0 => rw [hM0.2]; exact (h M0 C Ts hM0.1 hs).vsubst
+  rcases vsubstList_mem hM with ⟨M0, hM0⟩; rw [hM0.2]; exact (h M0 C Ts hM0.1 hs).vsubst
 
 theorem lookup_none_not_dom {n : VSubst} {x : VarName} (h : List.lookup x n = none) :
     Not (List.Mem x (n.map Prod.fst)) := by
   intro hm
-  cases lookup_isSome hm with
-  | intro v hv => rw [hv] at h; cases h
+  rcases lookup_isSome hm with ⟨v, hv⟩; rw [hv] at h; cases h
 
 theorem mem_gsub {n : VSubst} {gamma : Gamma} {y : VarDecl} (h : List.Mem y gamma)
     (hy : Not (List.Mem y.x (n.map Prod.fst))) : List.Mem y (gsub n gamma) := by
@@ -196,35 +191,34 @@ theorem Typing.vsub {d : Decls} : forall {Delta gamma e T}, Typing d Delta gamma
     simp only [Expr.vsubst] at h6'
     refine Typing.newLocal h1.vsubst h2 h3 h4 h5 h6' ?_ h8.vsubst
     intro M' hM'
-    cases vsubstList_mem hM' with
-    | intro M hM =>
-      rw [hM.2]
-      have hmo := MethodOk.vsub (h7 M hM.1) (n := nthis n) (xs := xs.filter fun x => x != this)
-        (xs' := xs'.filter fun x => x != this)
-        (fun x v U hx hl => by
-          have hxt : Not (x = this) := by
-            intro e; subst e
-            have := (List.mem_filter.mp (lookup_mem hx)).2
-            simp at this
-          have hl2 : gamma.lookup x = some U := by
-            have hm := lookup_mem_g hl
-            simp only [innerG, withoutThis, restrict, listMem_iff, List.mem_append, List.mem_filter,
-              List.mem_singleton] at hm
-            rcases hm with hm | hm
-            . exact lookup_of_mem_g n1 hm.1.1
-            . simp only [VarDecl.mk.injEq] at hm; exact absurd hm.2 hxt
-          rw [lookup_filter_this hxt] at hx
-          exact hv x v U hx hl2)
-        hw.nthis (fun y hy hm => by
-          have hyt : Not (y = this) := fun e => ht.2 (e ▸ vbindersListM_mem hM.1 hy)
-          exact hdef y (Or.inr (vbindersListM_mem hM.1 hy)) ((nthis_dom hyt).mp hm))
-        (innerG_nodup n1 _ _) (innerG_dom sc _ _) (by rw [<- innerG_gsub]; exact innerG_dom sc' _ _)
-        (noShadowListM_all hn.2 hM.1)
-        (by have := noShadowListM_all hn'.2 hM'; rw [hM.2] at this; exact this)
-        (fun h => ht.2 (vbindersListM_mem hM.1 h)) (uniqList_mem hM.1 hu.2) filter_this_no
-      show MethodOk _ _ (innerG (gsub n gamma) Fs C) _
-      rw [innerG_gsub]
-      exact hmo
+    rcases vsubstList_mem hM' with ⟨M, hM⟩
+    rw [hM.2]
+    have hmo := MethodOk.vsub (h7 M hM.1) (n := nthis n) (xs := xs.filter fun x => x != this)
+      (xs' := xs'.filter fun x => x != this)
+      (fun x v U hx hl => by
+        have hxt : Not (x = this) := by
+          intro e; subst e
+          have := (List.mem_filter.mp (lookup_mem hx)).2
+          simp at this
+        have hl2 : gamma.lookup x = some U := by
+          have hm := lookup_mem_g hl
+          simp only [innerG, withoutThis, restrict, listMem_iff, List.mem_append, List.mem_filter,
+            List.mem_singleton] at hm
+          rcases hm with hm | hm
+          . exact lookup_of_mem_g n1 hm.1.1
+          . simp only [VarDecl.mk.injEq] at hm; exact absurd hm.2 hxt
+        rw [lookup_filter_this hxt] at hx
+        exact hv x v U hx hl2)
+      hw.nthis (fun y hy hm => by
+        have hyt : Not (y = this) := fun e => ht.2 (e ▸ vbindersListM_mem hM.1 hy)
+        exact hdef y (Or.inr (vbindersListM_mem hM.1 hy)) ((nthis_dom hyt).mp hm))
+      (innerG_nodup n1 _ _) (innerG_dom sc _ _) (by rw [<- innerG_gsub]; exact innerG_dom sc' _ _)
+      (noShadowListM_all hn.2 hM.1)
+      (by have := noShadowListM_all hn'.2 hM'; rw [hM.2] at this; exact this)
+      (fun h => ht.2 (vbindersListM_mem hM.1 h)) (uniqList_mem hM.1 hu.2) filter_this_no
+    show MethodOk _ _ (innerG (gsub n gamma) Fs C) _
+    rw [innerG_gsub]
+    exact hmo
   | _, gamma, _, _, .ifInstanceof (x := x) h0 hk hc h1 h2, n, _, xs, xs', hv, hw, hdef, n1, sc, sc', hn, hn', ht, hu => by
     simp only [Expr.noShadow, Bool.and_eq_true, Bool.not_eq_true'] at hn
     simp only [Expr.vsubst, Expr.noShadow, Bool.and_eq_true, Bool.not_eq_true'] at hn' |-

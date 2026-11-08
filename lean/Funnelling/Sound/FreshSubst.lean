@@ -92,8 +92,7 @@ theorem mem_zip_fst {A B : Type} : forall {xs : List A} {ys : List B} {x : A}, x
     cases hx with
     | head => exact Exists.intro b (List.Mem.head _)
     | tail _ hx =>
-      cases mem_zip_fst (by simpa using hl) hx with
-      | intro y hy => exact Exists.intro y (List.Mem.tail _ hy)
+      rcases mem_zip_fst (by simpa using hl) hx with ⟨y, hy⟩; exact Exists.intro y (List.Mem.tail _ hy)
 
 theorem lookup_zip_ren {A B : Type} [DecidableEq A] {rt : List (Prod A A)} :
     forall {X1 X2 : List A} {Us : List B} {X : A}, X1.length = X2.length -> X2.Nodup ->
@@ -115,13 +114,12 @@ theorem lookup_zip_ren {A B : Type} [DecidableEq A] {rt : List (Prod A A)} :
       have hl' : X1.length = X2.length := by simpa using hl
       have hp' : forall p, List.Mem p (X1.zip X2) -> rn rt p.1 = p.2 := fun p h => hp p (List.Mem.tail _ h)
       have hne : Not (rn rt X = b) := by
-        cases mem_zip_fst hl' hX' with
-        | intro y hy =>
-          rw [hp' (X, y) hy]
-          intro eb
-          have eb' : y = b := eb
-          rw [eb'] at hy
-          exact (List.nodup_cons.mp hn).1 (List.of_mem_zip hy).2
+        rcases mem_zip_fst hl' hX' with ⟨y, hy⟩
+        rw [hp' (X, y) hy]
+        intro eb
+        have eb' : y = b := eb
+        rw [eb'] at hy
+        exact (List.nodup_cons.mp hn).1 (List.of_mem_zip hy).2
       rw [lookup_cons_ne hne]
       exact lookup_zip_ren hl' (List.nodup_cons.mp hn).2 hp' hX'
 

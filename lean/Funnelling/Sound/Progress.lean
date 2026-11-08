@@ -9,16 +9,13 @@ theorem Ty.ground_of : forall {T : Ty}, T.ftv = [] -> exists G : GTy, T = G.ty
   | .var _, h => by simp [Ty.ftv] at h
   | .cls C Ts, h => by
     simp only [Ty.ftv] at h
-    cases Ty.groundList_of h with
-    | intro Gs hG => exact Exists.intro (.cls C Gs) (by rw [hG]; rfl)
+    rcases Ty.groundList_of h with ⟨Gs, hG⟩; exact Exists.intro (.cls C Gs) (by rw [hG]; rfl)
 theorem Ty.groundList_of : forall {Ts : List Ty}, Ty.ftvList Ts = [] -> exists Gs : List GTy, Ts = GTy.tys Gs
   | [], _ => Exists.intro [] rfl
   | T :: Ts, h => by
     simp only [Ty.ftvList, List.append_eq_nil_iff] at h
-    cases Ty.ground_of h.1 with
-    | intro G hG =>
-      cases Ty.groundList_of h.2 with
-      | intro Gs hGs => exact Exists.intro (G :: Gs) (by rw [hG, hGs]; rfl)
+    rcases Ty.ground_of h.1 with ⟨G, hG⟩
+    rcases Ty.groundList_of h.2 with ⟨Gs, hGs⟩; exact Exists.intro (G :: Gs) (by rw [hG, hGs]; rfl)
 end
 
 theorem all_nil_contains {A : Type} [DecidableEq A] : forall {l : List A}, l.all ([] : List A).contains = true -> l = []
@@ -30,8 +27,7 @@ theorem funnels_ground : forall {Fs : List Funnel}, domF Fs = [] -> exists Gs : 
   | .funnel _ :: _, h => by simp [domF] at h
   | .ground G :: Fs, h => by
     have h' : domF Fs = [] := by simpa [domF] using h
-    cases funnels_ground h' with
-    | intro Gs hGs => exact Exists.intro (G :: Gs) (by rw [hGs]; rfl)
+    rcases funnels_ground h' with ⟨Gs, hGs⟩; exact Exists.intro (G :: Gs) (by rw [hGs]; rfl)
 
 inductive Redex : Expr -> Prop
   | field (v : Value) (f : FieldName) : Redex (.field v.expr f)
