@@ -135,6 +135,10 @@ theorem lookup_none {x : A} : forall {r : List (Prod A B)}, (forall p, List.Mem 
     rw [lookup_cons_ne hx]
     exact lookup_none (fun p hp => h p (List.Mem.tail _ hp))
 
+theorem lookup_none_of_not_dom {x : A} {r : List (Prod A B)} (h : Not (List.Mem x (r.map Prod.fst))) :
+    List.lookup x r = none :=
+  lookup_none fun p hp e => h (by rw [<- e]; exact List.mem_map_of_mem hp)
+
 theorem lookup_isSome {x : A} : forall {r : List (Prod A B)}, List.Mem x (r.map Prod.fst) ->
     exists y, List.lookup x r = some y
   | [], h => by cases h

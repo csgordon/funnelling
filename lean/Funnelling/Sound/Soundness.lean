@@ -13,7 +13,7 @@ theorem preservation {d : Decls} {e e' : Expr} {T : Ty} (hwf : WFDecls d) (hok :
   have hw' := hs.2
   rw [h.2.1] at hw' |-
   cases typing_plug E ht with
-  | intro Ta hTa => exact hTa.2 a' (presBase' hwf hok (WFExpr.plug he) (WFExpr.plug hw') h.2.2 hTa.1)
+  | intro Ta hTa => exact hTa.2 a' (preservationBase hwf hok (WFExpr.plug he) (WFExpr.plug hw') h.2.2 hTa.1)
 
 theorem progress {d : Decls} {e : Expr} {T : Ty} (hwf : WFDecls d) (hok : DeclsOk d) (he : WFExpr e)
     (ht : Typing d [] [] e T) : IsValue e \/ exists e', Reduces d e e' := by

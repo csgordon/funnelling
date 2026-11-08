@@ -22,16 +22,16 @@ theorem closedList_eq {Xs : List TVarName} {xs : List VarName} :
   | [] => rfl
   | e :: es => by simp [Expr.closedList, closedList_eq es]
 
-theorem ECtx.kq_replace {a a' : Expr} (h' : forall k, List.Mem k a'.locals -> KQ k) :
-    forall (E : ECtx), (forall k, List.Mem k (E.plug a).locals -> KQ k) ->
-      forall k, List.Mem k (E.plug a').locals -> KQ k := by
+theorem ECtx.nodup_replace {a a' : Expr} (h' : forall k, List.Mem k a'.locals -> K.Nodup k) :
+    forall (E : ECtx), (forall k, List.Mem k (E.plug a).locals -> K.Nodup k) ->
+      forall k, List.Mem k (E.plug a').locals -> K.Nodup k := by
   intro E
   induction E <;> intro h
   case hole => exact h'
   all_goals
     rename_i ih
     simp only [ECtx.plug, Expr.locals, localsList_eq, List.flatMap_append, List.flatMap_cons, listMem_iff,
-      List.mem_append, List.mem_cons, or_imp, forall_and, forall_eq, KQ] at h ih |-
+      List.mem_append, List.mem_cons, or_imp, forall_and, forall_eq, K.Nodup] at h ih |-
     repeat' apply And.intro
     all_goals first | assumption | exact ih h | exact ih h.1 | exact ih h.2 | exact ih h.1.1 | exact ih h.1.2 | exact ih h.2.1 | exact ih h.2.2 | exact ih h.1.1.1 | exact ih h.1.1.2 | exact ih h.1.2.1 | exact ih h.1.2.2 | exact ih h.2.1.1 | exact ih h.2.1.2 | exact ih h.2.2.1 | exact ih h.2.2.2 | exact ih h.1.1.1.1 | exact ih h.1.1.1.2 | exact ih h.1.1.2.1 | exact ih h.1.1.2.2 | exact ih h.1.2.1.1 | exact ih h.1.2.1.2 | exact ih h.1.2.2.1 | exact ih h.1.2.2.2 | exact ih h.2.1.1.1 | exact ih h.2.1.1.2 | exact ih h.2.1.2.1 | exact ih h.2.1.2.2 | exact ih h.2.2.1.1 | exact ih h.2.2.1.2 | exact ih h.2.2.2.1 | exact ih h.2.2.2.2 | exact ih h.1.1.1.1.1 | exact ih h.1.1.1.1.2 | exact ih h.1.1.1.2.1 | exact ih h.1.1.1.2.2 | exact ih h.1.1.2.1.1 | exact ih h.1.1.2.1.2 | exact ih h.1.1.2.2.1 | exact ih h.1.1.2.2.2 | exact ih h.1.2.1.1.1 | exact ih h.1.2.1.1.2 | exact ih h.1.2.1.2.1 | exact ih h.1.2.1.2.2 | exact ih h.1.2.2.1.1 | exact ih h.1.2.2.1.2 | exact ih h.1.2.2.2.1 | exact ih h.1.2.2.2.2 | exact ih h.2.1.1.1.1 | exact ih h.2.1.1.1.2 | exact ih h.2.1.1.2.1 | exact ih h.2.1.1.2.2 | exact ih h.2.1.2.1.1 | exact ih h.2.1.2.1.2 | exact ih h.2.1.2.2.1 | exact ih h.2.1.2.2.2 | exact ih h.2.2.1.1.1 | exact ih h.2.2.1.1.2 | exact ih h.2.2.1.2.1 | exact ih h.2.2.1.2.2 | exact ih h.2.2.2.1.1 | exact ih h.2.2.2.1.2 | exact ih h.2.2.2.2.1 | exact ih h.2.2.2.2.2 | exact ih h.1.1.1.1.1.1 | exact ih h.1.1.1.1.1.2 | exact ih h.1.1.1.1.2.1 | exact ih h.1.1.1.1.2.2 | exact ih h.1.1.1.2.1.1 | exact ih h.1.1.1.2.1.2 | exact ih h.1.1.1.2.2.1 | exact ih h.1.1.1.2.2.2 | exact ih h.1.1.2.1.1.1 | exact ih h.1.1.2.1.1.2 | exact ih h.1.1.2.1.2.1 | exact ih h.1.1.2.1.2.2 | exact ih h.1.1.2.2.1.1 | exact ih h.1.1.2.2.1.2 | exact ih h.1.1.2.2.2.1 | exact ih h.1.1.2.2.2.2 | exact ih h.1.2.1.1.1.1 | exact ih h.1.2.1.1.1.2 | exact ih h.1.2.1.1.2.1 | exact ih h.1.2.1.1.2.2 | exact ih h.1.2.1.2.1.1 | exact ih h.1.2.1.2.1.2 | exact ih h.1.2.1.2.2.1 | exact ih h.1.2.1.2.2.2 | exact ih h.1.2.2.1.1.1 | exact ih h.1.2.2.1.1.2 | exact ih h.1.2.2.1.2.1 | exact ih h.1.2.2.1.2.2 | exact ih h.1.2.2.2.1.1 | exact ih h.1.2.2.2.1.2 | exact ih h.1.2.2.2.2.1 | exact ih h.1.2.2.2.2.2 | exact ih h.2.1.1.1.1.1 | exact ih h.2.1.1.1.1.2 | exact ih h.2.1.1.1.2.1 | exact ih h.2.1.1.1.2.2 | exact ih h.2.1.1.2.1.1 | exact ih h.2.1.1.2.1.2 | exact ih h.2.1.1.2.2.1 | exact ih h.2.1.1.2.2.2 | exact ih h.2.1.2.1.1.1 | exact ih h.2.1.2.1.1.2 | exact ih h.2.1.2.1.2.1 | exact ih h.2.1.2.1.2.2 | exact ih h.2.1.2.2.1.1 | exact ih h.2.1.2.2.1.2 | exact ih h.2.1.2.2.2.1 | exact ih h.2.1.2.2.2.2 | exact ih h.2.2.1.1.1.1 | exact ih h.2.2.1.1.1.2 | exact ih h.2.2.1.1.2.1 | exact ih h.2.2.1.1.2.2 | exact ih h.2.2.1.2.1.1 | exact ih h.2.2.1.2.1.2 | exact ih h.2.2.1.2.2.1 | exact ih h.2.2.1.2.2.2 | exact ih h.2.2.2.1.1.1 | exact ih h.2.2.2.1.1.2 | exact ih h.2.2.2.1.2.1 | exact ih h.2.2.2.1.2.2 | exact ih h.2.2.2.2.1.1 | exact ih h.2.2.2.2.1.2 | exact ih h.2.2.2.2.2.1 | exact ih h.2.2.2.2.2.2 | exact h.1 | exact h.2 | exact h.1.1 | exact h.1.2 | exact h.2.1 | exact h.2.2 | exact h.1.1.1 | exact h.1.1.2 | exact h.1.2.1 | exact h.1.2.2 | exact h.2.1.1 | exact h.2.1.2 | exact h.2.2.1 | exact h.2.2.2 | exact h.1.1.1.1 | exact h.1.1.1.2 | exact h.1.1.2.1 | exact h.1.1.2.2 | exact h.1.2.1.1 | exact h.1.2.1.2 | exact h.1.2.2.1 | exact h.1.2.2.2 | exact h.2.1.1.1 | exact h.2.1.1.2 | exact h.2.1.2.1 | exact h.2.1.2.2 | exact h.2.2.1.1 | exact h.2.2.1.2 | exact h.2.2.2.1 | exact h.2.2.2.2 | exact h.1.1.1.1.1 | exact h.1.1.1.1.2 | exact h.1.1.1.2.1 | exact h.1.1.1.2.2 | exact h.1.1.2.1.1 | exact h.1.1.2.1.2 | exact h.1.1.2.2.1 | exact h.1.1.2.2.2 | exact h.1.2.1.1.1 | exact h.1.2.1.1.2 | exact h.1.2.1.2.1 | exact h.1.2.1.2.2 | exact h.1.2.2.1.1 | exact h.1.2.2.1.2 | exact h.1.2.2.2.1 | exact h.1.2.2.2.2 | exact h.2.1.1.1.1 | exact h.2.1.1.1.2 | exact h.2.1.1.2.1 | exact h.2.1.1.2.2 | exact h.2.1.2.1.1 | exact h.2.1.2.1.2 | exact h.2.1.2.2.1 | exact h.2.1.2.2.2 | exact h.2.2.1.1.1 | exact h.2.2.1.1.2 | exact h.2.2.1.2.1 | exact h.2.2.1.2.2 | exact h.2.2.2.1.1 | exact h.2.2.2.1.2 | exact h.2.2.2.2.1 | exact h.2.2.2.2.2 | exact h.1.1.1.1.1.1 | exact h.1.1.1.1.1.2 | exact h.1.1.1.1.2.1 | exact h.1.1.1.1.2.2 | exact h.1.1.1.2.1.1 | exact h.1.1.1.2.1.2 | exact h.1.1.1.2.2.1 | exact h.1.1.1.2.2.2 | exact h.1.1.2.1.1.1 | exact h.1.1.2.1.1.2 | exact h.1.1.2.1.2.1 | exact h.1.1.2.1.2.2 | exact h.1.1.2.2.1.1 | exact h.1.1.2.2.1.2 | exact h.1.1.2.2.2.1 | exact h.1.1.2.2.2.2 | exact h.1.2.1.1.1.1 | exact h.1.2.1.1.1.2 | exact h.1.2.1.1.2.1 | exact h.1.2.1.1.2.2 | exact h.1.2.1.2.1.1 | exact h.1.2.1.2.1.2 | exact h.1.2.1.2.2.1 | exact h.1.2.1.2.2.2 | exact h.1.2.2.1.1.1 | exact h.1.2.2.1.1.2 | exact h.1.2.2.1.2.1 | exact h.1.2.2.1.2.2 | exact h.1.2.2.2.1.1 | exact h.1.2.2.2.1.2 | exact h.1.2.2.2.2.1 | exact h.1.2.2.2.2.2 | exact h.2.1.1.1.1.1 | exact h.2.1.1.1.1.2 | exact h.2.1.1.1.2.1 | exact h.2.1.1.1.2.2 | exact h.2.1.1.2.1.1 | exact h.2.1.1.2.1.2 | exact h.2.1.1.2.2.1 | exact h.2.1.1.2.2.2 | exact h.2.1.2.1.1.1 | exact h.2.1.2.1.1.2 | exact h.2.1.2.1.2.1 | exact h.2.1.2.1.2.2 | exact h.2.1.2.2.1.1 | exact h.2.1.2.2.1.2 | exact h.2.1.2.2.2.1 | exact h.2.1.2.2.2.2 | exact h.2.2.1.1.1.1 | exact h.2.2.1.1.1.2 | exact h.2.2.1.1.2.1 | exact h.2.2.1.1.2.2 | exact h.2.2.1.2.1.1 | exact h.2.2.1.2.1.2 | exact h.2.2.1.2.2.1 | exact h.2.2.1.2.2.2 | exact h.2.2.2.1.1.1 | exact h.2.2.2.1.1.2 | exact h.2.2.2.1.2.1 | exact h.2.2.2.1.2.2 | exact h.2.2.2.2.1.1 | exact h.2.2.2.2.1.2 | exact h.2.2.2.2.2.1 | exact h.2.2.2.2.2.2
 
@@ -71,7 +71,7 @@ theorem ECtx.closed_replace {a a' : Expr} {Xs : List TVarName} {xs : List VarNam
     repeat' apply And.intro
     all_goals first | assumption | exact ih h | exact ih h.1 | exact ih h.2 | exact ih h.1.1 | exact ih h.1.2 | exact ih h.2.1 | exact ih h.2.2 | exact ih h.1.1.1 | exact ih h.1.1.2 | exact ih h.1.2.1 | exact ih h.1.2.2 | exact ih h.2.1.1 | exact ih h.2.1.2 | exact ih h.2.2.1 | exact ih h.2.2.2 | exact ih h.1.1.1.1 | exact ih h.1.1.1.2 | exact ih h.1.1.2.1 | exact ih h.1.1.2.2 | exact ih h.1.2.1.1 | exact ih h.1.2.1.2 | exact ih h.1.2.2.1 | exact ih h.1.2.2.2 | exact ih h.2.1.1.1 | exact ih h.2.1.1.2 | exact ih h.2.1.2.1 | exact ih h.2.1.2.2 | exact ih h.2.2.1.1 | exact ih h.2.2.1.2 | exact ih h.2.2.2.1 | exact ih h.2.2.2.2 | exact ih h.1.1.1.1.1 | exact ih h.1.1.1.1.2 | exact ih h.1.1.1.2.1 | exact ih h.1.1.1.2.2 | exact ih h.1.1.2.1.1 | exact ih h.1.1.2.1.2 | exact ih h.1.1.2.2.1 | exact ih h.1.1.2.2.2 | exact ih h.1.2.1.1.1 | exact ih h.1.2.1.1.2 | exact ih h.1.2.1.2.1 | exact ih h.1.2.1.2.2 | exact ih h.1.2.2.1.1 | exact ih h.1.2.2.1.2 | exact ih h.1.2.2.2.1 | exact ih h.1.2.2.2.2 | exact ih h.2.1.1.1.1 | exact ih h.2.1.1.1.2 | exact ih h.2.1.1.2.1 | exact ih h.2.1.1.2.2 | exact ih h.2.1.2.1.1 | exact ih h.2.1.2.1.2 | exact ih h.2.1.2.2.1 | exact ih h.2.1.2.2.2 | exact ih h.2.2.1.1.1 | exact ih h.2.2.1.1.2 | exact ih h.2.2.1.2.1 | exact ih h.2.2.1.2.2 | exact ih h.2.2.2.1.1 | exact ih h.2.2.2.1.2 | exact ih h.2.2.2.2.1 | exact ih h.2.2.2.2.2 | exact ih h.1.1.1.1.1.1 | exact ih h.1.1.1.1.1.2 | exact ih h.1.1.1.1.2.1 | exact ih h.1.1.1.1.2.2 | exact ih h.1.1.1.2.1.1 | exact ih h.1.1.1.2.1.2 | exact ih h.1.1.1.2.2.1 | exact ih h.1.1.1.2.2.2 | exact ih h.1.1.2.1.1.1 | exact ih h.1.1.2.1.1.2 | exact ih h.1.1.2.1.2.1 | exact ih h.1.1.2.1.2.2 | exact ih h.1.1.2.2.1.1 | exact ih h.1.1.2.2.1.2 | exact ih h.1.1.2.2.2.1 | exact ih h.1.1.2.2.2.2 | exact ih h.1.2.1.1.1.1 | exact ih h.1.2.1.1.1.2 | exact ih h.1.2.1.1.2.1 | exact ih h.1.2.1.1.2.2 | exact ih h.1.2.1.2.1.1 | exact ih h.1.2.1.2.1.2 | exact ih h.1.2.1.2.2.1 | exact ih h.1.2.1.2.2.2 | exact ih h.1.2.2.1.1.1 | exact ih h.1.2.2.1.1.2 | exact ih h.1.2.2.1.2.1 | exact ih h.1.2.2.1.2.2 | exact ih h.1.2.2.2.1.1 | exact ih h.1.2.2.2.1.2 | exact ih h.1.2.2.2.2.1 | exact ih h.1.2.2.2.2.2 | exact ih h.2.1.1.1.1.1 | exact ih h.2.1.1.1.1.2 | exact ih h.2.1.1.1.2.1 | exact ih h.2.1.1.1.2.2 | exact ih h.2.1.1.2.1.1 | exact ih h.2.1.1.2.1.2 | exact ih h.2.1.1.2.2.1 | exact ih h.2.1.1.2.2.2 | exact ih h.2.1.2.1.1.1 | exact ih h.2.1.2.1.1.2 | exact ih h.2.1.2.1.2.1 | exact ih h.2.1.2.1.2.2 | exact ih h.2.1.2.2.1.1 | exact ih h.2.1.2.2.1.2 | exact ih h.2.1.2.2.2.1 | exact ih h.2.1.2.2.2.2 | exact ih h.2.2.1.1.1.1 | exact ih h.2.2.1.1.1.2 | exact ih h.2.2.1.1.2.1 | exact ih h.2.2.1.1.2.2 | exact ih h.2.2.1.2.1.1 | exact ih h.2.2.1.2.1.2 | exact ih h.2.2.1.2.2.1 | exact ih h.2.2.1.2.2.2 | exact ih h.2.2.2.1.1.1 | exact ih h.2.2.2.1.1.2 | exact ih h.2.2.2.1.2.1 | exact ih h.2.2.2.1.2.2 | exact ih h.2.2.2.2.1.1 | exact ih h.2.2.2.2.1.2 | exact ih h.2.2.2.2.2.1 | exact ih h.2.2.2.2.2.2 | exact h.1 | exact h.2 | exact h.1.1 | exact h.1.2 | exact h.2.1 | exact h.2.2 | exact h.1.1.1 | exact h.1.1.2 | exact h.1.2.1 | exact h.1.2.2 | exact h.2.1.1 | exact h.2.1.2 | exact h.2.2.1 | exact h.2.2.2 | exact h.1.1.1.1 | exact h.1.1.1.2 | exact h.1.1.2.1 | exact h.1.1.2.2 | exact h.1.2.1.1 | exact h.1.2.1.2 | exact h.1.2.2.1 | exact h.1.2.2.2 | exact h.2.1.1.1 | exact h.2.1.1.2 | exact h.2.1.2.1 | exact h.2.1.2.2 | exact h.2.2.1.1 | exact h.2.2.1.2 | exact h.2.2.2.1 | exact h.2.2.2.2 | exact h.1.1.1.1.1 | exact h.1.1.1.1.2 | exact h.1.1.1.2.1 | exact h.1.1.1.2.2 | exact h.1.1.2.1.1 | exact h.1.1.2.1.2 | exact h.1.1.2.2.1 | exact h.1.1.2.2.2 | exact h.1.2.1.1.1 | exact h.1.2.1.1.2 | exact h.1.2.1.2.1 | exact h.1.2.1.2.2 | exact h.1.2.2.1.1 | exact h.1.2.2.1.2 | exact h.1.2.2.2.1 | exact h.1.2.2.2.2 | exact h.2.1.1.1.1 | exact h.2.1.1.1.2 | exact h.2.1.1.2.1 | exact h.2.1.1.2.2 | exact h.2.1.2.1.1 | exact h.2.1.2.1.2 | exact h.2.1.2.2.1 | exact h.2.1.2.2.2 | exact h.2.2.1.1.1 | exact h.2.2.1.1.2 | exact h.2.2.1.2.1 | exact h.2.2.1.2.2 | exact h.2.2.2.1.1 | exact h.2.2.2.1.2 | exact h.2.2.2.2.1 | exact h.2.2.2.2.2 | exact h.1.1.1.1.1.1 | exact h.1.1.1.1.1.2 | exact h.1.1.1.1.2.1 | exact h.1.1.1.1.2.2 | exact h.1.1.1.2.1.1 | exact h.1.1.1.2.1.2 | exact h.1.1.1.2.2.1 | exact h.1.1.1.2.2.2 | exact h.1.1.2.1.1.1 | exact h.1.1.2.1.1.2 | exact h.1.1.2.1.2.1 | exact h.1.1.2.1.2.2 | exact h.1.1.2.2.1.1 | exact h.1.1.2.2.1.2 | exact h.1.1.2.2.2.1 | exact h.1.1.2.2.2.2 | exact h.1.2.1.1.1.1 | exact h.1.2.1.1.1.2 | exact h.1.2.1.1.2.1 | exact h.1.2.1.1.2.2 | exact h.1.2.1.2.1.1 | exact h.1.2.1.2.1.2 | exact h.1.2.1.2.2.1 | exact h.1.2.1.2.2.2 | exact h.1.2.2.1.1.1 | exact h.1.2.2.1.1.2 | exact h.1.2.2.1.2.1 | exact h.1.2.2.1.2.2 | exact h.1.2.2.2.1.1 | exact h.1.2.2.2.1.2 | exact h.1.2.2.2.2.1 | exact h.1.2.2.2.2.2 | exact h.2.1.1.1.1.1 | exact h.2.1.1.1.1.2 | exact h.2.1.1.1.2.1 | exact h.2.1.1.1.2.2 | exact h.2.1.1.2.1.1 | exact h.2.1.1.2.1.2 | exact h.2.1.1.2.2.1 | exact h.2.1.1.2.2.2 | exact h.2.1.2.1.1.1 | exact h.2.1.2.1.1.2 | exact h.2.1.2.1.2.1 | exact h.2.1.2.1.2.2 | exact h.2.1.2.2.1.1 | exact h.2.1.2.2.1.2 | exact h.2.1.2.2.2.1 | exact h.2.1.2.2.2.2 | exact h.2.2.1.1.1.1 | exact h.2.2.1.1.1.2 | exact h.2.2.1.1.2.1 | exact h.2.2.1.1.2.2 | exact h.2.2.1.2.1.1 | exact h.2.2.1.2.1.2 | exact h.2.2.1.2.2.1 | exact h.2.2.1.2.2.2 | exact h.2.2.2.1.1.1 | exact h.2.2.2.1.1.2 | exact h.2.2.2.1.2.1 | exact h.2.2.2.1.2.2 | exact h.2.2.2.2.1.1 | exact h.2.2.2.2.1.2 | exact h.2.2.2.2.2.1 | exact h.2.2.2.2.2.2
 
-theorem WFExpr.kq {e : Expr} (h : WFExpr e) : forall k, List.Mem k e.locals -> KQ k := by
+theorem WFExpr.nodup {e : Expr} (h : WFExpr e) : forall k, List.Mem k e.locals -> K.Nodup k := by
   intro k hk
   have hm : forall M, List.Mem M k.Ms -> List.Mem M e.methods := fun M hM => by
     simp only [Expr.methods, listMem_iff, List.mem_flatMap]
@@ -79,7 +79,7 @@ theorem WFExpr.kq {e : Expr} (h : WFExpr e) : forall k, List.Mem k e.locals -> K
   refine And.intro (h.1 k hk) (And.intro (h.2.2.2.1 k hk) (fun M hM => And.intro (h.2.1 M (hm M hM))
     (And.intro (h.2.2.1 _ (List.mem_map_of_mem (f := Method.bounds) (hm M hM))) (h.2.2.2.2.2.1.1 M (hm M hM)))))
 
-theorem WFExpr.of_kq {e : Expr} (hk : forall k, List.Mem k e.locals -> KQ k) (hn : e.noShadow [] [] = true)
+theorem WFExpr.of_nodup {e : Expr} (hk : forall k, List.Mem k e.locals -> K.Nodup k) (hn : e.noShadow [] [] = true)
     (hi : Not (List.Mem this e.ifVars)) (hc : e.closed [] [] = true) : WFExpr e := by
   have hm : forall M, List.Mem M e.methods -> exists k, List.Mem k e.locals /\ List.Mem M k.Ms := fun M hM => by
     simp only [Expr.methods, listMem_iff, List.mem_flatMap] at hM
@@ -101,7 +101,7 @@ theorem WFExpr.of_kq {e : Expr} (hk : forall k, List.Mem k e.locals -> KQ k) (hn
 
 theorem WFExpr.replace {E : ECtx} {a a' : Expr} (h : WFExpr (E.plug a)) (h' : WFExpr a') :
     WFExpr (E.plug a') :=
-  WFExpr.of_kq (ECtx.kq_replace h'.kq E h.kq) (ECtx.noShadow_replace h'.2.2.2.2.1 E h.2.2.2.2.1)
+  WFExpr.of_nodup (ECtx.nodup_replace h'.nodup E h.nodup) (ECtx.noShadow_replace h'.2.2.2.2.1 E h.2.2.2.2.1)
     (ECtx.ifVars_replace h'.2.2.2.2.2.1.2 E h.2.2.2.2.2.1.2)
     (ECtx.closed_replace h'.2.2.2.2.2.2 E h.2.2.2.2.2.2)
 
@@ -180,7 +180,7 @@ theorem RenM.lens {rv : VRen} {rt : TRen} {M M' : Method} (h : RenM rv rt M M') 
   cases h with
   | mk h1 h2 _ => simp [Method.bounds, Method.params, Method.name, h1, h2]
 
-theorem wf_vsubst {e : Expr} {n : VSubst} (hk : forall k, List.Mem k e.locals -> KQ k)
+theorem wf_vsubst {e : Expr} {n : VSubst} (hk : forall k, List.Mem k e.locals -> K.Nodup k)
     (hn : e.noShadow [] [] = true) (hi : Not (List.Mem this e.ifVars)) (hc : e.closed [] (n.map Prod.fst) = true)
     (hv : forall p, List.Mem p n -> WFExpr p.2.expr)
     (hd : forall p, List.Mem p n -> (forall y, List.Mem y p.2.expr.vbinders -> Not (List.Mem y e.vbinders)) /\
@@ -196,7 +196,7 @@ theorem wf_vsubst {e : Expr} {n : VSubst} (hk : forall k, List.Mem k e.locals ->
     refine ⟨(hv p hp).2.2.2.2.1, fun y hy => ?_, fun X hX => ?_⟩
     . simp only [listMem_iff, List.mem_flatMap]; exact ⟨p, hp, hy⟩
     . simp only [listMem_iff, List.mem_flatMap]; exact ⟨p, hp, hX⟩
-  refine WFExpr.of_kq (Expr.kq_vsubst hk (fun p hp => (hv p hp).kq)) ?_
+  refine WFExpr.of_nodup (Expr.nodup_vsubst hk (fun p hp => (hv p hp).nodup)) ?_
     (Expr.ifVars_vsubst hi (fun p hp => (hv p hp).2.2.2.2.2.1.2))
     (Expr.closed_vsubst (S := []) hc (fun p hp => (hv p hp).2.2.2.2.2.2))
   refine Expr.noShadow_vsubst hthis hn hvns (fun y hy => by cases hy) ?_ (fun X hX => by cases hX) ?_
@@ -212,7 +212,7 @@ theorem wf_vsubst {e : Expr} {n : VSubst} (hk : forall k, List.Mem k e.locals ->
 theorem wf_ifThen {C' : ClassName} {Ts : List Ty} {x : VarName} {e1 e2 : Expr} {v : Value}
     (ha : WFExpr (.ifInst v.expr (.cls C' Ts) x e1 e2)) :
     exists e1', Fresh e1 e1' /\ VSubstDefined [x] e1' /\ WFExpr (e1'.vsubst [(x, v)]) := by
-  have hk := ha.kq
+  have hk := ha.nodup
   have hn := ha.2.2.2.2.1
   have hc := ha.2.2.2.2.2.2
   have ht := WFExpr.noThis ha
@@ -255,7 +255,7 @@ theorem wf_call_arg {e0 : Expr} {Ts : List Ty} {m : MethName} {es : List Expr} {
 
 theorem wf_found {M : Method} {m : MethName} {B0 : Bounds} {v0 : Value} {Gs Gs' : List GTy} {vs : List Value}
     (hm : M.name = m) (hG : Gs.length = B0.length) (hG' : Gs'.length = M.bounds.length)
-    (hp : M.params.length = vs.length) (hnD : (dom B0).Nodup) (hkM : forall k, List.Mem k M.locals -> KQ k)
+    (hp : M.params.length = vs.length) (hnD : (dom B0).Nodup) (hkM : forall k, List.Mem k M.locals -> K.Nodup k)
     (hcM : M.closed (dom B0) [] = true) (htM : NoThisM M) (hv0 : WFExpr v0.expr)
     (hvs : forall v, List.Mem v vs -> WFExpr v.expr) :
     exists Delta' T0 ps e0, FreshM M (.mk Delta' T0 m ps e0) /\ (dom B0 ++ dom Delta').Nodup /\
@@ -292,7 +292,7 @@ theorem wf_found {M : Method} {m : MethName} {B0 : Bounds} {v0 : Value} {Gs Gs' 
     zip_map_fst (by simp [hp'])
   have hfst : (bind (B0 ++ Delta') (Gs ++ Gs')).map Prod.fst = dom B0 ++ dom Delta' := by
     rw [bind_fst (by simp [hG, hlen])]; exact dom_append
-  refine wf_vsubst (Expr.kq_gsubst hk') ?_ ?_ ?_ ?_ ?_
+  refine wf_vsubst (Expr.nodup_gsubst hk') ?_ ?_ ?_ ?_ ?_
   . rw [Expr.noShadow_gsubst]
     exact Expr.noShadow_scope (Expr.noShadow_tscope hn'.2 (fun X _ h => by cases h)) (fun y _ h => by cases h)
   . rw [Expr.ifVars_gsubst]; exact hi'
@@ -329,19 +329,19 @@ theorem wf_innerFound {C C' : ClassName} {Ms : List Method} {M : Method} {m : Me
   have hv0 : WFExpr (Value.newLocal C Gs C' Gs'' vs0 Ms).expr :=
     WFExpr.plug (E := .callRecv .hole Gs' m (Value.exprs vs)) ha
   have hvs : forall v, List.Mem v vs -> WFExpr v.expr := fun v hv => wf_call_arg ha (exprs_mem hv)
-  have hk0 := hv0.kq
+  have hk0 := hv0.nodup
   have hc0 := hv0.2.2.2.2.2.2
   have ht0 := WFExpr.noThis hv0
   simp only [Value.expr, Expr.locals, listMem_iff, List.mem_cons, List.mem_append, or_imp, forall_and,
     forall_eq] at hk0
   simp only [Value.expr, Expr.closed, Bool.and_eq_true] at hc0
   simp only [NoThis, Value.expr, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ht0
-  have hkM : forall k, List.Mem k M.locals -> KQ k := fun k hk => hk0.2.2 k (mem_localsListM hM hk)
+  have hkM : forall k, List.Mem k M.locals -> K.Nodup k := fun k hk => hk0.2.2 k (mem_localsListM hM hk)
   have hcM : M.closed [] [] = true := closedListM_mem hM hc0.2
   have htM : NoThisM M := fun h => ht0.2 (vbindersListM_mem hM h)
   exact wf_found (B0 := []) (Gs := []) hm rfl hG' hp List.nodup_nil hkM hcM htM hv0 hvs
 
-theorem wfdecls_kq {d : Decls} (hwf : WFDecls d) : forall k, List.Mem k (classes d) -> KQ k := by
+theorem WFDecls.nodup {d : Decls} (hwf : WFDecls d) : forall k, List.Mem k (classes d) -> K.Nodup k := by
   intro k hk
   have hl := hwf.locOk k hk
   exact And.intro (hwf.2.2.1 k hk) (And.intro (hwf.2.2.2.2.2.1 k hk)
@@ -486,8 +486,8 @@ theorem wf_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec}
         ((this :: ps.map VarDecl.x).zip (v0 :: vs))) := by
   have hd := hD.dec_mem
   rcases WFDecls.method hwf hd hM with ⟨-, htM, -⟩
-  have hkM : forall k, List.Mem k M.locals -> KQ k :=
-    fun k hk => wfdecls_kq hwf k (classes_mem_loc hd (mem_localsListM hM hk))
+  have hkM : forall k, List.Mem k M.locals -> K.Nodup k :=
+    fun k hk => WFDecls.nodup hwf k (classes_mem_loc hd (mem_localsListM hM hk))
   have hcM := dec_method_closed hok hD hM
   have hv0 : WFExpr v0.expr := WFExpr.plug (E := .superRecv .hole (GTy.cls D.C Gs) Gs' m (Value.exprs vs)) ha
   have hvs : forall v, List.Mem v vs -> WFExpr v.expr := fun v hv => wf_super_arg ha (exprs_mem hv)

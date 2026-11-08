@@ -412,8 +412,8 @@ mutual
 theorem RenE.inv {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 rv3 rt3 Sa Sb Ta Tb},
     CompEnv rv1 rv2 rv3 rt1 rt2 rt3 Sa Sb Ta Tb -> IdRen rv3 -> IdRen rt3 ->
     (List.Mem this Sa -> List.Mem this Sb) -> a.closed Ta Sa = true -> b.noShadow Tb Sb = true ->
-    NoThis a -> NoThis b -> b.uniq -> (forall k, List.Mem k a.locals -> KQ k) ->
-    RenE rv2 rt2 b a /\ b.closed Tb Sb = true /\ (forall k, List.Mem k b.locals -> KQ k)
+    NoThis a -> NoThis b -> b.uniq -> (forall k, List.Mem k a.locals -> K.Nodup k) ->
+    RenE rv2 rt2 b a /\ b.closed Tb Sb = true /\ (forall k, List.Mem k b.locals -> K.Nodup k)
   | .var (x := x), rv2, rt2, rv3, rt3, Sa, Sb, Ta, Tb, env, h3, _, hS, hc, _, _, _, _, _ => by
     simp only [Expr.closed] at hc
     have hx : List.Mem x Sa := by simpa using hc
@@ -488,8 +488,8 @@ theorem RenE.inv {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 rv3 rt3 Sa 
     have hF : (Fs.map (Funnel.ren rt1)).map (Funnel.ren rt2) = Fs := by
       rw [Funnels.ren_comp (rt3 := rt3) (fun X hX => (env.st X (all_contains_iff.mp hc.1.1.1 X hX)).2)]
       exact Funnels.ren_id (fun X _ => rn_id h3t X)
-    have hk1 : KQ' Ms Fs := hk.1
-    unfold KQ' at hk1
+    have hk1 : KNodup Ms Fs := hk.1
+    unfold KNodup at hk1
     refine ⟨?_, ?_, ?_⟩
     . have := RenE.newLocal (C := C) (C' := C') (Fs := Fs.map (Funnel.ren rt1)) (Ts := Ty.renList rt1 Ts) r1.1 r2.1
       rwa [hF, env.tys hc.1.1.2, Ty.renList_idRen h3t] at this
@@ -500,8 +500,8 @@ theorem RenE.inv {rv1 rt1 a b} : RenE rv1 rt1 a b -> forall {rv2 rt2 rv3 rt3 Sa 
       exact env.varsIn hc.1.1.1
     . simp only [Expr.locals, listMem_iff, List.mem_append, List.mem_cons, or_imp, forall_and, forall_eq]
       refine ⟨?_, r1.2.2, r2.2.2⟩
-      show KQ' Ms' (Fs.map (Funnel.ren rt1))
-      unfold KQ'
+      show KNodup Ms' (Fs.map (Funnel.ren rt1))
+      unfold KNodup
       refine ⟨by rw [RenMs.names hm1]; exact hk1.1, ?_, ?_⟩
       . rw [domF_ren]
         exact List.pairwise_map.mpr (List.Pairwise.imp_of_mem
@@ -542,8 +542,8 @@ theorem RenEs.inv {rv1 rt1 as bs} : RenEs rv1 rt1 as bs -> forall {rv2 rt2 rv3 r
     (List.Mem this Sa -> List.Mem this Sb) -> Expr.closedList Ta Sa as = true ->
     Expr.noShadowList Tb Sb bs = true -> Not (List.Mem this (Expr.vbindersList as)) ->
     Not (List.Mem this (Expr.vbindersList bs)) -> Expr.uniqList bs ->
-    (forall k, List.Mem k (Expr.localsList as) -> KQ k) ->
-    RenEs rv2 rt2 bs as /\ Expr.closedList Tb Sb bs = true /\ (forall k, List.Mem k (Expr.localsList bs) -> KQ k)
+    (forall k, List.Mem k (Expr.localsList as) -> K.Nodup k) ->
+    RenEs rv2 rt2 bs as /\ Expr.closedList Tb Sb bs = true /\ (forall k, List.Mem k (Expr.localsList bs) -> K.Nodup k)
   | .nil, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ =>
     ⟨RenEs.nil, rfl, fun k hk => by simp [Expr.localsList] at hk⟩
   | .cons h1 hs1, rv2, rt2, rv3, rt3, Sa, Sb, Ta, Tb, env, h3, h3t, hS, hc, hn, ha, hb, hu, hk => by
@@ -559,8 +559,8 @@ theorem RenEs.inv {rv1 rt1 as bs} : RenEs rv1 rt1 as bs -> forall {rv2 rt2 rv3 r
       exact ⟨r1.2.2, r2.2.2⟩
 theorem RenM.inv {rv1 rt1 Ma Mb} : RenM rv1 rt1 Ma Mb -> forall {rv2 rt2 rv3 rt3 Sa Sb Ta Tb},
     CompEnv rv1 rv2 rv3 rt1 rt2 rt3 Sa Sb Ta Tb -> IdRen rv3 -> IdRen rt3 -> Ma.closed Ta Sa = true ->
-    Mb.noShadow Tb Sb = true -> NoThisM Ma -> NoThisM Mb -> Mb.uniq -> (forall k, List.Mem k Ma.locals -> KQ k) ->
-    RenM rv2 rt2 Mb Ma /\ Mb.closed Tb Sb = true /\ (forall k, List.Mem k Mb.locals -> KQ k)
+    Mb.noShadow Tb Sb = true -> NoThisM Ma -> NoThisM Mb -> Mb.uniq -> (forall k, List.Mem k Ma.locals -> K.Nodup k) ->
+    RenM rv2 rt2 Mb Ma /\ Mb.closed Tb Sb = true /\ (forall k, List.Mem k Mb.locals -> K.Nodup k)
   | .mk (Delta := Da) (T0 := T0) (m := m) (ps := psa) (Xs' := Xs1) (xs' := xs1) hL1 hl1 h1,
       rv2, rt2, rv3, rt3, Sa, Sb, Ta, Tb, env, h3, h3t, hc, hn, ha, hb, hu, hk => by
     simp only [Method.closed, Bool.and_eq_true, Method.noShadow] at hc hn
@@ -603,9 +603,9 @@ theorem RenMs.inv {rv1 rt1 Mas Mbs} : RenMs rv1 rt1 Mas Mbs -> forall {rv2 rt2 r
     CompEnv rv1 rv2 rv3 rt1 rt2 rt3 Sa Sb Ta Tb -> IdRen rv3 -> IdRen rt3 ->
     Method.closedList Ta Sa Mas = true -> Method.noShadowList Tb Sb Mbs = true ->
     Not (List.Mem this (Method.vbindersList Mas)) -> Not (List.Mem this (Method.vbindersList Mbs)) ->
-    Method.uniqList Mbs -> (forall k, List.Mem k (Method.localsList Mas) -> KQ k) ->
+    Method.uniqList Mbs -> (forall k, List.Mem k (Method.localsList Mas) -> K.Nodup k) ->
     RenMs rv2 rt2 Mbs Mas /\ Method.closedList Tb Sb Mbs = true /\
-      (forall k, List.Mem k (Method.localsList Mbs) -> KQ k)
+      (forall k, List.Mem k (Method.localsList Mbs) -> K.Nodup k)
   | .nil, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ =>
     ⟨RenMs.nil, rfl, fun k hk => by simp [Method.localsList] at hk⟩
   | .cons h1 hs1, rv2, rt2, rv3, rt3, Sa, Sb, Ta, Tb, env, h3, h3t, hc, hn, ha, hb, hu, hk => by
@@ -629,9 +629,9 @@ theorem not_at_of_mem {A : Type} [Nm A] {L : List A} {d : Nat} {y : A} (h : List
   fun ⟨k, _, e⟩ => fresh_not_mem L k (e ▸ h)
 
 theorem fresh_avoid (e : Expr) (LV : List VarName) (LT : List TVarName) {Xs : List TVarName} {xs : List VarName}
-    (hk : forall k, List.Mem k e.locals -> KQ k) (hc : e.closed Xs xs = true) (ht : NoThis e) :
+    (hk : forall k, List.Mem k e.locals -> K.Nodup k) (hc : e.closed Xs xs = true) (ht : NoThis e) :
     exists e', Fresh e e' /\ (forall y, List.Mem y e'.vbinders -> Not (List.Mem y LV)) /\
-      (forall X, List.Mem X e'.tbinders -> Not (List.Mem X LT)) /\ (forall k, List.Mem k e'.locals -> KQ k) /\
+      (forall X, List.Mem X e'.tbinders -> Not (List.Mem X LT)) /\ (forall k, List.Mem k e'.locals -> K.Nodup k) /\
       e'.noShadow Xs xs = true /\ Not (List.Mem this e'.ifVars) /\ e'.closed Xs xs = true := by
   have hthis : List.Mem this (this :: LV ++ xs) := List.mem_append_left _ (List.Mem.head _)
   have hvb : forall y, List.Mem y (e.fr (this :: LV ++ xs) (LT ++ Xs) [] [] 0).vbinders ->
@@ -647,9 +647,9 @@ theorem fresh_avoid (e : Expr) (LV : List VarName) (LT : List TVarName) {Xs : Li
     fun X hX hm => htb X hX (List.mem_append_left _ hm), r.2.2, hns, fun h => hnt (Expr.ifVars_vb _ h), r.2.1⟩
 
 theorem freshM_avoid (M : Method) (LV : List VarName) (LT : List TVarName) {Xs : List TVarName} {xs : List VarName}
-    (hk : forall k, List.Mem k M.locals -> KQ k) (hc : M.closed Xs xs = true) (ht : NoThisM M) :
+    (hk : forall k, List.Mem k M.locals -> K.Nodup k) (hc : M.closed Xs xs = true) (ht : NoThisM M) :
     exists M', FreshM M M' /\ (forall y, List.Mem y M'.vbinders -> Not (List.Mem y LV)) /\
-      (forall X, List.Mem X M'.tbinders -> Not (List.Mem X LT)) /\ (forall k, List.Mem k M'.locals -> KQ k) /\
+      (forall X, List.Mem X M'.tbinders -> Not (List.Mem X LT)) /\ (forall k, List.Mem k M'.locals -> K.Nodup k) /\
       M'.noShadow Xs xs = true /\ Not (List.Mem this M'.ifVars) /\ M'.closed Xs xs = true /\ NoThisM M' /\
       M'.uniq := by
   have hthis : List.Mem this (this :: LV ++ xs) := List.mem_append_left _ (List.Mem.head _)

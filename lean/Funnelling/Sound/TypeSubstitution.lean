@@ -105,12 +105,6 @@ theorem KindSeq.substC {d : Decls} (hd : DeclOk d) {Delta Delta' : Bounds} {s : 
   rw [substList_eq_map] at hT
   rcases List.mem_map.mp hT with ⟨U, hU⟩; rw [<- hU.2]; exact Kind.subst hd hc.sub hc.kind (h U hU.1)
 
-theorem lookup_none_of_not_dom {X : TVarName} {s : GSubst} (h : Not (List.Mem X (s.map Prod.fst))) :
-    List.lookup X s = none := by
-  cases hl : List.lookup X s with
-  | none => rfl
-  | some G => exact absurd (lookup_some_mem_dom hl) h
-
 theorem var_gsubst_none {X : TVarName} {s : GSubst} (h : Not (List.Mem X (s.map Prod.fst))) :
     (Ty.var X).subst s.ty = Ty.var X := by
   simp only [Ty.subst, GSubst.lookup_ty, lookup_none_of_not_dom h, Option.map_none, Option.getD_none]

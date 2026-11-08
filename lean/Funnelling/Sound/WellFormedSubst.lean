@@ -4,26 +4,26 @@ open Funnelling.SoundSimp
 
 namespace Funnelling
 
-def KQ' (Ms : List Method) (Fs : List Funnel) : Prop := (Ms.map Method.name).Nodup /\ (domF Fs).Nodup /\
+def KNodup (Ms : List Method) (Fs : List Funnel) : Prop := (Ms.map Method.name).Nodup /\ (domF Fs).Nodup /\
   forall M, List.Mem M Ms -> (M.params.map VarDecl.x).Nodup /\ (dom M.bounds).Nodup /\
     Not (List.Mem this (M.params.map VarDecl.x))
 
-abbrev KQ (k : K) : Prop := KQ' k.Ms k.Fs
+abbrev K.Nodup (k : K) : Prop := KNodup k.Ms k.Fs
 
-theorem KQ'.vsubst {n : VSubst} {Ms : List Method} {Fs : List Funnel} (h : KQ' Ms Fs) :
-    KQ' (Method.vsubstList n Ms) Fs := by
-  unfold KQ' at h |-
+theorem KNodup.vsubst {n : VSubst} {Ms : List Method} {Fs : List Funnel} (h : KNodup Ms Fs) :
+    KNodup (Method.vsubstList n Ms) Fs := by
+  unfold KNodup at h |-
   refine ⟨by rw [names_vsubst]; exact h.1, h.2.1, fun M hM => ?_⟩
   rcases vsubstList_mem hM with ⟨M0, hM0, e⟩
   subst e
   cases M0 with
   | mk D T m ps b => exact h.2.2 (Method.mk D T m ps b) hM0
 
-abbrev VLoc (n : VSubst) : Prop := forall p, List.Mem p n -> forall k, List.Mem k p.2.expr.locals -> KQ k
+abbrev VLoc (n : VSubst) : Prop := forall p, List.Mem p n -> forall k, List.Mem k p.2.expr.locals -> K.Nodup k
 
 mutual
-theorem Expr.kq_vsubst : forall {e : Expr} {n : VSubst}, (forall k, List.Mem k e.locals -> KQ k) -> VLoc n ->
-    forall k, List.Mem k (e.vsubst n).locals -> KQ k
+theorem Expr.nodup_vsubst : forall {e : Expr} {n : VSubst}, (forall k, List.Mem k e.locals -> K.Nodup k) -> VLoc n ->
+    forall k, List.Mem k (e.vsubst n).locals -> K.Nodup k
   | .var x, n, _, hn => by
     intro k hk
     cases hl : List.lookup x n with
@@ -31,39 +31,39 @@ theorem Expr.kq_vsubst : forall {e : Expr} {n : VSubst}, (forall k, List.Mem k e
     | some v => simp only [Expr.vsubst, hl] at hk; exact hn (x, v) (lookup_mem hl) k hk
   | .call _ _ _ _, _, h, hn => by
     simp only [Expr.vsubst, Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at h |-
-    exact ⟨Expr.kq_vsubst h.1 hn, Expr.kq_vsubstList h.2 hn⟩
+    exact ⟨Expr.nodup_vsubst h.1 hn, Expr.nodup_vsubstList h.2 hn⟩
   | .superCall _ _ _ _ _, _, h, hn => by
     simp only [Expr.vsubst, Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at h |-
-    exact ⟨Expr.kq_vsubst h.1 hn, Expr.kq_vsubstList h.2 hn⟩
+    exact ⟨Expr.nodup_vsubst h.1 hn, Expr.nodup_vsubstList h.2 hn⟩
   | .field _ _, _, h, hn => by
     simp only [Expr.vsubst, Expr.locals] at h |-
-    exact Expr.kq_vsubst h hn
-  | .new _ _ _, _, h, hn => Expr.kq_vsubstList h hn
+    exact Expr.nodup_vsubst h hn
+  | .new _ _ _, _, h, hn => Expr.nodup_vsubstList h hn
   | .newLocal _ _ _ _ _ _, _, h, hn => by
     simp only [Expr.vsubst, Expr.locals, listMem_iff, List.mem_append, List.mem_cons, or_imp, forall_and,
       forall_eq] at h |-
-    exact ⟨KQ'.vsubst h.1, Expr.kq_vsubstList h.2.1 hn,
-      Method.kq_vsubstList h.2.2 (fun p hp => hn p (List.mem_filter.mp hp).1)⟩
+    exact ⟨KNodup.vsubst h.1, Expr.nodup_vsubstList h.2.1 hn,
+      Method.nodup_vsubstList h.2.2 (fun p hp => hn p (List.mem_filter.mp hp).1)⟩
   | .ifInst _ _ _ _ _, _, h, hn => by
     simp only [Expr.vsubst, Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at h |-
-    exact ⟨⟨Expr.kq_vsubst h.1.1 hn, Expr.kq_vsubst h.1.2 hn⟩, Expr.kq_vsubst h.2 hn⟩
-theorem Expr.kq_vsubstList : forall {es : List Expr} {n : VSubst},
-    (forall k, List.Mem k (Expr.localsList es) -> KQ k) -> VLoc n ->
-    forall k, List.Mem k (Expr.localsList (Expr.vsubstList n es)) -> KQ k
+    exact ⟨⟨Expr.nodup_vsubst h.1.1 hn, Expr.nodup_vsubst h.1.2 hn⟩, Expr.nodup_vsubst h.2 hn⟩
+theorem Expr.nodup_vsubstList : forall {es : List Expr} {n : VSubst},
+    (forall k, List.Mem k (Expr.localsList es) -> K.Nodup k) -> VLoc n ->
+    forall k, List.Mem k (Expr.localsList (Expr.vsubstList n es)) -> K.Nodup k
   | [], _, _, _ => by intro k hk; simp [Expr.vsubstList, Expr.localsList] at hk
   | _ :: _, _, h, hn => by
     simp only [Expr.vsubstList, Expr.localsList, listMem_iff, List.mem_append, or_imp, forall_and] at h |-
-    exact ⟨Expr.kq_vsubst h.1 hn, Expr.kq_vsubstList h.2 hn⟩
-theorem Method.kq_vsubst : forall {M : Method} {n : VSubst}, (forall k, List.Mem k M.locals -> KQ k) -> VLoc n ->
-    forall k, List.Mem k (M.vsubst n).locals -> KQ k
-  | .mk _ _ _ _ _, _, h, hn => Expr.kq_vsubst h hn
-theorem Method.kq_vsubstList : forall {Ms : List Method} {n : VSubst},
-    (forall k, List.Mem k (Method.localsList Ms) -> KQ k) -> VLoc n ->
-    forall k, List.Mem k (Method.localsList (Method.vsubstList n Ms)) -> KQ k
+    exact ⟨Expr.nodup_vsubst h.1 hn, Expr.nodup_vsubstList h.2 hn⟩
+theorem Method.nodup_vsubst : forall {M : Method} {n : VSubst}, (forall k, List.Mem k M.locals -> K.Nodup k) -> VLoc n ->
+    forall k, List.Mem k (M.vsubst n).locals -> K.Nodup k
+  | .mk _ _ _ _ _, _, h, hn => Expr.nodup_vsubst h hn
+theorem Method.nodup_vsubstList : forall {Ms : List Method} {n : VSubst},
+    (forall k, List.Mem k (Method.localsList Ms) -> K.Nodup k) -> VLoc n ->
+    forall k, List.Mem k (Method.localsList (Method.vsubstList n Ms)) -> K.Nodup k
   | [], _, _, _ => by intro k hk; simp [Method.vsubstList, Method.localsList] at hk
   | _ :: _, _, h, hn => by
     simp only [Method.vsubstList, Method.localsList, listMem_iff, List.mem_append, or_imp, forall_and] at h |-
-    exact ⟨Method.kq_vsubst h.1 hn, Method.kq_vsubstList h.2 hn⟩
+    exact ⟨Method.nodup_vsubst h.1 hn, Method.nodup_vsubstList h.2 hn⟩
 end
 
 mutual
@@ -212,9 +212,9 @@ theorem domF_gsubst_sub {s : GSubst} : forall (Fs : List Funnel),
           List.singleton_append] at ih |-
         exact ⟨List.Sublist.cons _ ih.1, ih.2⟩
 
-theorem KQ'.gsubst {s : GSubst} {Ms : List Method} {Fs : List Funnel} (h : KQ' Ms Fs) :
-    KQ' (Method.gsubstList s Ms) (Fs.map (Funnel.gsubst s)) := by
-  unfold KQ' at h |-
+theorem KNodup.gsubst {s : GSubst} {Ms : List Method} {Fs : List Funnel} (h : KNodup Ms Fs) :
+    KNodup (Method.gsubstList s Ms) (Fs.map (Funnel.gsubst s)) := by
+  unfold KNodup at h |-
   refine ⟨by rw [names_gsubst]; exact h.1, List.Nodup.sublist (domF_gsubst_sub Fs).1 h.2.1, fun M hM => ?_⟩
   rcases gsubstList_mem hM with ⟨M0, hM0, e⟩
   subst e
@@ -225,46 +225,46 @@ theorem KQ'.gsubst {s : GSubst} {Ms : List Method} {Fs : List Funnel} (h : KQ' M
     exact this
 
 mutual
-theorem Expr.kq_gsubst {s : GSubst} : forall {e : Expr}, (forall k, List.Mem k e.locals -> KQ k) ->
-    forall k, List.Mem k (e.gsubst s).locals -> KQ k
+theorem Expr.nodup_gsubst {s : GSubst} : forall {e : Expr}, (forall k, List.Mem k e.locals -> K.Nodup k) ->
+    forall k, List.Mem k (e.gsubst s).locals -> K.Nodup k
   | .var _, _ => by intro k hk; simp [Expr.gsubst, Expr.locals] at hk
   | .call _ _ _ _, h => by
     simp only [Expr.gsubst, Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at h |-
-    exact ⟨Expr.kq_gsubst h.1, Expr.kq_gsubstList h.2⟩
+    exact ⟨Expr.nodup_gsubst h.1, Expr.nodup_gsubstList h.2⟩
   | .superCall _ _ _ _ _, h => by
     simp only [Expr.gsubst, Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at h |-
-    exact ⟨Expr.kq_gsubst h.1, Expr.kq_gsubstList h.2⟩
+    exact ⟨Expr.nodup_gsubst h.1, Expr.nodup_gsubstList h.2⟩
   | .field _ _, h => by
     simp only [Expr.gsubst, Expr.locals] at h |-
-    exact Expr.kq_gsubst h
-  | .new _ _ _, h => Expr.kq_gsubstList h
+    exact Expr.nodup_gsubst h
+  | .new _ _ _, h => Expr.nodup_gsubstList h
   | .newLocal _ _ _ _ _ _, h => by
     simp only [Expr.gsubst, Expr.locals, listMem_iff, List.mem_append, List.mem_cons, or_imp, forall_and,
       forall_eq] at h |-
-    exact ⟨KQ'.gsubst h.1, Expr.kq_gsubstList h.2.1, Method.kq_gsubstList h.2.2⟩
+    exact ⟨KNodup.gsubst h.1, Expr.nodup_gsubstList h.2.1, Method.nodup_gsubstList h.2.2⟩
   | .ifInst _ _ _ _ _, h => by
     simp only [Expr.gsubst, Expr.locals, listMem_iff, List.mem_append, or_imp, forall_and] at h |-
-    exact ⟨⟨Expr.kq_gsubst h.1.1, Expr.kq_gsubst h.1.2⟩, Expr.kq_gsubst h.2⟩
-theorem Expr.kq_gsubstList {s : GSubst} : forall {es : List Expr},
-    (forall k, List.Mem k (Expr.localsList es) -> KQ k) ->
-    forall k, List.Mem k (Expr.localsList (Expr.gsubstList s es)) -> KQ k
+    exact ⟨⟨Expr.nodup_gsubst h.1.1, Expr.nodup_gsubst h.1.2⟩, Expr.nodup_gsubst h.2⟩
+theorem Expr.nodup_gsubstList {s : GSubst} : forall {es : List Expr},
+    (forall k, List.Mem k (Expr.localsList es) -> K.Nodup k) ->
+    forall k, List.Mem k (Expr.localsList (Expr.gsubstList s es)) -> K.Nodup k
   | [], _ => by intro k hk; simp [Expr.gsubstList, Expr.localsList] at hk
   | _ :: _, h => by
     simp only [Expr.gsubstList, Expr.localsList, listMem_iff, List.mem_append, or_imp, forall_and] at h |-
-    exact ⟨Expr.kq_gsubst h.1, Expr.kq_gsubstList h.2⟩
-theorem Method.kq_gsubst {s : GSubst} : forall {M : Method}, (forall k, List.Mem k M.locals -> KQ k) ->
-    forall k, List.Mem k (M.gsubst s).locals -> KQ k
-  | .mk _ _ _ _ _, h => Expr.kq_gsubst h
-theorem Method.kq_gsubstList {s : GSubst} : forall {Ms : List Method},
-    (forall k, List.Mem k (Method.localsList Ms) -> KQ k) ->
-    forall k, List.Mem k (Method.localsList (Method.gsubstList s Ms)) -> KQ k
+    exact ⟨Expr.nodup_gsubst h.1, Expr.nodup_gsubstList h.2⟩
+theorem Method.nodup_gsubst {s : GSubst} : forall {M : Method}, (forall k, List.Mem k M.locals -> K.Nodup k) ->
+    forall k, List.Mem k (M.gsubst s).locals -> K.Nodup k
+  | .mk _ _ _ _ _, h => Expr.nodup_gsubst h
+theorem Method.nodup_gsubstList {s : GSubst} : forall {Ms : List Method},
+    (forall k, List.Mem k (Method.localsList Ms) -> K.Nodup k) ->
+    forall k, List.Mem k (Method.localsList (Method.gsubstList s Ms)) -> K.Nodup k
   | [], _ => by intro k hk; simp [Method.gsubstList, Method.localsList] at hk
   | _ :: _, h => by
     simp only [Method.gsubstList, Method.localsList, listMem_iff, List.mem_append, or_imp, forall_and] at h |-
-    exact ⟨Method.kq_gsubst h.1, Method.kq_gsubstList h.2⟩
+    exact ⟨Method.nodup_gsubst h.1, Method.nodup_gsubstList h.2⟩
 end
 
-theorem all_subst_fwd {s : GSubst} {T : List TVarName} {Us : List Ty}
+theorem Ty.ftvList_subst_all {s : GSubst} {T : List TVarName} {Us : List Ty}
     (h : (Ty.ftvList Us).all (T ++ s.map Prod.fst).contains = true) :
     (Ty.ftvList (Ty.substList s.ty Us)).all T.contains = true := by
   apply all_contains_iff.mpr
@@ -274,7 +274,7 @@ theorem all_subst_fwd {s : GSubst} {T : List TVarName} {Us : List Ty}
   . exact hm
   . exact absurd hm h'.2
 
-theorem all_subst_fwd1 {s : GSubst} {T : List TVarName} {U : Ty}
+theorem Ty.ftv_subst_all {s : GSubst} {T : List TVarName} {U : Ty}
     (h : U.ftv.all (T ++ s.map Prod.fst).contains = true) : (U.subst s.ty).ftv.all T.contains = true := by
   apply all_contains_iff.mpr
   intro X hX
@@ -290,25 +290,25 @@ theorem Expr.closed_gsubst {s : GSubst} : forall {e : Expr} {T : List TVarName} 
   | .call _ _ _ _, _, _, hc => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
     simp only [Expr.gsubst, Expr.closed, Bool.and_eq_true]
-    exact ⟨⟨Expr.closed_gsubst hc.1.1, all_subst_fwd hc.1.2⟩, Expr.closedList_gsubst hc.2⟩
+    exact ⟨⟨Expr.closed_gsubst hc.1.1, Ty.ftvList_subst_all hc.1.2⟩, Expr.closedList_gsubst hc.2⟩
   | .superCall _ T0 Ts _ _, _, _, hc => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
     simp only [Expr.gsubst, Expr.closed, Bool.and_eq_true]
-    exact ⟨⟨Expr.closed_gsubst hc.1.1, all_subst_fwd (Us := T0 :: Ts) hc.1.2⟩, Expr.closedList_gsubst hc.2⟩
+    exact ⟨⟨Expr.closed_gsubst hc.1.1, Ty.ftvList_subst_all (Us := T0 :: Ts) hc.1.2⟩, Expr.closedList_gsubst hc.2⟩
   | .field _ _, _, _, hc => by
     simp only [Expr.gsubst, Expr.closed]
     exact Expr.closed_gsubst hc
   | .new _ _ _, _, _, hc => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
     simp only [Expr.gsubst, Expr.closed, Bool.and_eq_true]
-    exact ⟨all_subst_fwd hc.1, Expr.closedList_gsubst hc.2⟩
+    exact ⟨Ty.ftvList_subst_all hc.1, Expr.closedList_gsubst hc.2⟩
   | .newLocal _ Fs _ Ts _ _, T, _, hc => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
     simp only [Expr.gsubst, Expr.closed, Bool.and_eq_true]
     refine ⟨⟨?_, Expr.closedList_gsubst hc.1.2⟩, Method.closedList_gsubst hc.2⟩
     have h1 := hc.1.1
     rw [List.all_append, Bool.and_eq_true] at h1 |-
-    refine ⟨?_, all_subst_fwd h1.2⟩
+    refine ⟨?_, Ty.ftvList_subst_all h1.2⟩
     apply all_contains_iff.mpr
     intro X hX
     have hd := domF_gsubst_sub (s := s) Fs
@@ -318,7 +318,7 @@ theorem Expr.closed_gsubst {s : GSubst} : forall {e : Expr} {T : List TVarName} 
   | .ifInst _ _ x _ _, T, S, hc => by
     simp only [Expr.closed, Bool.and_eq_true] at hc
     simp only [Expr.gsubst, Expr.closed, Bool.and_eq_true]
-    exact ⟨⟨⟨Expr.closed_gsubst hc.1.1.1, all_subst_fwd1 hc.1.1.2⟩, Expr.closed_gsubst hc.1.2⟩, Expr.closed_gsubst hc.2⟩
+    exact ⟨⟨⟨Expr.closed_gsubst hc.1.1.1, Ty.ftv_subst_all hc.1.1.2⟩, Expr.closed_gsubst hc.1.2⟩, Expr.closed_gsubst hc.2⟩
 theorem Expr.closedList_gsubst {s : GSubst} : forall {es : List Expr} {T : List TVarName} {S : List VarName},
     Expr.closedList (T ++ s.map Prod.fst) S es = true -> Expr.closedList T S (Expr.gsubstList s es) = true
   | [], _, _, _ => rfl
@@ -343,7 +343,7 @@ theorem Method.closed_gsubst {s : GSubst} : forall {M : Method} {T : List TVarNa
         Ty.substList s.ty (T0 :: cod D ++ ps.map VarDecl.T) := by
       rw [cod_subst, params_T_subst]; simp only [Ty.substList, substList_app, List.cons_append]
     rw [e]
-    exact all_subst_fwd (all_contains_mono hc.1 hsub)
+    exact Ty.ftvList_subst_all (all_contains_mono hc.1 hsub)
 theorem Method.closedList_gsubst {s : GSubst} : forall {Ms : List Method} {T : List TVarName} {S : List VarName},
     Method.closedList (T ++ s.map Prod.fst) S Ms = true -> Method.closedList T S (Method.gsubstList s Ms) = true
   | [], _, _, _ => rfl

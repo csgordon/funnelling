@@ -20,14 +20,6 @@ structure VSEnv (rv rvo : VRen) (n1 n2 : VSubst) (S : List VarName) : Prop where
 
 abbrev NotDom (xs : List VarName) (n : VSubst) : Prop := forall x, List.Mem x xs -> Not (List.Mem x (n.map Prod.fst))
 
-theorem lookup_none_of_notDom {n : VSubst} {x : VarName} (h : Not (List.Mem x (n.map Prod.fst))) :
-    List.lookup x n = none := by
-  apply lookup_none
-  intro p hp e
-  apply h
-  rw [<- e]
-  exact List.mem_map_of_mem hp
-
 theorem lookup_filter_this {n : VSubst} {w : VarName} (hw : Not (w = this)) :
     List.lookup w (n.filter fun p => p.1 != this) = List.lookup w n := by
   induction n with
@@ -61,7 +53,7 @@ theorem VSEnv.ifExt {rv rvo : VRen} {n1 n2 : VSubst} {S : List VarName} (env : V
     by_cases e : w = x
     . subst e
       rw [rn_cons_eq, rn_cons_eq]
-      exact Or.inr (And.intro (lookup_none_of_notDom hx1) (And.intro (lookup_none_of_notDom hy2) rfl))
+      exact Or.inr (And.intro (lookup_none_of_not_dom hx1) (And.intro (lookup_none_of_not_dom hy2) rfl))
     . rw [rn_cons_ne e, rn_cons_ne e]
       apply env.sv
       cases hw with
@@ -88,8 +80,8 @@ theorem VSEnv.methExt {rv rvo : VRen} {n1 n2 : VSubst} {S : List VarName} (env :
     intro w hw
     by_cases hm : List.Mem w xa
     . have hmb := rn_zip_mem (r := rv) hl hm
-      exact Or.inr (And.intro (lookup_none_of_notDom (ha1 w hm))
-        (And.intro (lookup_none_of_notDom (hb2 _ hmb)) (rn_zip_indep hl hm)))
+      exact Or.inr (And.intro (lookup_none_of_not_dom (ha1 w hm))
+        (And.intro (lookup_none_of_not_dom (hb2 _ hmb)) (rn_zip_indep hl hm)))
     . rw [rn_zip_not_mem hm, rn_zip_not_mem hm]
       by_cases hwt : w = this
       . subst hwt
@@ -265,14 +257,6 @@ theorem GSubst.lookup_ty {sigma : GSubst} {X : TVarName} :
 abbrev NotDomT (Xs : List TVarName) (sigma : GSubst) : Prop :=
   forall X, List.Mem X Xs -> Not (List.Mem X (sigma.map Prod.fst))
 
-theorem lookupT_none_of_notDom {sigma : GSubst} {X : TVarName} (h : Not (List.Mem X (sigma.map Prod.fst))) :
-    List.lookup X sigma = none := by
-  apply lookup_none
-  intro p hp e
-  apply h
-  rw [<- e]
-  exact List.mem_map_of_mem hp
-
 structure GSEnv (rt rto : TRen) (s1 s2 : GSubst) (T : List TVarName) : Prop where
   st : forall X, List.Mem X T ->
     (exists G, List.lookup X s1 = some G /\ List.lookup (rn rt X) s2 = some G) \/
@@ -330,8 +314,8 @@ theorem GSEnv.methExt {rt rto : TRen} {s1 s2 : GSubst} {T : List TVarName} (env 
     intro X hX
     by_cases hm : List.Mem X Xa
     . have hmb := rn_zip_mem (r := rt) hl hm
-      exact Or.inr (And.intro (lookupT_none_of_notDom (ha X hm))
-        (And.intro (lookupT_none_of_notDom (hb _ hmb)) (rn_zip_indep hl hm)))
+      exact Or.inr (And.intro (lookup_none_of_not_dom (ha X hm))
+        (And.intro (lookup_none_of_not_dom (hb _ hmb)) (rn_zip_indep hl hm)))
     . rw [rn_zip_not_mem hm, rn_zip_not_mem hm]
       have hXT : List.Mem X T := by
         simp only [listMem_iff, List.mem_append] at hX hm
