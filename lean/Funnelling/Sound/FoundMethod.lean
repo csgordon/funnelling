@@ -30,17 +30,6 @@ theorem gsubst_ty_bind {Dl : Bounds} {Gs : List GTy} : GSubst.ty (bind Dl Gs) = 
   simp only [GSubst.ty, bind, List.zip_map_right]
   rfl
 
-structure Found (M : Method) (B0 Delta' : Bounds) (T0 : Ty) (m : MethName) (ps : List VarDecl) (e0 : Expr)
-    (Gs Gs' : List GTy) (v0 : Value) (vs : List Value) : Prop where
-  fresh : FreshM M (.mk Delta' T0 m ps e0)
-  lenT : Gs'.length = Delta'.length
-  lenV : ps.length = vs.length
-  nodupT : (dom B0 ++ dom Delta').Nodup
-  nodupV : (this :: ps.map VarDecl.x).Nodup
-  gdef : GSubstDefined (dom B0 ++ dom Delta') e0
-  vdef : VSubstDefined (this :: ps.map VarDecl.x) e0
-  wf : WFExpr ((e0.gsubst (bind (B0 ++ Delta') (Gs ++ Gs'))).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)))
-
 namespace Found
 
 variable {M : Method} {B0 Delta' : Bounds} {T0 : Ty} {m : MethName} {ps : List VarDecl} {e0 : Expr}

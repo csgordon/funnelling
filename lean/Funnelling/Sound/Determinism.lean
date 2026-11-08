@@ -262,49 +262,52 @@ theorem bind_fst {A : Type} {D : Bounds} {as : List A} (h : as.length = D.length
     (bind D as).map Prod.fst = dom D := by
   simp only [bind]; exact zip_map_fst (by simp [dom, h])
 
+structure Found (M : Method) (B0 Delta' : Bounds) (T0 : Ty) (m : MethName) (ps : List VarDecl) (e0 : Expr)
+    (Gs Gs' : List GTy) (v0 : Value) (vs : List Value) : Prop where
+  fresh : FreshM M (.mk Delta' T0 m ps e0)
+  lenT : Gs'.length = Delta'.length
+  lenV : ps.length = vs.length
+  nodupT : (dom B0 ++ dom Delta').Nodup
+  nodupV : (this :: ps.map VarDecl.x).Nodup
+  gdef : GSubstDefined (dom B0 ++ dom Delta') e0
+  vdef : VSubstDefined (this :: ps.map VarDecl.x) e0
+  wf : WFExpr ((e0.gsubst (bind (B0 ++ Delta') (Gs ++ Gs'))).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)))
+
 theorem renE_meth {M : Method} {B : Bounds} {Gs Gs' : List GTy} {v0 : Value} {vs : List Value}
     {D1 D2 : Bounds} {T1 T2 : Ty} {m1 m2 : MethName} {p1 p2 : List VarDecl} {e1 e2 : Expr}
-    (h1 : RenM [] [] (.mk D1 T1 m1 p1 e1) M) (h2 : RenM [] [] M (.mk D2 T2 m2 p2 e2))
-    (hu : M.uniq) (ht : NoThisM M) (hn : Method.noShadow (dom B) [] M = true)
-    (hG : Gs.length = B.length) (hG1 : Gs'.length = D1.length) (hG2 : Gs'.length = D2.length)
-    (hl1 : p1.length = vs.length) (hl2 : p2.length = vs.length)
-    (hN1 : (dom B ++ dom D1).Nodup) (hN2 : (dom B ++ dom D2).Nodup)
-    (hn1 : (this :: p1.map VarDecl.x).Nodup) (hn2 : (this :: p2.map VarDecl.x).Nodup)
-    (hgs1 : GSubstDefined (dom B ++ dom D1) e1) (hgs2 : GSubstDefined (dom B ++ dom D2) e2)
-    (hvs1 : VSubstDefined (this :: p1.map VarDecl.x) e1) (hvs2 : VSubstDefined (this :: p2.map VarDecl.x) e2)
-    (hc1 : ((e1.gsubst (bind (B ++ D1) (Gs ++ Gs'))).vsubst
-      ((this :: p1.map VarDecl.x).zip (v0 :: vs))).closed [] [] = true)
+    (hu : M.uniq) (ht : NoThisM M) (hn : Method.noShadow (dom B) [] M = true) (hG : Gs.length = B.length)
+    (f1 : Found M B D1 T1 m1 p1 e1 Gs Gs' v0 vs) (f2 : Found M B D2 T2 m2 p2 e2 Gs Gs' v0 vs)
     (hv : forall v, List.Mem v (v0 :: vs) -> v.expr.closed [] [] = true) :
     RenE [] [] ((e1.gsubst (bind (B ++ D1) (Gs ++ Gs'))).vsubst ((this :: p1.map VarDecl.x).zip (v0 :: vs)))
       ((e2.gsubst (bind (B ++ D2) (Gs ++ Gs'))).vsubst ((this :: p2.map VarDecl.x).zip (v0 :: vs))) := by
   cases M with
   | mk Da Ta m ps e =>
-    have b1 := RenM.body h1
-    have b2 := RenM.body h2
+    have b1 := RenM.body f1.fresh.2
+    have b2 := RenM.body f2.fresh.1
     simp only [Method.uniq, NoThisM, Method.vbinders, listMem_iff, List.mem_append, not_or, Method.noShadow,
       Bool.and_eq_true] at hu ht hn
     have hlen1 : (p1.map VarDecl.x).length = (ps.map VarDecl.x).length := by simp [b1.2.2.1]
     have hlen2 : (ps.map VarDecl.x).length = (p2.map VarDecl.x).length := by simp [b2.2.2.1]
     have hLen1 : (dom D1).length = (dom Da).length := by simp [dom, b1.2.1]
     have hLen2 : (dom Da).length = (dom D2).length := by simp [dom, b2.2.1]
-    have htp1 : Not (List.Mem this (p1.map VarDecl.x)) := (List.nodup_cons.mp hn1).1
-    have htp2 : Not (List.Mem this (p2.map VarDecl.x)) := (List.nodup_cons.mp hn2).1
+    have htp1 : Not (List.Mem this (p1.map VarDecl.x)) := (List.nodup_cons.mp f1.nodupV).1
+    have htp2 : Not (List.Mem this (p2.map VarDecl.x)) := (List.nodup_cons.mp f2.nodupV).1
     have env := (CompEnv.base (dom B)).methExt hlen1 hlen2 hu.2.1 hLen1 hLen2 hu.1 htp1 ht.1
       (by simp) hn.1.1
     have hdom1 : (bind (B ++ D1) (Gs ++ Gs')).map Prod.fst = dom B ++ dom D1 := by
-      rw [bind_fst (by simp [hG, hG1]), dom_append]
+      rw [bind_fst (by simp [hG, f1.lenT]), dom_append]
     have hdom2 : (bind (B ++ D2) (Gs ++ Gs')).map Prod.fst = dom B ++ dom D2 := by
-      rw [bind_fst (by simp [hG, hG2]), dom_append]
+      rw [bind_fst (by simp [hG, f2.lenT]), dom_append]
     have hndom1 : ((this :: p1.map VarDecl.x).zip (v0 :: vs)).map Prod.fst = this :: p1.map VarDecl.x :=
-      zip_map_fst (by simp [hl1])
-    have hcv := Expr.closed_of_vsubst hc1
+      zip_map_fst (by simp [f1.lenV])
+    have hcv := Expr.closed_of_vsubst f1.wf.2.2.2.2.2.2
     rw [hndom1] at hcv
     have hcg := Expr.closed_of_gsubst hcv
     rw [hdom1] at hcg
     have hca : e1.closed (dom B ++ dom D1) (this :: [] ++ p1.map VarDecl.x) = true :=
       Expr.closed_mono hcg (fun X hX => by simpa using hX) (fun x hx => by simpa using hx)
-    have nt1 : NoThis e1 := fun h => hvs1 this h (List.Mem.head _)
-    have nt2 : NoThis e2 := fun h => hvs2 this h (List.Mem.head _)
+    have nt1 : NoThis e1 := fun h => f1.vdef this h (List.Mem.head _)
+    have nt2 : NoThis e2 := fun h => f2.vdef this h (List.Mem.head _)
     have hr := RenE.comp b1.1 b2.1 env hca hn.2 nt1 ht.2 hu.2.2
     have genv : GSEnv ((dom D1).zip (dom D2) ++ []) [] (bind (B ++ D1) (Gs ++ Gs')) (bind (B ++ D2) (Gs ++ Gs'))
         (dom B ++ dom D1) := {
@@ -315,7 +318,7 @@ theorem renE_meth {M : Method} {B : Bounds} {Gs Gs' : List GTy} {v0 : Value} {vs
         refine Exists.intro G (And.intro hGl ?_)
         rw [<- hGl]
         simp only [bind, dom_append]
-        refine (lookup_zip_ren ?_ hN2 ?_ hX).symm
+        refine (lookup_zip_ren ?_ f2.nodupT ?_ hX).symm
         . simp [dom, b2.2.1, b1.2.1]
         . intro p hp
           rw [List.zip_append (by simp)] at hp
@@ -325,13 +328,13 @@ theorem renE_meth {M : Method} {B : Bounds} {Gs Gs' : List GTy} {v0 : Value} {vs
             have hp1 : List.Mem p.1 (dom B) := by
               have := (List.of_mem_zip hp).1
               exact this
-            have hnot : Not (List.Mem p.1 (dom D1)) := fun h => nodup_append_disj hN1 hp1 h
+            have hnot : Not (List.Mem p.1 (dom D1)) := fun h => nodup_append_disj f1.nodupT hp1 h
             rw [rn_zip_not_mem hnot, rn_nil, e]
-          . exact rn_zip_pair (nodup_append_right hN1) hp }
+          . exact rn_zip_pair (nodup_append_right f1.nodupT) hp }
     have hgd1 : NotDom e1.tbinders (bind (B ++ D1) (Gs ++ Gs')) := by
-      intro X hX hm; rw [hdom1] at hm; exact hgs1 X hX hm
+      intro X hX hm; rw [hdom1] at hm; exact f1.gdef X hX hm
     have hgd2 : NotDom e2.tbinders (bind (B ++ D2) (Gs ++ Gs')) := by
-      intro X hX hm; rw [hdom2] at hm; exact hgs2 X hX hm
+      intro X hX hm; rw [hdom2] at hm; exact f2.gdef X hX hm
     have hrg := RenE.gsub hr genv hca hgd1 hgd2
     have venv : VSEnv ((p1.map VarDecl.x).zip (p2.map VarDecl.x) ++ []) []
         ((this :: p1.map VarDecl.x).zip (v0 :: vs)) ((this :: p2.map VarDecl.x).zip (v0 :: vs))
@@ -343,13 +346,13 @@ theorem renE_meth {M : Method} {B : Bounds} {Gs Gs' : List GTy} {v0 : Value} {vs
         rcases lookup_isSome hwd with ⟨v, hvl⟩
         refine Exists.intro v (And.intro hvl ?_)
         rw [<- hvl]
-        refine (lookup_zip_ren ?_ hn2 ?_ hw').symm
-        . simp [hl1, hl2]
+        refine (lookup_zip_ren ?_ f2.nodupV ?_ hw').symm
+        . simp [f1.lenV, f2.lenV]
         . intro p hp
           simp only [List.zip_cons_cons] at hp
           cases hp with
           | head => rw [rn_zip_not_mem htp1]; rfl
-          | tail _ hp => exact rn_zip_pair (List.nodup_cons.mp hn1).2 hp
+          | tail _ hp => exact rn_zip_pair (List.nodup_cons.mp f1.nodupV).2 hp
       k := fun p hp => by
         simp only [List.append_nil] at hp
         have h12 := List.of_mem_zip hp
@@ -357,9 +360,9 @@ theorem renE_meth {M : Method} {B : Bounds} {Gs Gs' : List GTy} {v0 : Value} {vs
       ko := fun _ h => by cases h
       c1 := fun p hp => hv p.2 (List.of_mem_zip hp).2 }
     have hvd1 : NotDom (e1.gsubst (bind (B ++ D1) (Gs ++ Gs'))).vbinders ((this :: p1.map VarDecl.x).zip (v0 :: vs)) := by
-      intro x hx hm; rw [Expr.vbinders_gsubst] at hx; rw [hndom1] at hm; exact hvs1 x hx hm
+      intro x hx hm; rw [Expr.vbinders_gsubst] at hx; rw [hndom1] at hm; exact f1.vdef x hx hm
     have hvd2 : NotDom (e2.gsubst (bind (B ++ D2) (Gs ++ Gs'))).vbinders ((this :: p2.map VarDecl.x).zip (v0 :: vs)) := by
-      intro x hx hm; rw [Expr.vbinders_gsubst] at hx; rw [zip_map_fst (by simp [hl2])] at hm; exact hvs2 x hx hm
+      intro x hx hm; rw [Expr.vbinders_gsubst] at hx; rw [zip_map_fst (by simp [f2.lenV])] at hm; exact f2.vdef x hx hm
     have nt1' : NoThis (e1.gsubst (bind (B ++ D1) (Gs ++ Gs'))) := by
       intro h; rw [Expr.vbinders_gsubst] at h; exact nt1 h
     have nt2' : NoThis (e2.gsubst (bind (B ++ D2) (Gs ++ Gs'))) := by
@@ -489,10 +492,10 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
     simp only [Expr.closed, Bool.and_eq_true] at hc
     have hvals := closed_cons_vals hc.1.1 hc.2
     exact And.intro
-      (renE_meth hF.2 hF2.1 hMf.1 hMf.2.1 hMf.2.2 hG hG' hG2' hp hp2 hN hN2 hN' hN2' hgs hgs2 hvs hvs2
-        hw1.2.2.2.2.2.2 hvals)
-      (renE_meth hF2.2 hF.1 hMf.1 hMf.2.1 hMf.2.2 hG hG2' hG' hp2 hp hN2 hN hN2' hN' hgs2 hgs hvs2 hvs
-        hw2.2.2.2.2.2.2 hvals)
+      (renE_meth hMf.1 hMf.2.1 hMf.2.2 hG ⟨hF, hG', hp, hN, hN', hgs, hvs, hw1⟩ ⟨hF2, hG2', hp2, hN2, hN2', hgs2, hvs2, hw2⟩
+        hvals)
+      (renE_meth hMf.1 hMf.2.1 hMf.2.2 hG ⟨hF2, hG2', hp2, hN2, hN2', hgs2, hvs2, hw2⟩ ⟨hF, hG', hp, hN, hN', hgs, hvs, hw1⟩
+        hvals)
   case innerFound.innerFound =>
     rename_i hN hN' hgs hvs _ _ _ _ _ _ _ _ _ _ _ _ _ _ hM2 hF2 hG2 hp2 hN2 hN2' hgs2 hvs2 hF hG hp hM
     obtain rfl := nodup_map_inj (ha.1 _ (List.mem_append_left _ (List.Mem.head _))) hM hM2
@@ -502,9 +505,9 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
     have hvals := closed_cons_vals hc.1.1 hc.2
     rcases WFExpr.local_method (WFExpr.plug (E := .callRecv .hole _ _ _) ha) hM with ⟨hMn, hMt, hMu, -⟩
     exact And.intro
-      (renE_meth (B := []) (Gs := []) hF.2 hF2.1 hMu hMt hMn rfl hG hG2 hp hp2 hN hN2 hN' hN2' hgs hgs2 hvs hvs2
-        hw1.2.2.2.2.2.2 hvals)
-      (renE_meth (B := []) (Gs := []) hF2.2 hF.1 hMu hMt hMn rfl hG2 hG hp2 hp hN2 hN hN2' hN' hgs2 hgs hvs2 hvs
-        hw2.2.2.2.2.2.2 hvals)
+      (renE_meth (B := []) (Gs := []) hMu hMt hMn rfl ⟨hF, hG, hp, hN, hN', hgs, hvs, hw1⟩
+        ⟨hF2, hG2, hp2, hN2, hN2', hgs2, hvs2, hw2⟩ hvals)
+      (renE_meth (B := []) (Gs := []) hMu hMt hMn rfl ⟨hF2, hG2, hp2, hN2, hN2', hgs2, hvs2, hw2⟩
+        ⟨hF, hG, hp, hN, hN', hgs, hvs, hw1⟩ hvals)
 
 end Funnelling
