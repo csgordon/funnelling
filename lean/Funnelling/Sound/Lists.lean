@@ -67,46 +67,6 @@ theorem Value.exprs_append_cons {vs : List Value} {es1 es2 : List Expr} {e : Exp
   have hm : List.Mem e (Value.exprs vs) := by rw [h]; exact List.mem_append_right _ (List.Mem.head _)
   rcases Value.mem_exprs hm with ⟨v, hv⟩; exact Exists.intro v hv.2
 
-theorem ECtx.plug_value {E : ECtx} {a : Expr} {v : Value} (h : E.plug a = v.expr) :
-    exists v' : Value, a = v'.expr := by
-  induction E generalizing v with
-  | hole => exact Exists.intro v h
-  | callRecv => cases v <;> simp [ECtx.plug, Value.expr] at h
-  | callArg => cases v <;> simp [ECtx.plug, Value.expr] at h
-  | superRecv => cases v <;> simp [ECtx.plug, Value.expr] at h
-  | superArg => cases v <;> simp [ECtx.plug, Value.expr] at h
-  | field => cases v <;> simp [ECtx.plug, Value.expr] at h
-  | ifCond => cases v <;> simp [ECtx.plug, Value.expr] at h
-  | newArg C Gs vs E es ih =>
-    cases v with
-    | new C' Gs' vs' =>
-      simp only [ECtx.plug, Value.expr, Expr.new.injEq] at h
-      rcases Value.exprs_append_cons h.2.2.symm with ⟨v1, hv1⟩; exact ih hv1
-    | newLocal => simp [ECtx.plug, Value.expr] at h
-  | localArg C Gs C' Gs' vs E es Ms ih =>
-    cases v with
-    | new => simp [ECtx.plug, Value.expr] at h
-    | newLocal D Hs D' Hs' ws Ns =>
-      simp only [ECtx.plug, Value.expr, Expr.newLocal.injEq] at h
-      rcases Value.exprs_append_cons h.2.2.2.2.1.symm with ⟨v1, hv1⟩; exact ih hv1
-
-theorem Step.not_value {d : Decls} {e e' : Expr} (h : Step d e e') :
-    forall v : Value, Not (e = v.expr) := by
-  induction h with
-  | simpleFieldFound => intro v hv; cases v <;> simp [Value.expr] at hv
-  | simpleFieldSuper => intro v hv; cases v <;> simp [Value.expr] at hv
-  | innerFieldSuper => intro v hv; cases v <;> simp [Value.expr] at hv
-  | ifThen => intro v hv; cases v <;> simp [Value.expr] at hv
-  | ifElse => intro v hv; cases v <;> simp [Value.expr] at hv
-  | simpleAddSuper => intro v hv; cases v <;> simp [Value.expr] at hv
-  | simpleFound => intro v hv; cases v <;> simp [Value.expr] at hv
-  | innerFound => intro v hv; cases v <;> simp [Value.expr] at hv
-  | innerSuper => intro v hv; cases v <;> simp [Value.expr] at hv
-  | searchSuper => intro v hv; cases v <;> simp [Value.expr] at hv
-  | ctx _ ih =>
-    intro v hv
-    rcases ECtx.plug_value hv with ⟨v', hv'⟩; exact ih v' hv'
-
 
 section
 variable {A B : Type} [DecidableEq A]
