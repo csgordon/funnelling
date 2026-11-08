@@ -17,8 +17,7 @@ theorem exprs_split {vs1 vs2 : List Value} {x y : Expr} {es1 es2 : List Expr}
   | nil =>
     cases vs2 with
     | nil =>
-      simp only [Value.exprs, List.nil_append, List.cons.injEq] at h
-      exact And.intro rfl h
+      simp_all
     | cons v vs2 =>
       simp only [Value.exprs, List.nil_append, List.cons_append, List.cons.injEq] at h
       exact absurd h.1 (hx v)

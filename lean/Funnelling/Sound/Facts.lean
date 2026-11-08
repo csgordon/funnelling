@@ -70,9 +70,7 @@ theorem find_some {A : Type} {p : A -> Bool} : forall {l : List A} {x : A}, l.fi
   | [], _, h => by simp at h
   | a :: l, x, h => by
     by_cases ha : p a = true
-    . rw [List.find?_cons_of_pos ha] at h
-      cases h
-      exact And.intro (List.Mem.head _) ha
+    . simp_all
     . rw [List.find?_cons_of_neg ha] at h
       have r := find_some h
       exact And.intro (List.Mem.tail _ r.1) r.2

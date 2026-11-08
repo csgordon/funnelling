@@ -22,13 +22,9 @@ theorem append_cons_split {A : Type} {l r P Q : List A} {x : A} (h : l ++ x :: r
   . rcases h1 with ⟨a, h1⟩
     cases a with
     | nil =>
-      right
-      exact Exists.intro [] (And.intro (by simpa using h1.2.symm) (by simpa using h1.1.symm))
+      simp_all
     | cons y a =>
-      left
-      simp only [List.cons_append, List.cons.injEq] at h1
-      refine Exists.intro a (And.intro ?_ h1.2.2)
-      rw [h1.1, h1.2.1]
+      simp_all
   . cases h1 with
     | intro c h1 => exact Or.inr (Exists.intro c (And.intro h1.2 h1.1))
 

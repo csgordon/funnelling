@@ -50,8 +50,7 @@ theorem fields_nodup {d : Decls} (hwf : WFDecls d) {D : Dec} (h : List.Mem D d) 
   have h2 := hwf.2.1 D h
   simp only [superChain, findDec_self hwf h] at h2
   by_cases ho : (D.C == Object) = true
-  . simp only [ho, ite_true, List.flatMap_cons, List.flatMap_nil, List.append_nil] at h2
-    exact h2
+  . simp_all
   . simp only [ho] at h2
     exact nodup_append_left h2
 

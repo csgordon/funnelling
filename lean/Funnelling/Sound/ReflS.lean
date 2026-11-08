@@ -82,9 +82,7 @@ theorem RenE.reflS {rv : VRen} {rt : TRen} : forall {e : Expr} {Ts : List TVarNa
       . rw [rn_cons_ne e]
         apply hv
         rcases hw with hw | hw
-        . cases hw with
-          | head => exact absurd rfl e
-          | tail _ hw => exact Or.inl hw
+        . simp_all
         . exact Or.inr hw
     have := RenE.ifInst (T := T) (y := x) (RenE.reflS hc.1.1.1 hv ht) (RenE.reflS hc.1.2 hv' ht)
       (RenE.reflS hc.2 hv ht)

@@ -164,8 +164,6 @@ theorem sub_unique_dec {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {T1 : Ty}
     simp only [Ty.cls.injEq] at h1
     exact absurd (Declared.dec_loc hwf h1.1 hD h1.2.1.symm) id
   | subVar =>
-    intro _ _
-    rcases h1 with ⟨D, h1⟩; cases h1 with
-    | intro Ts h1 => cases h1.2
+    simp_all
 
 end Funnelling.High

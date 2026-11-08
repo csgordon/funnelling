@@ -34,10 +34,7 @@ theorem nthis_dom {n : VSubst} {y : VarName} (hy : Not (y = this)) :
   simp only [nthis, listMem_iff, List.mem_map, List.mem_filter]
   constructor
   . intro h; cases h with | intro p hp => exact Exists.intro p (And.intro hp.1.1 hp.2)
-  . intro h
-    rcases h with ⟨p, hp⟩
-    refine Exists.intro p (And.intro (And.intro hp.1 ?_) hp.2)
-    rw [hp.2]; simpa using hy
+  . simp_all
 
 theorem innerG_gsub {n : VSubst} {gamma : Gamma} {Fs : List Funnel} {C : ClassName} :
     innerG (gsub n gamma) Fs C = gsub (nthis n) (innerG gamma Fs C) := by

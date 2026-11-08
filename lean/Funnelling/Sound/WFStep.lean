@@ -254,31 +254,19 @@ theorem wf_call_arg {e0 : Expr} {Ts : List Ty} {m : MethName} {es : List Expr} {
   exact WFExpr.sub h (fun _ hk => List.mem_append_right _ (mem_localsList he hk))
     (fun _ hx => List.mem_append_right _ (mem_ifVarsList he hx)) (noShadowList_mem he hn.2) (closedList_mem he hc.2)
 
-theorem wf_innerFound {C C' : ClassName} {Ms : List Method} {M : Method} {m : MethName}
-    {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} (hM : List.Mem M Ms) (hm : M.name = m)
-    (hG' : Gs'.length = M.bounds.length) (hp : M.params.length = vs.length)
-    (ha : WFExpr (.call (Value.newLocal C Gs C' Gs'' vs0 Ms).expr (GTy.tys Gs') m (Value.exprs vs))) :
-    exists Delta' T0 ps e0, FreshM M (.mk Delta' T0 m ps e0) /\ (dom Delta').Nodup /\
-      (this :: ps.map VarDecl.x).Nodup /\ GSubstDefined (dom Delta') e0 /\
+theorem wf_found {M : Method} {m : MethName} {B0 : Bounds} {v0 : Value} {Gs Gs' : List GTy} {vs : List Value}
+    (hm : M.name = m) (hG : Gs.length = B0.length) (hG' : Gs'.length = M.bounds.length)
+    (hp : M.params.length = vs.length) (hnD : (dom B0).Nodup) (hkM : forall k, List.Mem k M.locals -> KQ k)
+    (hcM : M.closed (dom B0) [] = true) (htM : NoThisM M) (hv0 : WFExpr v0.expr)
+    (hvs : forall v, List.Mem v vs -> WFExpr v.expr) :
+    exists Delta' T0 ps e0, FreshM M (.mk Delta' T0 m ps e0) /\ (dom B0 ++ dom Delta').Nodup /\
+      (this :: ps.map VarDecl.x).Nodup /\ GSubstDefined (dom B0 ++ dom Delta') e0 /\
       VSubstDefined (this :: ps.map VarDecl.x) e0 /\
-      WFExpr ((e0.gsubst (bind Delta' Gs')).vsubst
-        ((this :: ps.map VarDecl.x).zip (Value.newLocal C Gs C' Gs'' vs0 Ms :: vs))) := by
-  have hv0 : WFExpr (Value.newLocal C Gs C' Gs'' vs0 Ms).expr :=
-    WFExpr.plug (E := .callRecv .hole Gs' m (Value.exprs vs)) ha
-  have hvs : forall v, List.Mem v vs -> WFExpr v.expr := fun v hv => wf_call_arg ha (exprs_mem hv)
-  have hk0 := hv0.kq
-  have hc0 := hv0.2.2.2.2.2.2
-  have ht0 := WFExpr.noThis hv0
-  simp only [Value.expr, Expr.locals, listMem_iff, List.mem_cons, List.mem_append, or_imp, forall_and,
-    forall_eq] at hk0
-  simp only [Value.expr, Expr.closed, Bool.and_eq_true] at hc0
-  simp only [NoThis, Value.expr, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ht0
-  have hkM : forall k, List.Mem k M.locals -> KQ k := fun k hk => hk0.2.2 k (mem_localsListM hM hk)
-  have hcM : M.closed [] [] = true := closedListM_mem hM hc0.2
-  have htM : NoThisM M := fun h => ht0.2 (vbindersListM_mem hM h)
-  rcases freshM_avoid M ((Value.newLocal C Gs C' Gs'' vs0 Ms).expr.vbinders ++ Expr.vbindersList (Value.exprs vs))
-    ((Value.newLocal C Gs C' Gs'' vs0 Ms).expr.tbinders ++ Expr.tbindersList (Value.exprs vs))
-    hkM hcM htM with ⟨M', hF, hav, hat, hk', hn', hi', hc', ht', hu'⟩
+      WFExpr ((e0.gsubst (bind (B0 ++ Delta') (Gs ++ Gs'))).vsubst
+        ((this :: ps.map VarDecl.x).zip (v0 :: vs))) := by
+  rcases freshM_avoid M (v0.expr.vbinders ++ Expr.vbindersList (Value.exprs vs))
+    (v0.expr.tbinders ++ Expr.tbindersList (Value.exprs vs)) hkM hcM htM with
+    ⟨M', hF, hav, hat, hk', hn', hi', hc', ht', hu'⟩
   cases M' with
   | mk Delta' T0 m' ps e0 =>
   have hl := RenM.lens hF.1
@@ -293,11 +281,18 @@ theorem wf_innerFound {C C' : ClassName} {Ms : List Method} {M : Method} {m : Me
   simp only [Method.tbinders, listMem_iff, List.mem_append] at hat
   have hlen : Gs'.length = Delta'.length := by omega
   have hp' : ps.length = vs.length := by omega
-  refine ⟨Delta', T0, ps, e0, hF, hu'.1, List.nodup_cons.mpr ⟨ht'.1, hu'.2.1⟩,
+  have hN : (dom B0 ++ dom Delta').Nodup := by
+    apply List.nodup_append.mpr
+    refine And.intro hnD (And.intro hu'.1 ?_)
+    intro a ha b hb e
+    subst e
+    exact not_mem_of_all_not_contains hn'.1.1 hb ha
+  refine ⟨Delta', T0, ps, e0, hF, hN, List.nodup_cons.mpr ⟨ht'.1, hu'.2.1⟩,
     fun X hX => Expr.noShadow_tb hn'.2 X hX, fun y hy => Expr.noShadow_binders hn'.2 ht'.2 y hy, ?_⟩
-  have hz : ((this :: ps.map VarDecl.x).zip (Value.newLocal C Gs C' Gs'' vs0 Ms :: vs)).map Prod.fst =
-      this :: ps.map VarDecl.x := zip_map_fst (by simp [hp'])
-  have hfst : (bind Delta' Gs').map Prod.fst = dom Delta' := bind_fst hlen
+  have hz : ((this :: ps.map VarDecl.x).zip (v0 :: vs)).map Prod.fst = this :: ps.map VarDecl.x :=
+    zip_map_fst (by simp [hp'])
+  have hfst : (bind (B0 ++ Delta') (Gs ++ Gs')).map Prod.fst = dom B0 ++ dom Delta' := by
+    rw [bind_fst (by simp [hG, hlen])]; exact dom_append
   refine wf_vsubst (Expr.kq_gsubst hk') ?_ ?_ ?_ ?_ ?_
   . rw [Expr.noShadow_gsubst]
     exact Expr.noShadow_scope (Expr.noShadow_tscope hn'.2 (fun X _ h => by cases h)) (fun y _ h => by cases h)
@@ -322,6 +317,30 @@ theorem wf_innerFound {C C' : ClassName} {Ms : List Method} {M : Method} {m : Me
       cases hpv with
       | head => exact Or.inl hX
       | tail _ h => exact Or.inr (tbindersList_mem_e (exprs_mem h) hX)
+
+theorem wf_innerFound {C C' : ClassName} {Ms : List Method} {M : Method} {m : MethName}
+    {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} (hM : List.Mem M Ms) (hm : M.name = m)
+    (hG' : Gs'.length = M.bounds.length) (hp : M.params.length = vs.length)
+    (ha : WFExpr (.call (Value.newLocal C Gs C' Gs'' vs0 Ms).expr (GTy.tys Gs') m (Value.exprs vs))) :
+    exists Delta' T0 ps e0, FreshM M (.mk Delta' T0 m ps e0) /\ (dom Delta').Nodup /\
+      (this :: ps.map VarDecl.x).Nodup /\ GSubstDefined (dom Delta') e0 /\
+      VSubstDefined (this :: ps.map VarDecl.x) e0 /\
+      WFExpr ((e0.gsubst (bind Delta' Gs')).vsubst
+        ((this :: ps.map VarDecl.x).zip (Value.newLocal C Gs C' Gs'' vs0 Ms :: vs))) := by
+  have hv0 : WFExpr (Value.newLocal C Gs C' Gs'' vs0 Ms).expr :=
+    WFExpr.plug (E := .callRecv .hole Gs' m (Value.exprs vs)) ha
+  have hvs : forall v, List.Mem v vs -> WFExpr v.expr := fun v hv => wf_call_arg ha (exprs_mem hv)
+  have hk0 := hv0.kq
+  have hc0 := hv0.2.2.2.2.2.2
+  have ht0 := WFExpr.noThis hv0
+  simp only [Value.expr, Expr.locals, listMem_iff, List.mem_cons, List.mem_append, or_imp, forall_and,
+    forall_eq] at hk0
+  simp only [Value.expr, Expr.closed, Bool.and_eq_true] at hc0
+  simp only [NoThis, Value.expr, Expr.vbinders, listMem_iff, List.mem_append, not_or] at ht0
+  have hkM : forall k, List.Mem k M.locals -> KQ k := fun k hk => hk0.2.2 k (mem_localsListM hM hk)
+  have hcM : M.closed [] [] = true := closedListM_mem hM hc0.2
+  have htM : NoThisM M := fun h => ht0.2 (vbindersListM_mem hM h)
+  exact wf_found (B0 := []) (Gs := []) hm rfl hG' hp List.nodup_nil hkM hcM htM hv0 hvs
 
 theorem wfdecls_kq {d : Decls} (hwf : WFDecls d) : forall k, List.Mem k (classes d) -> KQ k := by
   intro k hk
@@ -400,9 +419,7 @@ theorem Typing.closed {d : Decls} : forall {Delta gamma e T}, Typing d Delta gam
       intro X hX
       rw [<- Pairing.dom_eq h2] at hX
       exact dom_sub1 hsD X hX
-    . apply all_contains_iff.mpr
-      intro X hX
-      exact dom_sub1 hsD X (Kind.ftv h5 X hX)
+    . simp_all
     . intro y hy
       simp only [gdom, withoutThis, restrict, List.map_append, listMem_iff, List.mem_append, List.mem_map,
         List.mem_filter, List.mem_singleton] at hy
@@ -475,62 +492,9 @@ theorem wf_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec}
   have hcM := dec_method_closed hok hD hM
   have hv0 : WFExpr v0.expr := WFExpr.plug (E := .superRecv .hole (GTy.cls D.C Gs) Gs' m (Value.exprs vs)) ha
   have hvs : forall v, List.Mem v vs -> WFExpr v.expr := fun v hv => wf_super_arg ha (exprs_mem hv)
-  rcases freshM_avoid M (v0.expr.vbinders ++ Expr.vbindersList (Value.exprs vs))
-    (v0.expr.tbinders ++ Expr.tbindersList (Value.exprs vs)) hkM hcM htM with
-    ⟨M', hF, hav, hat, hk', hn', hi', hc', ht', hu'⟩
-  cases M' with
-  | mk Delta' T0 m' ps e0 =>
-  have hl := RenM.lens hF.1
-  have hm' : m' = m := by rw [<- hm]; exact hl.2.2
-  subst hm'
-  have hb : Delta'.length = M.bounds.length := hl.1
-  have hq : ps.length = M.params.length := hl.2.1
-  simp only [Method.noShadow, Bool.and_eq_true, List.nil_append, List.cons_append] at hn'
-  simp only [Method.closed, Bool.and_eq_true, List.nil_append, List.cons_append] at hc'
-  simp only [NoThisM, Method.vbinders, listMem_iff, List.mem_append, not_or] at ht'
-  simp only [Method.vbinders, listMem_iff, List.mem_append] at hav
-  simp only [Method.tbinders, listMem_iff, List.mem_append] at hat
-  have hlen : Gs'.length = Delta'.length := by omega
-  have hp' : ps.length = vs.length := by omega
-  have hnD : (dom D.bounds).Nodup := hwf.2.2.2.2.1 D.bounds (by
+  exact wf_found hm hG hG' hp (hwf.2.2.2.2.1 D.bounds (by
     simp only [listMem_iff, List.mem_append, List.mem_map]
-    exact Or.inl (Exists.intro D (And.intro hd rfl)))
-  have hN : (dom D.bounds ++ dom Delta').Nodup := by
-    apply List.nodup_append.mpr
-    refine And.intro hnD (And.intro hu'.1 ?_)
-    intro a ha b hb e
-    subst e
-    exact not_mem_of_all_not_contains hn'.1.1 hb ha
-  refine ⟨Delta', T0, ps, e0, hF, hN, List.nodup_cons.mpr ⟨ht'.1, hu'.2.1⟩,
-    fun X hX => Expr.noShadow_tb hn'.2 X hX, fun y hy => Expr.noShadow_binders hn'.2 ht'.2 y hy, ?_⟩
-  have hz : ((this :: ps.map VarDecl.x).zip (v0 :: vs)).map Prod.fst = this :: ps.map VarDecl.x :=
-    zip_map_fst (by simp [hp'])
-  have hfst : (bind (D.bounds ++ Delta') (Gs ++ Gs')).map Prod.fst = dom D.bounds ++ dom Delta' := by
-    rw [bind_fst (by simp [hG, hlen])]; exact dom_append
-  refine wf_vsubst (Expr.kq_gsubst hk') ?_ ?_ ?_ ?_ ?_
-  . rw [Expr.noShadow_gsubst]
-    exact Expr.noShadow_scope (Expr.noShadow_tscope hn'.2 (fun X _ h => by cases h)) (fun y _ h => by cases h)
-  . rw [Expr.ifVars_gsubst]; exact hi'
-  . rw [hz]; exact Expr.closed_gsubst (T := []) (by rw [List.nil_append, hfst]; exact hc'.2)
-  . intro p hp
-    rcases p with ⟨px, pv⟩
-    cases (List.of_mem_zip hp).2 with
-    | head => exact hv0
-    | tail _ h => exact hvs pv h
-  . intro p hp
-    rcases p with ⟨px, pv⟩
-    have hpv := (List.of_mem_zip hp).2
-    refine ⟨fun y hy hm => ?_, fun X hX hm => ?_⟩
-    . rw [Expr.vbinders_gsubst] at hm
-      apply hav y (Or.inr hm)
-      cases hpv with
-      | head => exact Or.inl hy
-      | tail _ h => exact Or.inr (vbindersList_mem_e (exprs_mem h) hy)
-    . rw [Expr.tbinders_gsubst] at hm
-      apply hat X (Or.inr hm)
-      cases hpv with
-      | head => exact Or.inl hX
-      | tail _ h => exact Or.inr (tbindersList_mem_e (exprs_mem h) hX)
+    exact Or.inl (Exists.intro D (And.intro hd rfl)))) hkM hcM htM hv0 hvs
 
 theorem wf_base {d : Decls} {a a' : Expr} (hwf : WFDecls d) (hok : DeclsOk d) (ha : WFExpr a)
     (hs : BaseStep d a a') : exists a'', BaseStep d a a'' /\ WFExpr a'' := by

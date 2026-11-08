@@ -184,10 +184,7 @@ theorem Method.closed_vsubst : forall {M : Method} {n : VSubst} {T : List TVarNa
     . exact Or.inl (Or.inl (Or.inr hy))
     . by_cases hyt : y = this
       . exact Or.inl (Or.inl (Or.inl hyt))
-      . refine Or.inr ?_
-        rcases List.mem_map.mp hy with ⟨p, hp, e⟩
-        subst e
-        exact List.mem_map_of_mem (List.mem_filter.mpr ⟨hp, by simpa using hyt⟩)
+      . simp_all
     . exact Or.inl (Or.inr hy)
 theorem Method.closedList_vsubst : forall {Ms : List Method} {n : VSubst} {T : List TVarName} {S : List VarName},
     Method.closedList T (S ++ n.map Prod.fst) Ms = true -> (forall p, List.Mem p n -> p.2.expr.closed [] [] = true) ->

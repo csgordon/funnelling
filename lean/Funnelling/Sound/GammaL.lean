@@ -84,10 +84,7 @@ theorem Expr.noShadow_binders : forall {e : Expr} {Xs : List TVarName} {xs : Lis
     simp only [Expr.noShadow, Bool.and_eq_true, Bool.not_eq_true'] at hn
     simp only [NoThis, Expr.vbinders, listMem_iff, List.mem_append, List.mem_cons, not_or] at ht hy
     rcases hy with ((hy | hy) | hy) | hy
-    . subst hy
-      have := hn.1.1.2
-      simp at this
-      exact this
+    . simp_all
     . exact Expr.noShadow_binders hn.1.1.1 ht.1.1.2 y hy
     . intro hm
       exact Expr.noShadow_binders hn.1.2 ht.1.2 y hy (List.Mem.tail _ hm)

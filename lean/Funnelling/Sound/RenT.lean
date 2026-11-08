@@ -36,8 +36,8 @@ end
 
 mutual
 theorem Ty.ftv_ren {rt : TRen} : forall (T : Ty), (T.ren rt).ftv = T.ftv.map (rn rt)
-  | .var X => rfl
-  | .cls C Ts => Ty.ftvList_ren Ts
+  | .var _ => rfl
+  | .cls _ Ts => Ty.ftvList_ren Ts
 theorem Ty.ftvList_ren {rt : TRen} : forall (Ts : List Ty), Ty.ftvList (Ty.renList rt Ts) = (Ty.ftvList Ts).map (rn rt)
   | [] => rfl
   | T :: Ts => by
@@ -168,8 +168,7 @@ theorem Gamma.lookup_filter_of {p : VarDecl -> Bool} : forall {g : Gamma} {x : V
       . rw [List.filter_cons_of_pos hpy]
         simp only [Gamma.lookup, List.find?_cons, hb]
         exact ih
-      . rw [List.filter_cons_of_neg hpy]
-        exact ih
+      . simp_all
 
 theorem Gamma.lookup_of_filter {p : VarDecl -> Bool} {g : Gamma} {x : VarName} {U : Ty} (hn : (gdom g).Nodup)
     (h : Gamma.lookup (g.filter p) x = some U) : Gamma.lookup g x = some U /\ p { T := U, x := x } = true := by

@@ -9,7 +9,7 @@ theorem Ty.ftv_subst_sub {s : TSubst} {A : List TVarName} : forall {T : Ty},
     (forall Y, List.Mem Y T.ftv -> forall X, List.Mem X ((Ty.var Y).subst s).ftv -> List.Mem X A) ->
     forall X, List.Mem X (T.subst s).ftv -> List.Mem X A
   | .var Y, h, X, hX => h Y (List.Mem.head _) X hX
-  | .cls C Ts, h, X, hX => Ty.ftvList_subst_sub h X hX
+  | .cls _ _, h, X, hX => Ty.ftvList_subst_sub h X hX
 theorem Ty.ftvList_subst_sub {s : TSubst} {A : List TVarName} : forall {Ts : List Ty},
     (forall Y, List.Mem Y (Ty.ftvList Ts) -> forall X, List.Mem X ((Ty.var Y).subst s).ftv -> List.Mem X A) ->
     forall X, List.Mem X (Ty.ftvList (Ty.substList s Ts)) -> List.Mem X A
@@ -107,8 +107,7 @@ theorem Sub.inv_subst {d : Decls} (hd : DeclOk d) {Delta Delta2 : Bounds} {s : T
     refine Exists.intro T0 (And.intro h0.1 (And.intro (Sub.subInheritLocal hD hl' ?_) h0.2.2))
     exact h0.2.1
   | subVar _ _ _ =>
-    intro C Ts he
-    cases he
+    simp_all
 
 theorem map_zip_fst {A B C : Type} {f : A -> C} : forall {l : List A} {l' : List B}, l'.length = l.length ->
     (l.zip l').map (fun p => f p.1) = l.map f

@@ -104,8 +104,7 @@ theorem lookup_zip_ren {A B : Type} [DecidableEq A] {rt : List (Prod A A)} :
   | a :: X1, b :: X2, u :: Us, X, hl, hn, hp, hX => by
     simp only [List.zip_cons_cons]
     by_cases e : X = a
-    . subst e
-      rw [hp (X, b) (List.Mem.head _), lookup_cons_eq, lookup_cons_eq]
+    . simp_all
     . rw [lookup_cons_ne e]
       have hX' : List.Mem X X1 := by
         cases hX with
