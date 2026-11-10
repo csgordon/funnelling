@@ -11,7 +11,7 @@ inductive ExprCtx where
       (es' : List Expr)
   | field (ctx : ExprCtx) (f : FieldName)
   | newArg (C : ClassName) (Ts : List Ty) (es : List Expr) (ctx : ExprCtx) (es' : List Expr)
-  | localArg (C : ClassName) (Fs : List Funnel) (C' : ClassName) (Ts : List Ty) (es : List Expr)
+  | newLocalArg (C : ClassName) (Fs : List Funnel) (C' : ClassName) (Ts : List Ty) (es : List Expr)
       (ctx : ExprCtx) (es' : List Expr) (Ms : List Method)
   | ifCond (ctx : ExprCtx) (T : Ty) (x : VarName) (e1 e2 : Expr)
   | ifThen (e0 : Expr) (T : Ty) (x : VarName) (ctx : ExprCtx) (e2 : Expr)
@@ -25,27 +25,27 @@ def ExprCtx.plug : ExprCtx -> Expr -> Expr
   | .superArg e0 T Ts m es ctx es', e => .superCall e0 T Ts m (es ++ ctx.plug e :: es')
   | .field ctx f, e => .field (ctx.plug e) f
   | .newArg C Ts es ctx es', e => .new C Ts (es ++ ctx.plug e :: es')
-  | .localArg C Fs C' Ts es ctx es' Ms, e => .newLocal C Fs C' Ts (es ++ ctx.plug e :: es') Ms
+  | .newLocalArg C Fs C' Ts es ctx es' Ms, e => .newLocal C Fs C' Ts (es ++ ctx.plug e :: es') Ms
   | .ifCond ctx T x e1 e2, e => .ifInst (ctx.plug e) T x e1 e2
   | .ifThen e0 T x ctx e2, e => .ifInst e0 T x (ctx.plug e) e2
   | .ifElse e0 T x e1 ctx, e => .ifInst e0 T x e1 (ctx.plug e)
 
 def OccursIn (e' e : Expr) : Prop := exists ctx : ExprCtx, e = ctx.plug e'
 
-inductive Declared (d : Decls) : K -> Prop
+inductive Declared (d : Decls) : ClassDecl -> Prop
   | dec {D} : List.Mem D d -> Declared d (.dec D)
-  | loc {k Delta T0 m ps e C0 Fs C' Ts es Ms} :
-      Declared d k -> List.Mem (.mk Delta T0 m ps e) k.Ms ->
+  | newLocal {K Delta T0 m ps e C0 Fs C' Ts es Ms} :
+      Declared d K -> List.Mem (.mk Delta T0 m ps e) K.Ms ->
       OccursIn (.newLocal C0 Fs C' Ts es Ms) e ->
-      Declared d (.loc C0 Fs C' Ts es Ms)
+      Declared d (.newLocal C0 Fs C' Ts es Ms)
 
 def MethodIn (d : Decls) (M : Method) (C : ClassName) : Prop :=
-  exists k, Declared d k /\ k.name = C /\ List.Mem M k.Ms
+  exists K, Declared d K /\ K.name = C /\ List.Mem M K.Ms
 
 inductive Generic (d : Decls) : ClassName -> Ty -> Prop
-  | dec {D} : Declared d (.dec D) -> Generic d D.C (.cls D.C (vars (dom D.bounds)))
-  | loc {C Fs C' Ts es Ms} :
-      Declared d (.loc C Fs C' Ts es Ms) -> Generic d C (.cls C (vars (domF Fs)))
+  | dec {D} : Declared d (.dec D) -> Generic d D.C (.cls D.C (vars (dom D.Delta)))
+  | newLocal {C Fs C' Ts es Ms} :
+      Declared d (.newLocal C Fs C' Ts es Ms) -> Generic d C (.cls C (vars (domF Fs)))
 
 inductive Pairing (Delta : Bounds) : List Funnel -> List Ty -> Bounds -> List Ty -> Prop
   | nil : Pairing Delta [] [] [] []
@@ -56,8 +56,8 @@ inductive Pairing (Delta : Bounds) : List Funnel -> List Ty -> Bounds -> List Ty
       Pairing Delta Fs Ts Delta' Ts' -> Pairing Delta (.ground G :: Fs) (G.ty :: Ts) Delta' Ts'
 
 inductive Scope (d : Decls) : Ty -> Bounds -> List Ty -> Prop
-  | dec {D Ts} : Declared d (.dec D) -> Scope d (.cls D.C Ts) D.bounds Ts
-  | loc {C Delta' T0 m ps e C0 Fs C' Ts' es Ms T Delta Ts'' Ts Delta0 Ts0} :
+  | dec {D Ts} : Declared d (.dec D) -> Scope d (.cls D.C Ts) D.Delta Ts
+  | newLocal {C Delta' T0 m ps e C0 Fs C' Ts' es Ms T Delta Ts'' Ts Delta0 Ts0} :
       MethodIn d (.mk Delta' T0 m ps e) C ->
       OccursIn (.newLocal C0 Fs C' Ts' es Ms) e ->
       Generic d C T -> Scope d T Delta Ts'' ->

@@ -85,12 +85,12 @@ theorem Ty.mem_ftvList {X : TVarName} {Ts : List Ty} :
     List.Mem X (Ty.ftvList Ts) <-> exists T, List.Mem T Ts /\ List.Mem X T.ftv := by
   rw [Ty.ftvList_eq_flatMap]; exact List.mem_flatMap
 
-theorem Expr.mem_localsList {e : Expr} {es : List Expr} {k : K} (h : List.Mem e es) (hk : List.Mem k e.locals) :
-    List.Mem k (Expr.localsList es) := by
+theorem Expr.mem_localsList {e : Expr} {es : List Expr} {K : ClassDecl} (h : List.Mem e es) (hk : List.Mem K e.locals) :
+    List.Mem K (Expr.localsList es) := by
   rw [Expr.localsList_eq_flatMap]; exact List.mem_flatMap.mpr ⟨e, h, hk⟩
 
-theorem Method.mem_localsList {M : Method} {Ms : List Method} {k : K} (h : List.Mem M Ms) (hk : List.Mem k M.locals) :
-    List.Mem k (Method.localsList Ms) := by
+theorem Method.mem_localsList {M : Method} {Ms : List Method} {K : ClassDecl} (h : List.Mem M Ms) (hk : List.Mem K M.locals) :
+    List.Mem K (Method.localsList Ms) := by
   rw [Method.localsList_eq_flatMap]; exact List.mem_flatMap.mpr ⟨M, h, hk⟩
 
 theorem Expr.mem_ifVarsList {e : Expr} {es : List Expr} {x : VarName} (h : List.Mem e es) (hx : List.Mem x e.ifVars) :

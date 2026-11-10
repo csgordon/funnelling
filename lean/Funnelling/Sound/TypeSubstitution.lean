@@ -11,7 +11,7 @@ abbrev GOk (d : Decls) (Delta : Bounds) (s : GSubst) : Prop :=
 abbrev gsubB (s : GSubst) (Delta : Bounds) : Bounds :=
   Bounds.subst s.ty (Delta.filter fun b => !((s.map Prod.fst).contains b.X))
 
-abbrev gsubG (s : GSubst) (gamma : Gamma) : Gamma := gamma.map (VarDecl.subst s.ty)
+abbrev gsubG (s : GSubst) (Gamma : TypeEnv) : TypeEnv := Gamma.map (VarDecl.subst s.ty)
 
 theorem GOk.substCtx {d : Decls} {Delta : Bounds} {s : GSubst} (h : GOk d Delta s) :
     SubstCtx d Delta (gsubB s Delta) s.ty := by
@@ -51,21 +51,21 @@ theorem gsubB_append {s : GSubst} {Delta Dm : Bounds}
   intro b hb
   simpa using hm b hb
 
-theorem Gamma.lookup_gsubG {s : GSubst} {x : VarName} {T : Ty} : forall {gamma : Gamma}, gamma.lookup x = some T ->
-    (gsubG s gamma).lookup x = some (T.subst s.ty)
-  | [], h => by simp [Gamma.lookup] at h
-  | y :: gamma, h => by
+theorem TypeEnv.lookup_gsubG {s : GSubst} {x : VarName} {T : Ty} : forall {Gamma : TypeEnv}, Gamma.lookup x = some T ->
+    (gsubG s Gamma).lookup x = some (T.subst s.ty)
+  | [], h => by simp [TypeEnv.lookup] at h
+  | y :: Gamma, h => by
     by_cases hy : y.x = x
-    . simp only [Gamma.lookup, List.find?_cons, hy, beq_self_eq_true, Option.map_some] at h |-
+    . simp only [TypeEnv.lookup, List.find?_cons, hy, beq_self_eq_true, Option.map_some] at h |-
       simp only [gsubG, List.map_cons, List.find?_cons, VarDecl.subst, hy, beq_self_eq_true, Option.map_some]
       cases h
       rfl
     . have hb : (y.x == x) = false := by simpa using hy
-      simp only [Gamma.lookup, List.find?_cons, hb] at h |-
+      simp only [TypeEnv.lookup, List.find?_cons, hb] at h |-
       simp only [gsubG, List.map_cons, List.find?_cons, VarDecl.subst, hb]
-      exact Gamma.lookup_gsubG (gamma := gamma) h
+      exact TypeEnv.lookup_gsubG (Gamma := Gamma) h
 
-theorem gdom_gsubG {s : GSubst} {gamma : Gamma} : gdom (gsubG s gamma) = gdom gamma := by
+theorem gdom_gsubG {s : GSubst} {Gamma : TypeEnv} : gdom (gsubG s Gamma) = gdom Gamma := by
   simp [gdom, gsubG, VarDecl.subst, List.map_map, Function.comp_def]
 
 theorem substList_app {s : TSubst} {Ts Us : List Ty} :
@@ -190,25 +190,25 @@ theorem names_gsubst {s : GSubst} : forall {Ms : List Method}, (Method.gsubstLis
 
 theorem OverrideOkM.gsubst {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {s : GSubst} {C : ClassName}
     {Us : List Ty} {M : Method} (h : OverrideOkM d (.cls C Us) M)
-    (hdis : forall X, List.Mem X (dom M.bounds) -> Not (List.Mem X (s.map Prod.fst))) :
+    (hdis : forall X, List.Mem X (dom M.Delta) -> Not (List.Mem X (s.map Prod.fst))) :
     OverrideOkM d (.cls C (Ty.substList s.ty Us)) (M.gsubst s) := by
   cases M with
   | mk Dp T0p m psp ep =>
-    simp only [Method.bounds] at hdis
+    simp only [Method.Delta] at hdis
     have hv := vars_gsubst hdis
     cases h with
     | absent h1 h2 => exact OverrideOkM.absent h1 h2
     | @dec D _ _ _ _ _ _ Do T0o pso eo h1 h2 h3 h4 h5 h6 =>
       have hcl := declMeth_closed hwf hok h1 h2
-      simp only [K.gvars, <- dom_append] at hcl
-      have hlen : (Us ++ vars (dom Dp)).length = (D.bounds ++ Do).length := by simp [h3, h4, vars, dom]
+      simp only [ClassDecl.gvars, <- dom_append] at hcl
+      have hlen : (Us ++ vars (dom Dp)).length = (D.Delta ++ Do).length := by simp [h3, h4, vars, dom]
       refine OverrideOkM.dec h1 h2 (by rw [substList_length, h3])
         (by simp only [Bounds.subst, List.length_map]; exact h4) ?_ ?_
       . rw [dom_bounds_subst, cod_subst, <- h5, substList_bind_comp hlen hcl.1, substList_app, hv]
       . have e := congrArg (Ty.substList s.ty) h6
         rw [substList_bind_comp hlen hcl.2, substList_app, hv] at e
         rw [dom_bounds_subst, e, Ty.substList, params_T_subst]
-    | @loc C Fs C0 Ts0 es Ms _ _ _ _ _ _ Do T0o pso eo h1 h2 h3 h4 h5 h6 =>
+    | @newLocal C Fs C0 Ts0 es Ms _ _ _ _ _ _ Do T0o pso eo h1 h2 h3 h4 h5 h6 =>
       have hcl := declMeth_closed hwf hok h1 h2
       have hfst : forall X, List.Mem X (domF Fs ++ dom Do) ->
           List.Mem X ((bindF Fs Us ++ bind Do (vars (dom Dp))).map Prod.fst) := by
@@ -218,7 +218,7 @@ theorem OverrideOkM.gsubst {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {s : 
         . cases bindF_lookup_some h3 hX with
           | intro U hU => exact Or.inl (lookup_some_mem_dom hU)
         . exact Or.inr (by rw [bind_fst (by simp [h4, vars, dom])]; exact hX)
-      refine OverrideOkM.loc h1 h2 (by rw [substList_length, h3])
+      refine OverrideOkM.newLocal h1 h2 (by rw [substList_length, h3])
         (by simp only [Bounds.subst, List.length_map]; exact h4) ?_ ?_
       . rw [dom_bounds_subst, cod_subst, <- h5, substList_subst_gen (fun X hX => hfst X (hcl.1 X hX)),
           List.map_append, <- bindF_map, <- bind_map, <- substList_eq_map, <- substList_eq_map, hv]
@@ -269,8 +269,8 @@ theorem Pairing.gsub {s : GSubst} {Delta : Bounds} {Fs : List Funnel} {Ts : List
     rcases ih he.2 with ⟨Ts3, hp⟩
     exact Exists.intro _ (Pairing.ground hp)
 
-theorem innerG_gsub_sub {s : GSubst} {gamma : Gamma} {Fs : List Funnel} {C : ClassName} :
-    Sub1 (gsubG s (innerG gamma Fs C)) (innerG (gsubG s gamma) (Fs.map (Funnel.gsubst s)) C) := by
+theorem innerG_gsub_sub {s : GSubst} {Gamma : TypeEnv} {Fs : List Funnel} {C : ClassName} :
+    Sub1 (gsubG s (innerG Gamma Fs C)) (innerG (gsubG s Gamma) (Fs.map (Funnel.gsubst s)) C) := by
   intro y hy
   simp only [innerG, gsubG, withoutThis, restrict, listMem_iff, List.map_append, List.mem_append, List.mem_map,
     List.mem_filter, List.map_cons, List.map_nil, List.mem_singleton] at hy |-
@@ -293,9 +293,9 @@ theorem innerG_gsub_sub {s : GSubst} {gamma : Gamma} {Fs : List Funnel} {C : Cla
 
 theorem Consistent.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {s : GSubst}
     {C : ClassName} {Fs : List Funnel} {C0 : ClassName} {Ts : List Ty} {es es' : List Expr} {Ms : List Method}
-    (h : Consistent d (.loc C Fs C0 Ts es Ms))
-    (hdis : forall M, List.Mem M Ms -> forall X, List.Mem X (dom M.bounds) -> Not (List.Mem X (s.map Prod.fst))) :
-    Consistent d (.loc C (Fs.map (Funnel.gsubst s)) C0 (Ty.substList s.ty Ts) es' (Method.gsubstList s Ms)) := by
+    (h : Consistent d (.newLocal C Fs C0 Ts es Ms))
+    (hdis : forall M, List.Mem M Ms -> forall X, List.Mem X (dom M.Delta) -> Not (List.Mem X (s.map Prod.fst))) :
+    Consistent d (.newLocal C (Fs.map (Funnel.gsubst s)) C0 (Ty.substList s.ty Ts) es' (Method.gsubstList s Ms)) := by
   rcases consistent_unfold h with ⟨Fs', Ts', es'', Ms'', h⟩
   have hcl := hd.supL _ _ _ _ _ _ h.1
   refine Exists.intro Fs' (Exists.intro Ts' (Exists.intro es'' (Exists.intro Ms'' (And.intro h.1
@@ -311,7 +311,7 @@ theorem Consistent.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
 
 theorem OverrideOk.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {s : GSubst}
     {Delta Delta2 : Bounds} {C0 : ClassName} {Ts : List Ty} {Ms : List Method} (h : OverrideOk d Delta (.cls C0 Ts) Ms)
-    (hdis : forall M, List.Mem M Ms -> forall X, List.Mem X (dom M.bounds) -> Not (List.Mem X (s.map Prod.fst))) :
+    (hdis : forall M, List.Mem M Ms -> forall X, List.Mem X (dom M.Delta) -> Not (List.Mem X (s.map Prod.fst))) :
     OverrideOk d Delta2 (.cls C0 (Ty.substList s.ty Ts)) (Method.gsubstList s Ms) := by
   intro M' C' Ts' hM' hs
   rcases Method.gsubstList_mem hM' with ⟨M, hM⟩
@@ -326,30 +326,30 @@ theorem OverrideOk.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
   rw [e.2]
   exact OverrideOkM.gsubst hwf hok (h M C' U0 hM.1 h0.2.1) (hdis M hM.1)
 
-theorem dom_mem_tbinders {X : TVarName} : forall {M : Method}, List.Mem X (dom M.bounds) -> List.Mem X M.tbinders
+theorem dom_mem_tbinders {X : TVarName} : forall {M : Method}, List.Mem X (dom M.Delta) -> List.Mem X M.tbinders
   | .mk _ _ _ _ _, h => by
     simp only [Method.tbinders, listMem_iff, List.mem_append]
     exact Or.inl h
 
 theorem Typing.gsub_newLocal {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {Delta : Bounds}
-    {gamma : Gamma} {C : ClassName} {Fs : List Funnel} {C0 : ClassName} {Ts : List Ty} {es : List Expr}
+    {Gamma : TypeEnv} {C : ClassName} {Fs : List Funnel} {C0 : ClassName} {Ts : List Ty} {es : List Expr}
     {Ms : List Method} {Delta' : Bounds} {Ts'' : List Ty} {T'' : Ty} {s : GSubst} {Xs : List TVarName}
     {xs : List VarName}
-    (h1 : Consistent d (.loc C Fs C0 Ts es Ms)) (h2 : Pairing Delta Fs (abs Fs) Delta' Ts'')
+    (h1 : Consistent d (.newLocal C Fs C0 Ts es Ms)) (h2 : Pairing Delta Fs (abs Fs) Delta' Ts'')
     (h3 : forall X, List.Mem X (Ty.ftvList (cod Delta')) -> List.Mem X (dom Delta'))
     (h4 : Kind d Delta' (.cls C (abs Fs))) (h5 : Kind d Delta' (.cls C0 Ts))
     (h8 : OverrideOk d Delta' (.cls C0 Ts) Ms)
-    (ih6 : Typing d (gsubB s Delta) (gsubG s gamma) ((Expr.new C0 Ts es).gsubst s) (T''.subst s.ty))
-    (ih7 : forall M, List.Mem M Ms -> MethodOk d (gsubB s Delta') (gsubG s (innerG gamma Fs C)) (M.gsubst s))
+    (ih6 : Typing d (gsubB s Delta) (gsubG s Gamma) ((Expr.new C0 Ts es).gsubst s) (T''.subst s.ty))
+    (ih7 : forall M, List.Mem M Ms -> MethodOk d (gsubB s Delta') (gsubG s (innerG Gamma Fs C)) (M.gsubst s))
     (hg : GOk d Delta s)
     (hdis : forall X, List.Mem X (Expr.newLocal C Fs C0 Ts es Ms).tbinders -> Not (List.Mem X (s.map Prod.fst)))
-    (n1 : (gdom gamma).Nodup) (sc : Sub1 (gdom gamma) xs) (hn : (Expr.newLocal C Fs C0 Ts es Ms).noShadow Xs xs = true)
+    (n1 : (gdom Gamma).Nodup) (sc : Sub1 (gdom Gamma) xs) (hn : (Expr.newLocal C Fs C0 Ts es Ms).noShadow Xs xs = true)
     (ht : NoThis (Expr.newLocal C Fs C0 Ts es Ms)) (hu : (Expr.newLocal C Fs C0 Ts es Ms).uniq) :
-    Typing d (gsubB s Delta) (gsubG s gamma) ((Expr.newLocal C Fs C0 Ts es Ms).gsubst s)
+    Typing d (gsubB s Delta) (gsubG s Gamma) ((Expr.newLocal C Fs C0 Ts es Ms).gsubst s)
       ((Ty.cls C (abs Fs)).subst s.ty) := by
   simp only [Expr.noShadow, Bool.and_eq_true, Expr.tbinders, listMem_iff, List.mem_append, NoThis, Expr.vbinders,
     not_or, Expr.uniq] at hn hdis ht hu
-  have hdisM : forall M, List.Mem M Ms -> forall X, List.Mem X (dom M.bounds) -> Not (List.Mem X (s.map Prod.fst)) :=
+  have hdisM : forall M, List.Mem M Ms -> forall X, List.Mem X (dom M.Delta) -> Not (List.Mem X (s.map Prod.fst)) :=
     fun M hM X hX => hdis X (Or.inr (Method.mem_tbindersList hM (dom_mem_tbinders hX)))
   have hg' := hg.mono h2.sub
   have sc' := hg'.substCtx
@@ -394,14 +394,14 @@ theorem Typing.gsub_newLocal {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd
 
 mutual
 theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) :
-    forall {Delta gamma e T}, Typing d Delta gamma e T ->
+    forall {Delta Gamma e T}, Typing d Delta Gamma e T ->
     forall {s Xs xs}, GOk d Delta s -> (forall X, List.Mem X e.tbinders -> Not (List.Mem X (s.map Prod.fst))) ->
-    (gdom gamma).Nodup -> Sub1 (gdom gamma) xs -> e.noShadow Xs xs = true -> NoThis e -> e.uniq ->
-    Typing d (gsubB s Delta) (gsubG s gamma) (e.gsubst s) (T.subst s.ty)
+    (gdom Gamma).Nodup -> Sub1 (gdom Gamma) xs -> e.noShadow Xs xs = true -> NoThis e -> e.uniq ->
+    Typing d (gsubB s Delta) (gsubG s Gamma) (e.gsubst s) (T.subst s.ty)
   | _, _, _, _, .subs h hk hs, _, _, _, hg, hdis, n1, sc, hn, ht, hu =>
     Typing.subs (Typing.gsub hwf hok hd h hg hdis n1 sc hn ht hu) (Kind.subst hd hg.substCtx.sub hg.substCtx.kind hk)
       (Sub.subst hd hg.substCtx.sub hs)
-  | _, _, _, _, .var hl, _, _, _, _, _, _, _, _, _, _ => Typing.var (Gamma.lookup_gsubG hl)
+  | _, _, _, _, .var hl, _, _, _, _, _, _, _, _, _, _ => Typing.var (TypeEnv.lookup_gsubG hl)
   | _, _, _, _, .newObject, _, _, _, _, _, _, _, _, _, _ => Typing.newObject
   | _, _, _, _, .declField h1 h2 h3 h4, s, _, _, hg, hdis, n1, sc, hn, ht, hu => by
     have ih := Typing.gsub hwf hok hd h1 hg hdis n1 sc hn ht hu
@@ -430,7 +430,7 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
       n1 sc (by simpa [Expr.noShadowList, Expr.noShadow] using hn)
       (by simpa [NoThis, Expr.vbindersList, Expr.vbinders] using ht)
       (by simpa [Expr.uniqList, Expr.uniq] using hu)
-    have hlen : (Ts0 ++ Ts1).length = (D0.bounds ++ Delta1).length := by simp [h4, h5]
+    have hlen : (Ts0 ++ Ts1).length = (D0.Delta ++ Delta1).length := by simp [h4, h5]
     have e6 := congrArg (Ty.substList s.ty) h6
     rw [substList_bind_comp hlen hcl.1, substList_app] at e6
     have hs1 := Sub.subst hd hg.substCtx.sub h1
@@ -453,7 +453,7 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
     have hk2 := Kind.subst hd hg.substCtx.sub hg.substCtx.kind h2
     simp only [Expr.gsubst, Expr.gsubstList_append, Ty.subst]
     exact Typing.newTop h1 hk2 (by rw [substList_length, h3]) ih1 ih2
-  | _, gamma, _, _, .newLocal (C := C) (Fs := Fs) (Ms := Ms) (Delta' := Dp) h1 h2 h3 h4 h5 h6 h7 h8, s, Xs, xs,
+  | _, Gamma, _, _, .newLocal (C := C) (Fs := Fs) (Ms := Ms) (Delta' := Dp) h1 h2 h3 h4 h5 h6 h7 h8, s, Xs, xs,
       hg, hdis, n1, sc, hn, ht, hu => by
     have hn0 := hn
     have hdis0 := hdis
@@ -469,7 +469,7 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
     exact MethodOk.gsub hwf hok hd (h7 M hM) (hg.mono h2.sub)
       (fun X hX => hdis X (Or.inr (Method.mem_tbindersList hM hX))) (innerG_nodup n1 _ _) (innerG_dom sc _ _)
       (Method.noShadowList_mem hM hn.2) (fun h => ht.2 (Method.mem_vbindersList hM h)) (Method.uniqList_mem hM hu.2)
-  | Delta, gamma, _, _, .ifInstanceof (e0 := e0) (x := x) h0 hk hc h1 h2, s, _, xs, hg, hdis, n1, sc, hn, ht, hu => by
+  | Delta, Gamma, _, _, .ifInstanceof (e0 := e0) (x := x) h0 hk hc h1 h2, s, _, xs, hg, hdis, n1, sc, hn, ht, hu => by
     simp only [Expr.noShadow, Bool.and_eq_true, Bool.not_eq_true', Expr.tbinders, listMem_iff, List.mem_append,
       NoThis, Expr.vbinders, List.mem_cons, not_or, Expr.uniq] at hn hdis ht hu
     have hxs : Not (List.Mem x xs) := by have := hn.1.1.2; simp at this; exact this
@@ -481,18 +481,18 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
     have ih2 := Typing.gsub hwf hok hd h2 hg (fun X hX => hdis X (Or.inr hX)) n1 sc hn.2 ht.2 hu.2.2
     simp only [gsubG, List.map_append, List.map_cons, List.map_nil, VarDecl.subst] at ih1
     rcases Cast.gsub hd hg.substCtx hc with ⟨T1, hT1⟩
-    have ty0 : Typing d (gsubB s Delta) (gsubG s gamma) (Expr.gsubst s e0) T1 := by
+    have ty0 : Typing d (gsubB s Delta) (gsubG s Gamma) (Expr.gsubst s e0) T1 := by
       rcases hT1.2.2 with e | hk1
       . rw [e]; exact ih0
       . exact Typing.subs ih0 hk1 hT1.1
     exact Typing.ifInstanceof ty0 (Kind.subst hd hg.substCtx.sub hg.substCtx.kind hk) hT1.2.1 ih1 ih2
 theorem TypingSeq.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) :
-    forall {Delta gamma es Ts}, TypingSeq d Delta gamma es Ts ->
+    forall {Delta Gamma es Ts}, TypingSeq d Delta Gamma es Ts ->
     forall {s Xs xs}, GOk d Delta s ->
     (forall X, List.Mem X (Expr.tbindersList es) -> Not (List.Mem X (s.map Prod.fst))) ->
-    (gdom gamma).Nodup -> Sub1 (gdom gamma) xs -> Expr.noShadowList Xs xs es = true ->
+    (gdom Gamma).Nodup -> Sub1 (gdom Gamma) xs -> Expr.noShadowList Xs xs es = true ->
     Not (List.Mem this (Expr.vbindersList es)) -> Expr.uniqList es ->
-    TypingSeq d (gsubB s Delta) (gsubG s gamma) (Expr.gsubstList s es) (Ty.substList s.ty Ts)
+    TypingSeq d (gsubB s Delta) (gsubG s Gamma) (Expr.gsubstList s es) (Ty.substList s.ty Ts)
   | _, _, _, _, .nil, _, _, _, _, _, _, _, _, _, _ => TypingSeq.nil
   | _, _, _, _, .cons h hs, _, _, _, hg, hdis, n1, sc, hn, ht, hu => by
     simp only [Expr.noShadowList, Bool.and_eq_true, Expr.tbindersList, listMem_iff, List.mem_append,
@@ -500,11 +500,11 @@ theorem TypingSeq.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Dec
     exact TypingSeq.cons (Typing.gsub hwf hok hd h hg (fun X hX => hdis X (Or.inl hX)) n1 sc hn.1 ht.1 hu.1)
       (TypingSeq.gsub hwf hok hd hs hg (fun X hX => hdis X (Or.inr hX)) n1 sc hn.2 ht.2 hu.2)
 theorem MethodOk.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) :
-    forall {Delta gamma M}, MethodOk d Delta gamma M ->
+    forall {Delta Gamma M}, MethodOk d Delta Gamma M ->
     forall {s Xs xs}, GOk d Delta s -> (forall X, List.Mem X M.tbinders -> Not (List.Mem X (s.map Prod.fst))) ->
-    (gdom gamma).Nodup -> Sub1 (gdom gamma) (this :: xs) -> M.noShadow Xs xs = true -> NoThisM M -> M.uniq ->
-    MethodOk d (gsubB s Delta) (gsubG s gamma) (M.gsubst s)
-  | _, gamma, _, .methodOk (Delta' := Dm) (ps := ps) h1 h2 h3, s, Xs, xs, hg, hdis, n1, sc, hn, ht, hu => by
+    (gdom Gamma).Nodup -> Sub1 (gdom Gamma) (this :: xs) -> M.noShadow Xs xs = true -> NoThisM M -> M.uniq ->
+    MethodOk d (gsubB s Delta) (gsubG s Gamma) (M.gsubst s)
+  | _, Gamma, _, .methodOk (Delta' := Dm) (ps := ps) h1 h2 h3, s, Xs, xs, hg, hdis, n1, sc, hn, ht, hu => by
     simp only [Method.noShadow, Bool.and_eq_true, Method.tbinders, listMem_iff, List.mem_append, NoThisM,
       Method.vbinders, not_or, Method.uniq] at hn hdis ht hu
     have hdm : forall b, List.Mem b Dm -> Not (List.Mem b.X (s.map Prod.fst)) :=

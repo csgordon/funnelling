@@ -286,10 +286,10 @@ end
 theorem mem_mid {A : Type} {l r : List A} {x : A} : List.Mem x (l ++ x :: r) :=
   List.mem_append_right _ (List.Mem.head _)
 
-theorem ECtx.locals_plug {a : Expr} {k : K} (hk : List.Mem k a.locals) :
-    forall (E : ECtx), List.Mem k (E.plug a).locals := by
+theorem EvalCtx.locals_plug {a : Expr} {K : ClassDecl} (hk : List.Mem K a.locals) :
+    forall (E : EvalCtx), List.Mem K (E.plug a).locals := by
   intro E
-  induction E <;> simp only [ECtx.plug, Expr.locals]
+  induction E <;> simp only [EvalCtx.plug, Expr.locals]
   case hole => exact hk
   all_goals
     rename_i ih
@@ -298,10 +298,10 @@ theorem ECtx.locals_plug {a : Expr} {k : K} (hk : List.Mem k a.locals) :
           | exact List.Mem.tail _ (List.mem_append_left _ (Expr.mem_localsList mem_mid ih))
           | exact List.mem_append_left _ (List.mem_append_left _ ih)
 
-theorem ECtx.ifVars_plug {a : Expr} {x : VarName} (hk : List.Mem x a.ifVars) :
-    forall (E : ECtx), List.Mem x (E.plug a).ifVars := by
+theorem EvalCtx.ifVars_plug {a : Expr} {x : VarName} (hk : List.Mem x a.ifVars) :
+    forall (E : EvalCtx), List.Mem x (E.plug a).ifVars := by
   intro E
-  induction E <;> simp only [ECtx.plug, Expr.ifVars]
+  induction E <;> simp only [EvalCtx.plug, Expr.ifVars]
   case hole => exact hk
   all_goals
     rename_i ih
@@ -310,20 +310,20 @@ theorem ECtx.ifVars_plug {a : Expr} {x : VarName} (hk : List.Mem x a.ifVars) :
           | exact List.mem_append_left _ (Expr.mem_ifVarsList mem_mid ih)
           | exact List.Mem.tail _ (List.mem_append_left _ (List.mem_append_left _ ih))
 
-theorem ECtx.noShadow_plug {a : Expr} {Xs : List TVarName} {xs : List VarName} :
-    forall (E : ECtx), (E.plug a).noShadow Xs xs = true -> a.noShadow Xs xs = true := by
+theorem EvalCtx.noShadow_plug {a : Expr} {Xs : List TVarName} {xs : List VarName} :
+    forall (E : EvalCtx), (E.plug a).noShadow Xs xs = true -> a.noShadow Xs xs = true := by
   intro E
-  induction E <;> intro h <;> simp only [ECtx.plug, Expr.noShadow, Bool.and_eq_true] at h
+  induction E <;> intro h <;> simp only [EvalCtx.plug, Expr.noShadow, Bool.and_eq_true] at h
   case hole => exact h
   all_goals
     rename_i ih
     first | exact ih h | exact ih h.1 | exact ih h.1.1.1 | exact ih (Expr.noShadowList_mem mem_mid h)
           | exact ih (Expr.noShadowList_mem mem_mid h.1) | exact ih (Expr.noShadowList_mem mem_mid h.2)
 
-theorem ECtx.closed_plug {a : Expr} {Xs : List TVarName} {xs : List VarName} :
-    forall (E : ECtx), (E.plug a).closed Xs xs = true -> a.closed Xs xs = true := by
+theorem EvalCtx.closed_plug {a : Expr} {Xs : List TVarName} {xs : List VarName} :
+    forall (E : EvalCtx), (E.plug a).closed Xs xs = true -> a.closed Xs xs = true := by
   intro E
-  induction E <;> intro h <;> simp only [ECtx.plug, Expr.closed, Bool.and_eq_true] at h
+  induction E <;> intro h <;> simp only [EvalCtx.plug, Expr.closed, Bool.and_eq_true] at h
   case hole => exact h
   all_goals
     rename_i ih
@@ -334,33 +334,33 @@ theorem WFExpr.noShadow {e : Expr} (h : WFExpr e) : e.noShadow [] [] = true := h
 
 theorem WFExpr.closed {e : Expr} (h : WFExpr e) : e.closed [] [] = true := h.2.2.2.2.2.2
 
-theorem methods_sub {e e' : Expr} (h : forall k, List.Mem k e.locals -> List.Mem k e'.locals) :
+theorem methods_sub {e e' : Expr} (h : forall K, List.Mem K e.locals -> List.Mem K e'.locals) :
     forall M, List.Mem M e.methods -> List.Mem M e'.methods := by
   intro M hM
   simp only [Expr.methods, listMem_iff, List.mem_flatMap] at hM |-
-  rcases hM with ⟨k, hk⟩; exact Exists.intro k (And.intro (h k hk.1) hk.2)
+  rcases hM with ⟨K, hk⟩; exact Exists.intro K (And.intro (h K hk.1) hk.2)
 
-theorem WFExpr.sub {e e' : Expr} (h : WFExpr e') (hl : forall k, List.Mem k e.locals -> List.Mem k e'.locals)
+theorem WFExpr.sub {e e' : Expr} (h : WFExpr e') (hl : forall K, List.Mem K e.locals -> List.Mem K e'.locals)
     (hi : forall x, List.Mem x e.ifVars -> List.Mem x e'.ifVars) (hn : e.noShadow [] [] = true)
     (hc : e.closed [] [] = true) : WFExpr e := by
   have hm := methods_sub hl
-  refine And.intro (fun k hk => h.1 k (hl k hk)) (And.intro (fun M hM => h.2.1 M (hm M hM))
-    (And.intro ?_ (And.intro (fun k hk => h.2.2.2.1 k (hl k hk)) (And.intro hn (And.intro ?_ hc)))))
+  refine And.intro (fun K hk => h.1 K (hl K hk)) (And.intro (fun M hM => h.2.1 M (hm M hM))
+    (And.intro ?_ (And.intro (fun K hk => h.2.2.2.1 K (hl K hk)) (And.intro hn (And.intro ?_ hc)))))
   . intro D hD
     simp only [listMem_iff, List.mem_map] at hD
     cases hD with
     | intro M hM => exact h.2.2.1 D (by simp only [listMem_iff, List.mem_map]; exact Exists.intro M (And.intro (hm M hM.1) hM.2))
   . exact And.intro (fun M hM => h.2.2.2.2.2.1.1 M (hm M hM)) (fun ht => h.2.2.2.2.2.1.2 (hi this ht))
 
-theorem WFExpr.plug {E : ECtx} {a : Expr} (h : WFExpr (E.plug a)) : WFExpr a :=
-  WFExpr.sub h (fun _ hk => ECtx.locals_plug hk E) (fun _ hx => ECtx.ifVars_plug hx E)
-    (ECtx.noShadow_plug E h.noShadow) (ECtx.closed_plug E h.closed)
+theorem WFExpr.plug {E : EvalCtx} {a : Expr} (h : WFExpr (E.plug a)) : WFExpr a :=
+  WFExpr.sub h (fun _ hk => EvalCtx.locals_plug hk E) (fun _ hx => EvalCtx.ifVars_plug hx E)
+    (EvalCtx.noShadow_plug E h.noShadow) (EvalCtx.closed_plug E h.closed)
 
 theorem RenEs.mid {a b : Expr} (h : RenE [] [] a b) : forall (l r : List Expr), RenEs [] [] (l ++ a :: r) (l ++ b :: r)
   | [], r => RenEs.cons h (RenEs.refl (by intro p hp; cases hp) (by intro p hp; cases hp) r)
   | e :: l, r => RenEs.cons (RenE.refl (by intro p hp; cases hp) (by intro p hp; cases hp) e) (RenEs.mid h l r)
 
-theorem RenE.plug {a b : Expr} (h : RenE [] [] a b) : forall (E : ECtx), RenE [] [] (E.plug a) (E.plug b)
+theorem RenE.plug {a b : Expr} (h : RenE [] [] a b) : forall (E : EvalCtx), RenE [] [] (E.plug a) (E.plug b)
   | .hole => h
   | .callRecv E Gs m es => by
     have := RenE.call (m := m) (Ts := GTy.tys Gs) (RenE.plug h E) (RenEs.refl (by intro p hp; cases hp) (by intro p hp; cases hp) es)
@@ -381,7 +381,7 @@ theorem RenE.plug {a b : Expr} (h : RenE [] [] a b) : forall (E : ECtx), RenE []
   | .newArg C Gs vs E es => by
     have := RenE.new (C := C) (Ts := GTy.tys Gs) (RenEs.mid (RenE.plug h E) (Value.exprs vs) es)
     rwa [Ty.renList_idRen (by intro p hp; cases hp)] at this
-  | .localArg C Gs C' Gs' vs E es Ms => by
+  | .newLocalArg C Gs C' Gs' vs E es Ms => by
     have := RenE.newLocal (C := C) (Fs := Gs.map Funnel.ground) (C' := C') (Ts := GTy.tys Gs')
       (RenEs.mid (RenE.plug h E) (Value.exprs vs) es) (RenMs.refl (by intro p hp; cases hp) (by intro p hp; cases hp) Ms)
     rwa [Ty.renList_idRen (by intro p hp; cases hp), Funnels.ren_id (fun X _ => rn_id (by intro p hp; cases hp) X)] at this
@@ -391,21 +391,21 @@ theorem RenE.plug {a b : Expr} (h : RenE [] [] a b) : forall (E : ECtx), RenE []
       (RenE.refl (by intro p hp; cases hp) (by intro p hp; cases hp) e2)
     rwa [Ty.ren_idRen (by intro p hp; cases hp)] at this
 
-theorem Fresh.plug {a b : Expr} (h : Fresh a b) (E : ECtx) : Fresh (E.plug a) (E.plug b) :=
+theorem Fresh.plug {a b : Expr} (h : Fresh a b) (E : EvalCtx) : Fresh (E.plug a) (E.plug b) :=
   And.intro (RenE.plug h.1 E) (RenE.plug h.2 E)
 
 abbrev MOk (M : Method) : Prop :=
-  (dom M.bounds).Nodup /\ (M.params.map VarDecl.x).Nodup /\ Not (List.Mem this (M.params.map VarDecl.x))
+  (dom M.Delta).Nodup /\ (M.params.map VarDecl.x).Nodup /\ Not (List.Mem this (M.params.map VarDecl.x))
 
-abbrev LocOk (ks : List K) : Prop := forall k, List.Mem k ks -> forall M, List.Mem M k.Ms -> MOk M
+abbrev LocOk (Ks : List ClassDecl) : Prop := forall K, List.Mem K Ks -> forall M, List.Mem M K.Ms -> MOk M
 
-theorem LocOk.sub {ks ks' : List K} (h : LocOk ks') (hs : forall k, List.Mem k ks -> List.Mem k ks') : LocOk ks :=
-  fun k hk => h k (hs k hk)
+theorem LocOk.sub {Ks Ks' : List ClassDecl} (h : LocOk Ks') (hs : forall K, List.Mem K Ks -> List.Mem K Ks') : LocOk Ks :=
+  fun K hk => h K (hs K hk)
 
-theorem LocOk.append_left {ks ks' : List K} (h : LocOk (ks ++ ks')) : LocOk ks :=
+theorem LocOk.append_left {Ks Ks' : List ClassDecl} (h : LocOk (Ks ++ Ks')) : LocOk Ks :=
   h.sub (fun _ hk => List.mem_append_left _ hk)
 
-theorem LocOk.append_right {ks ks' : List K} (h : LocOk (ks ++ ks')) : LocOk ks' :=
+theorem LocOk.append_right {Ks Ks' : List ClassDecl} (h : LocOk (Ks ++ Ks')) : LocOk Ks' :=
   h.sub (fun _ hk => List.mem_append_right _ hk)
 
 mutual
@@ -501,12 +501,12 @@ theorem Method.noThisList_of : forall {Ms : List Method}, (forall M, List.Mem M 
 end
 
 theorem WFExpr.locOk {e : Expr} (h : WFExpr e) : LocOk e.locals := by
-  intro k hk M hM
+  intro K hk M hM
   have hm : List.Mem M e.methods := by
     simp only [Expr.methods, listMem_iff, List.mem_flatMap]
-    exact Exists.intro k (And.intro hk hM)
+    exact Exists.intro K (And.intro hk hM)
   refine And.intro ?_ (And.intro (h.2.1 M hm) (h.2.2.2.2.2.1.1 M hm))
-  exact h.2.2.1 M.bounds (by simp only [listMem_iff, List.mem_map]; exact Exists.intro M (And.intro hm rfl))
+  exact h.2.2.1 M.Delta (by simp only [listMem_iff, List.mem_map]; exact Exists.intro M (And.intro hm rfl))
 
 theorem WFExpr.uniq {e : Expr} (h : WFExpr e) : e.uniq := Expr.uniq_of h.locOk
 
@@ -524,30 +524,30 @@ theorem WFExpr.local_method {C C' : ClassName} {Gs Gs'' : List GTy} {vs0 : List 
   exact ⟨by simpa using Method.noShadowList_mem hM hn.2, fun h => ht.2 (Method.mem_vbindersList hM h),
     Method.uniqList_mem hM hu.2, Method.closedList_mem hM hc.2⟩
 
-theorem classes_mem_dec {d : Decls} {D : Dec} (h : List.Mem D d) : List.Mem (K.dec D) (classes d) := by
+theorem classes_mem_dec {d : Decls} {D : Dec} (h : List.Mem D d) : List.Mem (ClassDecl.dec D) (classes d) := by
   simp only [classes, listMem_iff, List.mem_flatMap]
   exact Exists.intro D (And.intro h (List.Mem.head _))
 
-theorem classes_mem_loc {d : Decls} {D : Dec} (h : List.Mem D d) {k : K} (hk : List.Mem k (Method.localsList D.Ms)) :
-    List.Mem k (classes d) := by
+theorem classes_mem_loc {d : Decls} {D : Dec} (h : List.Mem D d) {K : ClassDecl} (hk : List.Mem K (Method.localsList D.Ms)) :
+    List.Mem K (classes d) := by
   simp only [classes, listMem_iff, List.mem_flatMap]
   exact Exists.intro D (And.intro h (List.Mem.tail _ hk))
 
 theorem WFDecls.locOk {d : Decls} (h : WFDecls d) : LocOk (classes d) := by
-  intro k hk M hM
+  intro K hk M hM
   have hm : List.Mem M d.methods := by
     simp only [Decls.methods, listMem_iff, List.mem_flatMap]
-    exact Exists.intro k (And.intro hk hM)
+    exact Exists.intro K (And.intro hk hM)
   refine And.intro ?_ (And.intro (h.2.2.2.1 M hm) (h.2.2.2.2.2.2.2.1.1 M hm))
-  exact h.2.2.2.2.1 M.bounds (by
+  exact h.2.2.2.2.1 M.Delta (by
     simp only [listMem_iff, List.mem_append, List.mem_map]
     exact Or.inr (Exists.intro M (And.intro hm rfl)))
 
 theorem WFDecls.method {d : Decls} (h : WFDecls d) {D : Dec} (hD : List.Mem D d) {M : Method}
-    (hM : List.Mem M D.Ms) : M.uniq /\ NoThisM M /\ Method.noShadow (dom D.bounds) [] M = true := by
+    (hM : List.Mem M D.Ms) : M.uniq /\ NoThisM M /\ Method.noShadow (dom D.Delta) [] M = true := by
   have hl := h.locOk
-  have hmo : MOk M := hl (K.dec D) (classes_mem_dec hD) M hM
-  have hlm : LocOk M.locals := hl.sub (fun k hk => classes_mem_loc hD (Method.mem_localsList hM hk))
+  have hmo : MOk M := hl (ClassDecl.dec D) (classes_mem_dec hD) M hM
+  have hlm : LocOk M.locals := hl.sub (fun K hk => classes_mem_loc hD (Method.mem_localsList hM hk))
   have hi : Not (List.Mem this M.ifVars) := by
     intro ht
     apply h.2.2.2.2.2.2.2.1.2

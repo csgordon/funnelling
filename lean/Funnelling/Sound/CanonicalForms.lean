@@ -5,7 +5,7 @@ open Funnelling.SoundSimp
 namespace Funnelling
 
 theorem object_declared {d : Decls} (hwf : WFDecls d) : exists D, Declared d (.dec D) /\ D.C = Object /\
-    D.bounds = [] /\ D.C' = Object /\ D.Ts = [] /\ D.Ms = [] /\ D.Ss = [] := by
+    D.Delta = [] /\ D.C' = Object /\ D.Ts = [] /\ D.Ms = [] /\ D.Ss = [] := by
   rcases hwf.2.2.2.2.2.2.2.2.1.1 with ⟨D, hD⟩
   exact Exists.intro D (And.intro (Declared.dec hD.1) (And.intro hD.2.1
     (And.intro (by simpa using hD.2.2.1) (And.intro hD.2.2.2.1 (And.intro (by simpa using hD.2.2.2.2.1)
@@ -13,7 +13,7 @@ theorem object_declared {d : Decls} (hwf : WFDecls d) : exists D, Declared d (.d
 
 theorem kind_object {d : Decls} (hwf : WFDecls d) {Delta : Bounds} : Kind d Delta (.cls Object []) := by
   rcases object_declared hwf with ⟨D, hD⟩
-  have hs : Scope d (.cls D.C []) D.bounds [] := Scope.dec hD.1
+  have hs : Scope d (.cls D.C []) D.Delta [] := Scope.dec hD.1
   rw [hD.2.1, hD.2.2.1] at hs
   exact Kind.wfClass hs (fun _ h => by cases h) rfl Seq2.nil
 
@@ -57,7 +57,7 @@ theorem Sub.top_target {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} 
     exact Exists.intro D (And.intro hD he.1)
   | @subInherit D' Ts0' T' hD' hl _ ih =>
     rcases Declared.super hwf hD' with ⟨D'', hD''⟩
-    exact ih hD''.1 (Ts := Ty.substList (bind D'.bounds Ts0') D'.Ts) (by simp only [Ty.subst]; rw [hD''.2]; rfl) ht
+    exact ih hD''.1 (Ts := Ty.substList (bind D'.Delta Ts0') D'.Ts) (by simp only [Ty.subst]; rw [hD''.2]; rfl) ht
   | subInheritLocal hD' _ _ =>
     simp only [Ty.cls.injEq] at he
     exact absurd (Declared.dec_loc hwf hD hD' he.1) id
@@ -106,16 +106,16 @@ theorem bounds_sat {d : Decls} {Delta Dl : Bounds} {Ts : List Ty} (hn : (dom Dl)
 
 theorem kind_dec_args {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : Declared d (.dec D))
     {Ts : List Ty} (h : Kind d Delta (.cls D.C Ts)) :
-    Ts.length = D.bounds.length /\ forall b, List.Mem b D.bounds ->
-      Sub d Delta ((Ty.var b.X).subst (bind D.bounds Ts)) (b.T.subst (bind D.bounds Ts)) /\
-      Kind d Delta ((Ty.var b.X).subst (bind D.bounds Ts)) := by
+    Ts.length = D.Delta.length /\ forall b, List.Mem b D.Delta ->
+      Sub d Delta ((Ty.var b.X).subst (bind D.Delta Ts)) (b.T.subst (bind D.Delta Ts)) /\
+      Kind d Delta ((Ty.var b.X).subst (bind D.Delta Ts)) := by
   cases h with
   | wfClass h1 h2 h3 h4 =>
     have e := Scope.dec_eq hwf hD h1
     have e1 := e.1
     have e2 := e.2
     subst e1 e2
-    have hn : (dom D.bounds).Nodup := hwf.2.2.2.2.1 D.bounds (by
+    have hn : (dom D.Delta).Nodup := hwf.2.2.2.2.1 D.Delta (by
       simp only [listMem_iff, List.mem_append, List.mem_map]
       exact Or.inl (Exists.intro D (And.intro hD.dec_mem rfl)))
     exact And.intro h3 (bounds_sat hn h3 h4 h2)

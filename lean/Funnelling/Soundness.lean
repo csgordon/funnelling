@@ -3,7 +3,7 @@ import Funnelling.Sound.Soundness
 namespace Funnelling
 
 theorem typeSoundness {d e0 e T} (hwf : WFDecls d) (hok : DeclsOk d) (he0 : WFExpr e0)
-    (ht : Typing d [] [] e0 T) (hs : Steps d e0 e) :
+    (ht : Typing d [] [] e0 T) (hs : ReducesStar d e0 e) :
     Typing d [] [] e T /\ (IsValue e \/ exists e', Reduces d e e') := by
   induction hs with
   | refl => exact And.intro ht (progress hwf hok he0 ht)

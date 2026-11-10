@@ -20,17 +20,17 @@ def vA : Value := .new (cn "A") [] []
 def vB : Value := .new (cn "B") [] []
 def thisE : Expr := .var this
 
-def decObject : Dec := { C := Object, bounds := [], C' := Object, Ts := [], Ms := [], Ss := [] }
-def decA : Dec := { C := cn "A", bounds := [], C' := Object, Ts := [], Ms := [], Ss := [] }
+def decObject : Dec := { C := Object, Delta := [], C' := Object, Ts := [], Ms := [], Ss := [] }
+def decA : Dec := { C := cn "A", Delta := [], C' := Object, Ts := [], Ms := [], Ss := [] }
 def decB : Dec :=
-  { C := cn "B", bounds := [], C' := Object, Ts := [], Ms := [.mk [] tB (mn "onlyB") [] vB], Ss := [] }
+  { C := cn "B", Delta := [], C' := Object, Ts := [], Ms := [.mk [] tB (mn "onlyB") [] vB], Ss := [] }
 def decBox : Dec :=
-  { C := cn "Box", bounds := [{ X := tn "X", T := obj }], C' := Object, Ts := [],
+  { C := cn "Box", Delta := [{ X := tn "X", T := obj }], C' := Object, Ts := [],
     Ms := [.mk [] (.var (tn "X")) (mn "get") [] (.field thisE (fn "val"))],
     Ss := [{ T := .var (tn "X"), f := fn "val" }] }
 def decC1 : Dec :=
-  { C := cn "C1", bounds := [], C' := Object, Ts := [], Ms := [.mk [] tA (mn "m") [] vA], Ss := [] }
-def decC2 : Dec := { C := cn "C2", bounds := [], C' := cn "C1", Ts := [], Ms := [], Ss := [] }
+  { C := cn "C1", Delta := [], C' := Object, Ts := [], Ms := [.mk [] tA (mn "m") [] vA], Ss := [] }
+def decC2 : Dec := { C := cn "C2", Delta := [], C' := cn "C1", Ts := [], Ms := [], Ss := [] }
 
 def d1 : Decls := [decObject, decA, decB, decBox, decC1, decC2]
 
@@ -39,21 +39,21 @@ theorem w1 : WFDecls d1 := by decide
 
 -- W2: a method declaring two parameters named x violates A4.
 def decDup : Dec :=
-  { C := cn "Dup", bounds := [], C' := Object, Ts := [],
+  { C := cn "Dup", Delta := [], C' := Object, Ts := [],
     Ms := [.mk [] tA (mn "m") [{ T := tA, x := vn "x" }, { T := tA, x := vn "x" }] (.var (vn "x"))],
     Ss := [] }
 theorem w2 : Not (A4 (Decls.methods [decObject, decA, decDup])) := by decide
 
 -- W3: an if binding the parameter x again violates A7.
 def decShadow : Dec :=
-  { C := cn "Shadow", bounds := [], C' := Object, Ts := [],
+  { C := cn "Shadow", Delta := [], C' := Object, Ts := [],
     Ms := [.mk [] tA (mn "m") [{ T := tA, x := vn "x" }]
       (.ifInst (.var (vn "x")) tA (vn "x") (.var (vn "x")) (.var (vn "x")))],
     Ss := [] }
 theorem w3 : Not (A7Decls [decObject, decA, decShadow]) := by decide
 
 -- W4: a superclass that is not declared violates A9 and A10.
-def decOrphan : Dec := { C := cn "Orphan", bounds := [], C' := cn "Missing", Ts := [], Ms := [], Ss := [] }
+def decOrphan : Dec := { C := cn "Orphan", Delta := [], C' := cn "Missing", Ts := [], Ms := [], Ss := [] }
 theorem w4 : Not (A9 [decObject, decOrphan]) /\ Not (A10 [decObject, decOrphan]) := by decide
 
 -- R1: rule simpleFieldFound.
@@ -103,12 +103,12 @@ theorem r6Then : Reduces d1 (.ifInst vA tA (vn "x") (.var (vn "x")) vB) vA :=
     (by decide)
 
 -- R11: three steps, new C2<>().m() reduces to new A<>().
-theorem r11 : Steps d1 (.call (Value.new (cn "C2") [] []) [] (mn "m") []) vA :=
-  Steps.step r2 (Steps.step r3 (Steps.step r4 Steps.refl))
+theorem r11 : ReducesStar d1 (.call (Value.new (cn "C2") [] []) [] (mn "m") []) vA :=
+  ReducesStar.step r2 (ReducesStar.step r3 (ReducesStar.step r4 ReducesStar.refl))
 
 def tFoo (T : Ty) : Ty := .cls (cn "Foo") [T]
 def decFoo : Dec :=
-  { C := cn "Foo", bounds := [{ X := tn "X", T := obj }], C' := Object, Ts := [],
+  { C := cn "Foo", Delta := [{ X := tn "X", T := obj }], C' := Object, Ts := [],
     Ms := [.mk [] (.var (tn "X")) (mn "x") [] (.call thisE [] (mn "x") [])], Ss := [] }
 def myFooMethod : Method := .mk [] (.var (tn "Y")) (mn "x") [] (.var (vn "y"))
 def myFooBody : Expr := .newLocal (cn "MyFoo") [.funnel (tn "Y")] (cn "Foo") [.var (tn "Y")] [] [myFooMethod]
@@ -116,7 +116,7 @@ def mkMethod : Method :=
   .mk [{ X := tn "Y", T := obj }] (tFoo (.var (tn "Y"))) (mn "mk") [{ T := .var (tn "Y"), x := vn "y" }] myFooBody
 theorem kFooG {d : Decls} (hFoo : List.Mem decFoo d) {Delta : Bounds} {T : Ty} (hk : Kind d Delta T)
     (hs : Sub d Delta T obj) : Kind d Delta (tFoo T) :=
-  Kind.wfClass (Delta0 := decFoo.bounds) (Ts0 := [T]) (Scope.dec (.dec hFoo))
+  Kind.wfClass (Delta0 := decFoo.Delta) (Ts0 := [T]) (Scope.dec (.dec hFoo))
     (by intro T' h; cases h with | head => exact hk | tail _ h => cases h) rfl (.cons hs .nil)
 
 theorem overFooG {d : Decls} (hwf : WFDecls d) (hN : Closed d [Object]) (hO : ObjArgs d)
@@ -133,7 +133,7 @@ theorem overFooG {d : Decls} (hwf : WFDecls d) (hN : Closed d [Object]) (hO : Ob
       (.dec hFoo) (.head _) rfl rfl rfl rfl
   | inr h2 => exact overObj hN hO hObj rfl rfl h2.2
 
-def decMaker : Dec := { C := cn "Maker", bounds := [], C' := Object, Ts := [], Ms := [mkMethod], Ss := [] }
+def decMaker : Dec := { C := cn "Maker", Delta := [], C' := Object, Ts := [], Ms := [mkMethod], Ss := [] }
 
 def d2 : Decls := [decObject, decA, decB, decFoo, decMaker]
 
@@ -188,7 +188,7 @@ theorem subAObj : Sub d1 [] tA obj :=
   Sub.subInherit (D := decA) (.dec (.tail _ (.head _))) rfl .subRefl
 
 theorem kindBoxA : Kind d1 [] (.cls (cn "Box") [tA]) :=
-  Kind.wfClass (Delta0 := decBox.bounds) (Ts0 := [tA])
+  Kind.wfClass (Delta0 := decBox.Delta) (Ts0 := [tA])
     (Scope.dec (D := decBox) (.dec (.tail _ (.tail _ (.tail _ (.head _))))))
     (by intro T h; cases h with
       | head => exact kindA
@@ -235,17 +235,17 @@ theorem t2 : Not (exists T, Typing d1 [] [] (Value.new (cn "Box") [gA] [vB]) T) 
               exact absurd e (by decide)
             | inr h4 => exact notSub [cn "B", Object] (by decide) (.head _) (by decide) h4.1
 
-def myFooK : K := .loc (cn "MyFoo") [.funnel (tn "Y")] (cn "Foo") [.var (tn "Y")] [] [myFooMethod]
+def myFooK : ClassDecl := .newLocal (cn "MyFoo") [.funnel (tn "Y")] (cn "Foo") [.var (tn "Y")] [] [myFooMethod]
 
 theorem myFooDeclared : Declared d2 myFooK :=
-  Declared.loc (k := .dec decMaker) (.dec (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))
+  Declared.newLocal (K := .dec decMaker) (.dec (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))
     (.head _) (Exists.intro .hole rfl)
 
 -- C1: rule cast-down accepts the type test instanceof MyFoo<X> from Foo<X>.
 theorem c1 : Cast d2 [{ X := tn "X", T := obj }] (tFoo (.var (tn "X"))) (.cls (cn "MyFoo") [.var (tn "X")]) :=
   Cast.castDown (Xs := [tn "Y"]) (Ts' := [.var (tn "Y")])
     (Sub.subInheritLocal myFooDeclared rfl .subRefl)
-    (Generic.loc myFooDeclared)
+    (Generic.newLocal myFooDeclared)
     (Sub.subInheritLocal myFooDeclared rfl .subRefl)
     (by intro X h; cases h with
       | head => exact .head _
@@ -259,7 +259,7 @@ def brokenBody : Expr :=
   .ifInst (.var (vn "other")) (.cls (cn "MyFoo") []) (vn "w") (.var (vn "w"))
     (.newLocal (cn "MyFoo") [] (cn "Foo") [.var (tn "X")] [] [.mk [] (.var (tn "X")) (mn "x") [] (.var (vn "x"))])
 def decBroken : Dec :=
-  { C := cn "Broken", bounds := [], C' := Object, Ts := [],
+  { C := cn "Broken", Delta := [], C' := Object, Ts := [],
     Ms := [.mk [{ X := tn "X", T := obj }] (tFoo (.var (tn "X"))) (mn "m")
       [{ T := obj, x := vn "other" }, { T := .var (tn "X"), x := vn "x" }] brokenBody],
     Ss := [] }
@@ -277,21 +277,21 @@ def stuckB : Expr := .superCall vA obj [] (mn "onlyB") []
 theorem w6 : WFDecls d3 /\ WFExpr brokenMain := by decide
 
 -- J2: Example 1 reduces to new A<>().onlyB(), then to new A<>().[Object<>]onlyB(), which is stuck.
-theorem j2 : Steps d3 brokenMain stuckB /\ Stuck d3 stuckB :=
+theorem j2 : ReducesStar d3 brokenMain stuckB /\ Stuck d3 stuckB :=
   And.intro
-    (Steps.step (red (cRecv (cRecv (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) rfl) rfl) (by decide))
-    (Steps.step (red (cRecv (cRecv (cArg0 (sFound (D := decBroken) (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))
+    (ReducesStar.step (red (cRecv (cRecv (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) rfl) rfl) (by decide))
+    (ReducesStar.step (red (cRecv (cRecv (cArg0 (sFound (D := decBroken) (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))
       (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) rfl) rfl) (by decide))
-    (Steps.step (red (cRecv (cRecv (cArg0 (sElse rfl (noSubEx [cn "Foo", Object] (by decide) (.head _) (by decide)))
+    (ReducesStar.step (red (cRecv (cRecv (cArg0 (sElse rfl (noSubEx [cn "Foo", Object] (by decide) (.head _) (by decide)))
       rfl rfl) rfl) rfl) (by decide))
-    (Steps.step (red (cRecv (cRecv (sAdd rfl rfl rfl rfl) rfl) rfl) (by decide))
-    (Steps.step (red (cRecv (cRecv (sFound (D := decBroken) (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))
+    (ReducesStar.step (red (cRecv (cRecv (sAdd rfl rfl rfl rfl) rfl) rfl) (by decide))
+    (ReducesStar.step (red (cRecv (cRecv (sFound (D := decBroken) (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))
       (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl) rfl) (by decide))
-    (Steps.step (red (cRecv (cRecv (sThen rfl .subRefl (by decide)) rfl) rfl) (by decide))
-    (Steps.step (red (cRecv (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl) (by decide))
-    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
-    (Steps.step (red (sSearch (D := decA) (.tail _ (.head _)) (by decide) (by decide) rfl rfl rfl rfl rfl) (by decide))
-      Steps.refl)))))))))
+    (ReducesStar.step (red (cRecv (cRecv (sThen rfl .subRefl (by decide)) rfl) rfl) (by decide))
+    (ReducesStar.step (red (cRecv (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl) (by decide))
+    (ReducesStar.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (ReducesStar.step (red (sSearch (D := decA) (.tail _ (.head _)) (by decide) (by decide) rfl rfl rfl rfl rfl) (by decide))
+      ReducesStar.refl)))))))))
     (stuckS (by decide))
 
 -- N1: Example 1 is not Ok.
@@ -299,7 +299,7 @@ theorem n1 : Not (ProgOk d3 brokenMain) := fun h =>
   h.2.elim fun _ ht => (typeSoundness w6.1 h.1 w6.2 ht j2.1).2.elim j2.2.1 fun h' => h'.elim j2.2.2
 
 def decLeaker : Dec :=
-  { C := cn "Leaker", bounds := [], C' := Object, Ts := [],
+  { C := cn "Leaker", Delta := [], C' := Object, Ts := [],
     Ms := [
       .mk [{ X := tn "Y", T := obj }] (.cls (cn "MyFoo2") []) (mn "mk2") [{ T := .var (tn "Y"), x := vn "y" }]
         (.newLocal (cn "MyFoo2") [] (cn "Foo") [.var (tn "Y")] [] [.mk [] (.var (tn "Y")) (mn "x") [] (.var (vn "y"))]),
@@ -343,7 +343,7 @@ def onlyBCall (e : Expr) : Expr := call0 e "onlyB" []
 -- Example 1, funnelled as in Section 4.10.
 
 def decFixed : Dec :=
-  { C := cn "Fixed", bounds := [], C' := Object, Ts := [],
+  { C := cn "Fixed", Delta := [], C' := Object, Ts := [],
     Ms := [meth [bnd "X" obj] (tFoo (tv "X")) "mk" [par (tFoo (tv "X")) "other", par (tv "X") "x"]
       (.ifInst (ev "other") (.cls (cn "MyFoo") [tv "X"]) (vn "w") (ev "w")
         (.newLocal (cn "MyFoo") [.funnel (tn "X")] (cn "Foo") [tv "X"] [] [meth [] (tv "X") "x" [] (ev "x")]))],
@@ -363,8 +363,8 @@ theorem mFoo5 : List.Mem decFoo d5 := (.tail _ (.tail _ (.tail _ (.head _))))
 theorem mA5 : List.Mem decA d5 := (.tail _ (.head _))
 
 theorem myFoo5 : Declared d5
-    (.loc (cn "MyFoo") [.funnel (tn "X")] (cn "Foo") [tv "X"] [] [meth [] (tv "X") "x" [] (ev "x")]) :=
-  Declared.loc (k := .dec decFixed) (.dec mF5) (.head _)
+    (.newLocal (cn "MyFoo") [.funnel (tn "X")] (cn "Foo") [tv "X"] [] [meth [] (tv "X") "x" [] (ev "x")]) :=
+  Declared.newLocal (K := .dec decFixed) (.dec mF5) (.head _)
     (Exists.intro (.ifElse (ev "other") (.cls (cn "MyFoo") [tv "X"]) (vn "w") (ev "w") .hole) rfl)
 
 theorem kX5 : Kind d5 [bnd "X" obj] (tv "X") := Kind.wfVar (.head _)
@@ -373,26 +373,26 @@ theorem kFooX5 : Kind d5 [bnd "X" obj] (tFoo (tv "X")) := kFooG mFoo5 kX5 sX5
 
 theorem kMyFooX5 : Kind d5 [bnd "X" obj] (.cls (cn "MyFoo") [tv "X"]) :=
   Kind.wfClass (Delta0 := [bnd "X" obj]) (Ts0 := [tv "X"])
-    (Scope.loc (C := cn "Fixed") (T := .cls (cn "Fixed") []) (Delta := []) (Ts'' := [])
+    (Scope.newLocal (C := cn "Fixed") (T := .cls (cn "Fixed") []) (Delta := []) (Ts'' := [])
       (Exists.intro (.dec decFixed) (And.intro (.dec mF5) (And.intro rfl (.head _))))
       (Exists.intro (.ifElse (ev "other") (.cls (cn "MyFoo") [tv "X"]) (vn "w") (ev "w") .hole) rfl)
       (Generic.dec (.dec mF5)) (Scope.dec (.dec mF5)) (Pairing.funnel (.head _) .nil))
     (by intro T h; cases h with | head => exact kX5 | tail _ h => cases h) rfl (.cons sX5 .nil)
 
 theorem castX5 : Cast d5 [bnd "X" obj] (tFoo (tv "X")) (.cls (cn "MyFoo") [tv "X"]) :=
-  Cast.castDown (Xs := [tn "X"]) (Ts' := [tv "X"]) (Sub.subInheritLocal myFoo5 rfl .subRefl) (Generic.loc myFoo5)
+  Cast.castDown (Xs := [tn "X"]) (Ts' := [tv "X"]) (Sub.subInheritLocal myFoo5 rfl .subRefl) (Generic.newLocal myFoo5)
     (Sub.subInheritLocal myFoo5 rfl .subRefl)
     (by intro X h; cases h with | head => exact .head _ | tail _ h => cases h)
 
 theorem consMyFoo5 : Consistent d5
-    (.loc (cn "MyFoo") [.funnel (tn "X")] (cn "Foo") [tv "X"] [] [meth [] (tv "X") "x" [] (ev "x")]) :=
+    (.newLocal (cn "MyFoo") [.funnel (tn "X")] (cn "Foo") [tv "X"] [] [meth [] (tv "X") "x" [] (ev "x")]) :=
   Exists.intro _ (Exists.intro _ (Exists.intro _ (Exists.intro _
     (And.intro myFoo5 (And.intro rfl (And.intro rfl (And.intro (fun _ => Iff.rfl)
       (by
         intro M h
         cases h with
         | head =>
-          exact OverrideOkM.loc (Delta'' := []) (T0 := tv "X") (ps := []) (e := ev "x") myFoo5 (.head _) rfl rfl rfl rfl
+          exact OverrideOkM.newLocal (Delta'' := []) (T0 := tv "X") (ps := []) (e := ev "x") myFoo5 (.head _) rfl rfl rfl rfl
         | tail _ h => cases h))))))))
 
 -- P1: the class Fixed is Ok.
@@ -435,20 +435,20 @@ theorem t3 : Typing d5 [] [] fixedCallA (tFoo tA) :=
         .nil))
 
 -- R12: that call reduces to a MyFoo<A<>> whose method x returns new A<>().
-theorem r12 : Steps d5 fixedCallA vMyFooA :=
-  Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
-  (Steps.step (red (sFound (D := decFixed) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide))
+theorem r12 : ReducesStar d5 fixedCallA vMyFooA :=
+  ReducesStar.step (red (sAdd rfl rfl rfl rfl) (by decide))
+  (ReducesStar.step (red (sFound (D := decFixed) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide))
     (by decide))
-  (Steps.step (red (sElse rfl (noSubEx [cn "Foo", Object] (by decide) (.head _) (by decide))) (by decide))
-    Steps.refl))
+  (ReducesStar.step (red (sElse rfl (noSubEx [cn "Foo", Object] (by decide) (.head _) (by decide))) (by decide))
+    ReducesStar.refl))
 
 -- R13: given a MyFoo<A<>>, the type test succeeds and mk returns it.
-theorem r13 : Steps d5 (.call (Value.new (cn "Fixed") [] []) [tA] (mn "mk") [vMyFooA, vA]) vMyFooA :=
-  Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
-  (Steps.step (red (sFound (D := decFixed) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide))
+theorem r13 : ReducesStar d5 (.call (Value.new (cn "Fixed") [] []) [tA] (mn "mk") [vMyFooA, vA]) vMyFooA :=
+  ReducesStar.step (red (sAdd rfl rfl rfl rfl) (by decide))
+  (ReducesStar.step (red (sFound (D := decFixed) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide))
     (by decide))
-  (Steps.step (red (sThen rfl .subRefl (by decide)) (by decide))
-    Steps.refl))
+  (ReducesStar.step (red (sThen rfl .subRefl (by decide)) (by decide))
+    ReducesStar.refl))
 
 theorem fixedMk {T R : Ty} {es : List Expr}
     (h : Typing d5 [] [] (.call (Value.new (cn "Fixed") [] []) [T] (mn "mk") es) R) :
@@ -505,19 +505,19 @@ theorem n2 : Not (exists T, Typing d5 [] []
 
 def tFun (X Y : Ty) : Ty := .cls (cn "Fun") [X, Y]
 def decFun : Dec :=
-  { C := cn "Fun", bounds := [bnd "X" obj, bnd "Y" obj], C' := Object, Ts := [],
+  { C := cn "Fun", Delta := [bnd "X" obj, bnd "Y" obj], C' := Object, Ts := [],
     Ms := [meth [] (tv "Y") "apply" [par (tv "X") "x"] (call0 thisE "apply" [ev "x"])], Ss := [] }
 def decAToB : Dec :=
-  { C := cn "AToB", bounds := [], C' := cn "Fun", Ts := [tA, tB],
+  { C := cn "AToB", Delta := [], C' := cn "Fun", Ts := [tA, tB],
     Ms := [meth [] tB "apply" [par tA "a"] vB], Ss := [] }
 def decAsB : Dec :=
-  { C := cn "AsB", bounds := [], C' := cn "Fun", Ts := [tB, tB],
+  { C := cn "AsB", Delta := [], C' := cn "Fun", Ts := [tB, tB],
     Ms := [meth [] tB "apply" [par tB "b"] (onlyBCall (ev "b"))], Ss := [] }
 def vAToB : Value := .new (cn "AToB") [] []
 def vAsB : Value := .new (cn "AsB") [] []
 
 def decBroken2 : Dec :=
-  { C := cn "Broken2", bounds := [], C' := Object, Ts := [],
+  { C := cn "Broken2", Delta := [], C' := Object, Ts := [],
     Ms := [meth [bnd "X" obj] obj "m" [par obj "other", par (tv "X") "x", par (tFun (tv "X") tB) "f"]
       (.ifInst (ev "other") (.cls (cn "MyFoo2") []) (vn "local") (call0 (ev "f") "apply" [call0 (ev "local") "x" []])
         (.newLocal (cn "MyFoo2") [] Object [] [] [meth [] (tv "X") "x" [] (ev "x")]))],
@@ -532,23 +532,23 @@ def main2 : Expr :=
 -- W9: Example 2 in the core language is well formed.
 theorem w9 : WFDecls d6 /\ WFExpr main2 := by decide
 
-theorem r14p : Steps d6 main2 stuckB /\ Stuck d6 stuckB :=
+theorem r14p : ReducesStar d6 main2 stuckB /\ Stuck d6 stuckB :=
   And.intro
-    (Steps.step (red (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) (by decide))
-    (Steps.step (red (cArg0 (sFound (D := decBroken2) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))))
+    (ReducesStar.step (red (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) (by decide))
+    (ReducesStar.step (red (cArg0 (sFound (D := decBroken2) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))))
       (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
-    (Steps.step (red (cArg0 (sElse rfl (noSubEx [cn "A", Object] (by decide) (.head _) (by decide))) rfl rfl) (by decide))
-    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
-    (Steps.step (red (sFound (D := decBroken2) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))))
+    (ReducesStar.step (red (cArg0 (sElse rfl (noSubEx [cn "A", Object] (by decide) (.head _) (by decide))) rfl rfl) (by decide))
+    (ReducesStar.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (ReducesStar.step (red (sFound (D := decBroken2) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))))
       (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
-    (Steps.step (red (sThen rfl .subRefl (by decide)) (by decide))
-    (Steps.step (red (cArg0 (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
-    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
-    (Steps.step (red (sFound (D := decAsB) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))
+    (ReducesStar.step (red (sThen rfl .subRefl (by decide)) (by decide))
+    (ReducesStar.step (red (cArg0 (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
+    (ReducesStar.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (ReducesStar.step (red (sFound (D := decAsB) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))
       (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
-    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
-    (Steps.step (red (sSearch (D := decA) (.tail _ (.head _)) (by decide) (by decide) rfl rfl rfl rfl rfl) (by decide))
-      Steps.refl)))))))))))
+    (ReducesStar.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (ReducesStar.step (red (sSearch (D := decA) (.tail _ (.head _)) (by decide) (by decide) rfl rfl rfl rfl rfl) (by decide))
+      ReducesStar.refl)))))))))))
     (stuckS (by decide))
 
 -- N3: Example 2 is not Ok: the method x of MyFoo2 returns X, which MyFoo2 does not funnel.
@@ -556,17 +556,17 @@ theorem n3 : Not (ProgOk d6 main2) := fun h =>
   h.2.elim fun _ ht => (typeSoundness w9.1 h.1 w9.2 ht r14p.1).2.elim r14p.2.1 fun h' => h'.elim r14p.2.2
 
 -- R14: Example 2 reduces to new A<>().[Object<>]onlyB(), which is stuck: AsB uses an A<> as a B<>.
-theorem r14 : Steps d6 main2 stuckB /\ Stuck d6 stuckB := r14p
+theorem r14 : ReducesStar d6 main2 stuckB /\ Stuck d6 stuckB := r14p
 
-def decHolder : Dec := { C := cn "Holder", bounds := [bnd "X" obj], C' := Object, Ts := [], Ms := [], Ss := [] }
+def decHolder : Dec := { C := cn "Holder", Delta := [bnd "X" obj], C' := Object, Ts := [], Ms := [], Ss := [] }
 def decFixed2 : Dec :=
-  { C := cn "Fixed2", bounds := [], C' := Object, Ts := [],
+  { C := cn "Fixed2", Delta := [], C' := Object, Ts := [],
     Ms := [meth [bnd "X" obj] obj "m" [par (.cls (cn "Holder") [tv "X"]) "other", par (tv "X") "x", par (tFun (tv "X") tB) "f"]
       (.ifInst (ev "other") (.cls (cn "MyFoo3") [tv "X"]) (vn "local") (call0 (ev "f") "apply" [call0 (ev "local") "x" []])
         (.newLocal (cn "MyFoo3") [.funnel (tn "X")] (cn "Holder") [tv "X"] [] [meth [] (tv "X") "x" [] (ev "x")]))],
     Ss := [] }
 def decFixed2Obj : Dec :=
-  { C := cn "Fixed2Obj", bounds := [], C' := Object, Ts := [],
+  { C := cn "Fixed2Obj", Delta := [], C' := Object, Ts := [],
     Ms := [meth [bnd "X" obj] obj "m" [par obj "other", par (tv "X") "x", par (tFun (tv "X") tB) "f"]
       (.ifInst (ev "other") (.cls (cn "MyFoo4") [tv "X"]) (vn "local") (call0 (ev "f") "apply" [call0 (ev "local") "x" []])
         (.newLocal (cn "MyFoo4") [.funnel (tn "X")] Object [] [] [meth [] (tv "X") "x" [] (ev "x")]))],
@@ -583,8 +583,8 @@ theorem mFun6 : List.Mem decFun d6F := (.tail _ (.tail _ (.tail _ (.head _))))
 theorem mB6 : List.Mem decB d6F := (.tail _ (.tail _ (.head _)))
 
 theorem myFoo3D : Declared d6F
-    (.loc (cn "MyFoo3") [.funnel (tn "X")] (cn "Holder") [tv "X"] [] [meth [] (tv "X") "x" [] (ev "x")]) :=
-  Declared.loc (k := .dec decFixed2) (.dec mFx2) (.head _)
+    (.newLocal (cn "MyFoo3") [.funnel (tn "X")] (cn "Holder") [tv "X"] [] [meth [] (tv "X") "x" [] (ev "x")]) :=
+  Declared.newLocal (K := .dec decFixed2) (.dec mFx2) (.head _)
     (Exists.intro (.ifElse (ev "other") (.cls (cn "MyFoo3") [tv "X"]) (vn "local")
       (call0 (ev "f") "apply" [call0 (ev "local") "x" []]) .hole) rfl)
 
@@ -593,15 +593,15 @@ theorem sX6 : Sub d6F [bnd "X" obj] (tv "X") obj := Sub.subVar (.head _) .subRef
 theorem sB6 : Sub d6F [bnd "X" obj] tB obj := Sub.subInherit (D := decB) (.dec mB6) rfl .subRefl
 
 theorem kHolderX : Kind d6F [bnd "X" obj] (.cls (cn "Holder") [tv "X"]) :=
-  Kind.wfClass (Delta0 := decHolder.bounds) (Ts0 := [tv "X"]) (Scope.dec (.dec mH6)) (by intro T h; cases h with | head => exact kX6 | tail _ h => cases h)
+  Kind.wfClass (Delta0 := decHolder.Delta) (Ts0 := [tv "X"]) (Scope.dec (.dec mH6)) (by intro T h; cases h with | head => exact kX6 | tail _ h => cases h)
     rfl (.cons sX6 .nil)
 
 theorem kFunXB : Kind d6F [bnd "X" obj] (tFun (tv "X") tB) :=
-  Kind.wfClass (Delta0 := decFun.bounds) (Ts0 := [tv "X", tB]) (Scope.dec (.dec mFun6))
+  Kind.wfClass (Delta0 := decFun.Delta) (Ts0 := [tv "X", tB]) (Scope.dec (.dec mFun6))
     (by intro T h; cases h with | head => exact kX6 | tail _ h => cases h with | head => exact (kNull mB6 rfl) | tail _ h => cases h) rfl (.cons sX6 (.cons sB6 .nil))
 
 theorem scopeMyFoo3 : Scope d6F (.cls (cn "MyFoo3") [tv "X"]) [bnd "X" obj] [tv "X"] :=
-  Scope.loc (C := cn "Fixed2") (T := .cls (cn "Fixed2") []) (Delta := []) (Ts'' := [])
+  Scope.newLocal (C := cn "Fixed2") (T := .cls (cn "Fixed2") []) (Delta := []) (Ts'' := [])
     (Exists.intro (.dec decFixed2) (And.intro (.dec mFx2) (And.intro rfl (.head _))))
     (Exists.intro (.ifElse (ev "other") (.cls (cn "MyFoo3") [tv "X"]) (vn "local")
       (call0 (ev "f") "apply" [call0 (ev "local") "x" []]) .hole) rfl)
@@ -611,19 +611,19 @@ theorem kMyFoo3X : Kind d6F [bnd "X" obj] (.cls (cn "MyFoo3") [tv "X"]) :=
   Kind.wfClass scopeMyFoo3 (by intro T h; cases h with | head => exact kX6 | tail _ h => cases h) rfl (.cons sX6 .nil)
 
 theorem castHM : Cast d6F [bnd "X" obj] (.cls (cn "Holder") [tv "X"]) (.cls (cn "MyFoo3") [tv "X"]) :=
-  Cast.castDown (Xs := [tn "X"]) (Ts' := [tv "X"]) (Sub.subInheritLocal myFoo3D rfl .subRefl) (Generic.loc myFoo3D)
+  Cast.castDown (Xs := [tn "X"]) (Ts' := [tv "X"]) (Sub.subInheritLocal myFoo3D rfl .subRefl) (Generic.newLocal myFoo3D)
     (Sub.subInheritLocal myFoo3D rfl .subRefl)
     (by intro X h; cases h with | head => exact .head _ | tail _ h => cases h)
 
 theorem consMyFoo3 : Consistent d6F
-    (.loc (cn "MyFoo3") [.funnel (tn "X")] (cn "Holder") [tv "X"] [] [meth [] (tv "X") "x" [] (ev "x")]) :=
+    (.newLocal (cn "MyFoo3") [.funnel (tn "X")] (cn "Holder") [tv "X"] [] [meth [] (tv "X") "x" [] (ev "x")]) :=
   Exists.intro _ (Exists.intro _ (Exists.intro _ (Exists.intro _
     (And.intro myFoo3D (And.intro rfl (And.intro rfl (And.intro (fun _ => Iff.rfl)
       (by
         intro M h
         cases h with
         | head =>
-          exact OverrideOkM.loc (Delta'' := []) (T0 := tv "X") (ps := []) (e := ev "x") myFoo3D (.head _) rfl rfl rfl rfl
+          exact OverrideOkM.newLocal (Delta'' := []) (T0 := tv "X") (ps := []) (e := ev "x") myFoo3D (.head _) rfl rfl rfl rfl
         | tail _ h => cases h))))))))
 
 -- P2: funnelled, with other : Holder<X>, Example 2 is Ok: Holder<X> determines X.
@@ -638,7 +638,7 @@ theorem p2 : ClassOk d6F decFixed2 :=
       exact MethodOk.methodOk (by intro T h; cases h with | head => exact (kNull (D := decObject) (.head _) rfl) | tail _ h => cases h) (by intro T h; cases h with | head => exact (kNull (D := decObject) (.head _) rfl) | tail _ h => cases h with | head => exact kHolderX | tail _ h => cases h with | head => exact kX6 | tail _ h => cases h with | head => exact kFunXB | tail _ h => cases h)
         (Typing.ifInstanceof (Typing.var rfl) kMyFoo3X castHM
           (Typing.subs
-            (Typing.call (C0 := cn "Fun") (Ts0 := [tv "X", tB]) (Delta0 := decFun.bounds) (Ts2 := [tv "X", tB])
+            (Typing.call (C0 := cn "Fun") (Ts0 := [tv "X", tB]) (Delta0 := decFun.Delta) (Ts2 := [tv "X", tB])
               (Delta1 := []) (T0 := tv "Y") (ps := [par (tv "X") "x"]) (T0' := tB) (Ts' := [tv "X"])
               (Typing.var rfl) (Scope.dec (.dec mFun6))
               (Exists.intro (.dec decFun) (And.intro (.dec mFun6) (And.intro rfl (.head _)))) rfl rfl rfl
@@ -695,7 +695,7 @@ def myFoo6 : Expr :=
     [meth [] (tv "X") "v" [] (ev "x"),
      meth [] tB "show" [par (.cls (cn "MyFoo6") []) "o"] (call0 (ev "f") "apply" [call0 (ev "o") "v" []])]
 def decBroken6 : Dec :=
-  { C := cn "Broken6", bounds := [], C' := Object, Ts := [],
+  { C := cn "Broken6", Delta := [], C' := Object, Ts := [],
     Ms := [meth [bnd "X" obj] obj "m" [par obj "other", par (tv "X") "x", par (tFun (tv "X") tB) "f"]
         (call0 thisE "check" [myFoo6, ev "other"]),
       meth [] obj "check" [par (.cls (cn "MyFoo6") []) "mine", par obj "other"]
@@ -711,25 +711,25 @@ def main6 : Expr :=
 -- W11: Example 6 in the core language is well formed.
 theorem w11 : WFDecls d7 /\ WFExpr main6 := by decide
 
-theorem r15p : Steps d7 main6 stuckB /\ Stuck d7 stuckB :=
+theorem r15p : ReducesStar d7 main6 stuckB /\ Stuck d7 stuckB :=
   And.intro
-    (Steps.step (red (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) (by decide))
-    (Steps.step (red (cArg0 (sFound (D := decBroken6) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
-    (Steps.step (red (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) (by decide))
-    (Steps.step (red (cArg0 (sFound (D := decBroken6) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.tail _ (.head _)) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
-    (Steps.step (red (cArg0 (sElse rfl (noSubEx [cn "A", Object] (by decide) (.head _) (by decide))) rfl rfl) (by decide))
-    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
-    (Steps.step (red (sFound (D := decBroken6) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
-    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
-    (Steps.step (red (sFound (D := decBroken6) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.tail _ (.head _)) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
-    (Steps.step (red (sThen rfl .subRefl (by decide)) (by decide))
-    (Steps.step (red (sInner (.tail _ (.head _)) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
-    (Steps.step (red (cArg0 (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
-    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
-    (Steps.step (red (sFound (D := decAsB) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
-    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
-    (Steps.step (red (sSearch (D := decA) (.tail _ (.head _)) (by decide) (by decide) rfl rfl rfl rfl rfl) (by decide))
-      Steps.refl))))))))))))))))
+    (ReducesStar.step (red (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) (by decide))
+    (ReducesStar.step (red (cArg0 (sFound (D := decBroken6) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
+    (ReducesStar.step (red (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) (by decide))
+    (ReducesStar.step (red (cArg0 (sFound (D := decBroken6) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.tail _ (.head _)) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
+    (ReducesStar.step (red (cArg0 (sElse rfl (noSubEx [cn "A", Object] (by decide) (.head _) (by decide))) rfl rfl) (by decide))
+    (ReducesStar.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (ReducesStar.step (red (sFound (D := decBroken6) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    (ReducesStar.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (ReducesStar.step (red (sFound (D := decBroken6) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.tail _ (.head _)) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    (ReducesStar.step (red (sThen rfl .subRefl (by decide)) (by decide))
+    (ReducesStar.step (red (sInner (.tail _ (.head _)) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    (ReducesStar.step (red (cArg0 (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
+    (ReducesStar.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (ReducesStar.step (red (sFound (D := decAsB) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    (ReducesStar.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (ReducesStar.step (red (sSearch (D := decA) (.tail _ (.head _)) (by decide) (by decide) rfl rfl rfl rfl rfl) (by decide))
+      ReducesStar.refl))))))))))))))))
     (stuckS (by decide))
 
 -- N5: Example 6 is not Ok: MyFoo6 mentions X and captures f, but funnels nothing.
@@ -737,18 +737,18 @@ theorem n5 : Not (ProgOk d7 main6) := fun h =>
   h.2.elim fun _ ht => (typeSoundness w11.1 h.1 w11.2 ht r15p.1).2.elim r15p.2.1 fun h' => h'.elim r15p.2.2
 
 -- R15: Example 6 reduces to new A<>().[Object<>]onlyB(), which is stuck.
-theorem r15 : Steps d7 main6 stuckB /\ Stuck d7 stuckB := r15p
+theorem r15 : ReducesStar d7 main6 stuckB /\ Stuck d7 stuckB := r15p
 
 -- Counterexample 7: class generics; javac rejects it, and so does funnelling.
 
 def decBox7 : Dec :=
-  { C := cn "Box7", bounds := [bnd "X" obj], C' := Object, Ts := [],
+  { C := cn "Box7", Delta := [bnd "X" obj], C' := Object, Ts := [],
     Ms := [meth [] obj "m" [par obj "other", par (tv "X") "x", par (tFun (tv "X") tB) "f"]
       (.ifInst (ev "other") (.cls (cn "MyFoo7") []) (vn "local") (call0 (ev "f") "apply" [call0 (ev "local") "x" []])
         (.newLocal (cn "MyFoo7") [] Object [] [] [meth [] (tv "X") "x" [] (ev "x")]))],
     Ss := [] }
 def decBox7F : Dec :=
-  { C := cn "Box7F", bounds := [bnd "X" obj], C' := Object, Ts := [],
+  { C := cn "Box7F", Delta := [bnd "X" obj], C' := Object, Ts := [],
     Ms := [meth [] obj "m" [par obj "other", par (tv "X") "x", par (tFun (tv "X") tB) "f"]
       (.ifInst (ev "other") (.cls (cn "MyFoo7F") [tv "X"]) (vn "local") (call0 (ev "f") "apply" [call0 (ev "local") "x" []])
         (.newLocal (cn "MyFoo7F") [.funnel (tn "X")] Object [] [] [meth [] (tv "X") "x" [] (ev "x")]))],
@@ -803,20 +803,20 @@ theorem n7 : Not (ClassOk d8 decBox7F) := by
         exact castObj (C := cn "MyFoo7F") (by decide) (by decide) (by decide) (by decide) hc
 
 -- R16: Counterexample 7 reduces as Example 2: to new A<>().[Object<>]onlyB(), which is stuck.
-theorem r16 : Steps d8 main7 stuckB /\ Stuck d8 stuckB :=
+theorem r16 : ReducesStar d8 main7 stuckB /\ Stuck d8 stuckB :=
   And.intro
-    (Steps.step (red (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) (by decide))
-    (Steps.step (red (cArg0 (sFound (D := decBox7) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
-    (Steps.step (red (cArg0 (sElse rfl (noSubEx [cn "A", Object] (by decide) (.head _) (by decide))) rfl rfl) (by decide))
-    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
-    (Steps.step (red (sFound (D := decBox7) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
-    (Steps.step (red (sThen rfl .subRefl (by decide)) (by decide))
-    (Steps.step (red (cArg0 (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
-    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
-    (Steps.step (red (sFound (D := decAsB) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
-    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
-    (Steps.step (red (sSearch (D := decA) (.tail _ (.head _)) (by decide) (by decide) rfl rfl rfl rfl rfl) (by decide))
-      Steps.refl)))))))))))
+    (ReducesStar.step (red (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) (by decide))
+    (ReducesStar.step (red (cArg0 (sFound (D := decBox7) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
+    (ReducesStar.step (red (cArg0 (sElse rfl (noSubEx [cn "A", Object] (by decide) (.head _) (by decide))) rfl rfl) (by decide))
+    (ReducesStar.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (ReducesStar.step (red (sFound (D := decBox7) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    (ReducesStar.step (red (sThen rfl .subRefl (by decide)) (by decide))
+    (ReducesStar.step (red (cArg0 (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) (by decide))
+    (ReducesStar.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (ReducesStar.step (red (sFound (D := decAsB) (.tail _ (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    (ReducesStar.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (ReducesStar.step (red (sSearch (D := decA) (.tail _ (.head _)) (by decide) (by decide) rfl rfl rfl rfl rfl) (by decide))
+      ReducesStar.refl)))))))))))
     (stuckS (by decide))
 
 -- The method leak of Section 4.10.
@@ -826,20 +826,20 @@ def leakMain : Expr :=
     [.call (Value.new (cn "Leaker") [] []) [tA] (mn "mk2") [vA]]) "x" [])
 
 -- R17: leak returns a MyFoo2 built with A<> as a Foo<B<>>; the program reduces to new A<>().[Object<>]onlyB(), which is stuck.
-theorem r17 : Steps d4 leakMain stuckB /\ Stuck d4 stuckB :=
+theorem r17 : ReducesStar d4 leakMain stuckB /\ Stuck d4 stuckB :=
   And.intro
-    (Steps.step (red (cRecv (cRecv (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) rfl) rfl) (by decide))
-    (Steps.step (red (cRecv (cRecv (cArg0 (sFound (D := decLeaker) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) rfl) rfl) (by decide))
-    (Steps.step (red (cRecv (cRecv (sAdd rfl rfl rfl rfl) rfl) rfl) (by decide))
-    (Steps.step (red (cRecv (cRecv (sFound (D := decLeaker) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.tail _ (.head _)) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl) rfl) (by decide))
-    (Steps.step (red (cRecv (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl) (by decide))
-    (Steps.step (red (sAdd rfl rfl rfl rfl) (by decide))
-    (Steps.step (red (sSearch (D := decA) (.tail _ (.head _)) (by decide) (by decide) rfl rfl rfl rfl rfl) (by decide))
-      Steps.refl)))))))
+    (ReducesStar.step (red (cRecv (cRecv (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) rfl) rfl) (by decide))
+    (ReducesStar.step (red (cRecv (cRecv (cArg0 (sFound (D := decLeaker) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl rfl) rfl) rfl) (by decide))
+    (ReducesStar.step (red (cRecv (cRecv (sAdd rfl rfl rfl rfl) rfl) rfl) (by decide))
+    (ReducesStar.step (red (cRecv (cRecv (sFound (D := decLeaker) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.tail _ (.head _)) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl) rfl) (by decide))
+    (ReducesStar.step (red (cRecv (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl) (by decide))
+    (ReducesStar.step (red (sAdd rfl rfl rfl rfl) (by decide))
+    (ReducesStar.step (red (sSearch (D := decA) (.tail _ (.head _)) (by decide) (by decide) rfl rfl rfl rfl rfl) (by decide))
+      ReducesStar.refl)))))))
     (stuckS (by decide))
 
 def decLeakerF : Dec :=
-  { C := cn "LeakerF", bounds := [], C' := Object, Ts := [],
+  { C := cn "LeakerF", Delta := [], C' := Object, Ts := [],
     Ms := [
       meth [bnd "Y" obj] (.cls (cn "MyFoo2F") [tv "Y"]) "mk2" [par (tv "Y") "y"]
         (.newLocal (cn "MyFoo2F") [.funnel (tn "Y")] (cn "Foo") [tv "Y"] [] [meth [] (tv "Y") "x" [] (ev "y")]),
@@ -859,8 +859,8 @@ theorem mL4F : List.Mem decLeakerF d4F := (.tail _ (.tail _ (.tail _ (.tail _ (.
 theorem mFoo4F : List.Mem decFoo d4F := (.tail _ (.tail _ (.tail _ (.head _))))
 
 theorem myFoo2FDeclared : Declared d4F
-    (.loc (cn "MyFoo2F") [.funnel (tn "Y")] (cn "Foo") [tv "Y"] [] [meth [] (tv "Y") "x" [] (ev "y")]) :=
-  Declared.loc (k := .dec decLeakerF) (.dec mL4F) (.head _) (Exists.intro .hole rfl)
+    (.newLocal (cn "MyFoo2F") [.funnel (tn "Y")] (cn "Foo") [tv "Y"] [] [meth [] (tv "Y") "x" [] (ev "y")]) :=
+  Declared.newLocal (K := .dec decLeakerF) (.dec mL4F) (.head _) (Exists.intro .hole rfl)
 
 theorem kY4 : Kind d4F [bnd "Y" obj] (tv "Y") := Kind.wfVar (.head _)
 theorem sY4 : Sub d4F [bnd "Y" obj] (tv "Y") obj := Sub.subVar (.head _) .subRefl
@@ -868,20 +868,20 @@ theorem kFooY4 : Kind d4F [bnd "Y" obj] (tFoo (tv "Y")) := kFooG mFoo4F kY4 sY4
 
 theorem kMyFoo2FY : Kind d4F [bnd "Y" obj] (.cls (cn "MyFoo2F") [tv "Y"]) :=
   Kind.wfClass (Delta0 := [bnd "Y" obj]) (Ts0 := [tv "Y"])
-    (Scope.loc (C := cn "LeakerF") (T := .cls (cn "LeakerF") []) (Delta := []) (Ts'' := [])
+    (Scope.newLocal (C := cn "LeakerF") (T := .cls (cn "LeakerF") []) (Delta := []) (Ts'' := [])
       (Exists.intro (.dec decLeakerF) (And.intro (.dec mL4F) (And.intro rfl (.head _))))
       (Exists.intro .hole rfl) (Generic.dec (.dec mL4F)) (Scope.dec (.dec mL4F)) (Pairing.funnel (.head _) .nil))
     (by intro T h; cases h with | head => exact kY4 | tail _ h => cases h) rfl (.cons sY4 .nil)
 
 theorem consMyFoo2F : Consistent d4F
-    (.loc (cn "MyFoo2F") [.funnel (tn "Y")] (cn "Foo") [tv "Y"] [] [meth [] (tv "Y") "x" [] (ev "y")]) :=
+    (.newLocal (cn "MyFoo2F") [.funnel (tn "Y")] (cn "Foo") [tv "Y"] [] [meth [] (tv "Y") "x" [] (ev "y")]) :=
   Exists.intro _ (Exists.intro _ (Exists.intro _ (Exists.intro _
     (And.intro myFoo2FDeclared (And.intro rfl (And.intro rfl (And.intro (fun _ => Iff.rfl)
       (by
         intro M h
         cases h with
         | head =>
-          exact OverrideOkM.loc (Delta'' := []) (T0 := tv "Y") (ps := []) (e := ev "y") myFoo2FDeclared (.head _)
+          exact OverrideOkM.newLocal (Delta'' := []) (T0 := tv "Y") (ps := []) (e := ev "y") myFoo2FDeclared (.head _)
             rfl rfl rfl rfl
         | tail _ h => cases h))))))))
 
@@ -984,12 +984,12 @@ def innerExpr : Expr :=
 def outerMethod : Method := meth [] (tv "X") "x" [] (call0 innerExpr "x" [])
 def outerExpr : Expr := .newLocal (cn "Outer") [.funnel (tn "X")] (cn "Foo") [tv "X"] [] [outerMethod]
 def nestMk : Method := meth [bnd "X" obj] (tFoo (tv "X")) "mk" [par (tv "X") "x"] outerExpr
-def decNest : Dec := { C := cn "Nest", bounds := [], C' := Object, Ts := [], Ms := [nestMk], Ss := [] }
+def decNest : Dec := { C := cn "Nest", Delta := [], C' := Object, Ts := [], Ms := [nestMk], Ss := [] }
 
 def d9 : Decls := [decObject, decA, decB, decFoo, decNest]
 
-def outerK : K := .loc (cn "Outer") [.funnel (tn "X")] (cn "Foo") [tv "X"] [] [outerMethod]
-def innerK : K := .loc (cn "Inner") [.funnel (tn "X")] (cn "Foo") [tv "X"] [] [meth [] (tv "X") "x" [] (ev "x")]
+def outerK : ClassDecl := .newLocal (cn "Outer") [.funnel (tn "X")] (cn "Foo") [tv "X"] [] [outerMethod]
+def innerK : ClassDecl := .newLocal (cn "Inner") [.funnel (tn "X")] (cn "Foo") [tv "X"] [] [meth [] (tv "X") "x" [] (ev "x")]
 
 -- W14: nested local classes are well formed.
 theorem w14 : WFDecls d9 := by decide
@@ -997,14 +997,14 @@ theorem w14 : WFDecls d9 := by decide
 theorem nestDeclared : Declared d9 (.dec decNest) := .dec (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))
 
 theorem outerDeclared : Declared d9 outerK :=
-  Declared.loc (k := .dec decNest) nestDeclared (.head _) (Exists.intro .hole rfl)
+  Declared.newLocal (K := .dec decNest) nestDeclared (.head _) (Exists.intro .hole rfl)
 
 -- D1: Inner is declared: it occurs in the method x of Outer, which occurs in the method mk of Nest.
 theorem d1Inner : Declared d9 innerK :=
-  Declared.loc (k := outerK) outerDeclared (.head _) (Exists.intro (.callRecv .hole [] (mn "x") []) rfl)
+  Declared.newLocal (K := outerK) outerDeclared (.head _) (Exists.intro (.callRecv .hole [] (mn "x") []) rfl)
 
 theorem scopeOuter : Scope d9 (.cls (cn "Outer") [tv "X"]) [bnd "X" obj] [tv "X"] :=
-  Scope.loc (C := cn "Nest") (T := .cls (cn "Nest") []) (Delta := []) (Ts'' := [])
+  Scope.newLocal (C := cn "Nest") (T := .cls (cn "Nest") []) (Delta := []) (Ts'' := [])
     (Exists.intro (.dec decNest) (And.intro nestDeclared (And.intro rfl (.head _))))
     (Exists.intro .hole rfl) (Generic.dec nestDeclared) (Scope.dec nestDeclared) (Pairing.funnel (.head _) .nil)
 
@@ -1017,29 +1017,29 @@ theorem subAObj9 : Sub d9 [] tA obj := Sub.subInherit (D := decA) (.dec (.tail _
 -- K1: Inner<A<>> is well kinded: its scope goes through the scope of Outer<X>.
 theorem k1 : Kind d9 [] (.cls (cn "Inner") [tA]) :=
   Kind.wfClass (Delta0 := [bnd "X" obj]) (Ts0 := [tA])
-    (Scope.loc (C := cn "Outer") (T := .cls (cn "Outer") [tv "X"]) (Delta := [bnd "X" obj]) (Ts'' := [tv "X"])
+    (Scope.newLocal (C := cn "Outer") (T := .cls (cn "Outer") [tv "X"]) (Delta := [bnd "X" obj]) (Ts'' := [tv "X"])
       (Exists.intro outerK (And.intro outerDeclared (And.intro rfl (.head _))))
       (Exists.intro (.callRecv .hole [] (mn "x") []) rfl)
-      (Generic.loc outerDeclared) scopeOuter (Pairing.funnel (.head _) .nil))
+      (Generic.newLocal outerDeclared) scopeOuter (Pairing.funnel (.head _) .nil))
     (by intro T h; cases h with
       | head => exact kindA9
       | tail _ h => cases h)
     rfl (.cons subAObj9 .nil)
 
 -- R18: new Nest<>().<A<>>mk(new A<>()).x() reduces to new A<>().
-theorem r18 : Steps d9 (call0 (.call (Value.new (cn "Nest") [] []) [tA] (mn "mk") [vA]) "x" []) vA :=
-  (Steps.step (red (cRecv (sAdd rfl rfl rfl rfl) rfl) (by decide))
-  (Steps.step (red (cRecv (sFound (D := decNest) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl) (by decide))
-  (Steps.step (red (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
-  (Steps.step (red (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
-    Steps.refl))))
+theorem r18 : ReducesStar d9 (call0 (.call (Value.new (cn "Nest") [] []) [tA] (mn "mk") [vA]) "x" []) vA :=
+  (ReducesStar.step (red (cRecv (sAdd rfl rfl rfl rfl) rfl) (by decide))
+  (ReducesStar.step (red (cRecv (sFound (D := decNest) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) rfl) (by decide))
+  (ReducesStar.step (red (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+  (ReducesStar.step (red (sInner (.head _) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    ReducesStar.refl))))
 
 -- Funnels of both forms: after mk<A<>>, the value of Outer2 holds Inner2<Y funnel>, with Y a type variable of g.
 
 def inner2Expr : Expr :=
   .newLocal (cn "Inner2") [.funnel (tn "Y")] (cn "Foo") [tv "Y"] [] [meth [] (tv "Y") "x" [] (ev "y")]
 def decMix : Dec :=
-  { C := cn "Mix", bounds := [], C' := Object, Ts := [],
+  { C := cn "Mix", Delta := [], C' := Object, Ts := [],
     Ms := [meth [bnd "X" obj] (tFoo (tv "X")) "mk" [par (tv "X") "x"]
       (.newLocal (cn "Outer2") [.funnel (tn "X")] (cn "Foo") [tv "X"] []
         [meth [] (tv "X") "x" [] (ev "x"),
@@ -1059,10 +1059,10 @@ theorem w15 : WFDecls d10 := by decide
 theorem w16 : WFExpr vOuter2A := by decide
 
 -- R19: calling g<B<>> on the value of Outer2<A<>> gives an Inner2<B<>> whose method x returns new B<>().
-theorem r19 : Steps d10 (.call vOuter2A [tB] (mn "g") [vB])
+theorem r19 : ReducesStar d10 (.call vOuter2A [tB] (mn "g") [vB])
     (Value.newLocal (cn "Inner2") [gB] (cn "Foo") [gB] [] [meth [] tB "x" [] vB]) :=
-  (Steps.step (red (sInner (.tail _ (.head _)) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
-    Steps.refl)
+  (ReducesStar.step (red (sInner (.tail _ (.head _)) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)) (by decide))
+    ReducesStar.refl)
 
 -- Overriding.
 
@@ -1070,10 +1070,10 @@ def p1Id : Method := meth [bnd "X" obj] (tv "X") "id" [par (tv "X") "x"] (ev "x"
 def p2Id : Method := meth [bnd "Z" obj] (tv "Z") "id" [par (tv "Z") "z"] (ev "z")
 def p3Id : Method := meth [bnd "Z" obj] obj "id" [par (tv "Z") "z"] (ev "z")
 def p4Id : Method := meth [bnd "Z" tA] (tv "Z") "id" [par (tv "Z") "z"] (ev "z")
-def decP1 : Dec := { C := cn "P1", bounds := [], C' := Object, Ts := [], Ms := [p1Id], Ss := [] }
-def decP2 : Dec := { C := cn "P2", bounds := [], C' := cn "P1", Ts := [], Ms := [p2Id], Ss := [] }
-def decP3 : Dec := { C := cn "P3", bounds := [], C' := cn "P1", Ts := [], Ms := [p3Id], Ss := [] }
-def decP4 : Dec := { C := cn "P4", bounds := [], C' := cn "P1", Ts := [], Ms := [p4Id], Ss := [] }
+def decP1 : Dec := { C := cn "P1", Delta := [], C' := Object, Ts := [], Ms := [p1Id], Ss := [] }
+def decP2 : Dec := { C := cn "P2", Delta := [], C' := cn "P1", Ts := [], Ms := [p2Id], Ss := [] }
+def decP3 : Dec := { C := cn "P3", Delta := [], C' := cn "P1", Ts := [], Ms := [p3Id], Ss := [] }
+def decP4 : Dec := { C := cn "P4", Delta := [], C' := cn "P1", Ts := [], Ms := [p4Id], Ss := [] }
 
 def d11 : Decls := [decObject, decA, decP1, decP2, decP3, decP4]
 
@@ -1118,7 +1118,7 @@ theorem o2 : Not (OverrideOkM d11 (.cls (cn "P1") []) p3Id) := by
     subst e1 e2 e4
     injection hs with h1 h2
     cases h1
-  | loc hD =>
+  | newLocal hD =>
     injection hT with hC
     exact Declared.dec_loc w17 (.dec (.tail _ (.tail _ (.head _)))) hD hC
 
@@ -1155,7 +1155,7 @@ theorem o4P4 : Not (OverrideOkM d11 (.cls (cn "P1") []) p4Id) := by
     injection hc with h1 h2
     injection h1 with h3
     exact absurd h3 (by decide)
-  | loc hD =>
+  | newLocal hD =>
     injection hT with hC
     exact Declared.dec_loc w17 (.dec (.tail _ (.tail _ (.head _)))) hD hC
 
@@ -1184,7 +1184,7 @@ theorem c3 : Cast d2 [bnd "X" (tFoo tA)] (tv "X") (.cls (cn "MyFoo") [tA]) :=
   Cast.castVar (.head _)
     (Cast.castDown (Xs := [tn "Y"]) (Ts' := [tv "Y"])
       (Sub.subInheritLocal myFooDeclared rfl .subRefl)
-      (Generic.loc myFooDeclared)
+      (Generic.newLocal myFooDeclared)
       (Sub.subInheritLocal myFooDeclared rfl .subRefl)
       (by intro X h; cases h with
         | head => exact .head _
@@ -1204,9 +1204,9 @@ theorem c5 : Not (Cast d1 [] tA tB) := by
 -- Fields of a superclass.
 
 def decBase : Dec :=
-  { C := cn "Base", bounds := [bnd "X" obj], C' := Object, Ts := [], Ms := [], Ss := [{ T := tv "X", f := fn "f" }] }
+  { C := cn "Base", Delta := [bnd "X" obj], C' := Object, Ts := [], Ms := [], Ss := [{ T := tv "X", f := fn "f" }] }
 def decDerived : Dec :=
-  { C := cn "Derived", bounds := [], C' := cn "Base", Ts := [tA], Ms := [], Ss := [{ T := tB, f := fn "g" }] }
+  { C := cn "Derived", Delta := [], C' := cn "Base", Ts := [tA], Ms := [], Ss := [{ T := tB, f := fn "g" }] }
 
 def d12 : Decls := [decObject, decA, decB, decBase, decDerived]
 
@@ -1216,17 +1216,17 @@ theorem declBase : Declared d12 (.dec decBase) := .dec (.tail _ (.tail _ (.tail 
 theorem declDerived : Declared d12 (.dec decDerived) := .dec (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))
 
 -- R20: the field f of a Derived<> is the field of its superclass Base<A<>>: two steps.
-theorem r20 : Steps d12 derivedF vA :=
-  Steps.step
+theorem r20 : ReducesStar d12 derivedF vA :=
+  ReducesStar.step
     (And.intro
       (Step.simpleFieldSuper (D := decDerived) (Gs := []) (vs1 := [vB]) (vs := [vA]) declDerived rfl
         (by decide) (by decide) rfl)
       (by decide))
-    (Steps.step
+    (ReducesStar.step
       (And.intro
         (Step.simpleFieldFound (D := decBase) (Gs := [gA]) (vs1 := [vA]) (vs := []) declBase rfl (.head _))
         (by decide))
-      Steps.refl)
+      ReducesStar.refl)
 
 theorem kindA12 : Kind d12 [] tA :=
   Kind.wfClass (Delta0 := []) (Ts0 := []) (Scope.dec (D := decA) (.dec (.tail _ (.head _))))
@@ -1237,7 +1237,7 @@ theorem kindB12 : Kind d12 [] tB :=
     (by intro T h; cases h) rfl .nil
 
 theorem kindBaseA : Kind d12 [] (.cls (cn "Base") [tA]) :=
-  Kind.wfClass (Delta0 := decBase.bounds) (Ts0 := [tA]) (Scope.dec declBase)
+  Kind.wfClass (Delta0 := decBase.Delta) (Ts0 := [tA]) (Scope.dec declBase)
     (by intro T h; cases h with
       | head => exact kindA12
       | tail _ h => cases h)
@@ -1268,38 +1268,38 @@ theorem t4 : Typing d12 [] [] derivedF tA :=
 
 -- W18: A2: a field f in both Derived2 and its superclass Base.
 theorem w18 : Not (A2 [decObject, decA, decBase,
-    { C := cn "Derived2", bounds := [], C' := cn "Base", Ts := [tA], Ms := [], Ss := [{ T := tB, f := fn "f" }] }]) := by
+    { C := cn "Derived2", Delta := [], C' := cn "Base", Ts := [tA], Ms := [], Ss := [{ T := tB, f := fn "f" }] }]) := by
   decide
 
 -- W19: A1: a local class named A, as the top-level class A.
 theorem w19 : Not (A1 [decObject, decA,
-    { C := cn "Clash", bounds := [], C' := Object, Ts := [],
+    { C := cn "Clash", Delta := [], C' := Object, Ts := [],
       Ms := [meth [] obj "m" [] (.newLocal (cn "A") [] Object [] [] [])], Ss := [] }]) := by
   decide
 
 -- W20: A11: a ground funnel in Decls.
 theorem w20 : Not (A11 [decObject, decA,
-    { C := cn "Ground", bounds := [], C' := Object, Ts := [],
+    { C := cn "Ground", Delta := [], C' := Object, Ts := [],
       Ms := [meth [] obj "m" [] (.newLocal (cn "L") [.ground gA] Object [] [] [])], Ss := [] }]) := by
   decide
 
 -- W21: A6: the same type variable funnelled twice.
 theorem w21 : Not (A6 (classes [decObject,
-    { C := cn "Twice", bounds := [], C' := Object, Ts := [],
+    { C := cn "Twice", Delta := [], C' := Object, Ts := [],
       Ms := [meth [bnd "X" obj] obj "m" [] (.newLocal (cn "L") [.funnel (tn "X"), .funnel (tn "X")] Object [] [] [])],
       Ss := [] }])) := by
   decide
 
 -- W22: A8: a parameter named this.
 def dSelf : Decls := [decObject,
-    { C := cn "Self", bounds := [], C' := Object, Ts := [], Ms := [meth [] obj "m" [par obj "this"] thisE], Ss := [] }]
+    { C := cn "Self", Delta := [], C' := Object, Ts := [], Ms := [meth [] obj "m" [par obj "this"] thisE], Ss := [] }]
 
 theorem w22 : Not (A8 dSelf.methods (dSelf.flatMap fun D => Method.ifVarsList D.Ms)) := by decide
 
 -- W23: A9: a cycle of superclasses.
 theorem w23 : Not (A9 [decObject,
-    { C := cn "C3", bounds := [], C' := cn "C4", Ts := [], Ms := [], Ss := [] },
-    { C := cn "C4", bounds := [], C' := cn "C3", Ts := [], Ms := [], Ss := [] }]) := by
+    { C := cn "C3", Delta := [], C' := cn "C4", Ts := [], Ms := [], Ss := [] },
+    { C := cn "C4", Delta := [], C' := cn "C3", Ts := [], Ms := [], Ss := [] }]) := by
   decide
 
 -- Renaming by fresh.
@@ -1318,7 +1318,7 @@ theorem r21 : Reduces d1 (.ifInst vA tA (vn "x") nestedIf vB) (.ifInst vA tA (vn
 
 def lMethod : Method := meth [] obj "m" [par obj "x"] (call0 (ev "y") "m" [ev "x"])
 def decK : Dec :=
-  { C := cn "K", bounds := [], C' := Object, Ts := [],
+  { C := cn "K", Delta := [], C' := Object, Ts := [],
     Ms := [meth [] obj "k" [par (.cls (cn "L") []) "y"] (.newLocal (cn "L") [] Object [] [] [lMethod])], Ss := [] }
 
 def d13 : Decls := [decObject, decK]
@@ -1332,9 +1332,9 @@ theorem w24 : Not (Expr.noShadow [] [] (Value.newLocal (cn "L") [] Object [] [] 
   decide
 
 -- R22: rule simpleFound renames y into y1 and x into x1, so the copy of m binds x1 and the result is well formed.
-theorem r22 : Steps d13 (call0 (Value.new (cn "K") [] []) "k" [vL]) kResult :=
-  Steps.step (And.intro (Step.simpleAddSuper (Gs' := []) (vs := [vL]) rfl) (by decide))
-    (Steps.step
+theorem r22 : ReducesStar d13 (call0 (Value.new (cn "K") [] []) "k" [vL]) kResult :=
+  ReducesStar.step (And.intro (Step.simpleAddSuper (Gs' := []) (vs := [vL]) rfl) (by decide))
+    (ReducesStar.step
       (And.intro
         (Step.simpleFound (D := decK) (M := meth [] obj "k" [par (.cls (cn "L") []) "y"]
             (.newLocal (cn "L") [] Object [] [] [lMethod]))
@@ -1348,7 +1348,7 @@ theorem r22 : Steps d13 (call0 (Value.new (cn "K") [] []) "k" [vL]) kResult :=
               (.newLocal .nil (.cons (.mk (Xs' := []) (xs' := [vn "x"]) rfl rfl (.call .var (.cons .var .nil))) .nil))))
           rfl rfl (by decide) (by decide) rfl (by decide) (by decide) rfl)
         (by decide))
-      Steps.refl)
+      ReducesStar.refl)
 
 -- S1: field access on new Object<>() is stuck.
 theorem s1 : Stuck d1 (.field (Value.new Object [] []) (fn "f")) :=
@@ -1363,23 +1363,23 @@ def outerIf : Expr := .ifInst vA tA (vn "x") (innerIf "y") vB
 theorem w25 : Not (VSubstDefined [vn "x"] (innerIf "x")) := by decide
 
 -- R23: renaming y into y1, the program reduces to new B<>() in four steps.
-theorem r23 : Steps d1 outerIf vB :=
-  Steps.step
+theorem r23 : ReducesStar d1 outerIf vB :=
+  ReducesStar.step
     (And.intro
       (Step.ifThen (v := vA) (C' := cn "A") (Ts := []) (Ts' := []) (x := vn "x") (e1 := innerIf "y")
         (e1' := innerIf "y1") (e2 := vB) .subRefl
         (And.intro (RenE.ifInst (.new .nil) (.call .var .nil) (.new .nil)) (RenE.ifInst (.new .nil) (.call .var .nil) (.new .nil)))
         (by decide))
       (by decide))
-    (Steps.step
+    (ReducesStar.step
       (And.intro
         (Step.ifThen (v := vB) (C' := cn "B") (Ts := []) (Ts' := []) (x := vn "y1")
           (e1 := call0 (ev "y1") "onlyB" []) (e1' := call0 (ev "y1") "onlyB" []) (e2 := vB) .subRefl
           (And.intro (.call .var .nil) (.call .var .nil)) (by decide))
         (by decide))
-      (Steps.step
+      (ReducesStar.step
         (And.intro (Step.simpleAddSuper (Gs' := []) (vs := []) rfl) (by decide))
-        (Steps.step
+        (ReducesStar.step
           (And.intro
             (Step.simpleFound (D := decB) (M := meth [] tB "onlyB" [] vB) (Gs := []) (Gs' := []) (vs := [])
               (Delta' := []) (T0 := tB) (ps := []) (e0 := vB)
@@ -1387,7 +1387,7 @@ theorem r23 : Steps d1 outerIf vB :=
               (And.intro (.mk (Xs' := []) (xs' := []) rfl rfl (.new .nil)) (.mk (Xs' := []) (xs' := []) rfl rfl (.new .nil)))
               rfl rfl (by decide) (by decide) rfl (by decide) (by decide) rfl)
             (by decide))
-          Steps.refl)))
+          ReducesStar.refl)))
 
 -- The hypotheses of typeSoundness hold together: DeclsOk for d1 and for d2.
 
@@ -1405,8 +1405,8 @@ theorem one {A : Type} {a b : A} (h : List.Mem a [b]) : a = b := by
 theorem noMem {A : Type} {a : A} (h : List.Mem a []) : False := by cases h
 
 theorem occurs_mem (ctx : ExprCtx) (C0 Fs C' Ts es Ms) :
-    List.Mem (K.loc C0 Fs C' Ts es Ms) (ctx.plug (.newLocal C0 Fs C' Ts es Ms)).locals := by
-  have key : forall l : List K, Membership.mem l (K.loc C0 Fs C' Ts es Ms) -> List.Mem (K.loc C0 Fs C' Ts es Ms) l :=
+    List.Mem (ClassDecl.newLocal C0 Fs C' Ts es Ms) (ctx.plug (.newLocal C0 Fs C' Ts es Ms)).locals := by
+  have key : forall l : List ClassDecl, Membership.mem l (ClassDecl.newLocal C0 Fs C' Ts es Ms) -> List.Mem (ClassDecl.newLocal C0 Fs C' Ts es Ms) l :=
     fun _ h => h
   apply key
   induction ctx with
@@ -1417,7 +1417,7 @@ theorem occurs_mem (ctx : ExprCtx) (C0 Fs C' Ts es Ms) :
   | superArg _ _ _ _ _ ctx _ ih => simp [ExprCtx.plug, Expr.locals, localsList_append, Expr.localsList, ih]
   | field ctx _ ih => simp [ExprCtx.plug, Expr.locals, ih]
   | newArg _ _ _ ctx _ ih => simp [ExprCtx.plug, Expr.locals, localsList_append, Expr.localsList, ih]
-  | localArg _ _ _ _ _ ctx _ _ ih => simp [ExprCtx.plug, Expr.locals, localsList_append, Expr.localsList, ih]
+  | newLocalArg _ _ _ _ _ ctx _ _ ih => simp [ExprCtx.plug, Expr.locals, localsList_append, Expr.localsList, ih]
   | ifCond ctx _ _ _ _ ih => simp [ExprCtx.plug, Expr.locals, ih]
   | ifThen _ _ _ ctx _ ih => simp [ExprCtx.plug, Expr.locals, ih]
   | ifElse _ _ _ _ ctx ih => simp [ExprCtx.plug, Expr.locals, ih]
@@ -1427,10 +1427,10 @@ namespace OkD1
 theorem bodies : forall D, List.Mem D d1 -> forall M, List.Mem M D.Ms -> M.body.locals.isEmpty = true := by
   decide
 
-theorem declared {k} (h : Declared d1 k) : exists D, k = .dec D /\ List.Mem D d1 := by
+theorem declared {K} (h : Declared d1 K) : exists D, K = .dec D /\ List.Mem D d1 := by
   induction h with
   | dec hD => exact Exists.intro _ (And.intro rfl hD)
-  | @loc k Delta T0 m ps e C0 Fs C' Ts es Ms _ hM hOcc ih =>
+  | @newLocal K Delta T0 m ps e C0 Fs C' Ts es Ms _ hM hOcc ih =>
     cases ih with
     | intro D hk =>
     cases hk with
@@ -1589,10 +1589,10 @@ theorem bodies : forall D, List.Mem D d2 -> Not (D.C = cn "Maker") -> forall M, 
     M.body.locals.isEmpty = true := by
   decide
 
-theorem declared {k} (h : Declared d2 k) : (exists D, k = .dec D /\ List.Mem D d2) \/ k = myFooK := by
+theorem declared {K} (h : Declared d2 K) : (exists D, K = .dec D /\ List.Mem D d2) \/ K = myFooK := by
   induction h with
   | dec hD => exact Or.inl (Exists.intro _ (And.intro rfl hD))
-  | @loc k Delta T0 m ps e C0 Fs C' Ts es Ms _ hM hOcc ih =>
+  | @newLocal K Delta T0 m ps e C0 Fs C' Ts es Ms _ hM hOcc ih =>
     cases hOcc with
     | intro ctx hctx =>
     have hmem := occurs_mem ctx C0 Fs C' Ts es Ms
@@ -1612,7 +1612,7 @@ theorem declared {k} (h : Declared d2 k) : (exists D, k = .dec D /\ List.Mem D d
         have hm := one hM
         simp only [mkMethod] at hm
         cases hm
-        have h2 : List.Mem (K.loc C0 Fs C' Ts es Ms) [myFooK] := by
+        have h2 : List.Mem (ClassDecl.newLocal C0 Fs C' Ts es Ms) [myFooK] := by
           simpa [myFooK, myFooBody, Expr.locals, Expr.localsList, Method.localsList, myFooMethod, Method.locals]
             using hmem
         exact Or.inr (one h2)
@@ -1637,7 +1637,7 @@ theorem decName {D C} (h : Declared d2 (.dec D)) (hC : D.C = C) :
     subst hC
     rcases hm with h | h | h | h | h <;> subst h <;> simp [decObject, decA, decB, decFoo, decMaker, cn, Object]
 
-theorem locName {C Fs C' Ts es Ms} (h : Declared d2 (.loc C Fs C' Ts es Ms)) : C = cn "MyFoo" := by
+theorem locName {C Fs C' Ts es Ms} (h : Declared d2 (.newLocal C Fs C' Ts es Ms)) : C = cn "MyFoo" := by
   cases declared h with
   | inl h1 =>
     cases h1 with
@@ -1707,7 +1707,7 @@ def dX : Bounds := [bnd "X" obj]
 
 theorem kFoo (Delta : Bounds) (T : Ty) (hk : Kind d2 Delta T) (hs : Sub d2 Delta T obj) :
     Kind d2 Delta (tFoo T) :=
-  Kind.wfClass (Delta0 := decFoo.bounds) (Ts0 := [T]) (Scope.dec declFoo)
+  Kind.wfClass (Delta0 := decFoo.Delta) (Ts0 := [T]) (Scope.dec declFoo)
     (by intro T' h; rw [one h]; exact hk) rfl (.cons hs .nil)
 
 theorem kY : Kind d2 dY (tv "Y") := Kind.wfVar (T := obj) (.head _)
@@ -1715,10 +1715,10 @@ theorem sY : Sub d2 dY (tv "Y") obj := Sub.subVar (.head _) .subRefl
 theorem kX : Kind d2 dX (tv "X") := Kind.wfVar (T := obj) (.head _)
 theorem sA : Sub d2 [] tA obj := Sub.subInherit (D := decA) declA rfl .subRefl
 
-theorem typA2 (Delta : Bounds) (g : Gamma) : Typing d2 Delta g vA tA :=
+theorem typA2 (Delta : Bounds) (g : TypeEnv) : Typing d2 Delta g vA tA :=
   Typing.newTop (D := decA) (es1 := []) (es2 := []) declA (kA _) rfl .nil Typing.newObject
 
-theorem typB2 (Delta : Bounds) (g : Gamma) : Typing d2 Delta g vB tB :=
+theorem typB2 (Delta : Bounds) (g : TypeEnv) : Typing d2 Delta g vB tB :=
   Typing.newTop (D := decB) (es1 := []) (es2 := []) declB (kB _) rfl .nil Typing.newObject
 
 theorem okObject : ClassOk d2 decObject :=
@@ -1747,14 +1747,14 @@ theorem okFoo : ClassOk d2 decFoo :=
           intro M h
           rw [one h]
           exact MethodOk.methodOk (by intro T h; cases h) (by intro T h; rw [one h]; exact kX)
-            (Typing.call (Delta0 := decFoo.bounds) (Ts2 := [tv "X"]) (Delta1 := []) (T0 := tv "X") (ps := [])
-              (body := .call thisE [] (mn "x") []) (Ts' := [])
+            (Typing.call (Delta0 := decFoo.Delta) (Ts2 := [tv "X"]) (Delta1 := []) (T0 := tv "X") (ps := [])
+              (e := .call thisE [] (mn "x") []) (Ts' := [])
               (Typing.var rfl) (Scope.dec declFoo)
               (Exists.intro (.dec decFoo) (And.intro declFoo (And.intro rfl (.head _)))) rfl rfl rfl
               (by intro T h; cases h) .nil .nil))
         (overrideObj _ _)))
 
-def gMk : Gamma := [{ T := .cls (cn "Maker") [], x := this }, par (tv "Y") "y"]
+def gMk : TypeEnv := [{ T := .cls (cn "Maker") [], x := this }, par (tv "Y") "y"]
 
 theorem consistentMyFoo : Consistent d2 myFooK :=
   Exists.intro [.funnel (tn "Y")] (Exists.intro [tv "Y"] (Exists.intro [] (Exists.intro [myFooMethod]
@@ -1762,12 +1762,12 @@ theorem consistentMyFoo : Consistent d2 myFooK :=
       (by
         intro M h
         rw [one h]
-        exact OverrideOkM.loc (Delta'' := []) (T0 := tv "Y") (ps := []) (e := ev "y")
+        exact OverrideOkM.newLocal (Delta'' := []) (T0 := tv "Y") (ps := []) (e := ev "y")
           myFooDeclared (.head _) rfl rfl rfl rfl))))))))
 
 theorem kMyFooY : Kind d2 dY (.cls (cn "MyFoo") [tv "Y"]) :=
   Kind.wfClass (Delta0 := dY) (Ts0 := [tv "Y"])
-    (Scope.loc (C := cn "Maker") (Delta' := dY) (T0 := tFoo (tv "Y")) (m := mn "mk") (ps := [par (tv "Y") "y"])
+    (Scope.newLocal (C := cn "Maker") (Delta' := dY) (T0 := tFoo (tv "Y")) (m := mn "mk") (ps := [par (tv "Y") "y"])
       (e := myFooBody) (T := .cls (cn "Maker") []) (Delta := []) (Ts'' := [])
       (Exists.intro (.dec decMaker) (And.intro declMaker (And.intro rfl (.head _))))
       (Exists.intro .hole rfl) (Generic.dec declMaker) (Scope.dec declMaker) (Pairing.funnel (.head _) .nil))
@@ -1826,7 +1826,7 @@ def mainMk : Expr := .call (Value.new (cn "Maker") [] []) [tA] (mn "mk") [vA]
 
 theorem typMain : Typing d2 [] [] mainMk (tFoo tA) :=
   Typing.call (Delta0 := []) (Ts2 := []) (Delta1 := dY) (T0 := tFoo (tv "Y")) (ps := [par (tv "Y") "y"])
-    (body := myFooBody) (Ts' := [tA])
+    (e := myFooBody) (Ts' := [tA])
     (Typing.newTop (D := decMaker) (es1 := []) (es2 := []) declMaker (kMaker _) rfl .nil Typing.newObject)
     (Scope.dec declMaker)
     (Exists.intro (.dec decMaker) (And.intro declMaker (And.intro rfl (.head _)))) rfl rfl rfl
@@ -1841,12 +1841,12 @@ theorem typVLocal : Typing d2 [] [] vLocal (tFoo tA) :=
           (by
             intro M h
             rw [one h]
-            exact OverrideOkM.loc (Delta'' := []) (T0 := tv "Y") (ps := []) (e := ev "y")
+            exact OverrideOkM.newLocal (Delta'' := []) (T0 := tv "Y") (ps := []) (e := ev "y")
               myFooDeclared (.head _) rfl rfl rfl rfl)))))))))
       (Pairing.ground .nil)
       (by intro X h; cases h)
       (Kind.wfClass (Delta0 := dY) (Ts0 := [tA])
-        (Scope.loc (C := cn "Maker") (Delta' := dY) (T0 := tFoo (tv "Y")) (m := mn "mk") (ps := [par (tv "Y") "y"])
+        (Scope.newLocal (C := cn "Maker") (Delta' := dY) (T0 := tFoo (tv "Y")) (m := mn "mk") (ps := [par (tv "Y") "y"])
           (e := myFooBody) (T := .cls (cn "Maker") []) (Delta := []) (Ts'' := [])
           (Exists.intro (.dec decMaker) (And.intro declMaker (And.intro rfl (.head _))))
           (Exists.intro .hole rfl) (Generic.dec declMaker) (Scope.dec declMaker) (Pairing.funnel (.head _) .nil))
@@ -1863,7 +1863,7 @@ theorem typVLocal : Typing d2 [] [] vLocal (tFoo tA) :=
 
 theorem kMyFooA : Kind d2 [] (.cls (cn "MyFoo") [tA]) :=
   Kind.wfClass (Delta0 := dY) (Ts0 := [tA])
-    (Scope.loc (C := cn "Maker") (Delta' := dY) (T0 := tFoo (tv "Y")) (m := mn "mk") (ps := [par (tv "Y") "y"])
+    (Scope.newLocal (C := cn "Maker") (Delta' := dY) (T0 := tFoo (tv "Y")) (m := mn "mk") (ps := [par (tv "Y") "y"])
       (e := myFooBody) (T := .cls (cn "Maker") []) (Delta := []) (Ts'' := [])
       (Exists.intro (.dec decMaker) (And.intro declMaker (And.intro rfl (.head _))))
       (Exists.intro .hole rfl) (Generic.dec declMaker) (Scope.dec declMaker) (Pairing.funnel (.head _) .nil))
@@ -1872,7 +1872,7 @@ theorem kMyFooA : Kind d2 [] (.cls (cn "MyFoo") [tA]) :=
 theorem castFooMyFoo : Cast d2 [] (tFoo tA) (.cls (cn "MyFoo") [tA]) :=
   Cast.castDown (Xs := [tn "Y"]) (Ts' := [tv "Y"])
     (Sub.subInheritLocal myFooDeclared rfl .subRefl)
-    (Generic.loc myFooDeclared)
+    (Generic.newLocal myFooDeclared)
     (Sub.subInheritLocal myFooDeclared rfl .subRefl)
     (by intro X h; cases h with
       | head => exact .head _
@@ -1916,12 +1916,12 @@ theorem t5 : Typing d1 [] [] (.superCall (Value.new (cn "C2") [] []) (.cls (cn "
     Typing d1 [] [] (.superCall (Value.new (cn "C2") [] []) (.cls (cn "C1") []) [] (mn "m") []) tA :=
   And.intro
     (Typing.callLbRuntime (D := decC2) (Ts := []) (D0 := decC1) (Ts0 := []) (Delta1 := []) (T0 := tA)
-      (ps := []) (body := vA) (Ts' := [])
+      (ps := []) (e := vA) (Ts' := [])
       (Sub.subInherit (D := decC2) OkD1.declC2 rfl .subRefl) OkD1.declC1
       (Exists.intro (.dec decC1) (And.intro OkD1.declC1 (And.intro rfl (.head _)))) rfl rfl rfl
       OkD1.declC2 OkD1.kC2 (by intro T h; cases h) .nil (.cons OkD1.typC2 .nil))
     (Typing.callLbRuntime (D := decC1) (Ts := []) (D0 := decC1) (Ts0 := []) (Delta1 := []) (T0 := tA)
-      (ps := []) (body := vA) (Ts' := [])
+      (ps := []) (e := vA) (Ts' := [])
       .subRefl OkD1.declC1
       (Exists.intro (.dec decC1) (And.intro OkD1.declC1 (And.intro rfl (.head _)))) rfl rfl rfl
       OkD1.declC1 OkD1.kC1 (by intro T h; cases h) .nil

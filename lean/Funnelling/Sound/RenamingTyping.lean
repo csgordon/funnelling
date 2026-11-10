@@ -6,10 +6,10 @@ namespace Funnelling
 
 mutual
 theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) :
-    forall {Delta gamma e T}, Typing d Delta gamma e T ->
-    forall {rv rt e' Delta' gamma' Xs xs Xs' xs'}, RenE rv rt e e' -> REnv rv rt Delta Delta' gamma gamma' Xs xs xs' ->
+    forall {Delta Gamma e T}, Typing d Delta Gamma e T ->
+    forall {rv rt e' Delta' Gamma' Xs xs Xs' xs'}, RenE rv rt e e' -> REnv rv rt Delta Delta' Gamma Gamma' Xs xs xs' ->
     e.noShadow Xs xs = true -> e'.noShadow Xs' xs' = true -> NoThis e -> NoThis e' -> e.uniq -> e'.uniq ->
-    Typing d Delta' gamma' e' (T.ren rt)
+    Typing d Delta' Gamma' e' (T.ren rt)
   | _, _, _, _, .subs h hk hs, _, _, _, _, _, _, _, _, _, hr, env, hn, hn', ht, ht', hu, hu' =>
     Typing.subs (Typing.ren hwf hok hd h hr env hn hn' ht ht' hu hu') (Kind.renT hd env.bD hk) (Sub.renT hd env.bD hs)
   | _, _, _, _, .var hl, _, _, _, _, _, _, _, _, _, hr, env, _, _, _, _, _, _ => by
@@ -50,7 +50,7 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
         (by simpa [NoThis, Expr.vbindersList, Expr.vbinders] using ht)
         (by simpa [NoThis, Expr.vbindersList, Expr.vbinders] using ht')
         (by simpa [Expr.uniqList, Expr.uniq] using hu) (by simpa [Expr.uniqList, Expr.uniq] using hu')
-      have hlen : (Ts0 ++ Ts1).length = (D0.bounds ++ Delta1).length := by simp [h4, h5]
+      have hlen : (Ts0 ++ Ts1).length = (D0.Delta ++ Delta1).length := by simp [h4, h5]
       have e6 := congrArg (Ty.renList rt) h6
       rw [renList_bind hlen hcl.1, renList_append] at e6
       have hs1 := Sub.renT hd env.bD h1
@@ -81,7 +81,7 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
       simp only [Ty.ren] at hk2 |-
       exact Typing.newTop h1 hk2 (by rw [renList_length, h3]) ih1 ih2
   | _, _, _, _, .newLocal (C := C) (Fs := Fs) (C0 := C0) (Ts := Ts) (Ms := Ms) (Delta' := Dp) h1 h2 h3 h4 h5 h6 h7 h8,
-      rv, rt, _, Delta', gamma', Xs, xs, Xs', xs', hr, env, hn, hn', ht, ht', hu, hu' => by
+      rv, rt, _, Delta', Gamma', Xs, xs, Xs', xs', hr, env, hn, hn', ht, ht', hu, hu' => by
     cases hr with
     | newLocal hr1 hr2 =>
       simp only [Expr.noShadow, Bool.and_eq_true] at hn hn'
@@ -91,7 +91,7 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
       have hDX : forall X, List.Mem X (dom Dp) -> List.Mem X Xs := fun X hX => env.dX X (dom_sub1 h2.sub X hX)
       have hFs : forall X, List.Mem X (Ty.ftvList (abs Fs)) -> List.Mem X Xs := fun X hX => hDX X (Kind.ftv h4 X hX)
       have hTs : forall X, List.Mem X (Ty.ftvList Ts) -> List.Mem X Xs := fun X hX => hDX X (Kind.ftv h5 X hX)
-      have hdisM : forall M, List.Mem M Ms -> forall X, List.Mem X Xs -> Not (List.Mem X (dom M.bounds)) :=
+      have hdisM : forall M, List.Mem M Ms -> forall X, List.Mem X Xs -> Not (List.Mem X (dom M.Delta)) :=
         fun M hM X hX hm => Method.noShadow_dom (Method.noShadowList_mem hM hn.2) X hm hX
       have huM : forall M, List.Mem M Ms -> M.uniq := fun M hM => Method.uniqList_mem hM hu.2
       have ih6 := Typing.ren hwf hok hd h6 (RenE.new hr1) env (by simpa [Expr.noShadow] using hn.1)
@@ -134,12 +134,12 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
         (Typing.ren hwf hok hd h1 hr1 env1 hn.1.2 hn'.1.2 ht.1.2 ht'.1.2 hu.2.1 hu'.2.1)
         (Typing.ren hwf hok hd h2 hr2 env hn.2 hn'.2 ht.2 ht'.2 hu.2.2 hu'.2.2)
 theorem TypingSeq.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) :
-    forall {Delta gamma es Ts}, TypingSeq d Delta gamma es Ts ->
-    forall {rv rt es' Delta' gamma' Xs xs Xs' xs'}, RenEs rv rt es es' ->
-    REnv rv rt Delta Delta' gamma gamma' Xs xs xs' ->
+    forall {Delta Gamma es Ts}, TypingSeq d Delta Gamma es Ts ->
+    forall {rv rt es' Delta' Gamma' Xs xs Xs' xs'}, RenEs rv rt es es' ->
+    REnv rv rt Delta Delta' Gamma Gamma' Xs xs xs' ->
     Expr.noShadowList Xs xs es = true -> Expr.noShadowList Xs' xs' es' = true ->
     Not (List.Mem this (Expr.vbindersList es)) -> Not (List.Mem this (Expr.vbindersList es')) ->
-    Expr.uniqList es -> Expr.uniqList es' -> TypingSeq d Delta' gamma' es' (Ty.renList rt Ts)
+    Expr.uniqList es -> Expr.uniqList es' -> TypingSeq d Delta' Gamma' es' (Ty.renList rt Ts)
   | _, _, _, _, .nil, _, _, _, _, _, _, _, _, _, hr, _, _, _, _, _, _, _ => by
     cases hr; exact TypingSeq.nil
   | _, _, _, _, .cons h hs, _, _, _, _, _, _, _, _, _, hr, env, hn, hn', ht, ht', hu, hu' => by
@@ -150,12 +150,12 @@ theorem TypingSeq.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Decl
       exact TypingSeq.cons (Typing.ren hwf hok hd h hr1 env hn.1 hn'.1 ht.1 ht'.1 hu.1 hu'.1)
         (TypingSeq.ren hwf hok hd hs hr2 env hn.2 hn'.2 ht.2 ht'.2 hu.2 hu'.2)
 theorem MethodOk.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) :
-    forall {Delta gamma M}, MethodOk d Delta gamma M ->
-    forall {rv rt M' Delta' gamma' Xs xs Xs' xs'}, RenM rv rt M M' ->
-    REnv rv rt Delta Delta' gamma gamma' Xs (this :: xs) (this :: xs') ->
+    forall {Delta Gamma M}, MethodOk d Delta Gamma M ->
+    forall {rv rt M' Delta' Gamma' Xs xs Xs' xs'}, RenM rv rt M M' ->
+    REnv rv rt Delta Delta' Gamma Gamma' Xs (this :: xs) (this :: xs') ->
     M.noShadow Xs xs = true -> M'.noShadow Xs' xs' = true -> NoThisM M -> NoThisM M' -> M.uniq -> M'.uniq ->
-    MethodOk d Delta' gamma' M'
-  | Delta, _, _, .methodOk (Delta' := Dm) (T0 := T0) (ps := ps) h1 h2 h3, rv, rt, _, Delta', gamma', Xs, xs, Xs',
+    MethodOk d Delta' Gamma' M'
+  | Delta, _, _, .methodOk (Delta' := Dm) (T0 := T0) (ps := ps) h1 h2 h3, rv, rt, _, Delta', Gamma', Xs, xs, Xs',
       xs', hr, env, hn, hn', ht, ht', hu, hu' => by
     cases hr with
     | @mk _ _ _ _ _ _ _ e2 Ys ys hL hl hb =>

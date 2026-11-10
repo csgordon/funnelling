@@ -38,7 +38,7 @@ inductive Redex : Expr -> Prop
 
 mutual
 theorem decomp_closed : forall {e : Expr}, e.closed [] [] = true ->
-    IsValue e \/ exists (E : ECtx) (r : Expr), e = E.plug r /\ Redex r
+    IsValue e \/ exists (E : EvalCtx) (r : Expr), e = E.plug r /\ Redex r
   | .var _, h => by simp [Expr.closed] at h
   | .call e Ts m es, h => by
     simp only [Expr.closed, Bool.and_eq_true] at h
@@ -87,7 +87,7 @@ theorem decomp_closed : forall {e : Expr}, e.closed [] [] = true ->
     subst hGs hGs'
     rcases decomp_closedList h.1.2 with ⟨vs, hvs⟩ | ⟨vs, E, r, es', hE, hr⟩
     . subst hvs; exact Or.inl ⟨Value.newLocal C Gs C' Gs' vs Ms, rfl⟩
-    . subst hE; exact Or.inr ⟨.localArg C Gs C' Gs' vs E es' Ms, r, rfl, hr⟩
+    . subst hE; exact Or.inr ⟨.newLocalArg C Gs C' Gs' vs E es' Ms, r, rfl, hr⟩
   | .ifInst e0 T x e1 e2, h => by
     simp only [Expr.closed, Bool.and_eq_true] at h
     rcases Ty.ground_of (all_nil_contains h.1.1.2) with ⟨G, hG⟩
@@ -98,7 +98,7 @@ theorem decomp_closed : forall {e : Expr}, e.closed [] [] = true ->
     . subst hE; exact ⟨.ifCond E G x e1 e2, r, rfl, hr⟩
 theorem decomp_closedList : forall {es : List Expr}, Expr.closedList [] [] es = true ->
     (exists vs : List Value, es = Value.exprs vs) \/
-    exists (vs : List Value) (E : ECtx) (r : Expr) (es' : List Expr), es = Value.exprs vs ++ E.plug r :: es' /\ Redex r
+    exists (vs : List Value) (E : EvalCtx) (r : Expr) (es' : List Expr), es = Value.exprs vs ++ E.plug r :: es' /\ Redex r
   | [], _ => Or.inl ⟨[], rfl⟩
   | e :: es, h => by
     simp only [Expr.closedList, Bool.and_eq_true] at h
@@ -294,7 +294,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         subst hMn
         have hd := declOk hwf hok
         rcases dec_override hwf hok hd hw'.decl hM hw'.decl0 hkd0 hw'.sub with ⟨Us, hUs, hO, _⟩
-        have hl2 : Us.length = w.D0.bounds.length := by rw [<- hw'.len0, hUs, substList_length]
+        have hl2 : Us.length = w.D0.Delta.length := by rw [<- hw'.len0, hUs, substList_length]
         rcases found_sig hwf (Scope.dec hw'.decl0) hw'.meth hl2 hO with ⟨_, h4, _, h6⟩
         have hl6 := congrArg List.length h6
         have hls := congrArg List.length hw'.sig
@@ -304,13 +304,13 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         have hl1 := hw'.len1
         rw [gtys_length] at hl1
         rcases WFDecls.method hwf hw'.decl.dec_mem hM with ⟨huM, htM, hnM⟩
-        have hnD : (dom w.D.bounds).Nodup := hwf.2.2.2.2.1 w.D.bounds (by
+        have hnD : (dom w.D.Delta).Nodup := hwf.2.2.2.2.1 w.D.Delta (by
           simp only [listMem_iff, List.mem_append, List.mem_map]
           exact Or.inl (Exists.intro w.D (And.intro hw'.decl.dec_mem rfl)))
         have hdis := Method.noShadow_dom hnM
         simp only [Method.noShadow, Bool.and_eq_true, List.nil_append, List.cons_append, NoThisM, Method.vbinders,
           listMem_iff, List.mem_append, not_or, Method.uniq] at hnM htM huM
-        have hN : (dom w.D.bounds ++ dom Delta').Nodup := by grind
+        have hN : (dom w.D.Delta ++ dom Delta').Nodup := by grind
         exact ⟨_, Step.simpleFound hw'.decl hM (FreshM.refl _) hkd (by omega) hN
           (List.nodup_cons.mpr ⟨htM.1, huM.2.1⟩) (by omega) (fun X hX => Expr.noShadow_tb hnM.2 X hX)
           (fun y hy => Expr.noShadow_binders hnM.2 htM.2 y hy) rfl⟩

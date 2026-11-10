@@ -5,9 +5,9 @@ open Funnelling.SoundSimp
 namespace Funnelling
 
 theorem Declared.object {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : Declared d (.dec D)) (hO : D.C = Object) :
-    D.C' = Object /\ D.Ts = [] /\ D.bounds = [] /\ D.Ms = [] /\ D.Ss = [] := by
+    D.C' = Object /\ D.Ts = [] /\ D.Delta = [] /\ D.Ms = [] /\ D.Ss = [] := by
   rcases object_declared hwf with ⟨D0, hD0, h1, h2, h3, h4, h5, h6⟩
-  have e := K.dec.inj (Declared.unique hwf hD hD0 (by show D.C = D0.C; rw [hO, h1]))
+  have e := ClassDecl.dec.inj (Declared.unique hwf hD hD0 (by show D.C = D0.C; rw [hO, h1]))
   subst e
   exact ⟨h3, h4, h2, h5, h6⟩
 
@@ -19,7 +19,7 @@ theorem sub_from_object {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {U0 : Lis
   | @subInherit D Ts0 T' hD hl _ ih =>
     simp only [Ty.cls.injEq] at he
     have ho := Declared.object hwf hD he.1.symm
-    exact ih (U0 := Ty.substList (bind D.bounds Ts0) D.Ts) (by simp only [Ty.subst]; rw [ho.1])
+    exact ih (U0 := Ty.substList (bind D.Delta Ts0) D.Ts) (by simp only [Ty.subst]; rw [ho.1])
   | subInheritLocal hD _ _ =>
     simp only [Ty.cls.injEq] at he
     rcases object_declared hwf with ⟨D0, hD0⟩; exact absurd (Declared.dec_loc hwf hD0.1 hD (by rw [hD0.2.1, he.1])) id
@@ -40,18 +40,18 @@ theorem chain_mem {d : Decls} (hwf : WFDecls d) {Delta : Bounds} : forall (n : N
       rw [ho] at hs
       rcases sub_from_object hwf hs with ⟨U', hU⟩
       simp only [Ty.cls.injEq] at hU
-      have e := K.dec.inj (Declared.unique hwf hD' hD (by show D'.C = D.C; rw [hU.1, ho]))
+      have e := ClassDecl.dec.inj (Declared.unique hwf hD' hD (by show D'.C = D.C; rw [hU.1, ho]))
       rw [e]; exact List.Mem.head _
     . have hsc : superChain d (n + 1) D.C = D :: superChain d n D.C' := by
         simp only [superChain, hf]; simp [ho]
       rw [hsc] at hO |-
       rcases Sub.dec_step hwf hD hs with e | hs2
       . simp only [Ty.cls.injEq] at e
-        have e2 := K.dec.inj (Declared.unique hwf hD' hD e.1)
+        have e2 := ClassDecl.dec.inj (Declared.unique hwf hD' hD e.1)
         rw [e2]; exact List.Mem.head _
       . rcases Declared.super hwf hD with ⟨D2, hD2⟩
         have hsup := hD2.2
-        simp only [K.sup] at hsup
+        simp only [ClassDecl.sup] at hsup
         have hs3 := hs2.2
         simp only [Ty.subst] at hs3
         rw [<- hsup] at hs3
@@ -109,12 +109,12 @@ theorem sub_self_eq {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} {f 
   . have ho : Not (D.C = Object) := by
       intro ho
       rcases object_declared hwf with ⟨D0, hD0⟩
-      have e := K.dec.inj (Declared.unique hwf hD hD0.1 (by show D.C = D0.C; rw [ho, hD0.2.1]))
+      have e := ClassDecl.dec.inj (Declared.unique hwf hD hD0.1 (by show D.C = D0.C; rw [ho, hD0.2.1]))
       rw [e, hD0.2.2.2.2.2.2] at hf
       cases hf
     rcases Declared.super hwf hD with ⟨D2, hD2⟩
     have hsup := hD2.2
-    simp only [K.sup] at hsup
+    simp only [ClassDecl.sup] at hsup
     have hs3 := hs2.2
     simp only [Ty.subst] at hs3
     rw [<- hsup] at hs3
@@ -194,12 +194,12 @@ theorem rank_sub {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : 
     rw [he.1]; exact Nat.le_refl _
   | @subInherit D' Ts0' T' hD' hl _ ih =>
     simp only [Ty.cls.injEq] at he
-    have e := K.dec.inj (Declared.unique hwf hD' hD he.1.symm)
+    have e := ClassDecl.dec.inj (Declared.unique hwf hD' hD he.1.symm)
     subst e
     rcases Declared.super hwf hD' with ⟨D'', hD''⟩
     have hsup := hD''.2
-    simp only [K.sup] at hsup
-    have r := ih hD''.1 (Ts := Ty.substList (bind D'.bounds Ts0') D'.Ts) (by simp only [Ty.subst]; rw [hsup]) ht
+    simp only [ClassDecl.sup] at hsup
+    have r := ih hD''.1 (Ts := Ty.substList (bind D'.Delta Ts0') D'.Ts) (by simp only [Ty.subst]; rw [hsup]) ht
     rw [hsup] at r
     by_cases ho : D'.C = Object
     . have ho2 := (Declared.object hwf hD' ho).1
@@ -213,10 +213,10 @@ theorem rank_sub {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : 
 
 theorem no_cycle {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : Declared d (.dec D))
     (ho : Not (D.C = Object)) {Ts U : List Ty}
-    (h : Sub d Delta ((Ty.cls D.C' D.Ts).subst (bind D.bounds Ts)) (.cls D.C U)) : False := by
+    (h : Sub d Delta ((Ty.cls D.C' D.Ts).subst (bind D.Delta Ts)) (.cls D.C U)) : False := by
   rcases Declared.super hwf hD with ⟨D'', hD''⟩
   have hsup := hD''.2
-  simp only [K.sup, Ty.subst] at hsup h
+  simp only [ClassDecl.sup, Ty.subst] at hsup h
   rw [<- hsup] at h
   have r := rank_sub hwf hD''.1 h
   rw [rank_super hwf hD ho, hsup] at r
@@ -231,7 +231,7 @@ theorem object_args {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {U0 U : List 
   | @subInherit D Ts0 T' hD hl _ ih =>
     simp only [Ty.cls.injEq] at he
     have ho := Declared.object hwf hD he.1.symm
-    rcases ih (U0 := Ty.substList (bind D.bounds Ts0) D.Ts) (by simp only [Ty.subst]; rw [ho.1]) ht with e | e
+    rcases ih (U0 := Ty.substList (bind D.Delta Ts0) D.Ts) (by simp only [Ty.subst]; rw [ho.1]) ht with e | e
     . right; rw [e, ho.2.1]; rfl
     . exact Or.inr e
   | subInheritLocal hD _ _ =>
@@ -285,7 +285,7 @@ theorem sub_unique_dec {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {T1 : Ty}
       . exact absurd (no_cycle hwf hD ho hs) id
     . refine ih ?_ ht hs3.2
       rcases Declared.super hwf hD with ⟨D'', hD''⟩
-      refine Exists.intro D'' (Exists.intro (Ty.substList (bind D.bounds Ts0) D.Ts) (And.intro hD''.1 ?_))
+      refine Exists.intro D'' (Exists.intro (Ty.substList (bind D.Delta Ts0) D.Ts) (And.intro hD''.1 ?_))
       simp only [Ty.subst]
       rw [hD''.2]; rfl
   | subInheritLocal hD _ _ =>
@@ -330,7 +330,7 @@ theorem kind_chain {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
   | @subInherit D Ts0 T' hD hl _ ih =>
     have hka := kind_dec_args hwf hD hk
     have hcls := (hok D hD.dec_mem).2.1 _ (List.Mem.head _)
-    have hK := Kind.subst hd (Delta' := Delta) (s := bind D.bounds Ts0) (fun b hb => (hka.2 b hb).1)
+    have hK := Kind.subst hd (Delta' := Delta) (s := bind D.Delta Ts0) (fun b hb => (hka.2 b hb).1)
       (fun b hb => (hka.2 b hb).2) hcls
     exact ih rfl hK
   | @subInheritLocal C1 Fs C' Ts' es Ms Ts1 T' hD hl _ ih =>
@@ -339,8 +339,8 @@ theorem kind_chain {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
       rcases h1.loc_declared with h' | h'
       . cases h' with
         | intro D hD' => exact absurd (Declared.dec_loc hwf hD'.1 hD hD'.2.1) id
-      . rcases scopeFacts hwf hok h1 with ⟨k', hk'⟩
-        have hname : k'.name = C1 := by
+      . rcases scopeFacts hwf hok h1 with ⟨K', hk'⟩
+        have hname : K'.name = C1 := by
           rcases hk'.2.1 with ⟨Us, hUs⟩; simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
         have ek := Declared.unique hwf hk'.1 hD hname
         subst ek
@@ -372,7 +372,7 @@ theorem kind_len {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {C : ClassName} 
       have e := Scope.dec_eq hwf hD h1
       rw [e.1, e.2] at h3
       rw [h3, hlx]
-    | @loc C0 Fs C' Ts' es Ms hD =>
+    | @newLocal C0 Fs C' Ts' es Ms hD =>
       simp only [Ty.cls.injEq] at hgT
       have hlx := congrArg List.length hgT.2
       simp only [vars, List.length_map] at hlx
@@ -390,15 +390,15 @@ theorem kind_len {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {C : ClassName} 
         simp only [dom, List.length_map] at hd
         rw [h3, hd, hlx]
 
-theorem sub_unique {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {k : K} (hk : Declared d k) {Ts : List Ty}
-    {C' : ClassName} {U1 U2 : List Ty} (h1 : Sub d Delta (.cls k.name Ts) (.cls C' U1))
-    (h2 : Sub d Delta (.cls k.name Ts) (.cls C' U2)) : U1 = U2 := by
-  cases k with
+theorem sub_unique {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {K : ClassDecl} (hk : Declared d K) {Ts : List Ty}
+    {C' : ClassName} {U1 U2 : List Ty} (h1 : Sub d Delta (.cls K.name Ts) (.cls C' U1))
+    (h2 : Sub d Delta (.cls K.name Ts) (.cls C' U2)) : U1 = U2 := by
+  cases K with
   | dec D => exact sub_unique_dec hwf (Exists.intro D (Exists.intro Ts (And.intro hk rfl))) h1 h2
-  | loc C Fs C0 Ts0 es Ms =>
+  | newLocal C Fs C0 Ts0 es Ms =>
     rcases Declared.super hwf hk with ⟨D', hD'⟩
     have hsup := hD'.2
-    simp only [K.sup] at hsup
+    simp only [ClassDecl.sup] at hsup
     have back : forall {U : List Ty}, Sub d Delta ((Ty.cls C0 Ts0).subst (bindF Fs Ts)) (.cls C U) -> False := by
       intro U hs
       rw [<- hsup] at hs
@@ -484,20 +484,20 @@ theorem vars_inj : forall {Xs Ys : List TVarName}, vars Xs = vars Ys -> Xs = Ys
     rw [h.1, ih]
 
 theorem Generic.nodup {d : Decls} (hwf : WFDecls d) {C : ClassName} {Xs : List TVarName}
-    (hg : Generic d C (.cls C (vars Xs))) : Xs.Nodup /\ exists k, Declared d k /\ k.name = C := by
+    (hg : Generic d C (.cls C (vars Xs))) : Xs.Nodup /\ exists K, Declared d K /\ K.name = C := by
   generalize hgT : Ty.cls C (vars Xs) = T at hg
   cases hg with
   | @dec D hD =>
     simp only [Ty.cls.injEq] at hgT
-    have hx : Xs = dom D.bounds := by
+    have hx : Xs = dom D.Delta := by
       have := hgT.2
       exact vars_inj this
     refine And.intro ?_ (Exists.intro _ (And.intro hD rfl))
     rw [hx]
-    exact hwf.2.2.2.2.1 D.bounds (by
+    exact hwf.2.2.2.2.1 D.Delta (by
       simp only [listMem_iff, List.mem_append, List.mem_map]
       exact Or.inl (Exists.intro D (And.intro hD.dec_mem rfl)))
-  | @loc C0 Fs C' Ts' es Ms hD =>
+  | @newLocal C0 Fs C' Ts' es Ms hD =>
     simp only [Ty.cls.injEq] at hgT
     have hx : Xs = domF Fs := by
       have := hgT.2
@@ -508,9 +508,9 @@ theorem Generic.nodup {d : Decls} (hwf : WFDecls d) {C : ClassName} {Xs : List T
     exact hwf.2.2.2.2.2.1 _ hD.mem
 
 theorem cast_runtime {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {T0 : Ty} {C : ClassName}
-    {Ts Ts'' : List Ty} {k1 : K} {U1 : List Ty} (hk1d : Declared d k1) (hc : Cast d [] T0 (.cls C Ts))
-    (hv : Sub d [] (.cls k1.name U1) T0) (hr : Sub d [] (.cls k1.name U1) (.cls C Ts''))
-    (hk : Kind d [] (.cls C Ts)) (hk1 : Kind d [] (.cls k1.name U1)) : Sub d [] (.cls k1.name U1) (.cls C Ts) := by
+    {Ts Ts'' : List Ty} {K1 : ClassDecl} {U1 : List Ty} (hk1d : Declared d K1) (hc : Cast d [] T0 (.cls C Ts))
+    (hv : Sub d [] (.cls K1.name U1) T0) (hr : Sub d [] (.cls K1.name U1) (.cls C Ts''))
+    (hk : Kind d [] (.cls C Ts)) (hk1 : Kind d [] (.cls K1.name U1)) : Sub d [] (.cls K1.name U1) (.cls C Ts) := by
   cases hc with
   | castUp h => exact hv.trans h
   | castVar hm => cases hm
@@ -524,7 +524,7 @@ theorem cast_runtime {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclO
     simp only [Ty.subst] at hs1 hs2
     rw [vars_subst hg.1 l1] at hs1
     rw [vars_subst hg.1 l2] at hs2
-    rcases hg.2 with ⟨k, hk'⟩
+    rcases hg.2 with ⟨K, hk'⟩
     have hkn := hk'.2
     rw [<- hkn] at hs1 hs2 h1
     have e1 := sub_unique hwf hk'.1 h1 hs1

@@ -25,8 +25,8 @@ theorem Up.trans {d : Decls} {Delta : Bounds} {T1 T2 T3 : Ty} (h1 : Up d Delta T
     . subst e; exact Or.inr h1
     . exact Or.inr (And.intro (h1.1.trans h2.1) h2.2)
 
-theorem Up.typing {d : Decls} {Delta : Bounds} {gamma : Gamma} {e : Expr} {T1 T : Ty}
-    (h : Typing d Delta gamma e T1) (hu : Up d Delta T1 T) : Typing d Delta gamma e T := by
+theorem Up.typing {d : Decls} {Delta : Bounds} {Gamma : TypeEnv} {e : Expr} {T1 T : Ty}
+    (h : Typing d Delta Gamma e T1) (hu : Up d Delta T1 T) : Typing d Delta Gamma e T := by
   rcases hu with e | hu
   . subst e; exact h
   . exact Typing.subs h hu.2 hu.1
@@ -41,15 +41,15 @@ structure FieldW where
   Ts' : List Ty
   T0 : Ty
 
-structure FieldP (d : Decls) (Delta : Bounds) (gamma : Gamma) (e : Expr) (f : FieldName) (T : Ty) (w : FieldW) : Prop where
-  ty : Typing d Delta gamma e (.cls w.D.C w.Ts')
+structure FieldP (d : Decls) (Delta : Bounds) (Gamma : TypeEnv) (e : Expr) (f : FieldName) (T : Ty) (w : FieldW) : Prop where
+  ty : Typing d Delta Gamma e (.cls w.D.C w.Ts')
   decl : Declared d (.dec w.D)
   mem : List.Mem { T := w.T0, f := f } w.D.Ss
-  len : w.Ts'.length = w.D.bounds.length
-  up : Up d Delta (w.T0.subst (bind w.D.bounds w.Ts')) T
+  len : w.Ts'.length = w.D.Delta.length
+  up : Up d Delta (w.T0.subst (bind w.D.Delta w.Ts')) T
 
-theorem inv_field {d Delta gamma e0 f} : forall {e T}, Typing d Delta gamma e T -> e = .field e0 f ->
-    exists w, FieldP d Delta gamma e0 f T w
+theorem inv_field {d Delta Gamma e0 f} : forall {e T}, Typing d Delta Gamma e T -> e = .field e0 f ->
+    exists w, FieldP d Delta Gamma e0 f T w
   | _, _, .subs h hk hs, he => by
     rcases inv_field h he with ⟨w, hw⟩; exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
   | _, _, .declField h1 h2 h3 h4, he => by
@@ -67,17 +67,17 @@ structure IfW where
   T0 : Ty
   T1 : Ty
 
-structure IfP (d : Decls) (Delta : Bounds) (gamma : Gamma) (e0 : Expr) (T : Ty) (x : VarName) (e1 e2 : Expr)
+structure IfP (d : Decls) (Delta : Bounds) (Gamma : TypeEnv) (e0 : Expr) (T : Ty) (x : VarName) (e1 e2 : Expr)
     (T' : Ty) (w : IfW) : Prop where
-  ty0 : Typing d Delta gamma e0 w.T0
+  ty0 : Typing d Delta Gamma e0 w.T0
   kind : Kind d Delta T
   cast : Cast d Delta w.T0 T
-  ty1 : Typing d Delta (gamma ++ [{ T := T, x := x }]) e1 w.T1
-  ty2 : Typing d Delta gamma e2 w.T1
+  ty1 : Typing d Delta (Gamma ++ [{ T := T, x := x }]) e1 w.T1
+  ty2 : Typing d Delta Gamma e2 w.T1
   up : Up d Delta w.T1 T'
 
-theorem inv_if {d Delta gamma e0 T x e1 e2} : forall {e T'}, Typing d Delta gamma e T' ->
-    e = .ifInst e0 T x e1 e2 -> exists w, IfP d Delta gamma e0 T x e1 e2 T' w
+theorem inv_if {d Delta Gamma e0 T x e1 e2} : forall {e T'}, Typing d Delta Gamma e T' ->
+    e = .ifInst e0 T x e1 e2 -> exists w, IfP d Delta Gamma e0 T x e1 e2 T' w
   | _, _, .subs h hk hs, he => by
     rcases inv_if h he with ⟨w, hw⟩; exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
   | _, _, .ifInstanceof h0 hk hc h1 h2, he => by
@@ -103,9 +103,9 @@ structure CallW where
   T0' : Ty
   Ts' : List Ty
 
-structure CallP (d : Decls) (Delta : Bounds) (gamma : Gamma) (e0 : Expr) (Ts1 : List Ty) (m : MethName)
+structure CallP (d : Decls) (Delta : Bounds) (Gamma : TypeEnv) (e0 : Expr) (Ts1 : List Ty) (m : MethName)
     (es : List Expr) (T : Ty) (w : CallW) : Prop where
-  ty0 : Typing d Delta gamma e0 (.cls w.C0 w.Ts0)
+  ty0 : Typing d Delta Gamma e0 (.cls w.C0 w.Ts0)
   scope : Scope d (.cls w.C0 w.Ts0) w.Delta0 w.Ts2
   meth : MethodIn d (.mk w.Delta1 w.T0 m w.ps w.body) w.C0
   len2 : w.Ts2.length = w.Delta0.length
@@ -113,11 +113,11 @@ structure CallP (d : Decls) (Delta : Bounds) (gamma : Gamma) (e0 : Expr) (Ts1 : 
   sig : w.T0' :: w.Ts' = Ty.substList (bind (w.Delta0 ++ w.Delta1) (w.Ts2 ++ Ts1)) (w.T0 :: w.ps.map VarDecl.T)
   kinds : KindSeq d Delta Ts1
   subs : SubSeq d Delta Ts1 (Ty.substList (bind (w.Delta0 ++ w.Delta1) (w.Ts2 ++ Ts1)) (cod w.Delta1))
-  args : TypingSeq d Delta gamma es w.Ts'
+  args : TypingSeq d Delta Gamma es w.Ts'
   up : Up d Delta w.T0' T
 
-theorem inv_call {d Delta gamma e0 Ts1 m es} : forall {e T}, Typing d Delta gamma e T ->
-    e = .call e0 Ts1 m es -> exists w, CallP d Delta gamma e0 Ts1 m es T w
+theorem inv_call {d Delta Gamma e0 Ts1 m es} : forall {e T}, Typing d Delta Gamma e T ->
+    e = .call e0 Ts1 m es -> exists w, CallP d Delta Gamma e0 Ts1 m es T w
   | _, _, .subs h hk hs, he => by
     rcases inv_call h he with ⟨w, hw⟩; exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
   | _, _, .call h1 h2 h3 h4 h5 h6 h7 h8 h9, he => by
@@ -143,24 +143,24 @@ structure SuperW where
   T0' : Ty
   Ts' : List Ty
 
-structure SuperP (d : Decls) (Delta : Bounds) (gamma : Gamma) (e0 : Expr) (T : Ty) (Ts1 : List Ty) (m : MethName)
+structure SuperP (d : Decls) (Delta : Bounds) (Gamma : TypeEnv) (e0 : Expr) (T : Ty) (Ts1 : List Ty) (m : MethName)
     (es : List Expr) (T' : Ty) (w : SuperW) : Prop where
   ann : T = .cls w.D.C w.Ts
   sub : Sub d Delta (.cls w.D.C w.Ts) (.cls w.D0.C w.Ts0)
   decl0 : Declared d (.dec w.D0)
   meth : MethodIn d (.mk w.Delta1 w.T0 m w.ps w.body) w.D0.C
-  len0 : w.Ts0.length = w.D0.bounds.length
+  len0 : w.Ts0.length = w.D0.Delta.length
   len1 : Ts1.length = w.Delta1.length
-  sig : w.T0' :: w.Ts' = Ty.substList (bind (w.D0.bounds ++ w.Delta1) (w.Ts0 ++ Ts1)) (w.T0 :: w.ps.map VarDecl.T)
+  sig : w.T0' :: w.Ts' = Ty.substList (bind (w.D0.Delta ++ w.Delta1) (w.Ts0 ++ Ts1)) (w.T0 :: w.ps.map VarDecl.T)
   decl : Declared d (.dec w.D)
   kind : Kind d Delta (.cls w.D.C w.Ts)
   kinds : KindSeq d Delta Ts1
-  subs : SubSeq d Delta Ts1 (Ty.substList (bind (w.D0.bounds ++ w.Delta1) (w.Ts0 ++ Ts1)) (cod w.Delta1))
-  args : TypingSeq d Delta gamma (e0 :: es) (.cls w.D.C w.Ts :: w.Ts')
+  subs : SubSeq d Delta Ts1 (Ty.substList (bind (w.D0.Delta ++ w.Delta1) (w.Ts0 ++ Ts1)) (cod w.Delta1))
+  args : TypingSeq d Delta Gamma (e0 :: es) (.cls w.D.C w.Ts :: w.Ts')
   up : Up d Delta w.T0' T'
 
-theorem inv_super {d Delta gamma e0 T0 Ts1 m es} : forall {e T}, Typing d Delta gamma e T ->
-    e = .superCall e0 T0 Ts1 m es -> exists w, SuperP d Delta gamma e0 T0 Ts1 m es T w
+theorem inv_super {d Delta Gamma e0 T0 Ts1 m es} : forall {e T}, Typing d Delta Gamma e T ->
+    e = .superCall e0 T0 Ts1 m es -> exists w, SuperP d Delta Gamma e0 T0 Ts1 m es T w
   | _, _, .subs h hk hs, he => by
     rcases inv_super h he with ⟨w, hw⟩; exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
   | _, _, .callLbRuntime h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11, he => by
@@ -179,21 +179,21 @@ structure LocalW where
   Ts'' : List Ty
   T'' : Ty
 
-structure LocalP (d : Decls) (Delta : Bounds) (gamma : Gamma) (C : ClassName) (Fs : List Funnel) (C0 : ClassName)
+structure LocalP (d : Decls) (Delta : Bounds) (Gamma : TypeEnv) (C : ClassName) (Fs : List Funnel) (C0 : ClassName)
     (Ts : List Ty) (es : List Expr) (Ms : List Method) (T' : Ty) (w : LocalW) : Prop where
-  cons : Consistent d (.loc C Fs C0 Ts es Ms)
+  cons : Consistent d (.newLocal C Fs C0 Ts es Ms)
   pair : Pairing Delta Fs (abs Fs) w.Delta' w.Ts''
   closedB : forall X, List.Mem X (Ty.ftvList (cod w.Delta')) -> List.Mem X (dom w.Delta')
   kindC : Kind d w.Delta' (.cls C (abs Fs))
   kindS : Kind d w.Delta' (.cls C0 Ts)
-  tyNew : Typing d Delta gamma (.new C0 Ts es) w.T''
+  tyNew : Typing d Delta Gamma (.new C0 Ts es) w.T''
   meths : forall M, List.Mem M Ms -> MethodOk d w.Delta'
-    (withoutThis (restrict gamma (Ty.ftvList (abs Fs))) ++ [{ T := .cls C (abs Fs), x := this }]) M
+    (withoutThis (restrict Gamma (Ty.ftvList (abs Fs))) ++ [{ T := .cls C (abs Fs), x := this }]) M
   over : OverrideOk d w.Delta' (.cls C0 Ts) Ms
   up : Up d Delta (.cls C (abs Fs)) T'
 
-theorem inv_local {d Delta gamma C Fs C0 Ts es Ms} : forall {e T}, Typing d Delta gamma e T ->
-    e = .newLocal C Fs C0 Ts es Ms -> exists w, LocalP d Delta gamma C Fs C0 Ts es Ms T w
+theorem inv_local {d Delta Gamma C Fs C0 Ts es Ms} : forall {e T}, Typing d Delta Gamma e T ->
+    e = .newLocal C Fs C0 Ts es Ms -> exists w, LocalP d Delta Gamma C Fs C0 Ts es Ms T w
   | _, _, .subs h hk hs, he => by
     rcases inv_local h he with ⟨w, hw⟩; exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
   | _, _, .newLocal h1 h2 h3 h4 h5 h6 h7 h8, he => by
@@ -213,19 +213,19 @@ structure NewW where
   es2 : List Expr
   T'' : Ty
 
-structure NewP (d : Decls) (Delta : Bounds) (gamma : Gamma) (C : ClassName) (Ts : List Ty) (es : List Expr)
+structure NewP (d : Decls) (Delta : Bounds) (Gamma : TypeEnv) (C : ClassName) (Ts : List Ty) (es : List Expr)
     (T : Ty) (w : NewW) : Prop where
   name : w.D.C = C
   decl : Declared d (.dec w.D)
   kind : Kind d Delta (.cls w.D.C Ts)
-  len : Ts.length = w.D.bounds.length
-  fields : TypingSeq d Delta gamma w.es1 (Ty.substList (bind w.D.bounds Ts) (w.D.Ss.map Slot.T))
-  sup : Typing d Delta gamma (.new w.D.C' (Ty.substList (bind w.D.bounds Ts) w.D.Ts) w.es2) w.T''
+  len : Ts.length = w.D.Delta.length
+  fields : TypingSeq d Delta Gamma w.es1 (Ty.substList (bind w.D.Delta Ts) (w.D.Ss.map Slot.T))
+  sup : Typing d Delta Gamma (.new w.D.C' (Ty.substList (bind w.D.Delta Ts) w.D.Ts) w.es2) w.T''
   split : es = w.es1 ++ w.es2
   up : Up d Delta (.cls w.D.C Ts) T
 
-theorem inv_new {d Delta gamma C Ts es} : forall {e T}, Typing d Delta gamma e T -> e = .new C Ts es ->
-    (C = Object /\ Ts = [] /\ es = [] /\ Up d Delta (.cls Object []) T) \/ exists w, NewP d Delta gamma C Ts es T w
+theorem inv_new {d Delta Gamma C Ts es} : forall {e T}, Typing d Delta Gamma e T -> e = .new C Ts es ->
+    (C = Object /\ Ts = [] /\ es = [] /\ Up d Delta (.cls Object []) T) \/ exists w, NewP d Delta Gamma C Ts es T w
   | _, _, .subs h hk hs, he => by
     rcases inv_new h he with h1 | h1
     . exact Or.inl (And.intro h1.1 (And.intro h1.2.1 (And.intro h1.2.2.1 (h1.2.2.2.trans (Or.inr (And.intro hs hk))))))
@@ -244,9 +244,9 @@ theorem inv_new {d Delta gamma C Ts es} : forall {e T}, Typing d Delta gamma e T
   | _, _, .newLocal .., he => by cases he
   | _, _, .ifInstanceof .., he => by cases he
 
-theorem TypingSeq.mid {d Delta gamma} {x : Expr} : forall {l r : List Expr} {Ts : List Ty},
-    TypingSeq d Delta gamma (l ++ x :: r) Ts -> exists Tx, Typing d Delta gamma x Tx /\
-      forall x', Typing d Delta gamma x' Tx -> TypingSeq d Delta gamma (l ++ x' :: r) Ts
+theorem TypingSeq.mid {d Delta Gamma} {x : Expr} : forall {l r : List Expr} {Ts : List Ty},
+    TypingSeq d Delta Gamma (l ++ x :: r) Ts -> exists Tx, Typing d Delta Gamma x Tx /\
+      forall x', Typing d Delta Gamma x' Tx -> TypingSeq d Delta Gamma (l ++ x' :: r) Ts
   | [], r, Ts, h => by
     cases h with
     | cons h1 h2 => exact Exists.intro _ (And.intro h1 (fun x' hx => TypingSeq.cons hx h2))
@@ -268,9 +268,9 @@ theorem append_cons_split {A : Type} {l r P Q : List A} {x : A} (h : l ++ x :: r
   . cases h1 with
     | intro c h1 => exact Or.inr (Exists.intro c (And.intro h1.2 h1.1))
 
-theorem typing_new_mid {d Delta gamma} {x : Expr} : forall {C Ts l r T} {e : Expr},
-    Typing d Delta gamma e T -> e = .new C Ts (l ++ x :: r) -> exists Tx, Typing d Delta gamma x Tx /\
-      forall x', Typing d Delta gamma x' Tx -> Typing d Delta gamma (.new C Ts (l ++ x' :: r)) T
+theorem typing_new_mid {d Delta Gamma} {x : Expr} : forall {C Ts l r T} {e : Expr},
+    Typing d Delta Gamma e T -> e = .new C Ts (l ++ x :: r) -> exists Tx, Typing d Delta Gamma x Tx /\
+      forall x', Typing d Delta Gamma x' Tx -> Typing d Delta Gamma (.new C Ts (l ++ x' :: r)) T
   | _, _, _, _, _, _, .subs h hk hs, he => by
     cases typing_new_mid h he with
     | intro Tx hx => exact Exists.intro Tx (And.intro hx.1 (fun x' h' => Typing.subs (hx.2 x' h') hk hs))
@@ -305,9 +305,9 @@ theorem typing_new_mid {d Delta gamma} {x : Expr} : forall {C Ts l r T} {e : Exp
   | _, _, _, _, _, _, .newLocal .., he => by cases he
   | _, _, _, _, _, _, .ifInstanceof .., he => by cases he
 
-theorem typing_plug {d Delta gamma} {a : Expr} : forall (E : ECtx) {T : Ty},
-    Typing d Delta gamma (E.plug a) T -> exists Ta, Typing d Delta gamma a Ta /\
-      forall a', Typing d Delta gamma a' Ta -> Typing d Delta gamma (E.plug a') T
+theorem typing_plug {d Delta Gamma} {a : Expr} : forall (E : EvalCtx) {T : Ty},
+    Typing d Delta Gamma (E.plug a) T -> exists Ta, Typing d Delta Gamma a Ta /\
+      forall a', Typing d Delta Gamma a' Ta -> Typing d Delta Gamma (E.plug a') T
   | .hole, T, h => Exists.intro T (And.intro h (fun _ h' => h'))
   | .callRecv E Gs m es, T, h => by
     rcases inv_call h rfl with ⟨w, hw⟩
@@ -327,7 +327,7 @@ theorem typing_plug {d Delta gamma} {a : Expr} : forall (E : ECtx) {T : Ty},
     | cons h0 hs =>
       rcases typing_plug E h0 with ⟨Ta, hTa⟩
       refine Exists.intro Ta (And.intro hTa.1 (fun a' h' => ?_))
-      simp only [ECtx.plug]
+      simp only [EvalCtx.plug]
       rw [hann]
       exact hw.up.typing (Typing.callLbRuntime hw.sub hw.decl0 hw.meth hw.len0 hw.len1 hw.sig hw.decl hw.kind
         hw.kinds hw.subs (TypingSeq.cons (hTa.2 a' h') hs))
@@ -339,7 +339,7 @@ theorem typing_plug {d Delta gamma} {a : Expr} : forall (E : ECtx) {T : Ty},
       rcases TypingSeq.mid hs with ⟨Tx, hx⟩
       rcases typing_plug E hx.1 with ⟨Ta, hTa⟩
       refine Exists.intro Ta (And.intro hTa.1 (fun a' h' => ?_))
-      simp only [ECtx.plug]
+      simp only [EvalCtx.plug]
       rw [hann]
       exact hw.up.typing (Typing.callLbRuntime hw.sub hw.decl0 hw.meth hw.len0 hw.len1 hw.sig hw.decl hw.kind
         hw.kinds hw.subs (TypingSeq.cons h0 (hx.2 _ (hTa.2 a' h'))))
@@ -352,7 +352,7 @@ theorem typing_plug {d Delta gamma} {a : Expr} : forall (E : ECtx) {T : Ty},
     rcases typing_new_mid h rfl with ⟨Tx, hx⟩
     cases typing_plug E hx.1 with
     | intro Ta hTa => exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hx.2 _ (hTa.2 a' h')))
-  | .localArg C Gs C' Gs' vs E es Ms, T, h => by
+  | .newLocalArg C Gs C' Gs' vs E es Ms, T, h => by
     rcases inv_local h rfl with ⟨w, hw⟩
     rcases typing_new_mid hw.tyNew rfl with ⟨Tx, hx⟩
     rcases typing_plug E hx.1 with ⟨Ta, hTa⟩

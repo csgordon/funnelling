@@ -4,10 +4,10 @@ open Funnelling.SoundSimp
 
 namespace Funnelling
 
-theorem typingSeq_lookup {d : Decls} : forall {g : Gamma} {vs : List Value},
+theorem typingSeq_lookup {d : Decls} : forall {g : TypeEnv} {vs : List Value},
     (gdom g).Nodup -> TypingSeq d [] [] (Value.exprs vs) (g.map VarDecl.T) ->
     forall x v U, List.lookup x ((gdom g).zip vs) = some v -> g.lookup x = some U -> Typing d [] [] v.expr U
-  | [], _, _, _, x, v, U, _, h => by simp [Gamma.lookup] at h
+  | [], _, _, _, x, v, U, _, h => by simp [TypeEnv.lookup] at h
   | _ :: _, [], _, h, _, _, _, _, _ => by cases h
   | y :: g, v0 :: vs, hn, h, x, v, U, h1, h2 => by
     cases h with
@@ -17,12 +17,12 @@ theorem typingSeq_lookup {d : Decls} : forall {g : Gamma} {vs : List Value},
       . subst e
         rw [lookup_cons_eq] at h1
         cases h1
-        simp only [Gamma.lookup, List.find?_cons, beq_self_eq_true, Option.map_some] at h2
+        simp only [TypeEnv.lookup, List.find?_cons, beq_self_eq_true, Option.map_some] at h2
         cases h2
         exact ht
       . rw [lookup_cons_ne e] at h1
         have hb : (y.x == x) = false := by simpa using fun h => e h.symm
-        simp only [Gamma.lookup, List.find?_cons, hb] at h2
+        simp only [TypeEnv.lookup, List.find?_cons, hb] at h2
         exact typingSeq_lookup (List.nodup_cons.mp hn).2 hts x v U h1 h2
 
 theorem gsubst_ty_bind {Dl : Bounds} {Gs : List GTy} : GSubst.ty (bind Dl Gs) = bind Dl (GTy.tys Gs) := by
@@ -168,18 +168,18 @@ end Found
 
 theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {D : Dec} {M : Method}
     {m : MethName} {Delta' : Bounds} {T0 : Ty} {ps : List VarDecl} {e0 : Expr} {v0 : Value} {Gs Gs' : List GTy}
-    {vs : List Value} {T : Ty} (hD : Declared d (.dec D)) (hM : List.Mem M D.Ms) (hG : Gs.length = D.bounds.length)
-    (f : Found M D.bounds Delta' T0 m ps e0 Gs Gs' v0 vs)
+    {vs : List Value} {T : Ty} (hD : Declared d (.dec D)) (hM : List.Mem M D.Ms) (hG : Gs.length = D.Delta.length)
+    (f : Found M D.Delta Delta' T0 m ps e0 Gs Gs' v0 vs)
     (ha : WFExpr (.superCall v0.expr (.cls D.C (GTy.tys Gs)) (GTy.tys Gs') m (Value.exprs vs)))
     (h : Typing d [] [] (.superCall v0.expr (.cls D.C (GTy.tys Gs)) (GTy.tys Gs') m (Value.exprs vs)) T) :
-    Typing d [] [] ((e0.gsubst (bind (D.bounds ++ Delta') (Gs ++ Gs'))).vsubst
+    Typing d [] [] ((e0.gsubst (bind (D.Delta ++ Delta') (Gs ++ Gs'))).vsubst
       ((this :: ps.map VarDecl.x).zip (v0 :: vs))) T := by
   have hwm := WFDecls.method hwf hD.dec_mem hM
   rcases inv_super h rfl with ⟨⟨D1, Ts, D0, Ts0, Delta1, T0o, pso, body, T0', Ts'⟩, hw⟩
   have ann := hw.ann
   simp only [Ty.cls.injEq] at ann
   have eD : D = D1 := by
-    have e := Declared.unique hwf hD hw.decl (by simp only [K.name]; exact ann.1)
+    have e := Declared.unique hwf hD hw.decl (by simp only [ClassDecl.name]; exact ann.1)
     injection e
   subst eD
   have eTs := ann.2
@@ -188,35 +188,35 @@ theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
   have hO' := OverrideOkM.ren (rv := []) (rt := []) hwf hok hO f.fresh.1
     (fun X hX hm => Method.noShadow_dom hwm.2.2 X hm (hUf X hX)) hwm.1
   rw [Ty.renList_id (fun _ _ => rn_nil)] at hO'
-  have h3 : Us.length = D0.bounds.length := by rw [<- hw.len0, hUs, substList_length]
+  have h3 : Us.length = D0.Delta.length := by rw [<- hw.len0, hUs, substList_length]
   rcases found_sig hwf (Scope.dec hw.decl0) hw.meth h3 hO' with ⟨_, h4, h5, h6⟩
   have hv1 := f.subst_vars hG
-  have hcomp1 : forall L, (forall X, List.Mem X (Ty.ftvList L) -> List.Mem X (dom D.bounds)) ->
-      Ty.substList (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs'))) L =
-        Ty.substList (bind D.bounds (GTy.tys Gs)) L := by
+  have hcomp1 : forall L, (forall X, List.Mem X (Ty.ftvList L) -> List.Mem X (dom D.Delta)) ->
+      Ty.substList (GSubst.ty (bind (D.Delta ++ Delta') (Gs ++ Gs'))) L =
+        Ty.substList (bind D.Delta (GTy.tys Gs)) L := by
     intro L hL
     conv => lhs; rw [<- substList_bind_vars_id hL]
     rw [substList_bind_comp (by simp [vars, dom]) hL, hv1.1]
-  have hUt : Ty.substList (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs'))) Us = Ts0 := by
+  have hUt : Ty.substList (GSubst.ty (bind (D.Delta ++ Delta') (Gs ++ Gs'))) Us = Ts0 := by
     rw [hcomp1 Us hUf]; exact hUs.symm
   have hcl0 := methodIn_closed hwf hok (Scope.dec (Ts := Us) hw.decl0) hw.meth
   have hmo := (hok D hD.dec_mem).2.2.1 M hM
-  have env : REnv [] [] D.bounds D.bounds [{ T := .cls D.C (vars (dom D.bounds)), x := this }]
-      [{ T := .cls D.C (vars (dom D.bounds)), x := this }] (dom D.bounds) [this] [this] :=
+  have env : REnv [] [] D.Delta D.Delta [{ T := .cls D.C (vars (dom D.Delta)), x := this }]
+      [{ T := .cls D.C (vars (dom D.Delta)), x := this }] (dom D.Delta) [this] [this] :=
     REnv.refl (fun b hb X hX => Kind.ftv ((hok D hD.dec_mem).1 b.T (List.mem_map_of_mem (f := Bound.T) hb)) X hX)
       (fun X hX => ftv_vars (by simpa [Ty.ftv] using hX))
   have hmo' := MethodOk.ren hwf hok hd hmo f.fresh.1 env hwm.2.2 f.methNoShadow hwm.2.1 f.methNoThis hwm.1 f.methUniq
-  have hb0 : forall b, List.Mem b D.bounds ->
-      Sub d [] ((Ty.var b.X).subst (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs'))))
-        (b.T.subst (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs')))) /\
-      Kind d [] ((Ty.var b.X).subst (GSubst.ty (bind (D.bounds ++ Delta') (Gs ++ Gs')))) := by
+  have hb0 : forall b, List.Mem b D.Delta ->
+      Sub d [] ((Ty.var b.X).subst (GSubst.ty (bind (D.Delta ++ Delta') (Gs ++ Gs'))))
+        (b.T.subst (GSubst.ty (bind (D.Delta ++ Delta') (Gs ++ Gs')))) /\
+      Kind d [] ((Ty.var b.X).subst (GSubst.ty (bind (D.Delta ++ Delta') (Gs ++ Gs')))) := by
     intro b hb
     have hka := (kind_dec_args hwf hD hw.kind).2 b hb
-    have hbT : forall X, List.Mem X (Ty.ftvList [b.T]) -> List.Mem X (dom D.bounds) := by
+    have hbT : forall X, List.Mem X (Ty.ftvList [b.T]) -> List.Mem X (dom D.Delta) := by
       intro X hX
       simp only [Ty.ftvList, List.append_nil] at hX
       exact Kind.ftv ((hok D hD.dec_mem).1 b.T (List.mem_map_of_mem (f := Bound.T) hb)) X hX
-    have hbX : forall X, List.Mem X (Ty.ftvList [Ty.var b.X]) -> List.Mem X (dom D.bounds) := by
+    have hbX : forall X, List.Mem X (Ty.ftvList [Ty.var b.X]) -> List.Mem X (dom D.Delta) := by
       intro X hX
       cases hX with
       | head => exact List.mem_map_of_mem (f := Bound.X) hb
