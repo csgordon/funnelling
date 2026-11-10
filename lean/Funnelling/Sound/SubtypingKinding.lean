@@ -5,8 +5,8 @@ open Funnelling.SoundSimp
 namespace Funnelling
 
 structure DeclOk (d : Decls) : Prop where
-  supD : forall D, Declared d (.dec D) -> forall X, List.Mem X (Ty.ftvList D.Ts) -> List.Mem X (dom D.bounds)
-  supL : forall C Fs C' Ts es Ms, Declared d (.loc C Fs C' Ts es Ms) ->
+  supD : forall D, Declared d (.dec D) -> forall X, List.Mem X (Ty.ftvList D.Ts) -> List.Mem X (dom D.Delta)
+  supL : forall C Fs C' Ts es Ms, Declared d (.newLocal C Fs C' Ts es Ms) ->
     forall X, List.Mem X (Ty.ftvList Ts) -> List.Mem X (domF Fs)
   scopeB : forall T Delta0 Ts0, Scope d T Delta0 Ts0 ->
     forall X, List.Mem X (Ty.ftvList (cod Delta0)) -> List.Mem X (dom Delta0)
@@ -176,7 +176,7 @@ theorem Scope.subst {d : Decls} {s : TSubst} {T : Ty} {Delta0 : Bounds} {Ts0 : L
     (h : Scope d T Delta0 Ts0) : Scope d (T.subst s) Delta0 (Ty.substList s Ts0) := by
   cases h with
   | dec hD => simp only [Ty.subst]; exact Scope.dec hD
-  | loc h1 h2 h3 h4 h5 => simp only [Ty.subst]; exact Scope.loc h1 h2 h3 h4 h5.subst
+  | newLocal h1 h2 h3 h4 h5 => simp only [Ty.subst]; exact Scope.newLocal h1 h2 h3 h4 h5.subst
 
 theorem Kind.ftv {d : Decls} {Delta : Bounds} {T : Ty} (h : Kind d Delta T) :
     forall X, List.Mem X T.ftv -> List.Mem X (dom Delta) := by
@@ -299,72 +299,72 @@ theorem Cast.gsub {d : Decls} (hd : DeclOk d) {Delta Delta' : Bounds} {s : TSubs
     simp only [Ty.subst] at this |-
     exact Exists.intro _ (And.intro Sub.subRefl (And.intro (Cast.castDown this h2 h3 h4) (Or.inl rfl)))
 
-def K.gvars : K -> List TVarName
-  | .dec D => dom D.bounds
-  | .loc _ Fs _ _ _ _ => domF Fs
+def ClassDecl.gvars : ClassDecl -> List TVarName
+  | .dec D => dom D.Delta
+  | .newLocal _ Fs _ _ _ _ => domF Fs
 
-structure SF (d : Decls) (k : K) (Delta0 : Bounds) : Prop where
+structure SF (d : Decls) (K : ClassDecl) (Delta0 : Bounds) : Prop where
   closedB : forall X, List.Mem X (Ty.ftvList (cod Delta0)) -> List.Mem X (dom Delta0)
   ndom : (dom Delta0).Nodup
-  gv : dom Delta0 = k.gvars
-  meths : forall M, List.Mem M k.Ms -> exists gamma, MethodOk d Delta0 gamma M
-  ns : forall M, List.Mem M k.Ms -> exists Xs xs, Sub1 (dom Delta0) Xs /\ Method.noShadow Xs xs M = true
-  sup : forall C Fs C' Ts es Ms, k = .loc C Fs C' Ts es Ms -> forall X, List.Mem X (Ty.ftvList Ts) -> List.Mem X (domF Fs)
-  supK : forall C Fs C' Ts es Ms, k = .loc C Fs C' Ts es Ms -> Kind d Delta0 (.cls C' Ts)
+  gv : dom Delta0 = K.gvars
+  meths : forall M, List.Mem M K.Ms -> exists Gamma, MethodOk d Delta0 Gamma M
+  ns : forall M, List.Mem M K.Ms -> exists Xs xs, Sub1 (dom Delta0) Xs /\ Method.noShadow Xs xs M = true
+  sup : forall C Fs C' Ts es Ms, K = .newLocal C Fs C' Ts es Ms -> forall X, List.Mem X (Ty.ftvList Ts) -> List.Mem X (domF Fs)
+  supK : forall C Fs C' Ts es Ms, K = .newLocal C Fs C' Ts es Ms -> Kind d Delta0 (.cls C' Ts)
 
-theorem methodOk_inv {d : Decls} {Delta : Bounds} {gamma : Gamma} {Delta' : Bounds} {T0 : Ty} {m : MethName}
-    {ps : List VarDecl} {e : Expr} (h : MethodOk d Delta gamma (.mk Delta' T0 m ps e)) :
+theorem methodOk_inv {d : Decls} {Delta : Bounds} {Gamma : TypeEnv} {Delta' : Bounds} {T0 : Ty} {m : MethName}
+    {ps : List VarDecl} {e : Expr} (h : MethodOk d Delta Gamma (.mk Delta' T0 m ps e)) :
     KindSeq d (Delta ++ Delta') (cod Delta') /\ KindSeq d (Delta ++ Delta') (T0 :: ps.map VarDecl.T) /\
-      Typing d (Delta ++ Delta') (gamma ++ ps) e T0 := by
+      Typing d (Delta ++ Delta') (Gamma ++ ps) e T0 := by
   cases h with
   | methodOk h1 h2 h3 => exact And.intro h1 (And.intro h2 h3)
 
 theorem sf_dec {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec} (hD : Declared d (.dec D)) :
-    SF d (.dec D) D.bounds := by
+    SF d (.dec D) D.Delta := by
   have hc := hok D hD.dec_mem
   refine { closedB := ?_, ndom := ?_, gv := rfl, meths := ?_, ns := ?_, sup := ?_, supK := ?_ }
   . intro X hX
     rcases Ty.mem_ftvList.mp hX with ⟨T, hT⟩; exact Kind.ftv (hc.1 T hT.1) X hT.2
-  . exact hwf.2.2.2.2.1 D.bounds (by
+  . exact hwf.2.2.2.2.1 D.Delta (by
       simp only [listMem_iff, List.mem_append, List.mem_map]
       exact Or.inl (Exists.intro D (And.intro hD.dec_mem rfl)))
   . intro M hM; exact Exists.intro _ (hc.2.2.1 M hM)
   . intro M hM
-    exact Exists.intro (dom D.bounds) (Exists.intro [] (And.intro (fun _ h => h)
+    exact Exists.intro (dom D.Delta) (Exists.intro [] (And.intro (fun _ h => h)
       (Method.noShadowList_mem hM (hwf.2.2.2.2.2.2.1 D hD.dec_mem))))
   . intro _ _ _ _ _ _ e; cases e
   . intro _ _ _ _ _ _ e; cases e
 
-theorem methods_mem {d : Decls} {k : K} (hk : Declared d k) {M : Method} (hM : List.Mem M k.Ms) :
+theorem methods_mem {d : Decls} {K : ClassDecl} (hk : Declared d K) {M : Method} (hM : List.Mem M K.Ms) :
     List.Mem M d.methods := by
   simp only [Decls.methods, listMem_iff, List.mem_flatMap]
-  exact Exists.intro k (And.intro hk.mem hM)
+  exact Exists.intro K (And.intro hk.mem hM)
 
 theorem scopeFacts {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {T : Ty} {Delta0 : Bounds} {Ts0 : List Ty}
-    (h : Scope d T Delta0 Ts0) : exists k, Declared d k /\ (exists Us, T = .cls k.name Us) /\ SF d k Delta0 := by
+    (h : Scope d T Delta0 Ts0) : exists K, Declared d K /\ (exists Us, T = .cls K.name Us) /\ SF d K Delta0 := by
   induction h with
   | @dec D Ts hD => exact Exists.intro (.dec D) (And.intro hD (And.intro (Exists.intro Ts rfl) (sf_dec hwf hok hD)))
-  | @loc C Delta' T0 m ps e C0 Fs C' Ts' es Ms T Delta Ts'' Ts Delta0 Ts0 h1 h2 h3 h4 h5 ih =>
-    rcases ih with ⟨k', hk'⟩
-    rcases h1 with ⟨k'', hk''⟩
-    have hgen : k'.name = C := by
+  | @newLocal C Delta' T0 m ps e C0 Fs C' Ts' es Ms T Delta Ts'' Ts Delta0 Ts0 h1 h2 h3 h4 h5 ih =>
+    rcases ih with ⟨K', hk'⟩
+    rcases h1 with ⟨K'', hk''⟩
+    have hgen : K'.name = C := by
       rcases hk'.2.1 with ⟨Us, hUs⟩
       cases h3 with
       | dec hD => simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
-      | loc hD => simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
+      | newLocal hD => simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
     have ek := Declared.unique hwf hk''.1 hk'.1 (by rw [hk''.2.1, hgen])
     subst ek
     have sf := hk'.2.2
     have hM := hk''.2.2
-    rcases sf.meths _ hM with ⟨gamma, hmo⟩
+    rcases sf.meths _ hM with ⟨Gamma, hmo⟩
     have hmi := methodOk_inv hmo
     rcases h2 with ⟨E, hE⟩
     rw [hE] at hmi
-    rcases occ_typing E hmi.2.2 with ⟨gamma', hg⟩
+    rcases occ_typing E hmi.2.2 with ⟨Gamma', hg⟩
     rcases hg with ⟨Ta, hTa⟩
     rcases inv_local hTa rfl with ⟨w, hw⟩
-    have hdecl : Declared d (.loc C0 Fs C' Ts' es Ms) :=
-      Declared.loc hk''.1 hM (Exists.intro E hE)
+    have hdecl : Declared d (.newLocal C0 Fs C' Ts' es Ms) :=
+      Declared.newLocal hk''.1 hM (Exists.intro E hE)
     rcases sf.ns _ hM with ⟨Xs, hXs⟩
     rcases hXs with ⟨xs, hxs⟩
     have hns := hxs.2
@@ -381,7 +381,7 @@ theorem scopeFacts {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {T : Ty} {Del
         exact not_mem_of_all_not_contains hns.1.1 hY (hxs.1 X hX)
     have eD := Pairing.unique hnd h5 hw.pair
     subst eD
-    refine Exists.intro (.loc C0 Fs C' Ts' es Ms) (And.intro hdecl (And.intro (Exists.intro Ts rfl) ?_))
+    refine Exists.intro (.newLocal C0 Fs C' Ts' es Ms) (And.intro hdecl (And.intro (Exists.intro Ts rfl) ?_))
     refine { closedB := hw.closedB, ndom := ?_, gv := h5.dom_eq, meths := ?_, ns := ?_, sup := ?_, supK := ?_ }
     . rw [h5.dom_eq]; exact hwf.2.2.2.2.2.1 _ hdecl.mem
     . intro M' hM'; exact Exists.intro _ (hw.meths M' hM')
@@ -408,42 +408,42 @@ theorem scopeFacts {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {T : Ty} {Del
       cases e
       exact hw.kindS
 
-def K.generic : K -> Ty
-  | .dec D => .cls D.C (vars (dom D.bounds))
-  | .loc C Fs _ _ _ _ => .cls C (vars (domF Fs))
+def ClassDecl.generic : ClassDecl -> Ty
+  | .dec D => .cls D.C (vars (dom D.Delta))
+  | .newLocal C Fs _ _ _ _ => .cls C (vars (domF Fs))
 
-theorem K.generic_name (k : K) : exists Us, k.generic = .cls k.name Us := by cases k <;> exact Exists.intro _ rfl
+theorem ClassDecl.generic_name (K : ClassDecl) : exists Us, K.generic = .cls K.name Us := by cases K <;> exact Exists.intro _ rfl
 
-theorem Declared.generic {d : Decls} {k : K} (hk : Declared d k) : Generic d k.name k.generic := by
-  cases k with
+theorem Declared.generic {d : Decls} {K : ClassDecl} (hk : Declared d K) : Generic d K.name K.generic := by
+  cases K with
   | dec D => exact Generic.dec hk
-  | loc C Fs C' Ts es Ms => exact Generic.loc hk
+  | newLocal C Fs C' Ts es Ms => exact Generic.newLocal hk
 
-theorem scopeExists {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {k : K} (hk : Declared d k) :
-    exists Delta0 Ts0, Scope d k.generic Delta0 Ts0 := by
+theorem scopeExists {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {K : ClassDecl} (hk : Declared d K) :
+    exists Delta0 Ts0, Scope d K.generic Delta0 Ts0 := by
   induction hk with
   | @dec D hD => exact Exists.intro _ (Exists.intro _ (Scope.dec (Declared.dec hD)))
-  | @loc k Delta T0 m ps e C0 Fs C' Ts es Ms hk hM hO ih =>
+  | @newLocal K Delta T0 m ps e C0 Fs C' Ts es Ms hk hM hO ih =>
     rcases ih with ⟨Dk, h⟩
     rcases h with ⟨Tk, hs⟩
-    rcases scopeFacts hwf hok hs with ⟨k', hk'⟩
-    have hname : k'.name = k.name := by
+    rcases scopeFacts hwf hok hs with ⟨K', hk'⟩
+    have hname : K'.name = K.name := by
       rcases hk'.2.1 with ⟨Us, hUs⟩
-      rcases K.generic_name k with ⟨Vs, hVs⟩; rw [hVs] at hUs; simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
+      rcases ClassDecl.generic_name K with ⟨Vs, hVs⟩; rw [hVs] at hUs; simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
     have ek := Declared.unique hwf hk'.1 hk hname
     subst ek
-    rcases hk'.2.2.meths _ hM with ⟨gamma, hmo⟩
+    rcases hk'.2.2.meths _ hM with ⟨Gamma, hmo⟩
     have hmi := methodOk_inv hmo
     rcases hO with ⟨E, hE⟩
     rw [hE] at hmi
-    rcases occ_typing E hmi.2.2 with ⟨gamma', hg⟩
+    rcases occ_typing E hmi.2.2 with ⟨Gamma', hg⟩
     rcases hg with ⟨Ta, hTa⟩
     rcases inv_local hTa rfl with ⟨w, hw⟩
-    have hdecl : Declared d (.loc C0 Fs C' Ts es Ms) := Declared.loc hk hM (Exists.intro E hE)
+    have hdecl : Declared d (.newLocal C0 Fs C' Ts es Ms) := Declared.newLocal hk hM (Exists.intro E hE)
     have hab := abs_funnels (Fs := Fs) (fun F hF => hwf.2.2.2.2.2.2.2.2.2.2 _ hdecl.mem F hF)
     have hp := hw.pair
     rw [hab] at hp
-    exact Exists.intro _ (Exists.intro _ (Scope.loc (Exists.intro k' (And.intro hk (And.intro rfl hM)))
+    exact Exists.intro _ (Exists.intro _ (Scope.newLocal (Exists.intro K' (And.intro hk (And.intro rfl hM)))
       (Exists.intro E hE) hk.generic hs hp))
 
 theorem declOk {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) : DeclOk d where
@@ -454,13 +454,13 @@ theorem declOk {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) : DeclOk d where
     intro C Fs C' Ts es Ms hD X hX
     rcases scopeExists hwf hok hD with ⟨Dk, h⟩
     rcases h with ⟨Tk, hs⟩
-    rcases scopeFacts hwf hok hs with ⟨k', hk'⟩
-    have hname : k'.name = C := by
-      rcases hk'.2.1 with ⟨Us, hUs⟩; simp only [K.generic, Ty.cls.injEq] at hUs; exact hUs.1.symm
+    rcases scopeFacts hwf hok hs with ⟨K', hk'⟩
+    have hname : K'.name = C := by
+      rcases hk'.2.1 with ⟨Us, hUs⟩; simp only [ClassDecl.generic, Ty.cls.injEq] at hUs; exact hUs.1.symm
     have ek := Declared.unique hwf hk'.1 hD hname
     exact hk'.2.2.sup C Fs C' Ts es Ms ek X hX
   scopeB := by
     intro T Delta0 Ts0 hs
-    rcases scopeFacts hwf hok hs with ⟨k', hk'⟩; exact hk'.2.2.closedB
+    rcases scopeFacts hwf hok hs with ⟨K', hk'⟩; exact hk'.2.2.closedB
 
 end Funnelling

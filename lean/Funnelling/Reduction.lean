@@ -3,20 +3,20 @@ import Funnelling.WellFormed
 
 namespace Funnelling
 
-inductive ECtx where
+inductive EvalCtx where
   | hole
-  | callRecv (E : ECtx) (Gs : List GTy) (m : MethName) (es : List Expr)
-  | callArg (v : Value) (Gs : List GTy) (m : MethName) (vs : List Value) (E : ECtx) (es : List Expr)
-  | superRecv (E : ECtx) (G : GTy) (Gs : List GTy) (m : MethName) (es : List Expr)
-  | superArg (v : Value) (G : GTy) (Gs : List GTy) (m : MethName) (vs : List Value) (E : ECtx)
+  | callRecv (E : EvalCtx) (Gs : List GTy) (m : MethName) (es : List Expr)
+  | callArg (v : Value) (Gs : List GTy) (m : MethName) (vs : List Value) (E : EvalCtx) (es : List Expr)
+  | superRecv (E : EvalCtx) (G : GTy) (Gs : List GTy) (m : MethName) (es : List Expr)
+  | superArg (v : Value) (G : GTy) (Gs : List GTy) (m : MethName) (vs : List Value) (E : EvalCtx)
       (es : List Expr)
-  | field (E : ECtx) (f : FieldName)
-  | newArg (C : ClassName) (Gs : List GTy) (vs : List Value) (E : ECtx) (es : List Expr)
-  | localArg (C : ClassName) (Gs : List GTy) (C' : ClassName) (Gs' : List GTy) (vs : List Value)
-      (E : ECtx) (es : List Expr) (Ms : List Method)
-  | ifCond (E : ECtx) (G : GTy) (x : VarName) (e1 e2 : Expr)
+  | field (E : EvalCtx) (f : FieldName)
+  | newArg (C : ClassName) (Gs : List GTy) (vs : List Value) (E : EvalCtx) (es : List Expr)
+  | newLocalArg (C : ClassName) (Gs : List GTy) (C' : ClassName) (Gs' : List GTy) (vs : List Value)
+      (E : EvalCtx) (es : List Expr) (Ms : List Method)
+  | ifCond (E : EvalCtx) (G : GTy) (x : VarName) (e1 e2 : Expr)
 
-def ECtx.plug : ECtx -> Expr -> Expr
+def EvalCtx.plug : EvalCtx -> Expr -> Expr
   | .hole, e => e
   | .callRecv E Gs m es, e => .call (E.plug e) Gs m es
   | .callArg v Gs m vs E es, e => .call v Gs m (Value.exprs vs ++ E.plug e :: es)
@@ -24,7 +24,7 @@ def ECtx.plug : ECtx -> Expr -> Expr
   | .superArg v G Gs m vs E es, e => .superCall v G Gs m (Value.exprs vs ++ E.plug e :: es)
   | .field E f, e => .field (E.plug e) f
   | .newArg C Gs vs E es, e => .new C Gs (Value.exprs vs ++ E.plug e :: es)
-  | .localArg C Gs C' Gs' vs E es Ms, e =>
+  | .newLocalArg C Gs C' Gs' vs E es Ms, e =>
     .newLocal C (Gs.map Funnel.ground) C' Gs' (Value.exprs vs ++ E.plug e :: es) Ms
   | .ifCond E G x e1 e2, e => .ifInst (E.plug e) G x e1 e2
 
@@ -39,9 +39,9 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       vs1.length = D.Ss.length ->
       Not (List.Mem f (D.Ss.map Slot.f)) ->
       Not (D.C = Object) ->
-      Gs.length = D.bounds.length ->
+      Gs.length = D.Delta.length ->
       Step d (.field (Value.new D.C Gs (vs1 ++ vs)) f)
-        (.field (.new D.C' (Ty.substList (bind D.bounds (Gs : List Ty)) D.Ts) vs) f)
+        (.field (.new D.C' (Ty.substList (bind D.Delta (Gs : List Ty)) D.Ts) vs) f)
   | innerFieldSuper {C C' Ms f} {Gs Gs' : List GTy} {vs : List Value} :
       Step d (.field (Value.newLocal C Gs C' Gs' vs Ms) f) (.field (Value.new C' Gs' vs) f)
   | ifThen {C' Ts Ts' x e1 e1' e2} {v : Value} :
@@ -59,13 +59,13 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       Declared d (.dec D) ->
       List.Mem M D.Ms ->
       FreshM M (.mk Delta' T0 m ps e0) ->
-      Gs.length = D.bounds.length -> Gs'.length = Delta'.length ->
-      (dom D.bounds ++ dom Delta').Nodup ->
+      Gs.length = D.Delta.length -> Gs'.length = Delta'.length ->
+      (dom D.Delta ++ dom Delta').Nodup ->
       (this :: ps.map VarDecl.x).Nodup ->
       ps.length = vs.length ->
-      GSubstDefined (dom D.bounds ++ dom Delta') e0 ->
+      GSubstDefined (dom D.Delta ++ dom Delta') e0 ->
       VSubstDefined (this :: ps.map VarDecl.x) e0 ->
-      e = (e0.gsubst (bind (D.bounds ++ Delta') (Gs ++ Gs'))).vsubst
+      e = (e0.gsubst (bind (D.Delta ++ Delta') (Gs ++ Gs'))).vsubst
         ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
       Step d (.superCall v0 (.cls D.C Gs) Gs' m vs) e
   | innerFound {C C' Ms M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} :
@@ -88,17 +88,17 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       Declared d (.dec D) ->
       Not (List.Mem m (D.Ms.map Method.name)) ->
       Not (D.C = Object) ->
-      Gs.length = D.bounds.length ->
+      Gs.length = D.Delta.length ->
       Step d (.superCall v (.cls D.C Gs) Gs' m vs)
-        (.superCall v (.cls D.C' (Ty.substList (bind D.bounds (Gs : List Ty)) D.Ts)) Gs' m vs)
-  | ctx {E : ECtx} {e e'} :
+        (.superCall v (.cls D.C' (Ty.substList (bind D.Delta (Gs : List Ty)) D.Ts)) Gs' m vs)
+  | ctx {E : EvalCtx} {e e'} :
       Step d e e' -> Step d (E.plug e) (E.plug e')
 
 def Reduces (d : Decls) (e e' : Expr) : Prop := Step d e e' /\ WFExpr e'
 
-inductive Steps (d : Decls) : Expr -> Expr -> Prop
-  | refl {e} : Steps d e e
-  | step {e e' e''} : Reduces d e e' -> Steps d e' e'' -> Steps d e e''
+inductive ReducesStar (d : Decls) : Expr -> Expr -> Prop
+  | refl {e} : ReducesStar d e e
+  | step {e e' e''} : Reduces d e e' -> ReducesStar d e' e'' -> ReducesStar d e e''
 
 def IsValue (e : Expr) : Prop := exists v : Value, e = v
 

@@ -32,14 +32,14 @@ theorem ftv_vars {X : TVarName} {Xs : List TVarName} (h : List.Mem X (Ty.ftvList
 
 theorem dec_override {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {D : Dec}
     (hD : Declared d (.dec D)) {M : Method} (hM : List.Mem M D.Ms) {D0 : Dec} (hD0 : Declared d (.dec D0))
-    {Gs Ts0 : List Ty} (hl : Gs.length = D.bounds.length) (hs : Sub d [] (.cls D.C Gs) (.cls D0.C Ts0)) :
-    exists Us, Ts0 = Ty.substList (bind D.bounds Gs) Us /\ OverrideOkM d (.cls D0.C Us) M /\
-      forall X, List.Mem X (Ty.ftvList Us) -> List.Mem X (dom D.bounds) := by
+    {Gs Ts0 : List Ty} (hl : Gs.length = D.Delta.length) (hs : Sub d [] (.cls D.C Gs) (.cls D0.C Ts0)) :
+    exists Us, Ts0 = Ty.substList (bind D.Delta Gs) Us /\ OverrideOkM d (.cls D0.C Us) M /\
+      forall X, List.Mem X (Ty.ftvList Us) -> List.Mem X (dom D.Delta) := by
   have hn := (sf_dec hwf hok hD).ndom
-  have e : Gs = Ty.substList (bind D.bounds Gs) (vars (dom D.bounds)) :=
+  have e : Gs = Ty.substList (bind D.Delta Gs) (vars (dom D.Delta)) :=
     (vars_subst hn (by rw [hl]; simp [dom])).symm
   rw [e] at hs
-  rcases Sub.inv_subst hd (Delta2 := D.bounds) (A := dom D.bounds) hs rfl (fun X hX => ftv_vars hX) with ⟨T0, h0⟩
+  rcases Sub.inv_subst hd (Delta2 := D.Delta) (A := dom D.Delta) hs rfl (fun X hX => ftv_vars hX) with ⟨T0, h0⟩
   rcases Sub.cls_target h0.2.1 rfl with ⟨C1, U0, e0⟩
   subst e0
   have e1 := h0.1
@@ -55,12 +55,12 @@ theorem dec_override {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclO
     cases M with
     | mk Dm T0m m ps e =>
       have hcl := declMeth_closed hwf hok hD hM
-      simp only [K.gvars, <- dom_append] at hcl
-      have hv : vars (dom D.bounds) ++ vars (dom Dm) = vars (dom (D.bounds ++ Dm)) := by rw [dom_append, vars_append]
+      simp only [ClassDecl.gvars, <- dom_append] at hcl
+      have hv : vars (dom D.Delta) ++ vars (dom Dm) = vars (dom (D.Delta ++ Dm)) := by rw [dom_append, vars_append]
       refine OverrideOkM.dec hD hM (by simp [vars, dom]) rfl ?_ ?_
       . rw [hv, substList_bind_vars_id hcl.1]
       . rw [hv, substList_bind_vars_id hcl.2]
-  . have hsup : (Ty.cls D.C' D.Ts).subst (bind D.bounds (vars (dom D.bounds))) = Ty.cls D.C' D.Ts := by
+  . have hsup : (Ty.cls D.C' D.Ts).subst (bind D.Delta (vars (dom D.Delta))) = Ty.cls D.C' D.Ts := by
       simp only [Ty.subst]
       rw [substList_bind_vars_id (hd.supD D hD)]
     rw [hsup] at e3
@@ -80,7 +80,7 @@ theorem found_sig {d : Decls} (hwf : WFDecls d) {C0 : ClassName} {Ts0 : List Ty}
       Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ vars (dom Dp))) (cod Delta1) = cod Dp /\
       Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ vars (dom Dp))) (T0c :: psc.map VarDecl.T) =
         T0 :: ps.map VarDecl.T := by
-  rcases hm with ⟨k, hk, hkn, hkM⟩
+  rcases hm with ⟨K, hk, hkn, hkM⟩
   generalize hTT : Ty.cls C0 Ts0 = TT at hO
   cases hO with
   | absent h1 h2 =>
@@ -103,7 +103,7 @@ theorem found_sig {d : Decls} (hwf : WFDecls d) {C0 : ClassName} {Ts0 : List Ty}
     rcases es with ⟨es1, es2⟩
     subst es1 es2
     exact And.intro rfl (And.intro h4 (And.intro h5 h6))
-  | @loc C1 Fs C1' Ts1' es1 Ms1 _ _ _ _ _ _ Do T0x psx ex h1 h2 h3 h4 h5 h6 =>
+  | @newLocal C1 Fs C1' Ts1' es1 Ms1 _ _ _ _ _ _ Do T0x psx ex h1 h2 h3 h4 h5 h6 =>
     simp only [Ty.cls.injEq] at hTT
     have ek := Declared.unique hwf hk h1 (by rw [hkn]; exact hTT.1)
     subst ek
@@ -119,7 +119,7 @@ theorem found_sig {d : Decls} (hwf : WFDecls d) {C0 : ClassName} {Ts0 : List Ty}
       exact absurd (Declared.dec_loc hwf hD h1 hDC) id
     . rcases hsd with ⟨Fs2, C2, Ts2', es2, Ms2, Delta, hdecl, hpair⟩
       have eK := Declared.unique hwf hdecl h1 rfl
-      simp only [K.loc.injEq] at eK
+      simp only [ClassDecl.newLocal.injEq] at eK
       rcases eK with ⟨_, eF, _⟩
       subst eF
       have hall : forall F, List.Mem F Fs2 -> F.isFunnel = true := fun F hF => hwf.2.2.2.2.2.2.2.2.2.2 _ h1.mem F hF

@@ -53,11 +53,11 @@ theorem sFound {d : Decls} {D : Dec} {Delta' : Bounds} {T0 : Ty} {m : MethName} 
     (hD : List.Mem D d) (hM : List.Mem (Method.mk Delta' T0 m ps e0) D.Ms)
     (h1 : (toV r).expr = r) (h2 : GTy.tys (toGs Ts) = Ts) (h3 : GTy.tys (toGs Ts') = Ts')
     (h4 : Value.exprs (toVs es) = es)
-    (l1 : Ts.length = D.bounds.length) (l2 : Ts'.length = Delta'.length) (l3 : ps.length = es.length)
-    (n1 : (dom D.bounds ++ dom Delta').Nodup) (n2 : (this :: ps.map VarDecl.x).Nodup)
-    (g1 : GSubstDefined (dom D.bounds ++ dom Delta') e0) (g2 : VSubstDefined (this :: ps.map VarDecl.x) e0) :
+    (l1 : Ts.length = D.Delta.length) (l2 : Ts'.length = Delta'.length) (l3 : ps.length = es.length)
+    (n1 : (dom D.Delta ++ dom Delta').Nodup) (n2 : (this :: ps.map VarDecl.x).Nodup)
+    (g1 : GSubstDefined (dom D.Delta ++ dom Delta') e0) (g2 : VSubstDefined (this :: ps.map VarDecl.x) e0) :
     Step d (.superCall r (.cls D.C Ts) Ts' m es)
-      ((e0.gsubst (bind (D.bounds ++ Delta') (toGs Ts ++ toGs Ts'))).vsubst
+      ((e0.gsubst (bind (D.Delta ++ Delta') (toGs Ts ++ toGs Ts'))).vsubst
         ((this :: ps.map VarDecl.x).zip (toV r :: toVs es))) := by
   have h := Step.simpleFound (d := d) (D := D) (M := .mk Delta' T0 m ps e0) (v0 := toV r) (Gs := toGs Ts)
     (Gs' := toGs Ts') (vs := toVs es) (.dec hD) hM (freshM _) (by rw [tys_length h2, l1])
@@ -86,9 +86,9 @@ theorem sInner {d : Decls} {C C' : ClassName} {Fs : List Funnel} {Ts0 : List Ty}
 theorem sSearch {d : Decls} {D : Dec} {r : Expr} {Ts Ts' : List Ty} {m : MethName} {es : List Expr}
     (hD : List.Mem D d) (hm : Not (List.Mem m (D.Ms.map Method.name))) (ho : Not (D.C = Object))
     (h1 : (toV r).expr = r) (h2 : GTy.tys (toGs Ts) = Ts) (h3 : GTy.tys (toGs Ts') = Ts')
-    (h4 : Value.exprs (toVs es) = es) (l1 : Ts.length = D.bounds.length) :
+    (h4 : Value.exprs (toVs es) = es) (l1 : Ts.length = D.Delta.length) :
     Step d (.superCall r (.cls D.C Ts) Ts' m es)
-      (.superCall r (.cls D.C' (Ty.substList (bind D.bounds Ts) D.Ts)) Ts' m es) := by
+      (.superCall r (.cls D.C' (Ty.substList (bind D.Delta Ts) D.Ts)) Ts' m es) := by
   have h := Step.searchSuper (d := d) (D := D) (m := m) (v := toV r) (Gs := toGs Ts) (Gs' := toGs Ts')
     (vs := toVs es) (.dec hD) hm ho (by rw [tys_length h2, l1])
   rw [h1, h2, h3, h4] at h
@@ -111,14 +111,14 @@ theorem sElse {d : Decls} {r : Expr} {C' : ClassName} {Ts : List Ty} {x : VarNam
 theorem cRecv {d : Decls} {e e' : Expr} {Ts : List Ty} {m : MethName} {es : List Expr} (h : Step d e e')
     (h2 : GTy.tys (toGs Ts) = Ts) : Step d (.call e Ts m es) (.call e' Ts m es) := by
   have h' := Step.ctx (E := .callRecv .hole (toGs Ts) m es) h
-  simp only [ECtx.plug] at h'
+  simp only [EvalCtx.plug] at h'
   rw [h2] at h'
   exact h'
 
 theorem cArg0 {d : Decls} {r e e' : Expr} {Ts : List Ty} {m : MethName} {es : List Expr} (h : Step d e e')
     (h1 : (toV r).expr = r) (h2 : GTy.tys (toGs Ts) = Ts) : Step d (.call r Ts m (e :: es)) (.call r Ts m (e' :: es)) := by
   have h' := Step.ctx (E := .callArg (toV r) (toGs Ts) m [] .hole es) h
-  simp only [ECtx.plug, Value.exprs, List.nil_append] at h'
+  simp only [EvalCtx.plug, Value.exprs, List.nil_append] at h'
   rw [h1, h2] at h'
   exact h'
 
@@ -155,13 +155,13 @@ theorem noStepSuper {d : Decls} (hObj : forall D, List.Mem D d -> D.C = Object -
     cases E with
     | hole => exact ih he
     | superRecv E' =>
-      simp only [ECtx.plug, Expr.superCall.injEq] at he
-      cases ECtx.plug_value he.1 with
+      simp only [EvalCtx.plug, Expr.superCall.injEq] at he
+      cases EvalCtx.plug_value he.1 with
       | intro v' hv' => exact Step.not_value h v' hv'
     | superArg =>
-      simp only [ECtx.plug, Expr.superCall.injEq] at he
+      simp only [EvalCtx.plug, Expr.superCall.injEq] at he
       simp at he
-    | _ => simp only [ECtx.plug] at he; cases he
+    | _ => simp only [EvalCtx.plug] at he; cases he
   | _ => intro he; cases he
 
 theorem noStepField {d : Decls} {f : FieldName} : forall {e e' : Expr}, Step d e e' ->
@@ -188,10 +188,10 @@ theorem noStepField {d : Decls} {f : FieldName} : forall {e e' : Expr}, Step d e
     cases E with
     | hole => exact ih he
     | field E' =>
-      simp only [ECtx.plug, Expr.field.injEq] at he
-      cases ECtx.plug_value (v := .new Object [] []) he.1 with
+      simp only [EvalCtx.plug, Expr.field.injEq] at he
+      cases EvalCtx.plug_value (v := .new Object [] []) he.1 with
       | intro v' hv' => exact Step.not_value h v' hv'
-    | _ => simp only [ECtx.plug] at he; cases he
+    | _ => simp only [EvalCtx.plug] at he; cases he
   | _ => intro he; cases he
 
 theorem stuckS {d : Decls} (hObj : forall D, List.Mem D d -> D.C = Object -> D.Ms.isEmpty = true) {v : Value}
@@ -200,7 +200,7 @@ theorem stuckS {d : Decls} (hObj : forall D, List.Mem D d -> D.C = Object -> D.M
   And.intro noValSuper (fun _ h => noStepSuper hObj h.1 rfl)
 
 theorem subNames {d : Decls} {N : List ClassName}
-    (hN : forall k, List.Mem k (classes d) -> List.Mem k.name N -> List.Mem k.sup N) {Delta : Bounds} {S T : Ty}
+    (hN : forall K, List.Mem K (classes d) -> List.Mem K.name N -> List.Mem K.sup N) {Delta : Bounds} {S T : Ty}
     (h : Sub d Delta S T) : forall {C Ts}, S = .cls C Ts -> List.Mem C N ->
       exists C' Ts', T = .cls C' Ts' /\ List.Mem C' N := by
   induction h with
@@ -214,11 +214,11 @@ theorem subNames {d : Decls} {N : List ClassName}
     intro C Ts hS hC
     injection hS with hC' _
     subst hC'
-    exact ih rfl (hN (.loc C0 Fs C' Ts' es Ms) hD.mem hC)
+    exact ih rfl (hN (.newLocal C0 Fs C' Ts' es Ms) hD.mem hC)
   | subVar _ _ _ => intro C Ts hS; cases hS
 
 theorem notSub {d : Decls} (N : List ClassName)
-    (hN : forall k, List.Mem k (classes d) -> List.Mem k.name N -> List.Mem k.sup N) {Delta : Bounds}
+    (hN : forall K, List.Mem K (classes d) -> List.Mem K.name N -> List.Mem K.sup N) {Delta : Bounds}
     {C C' : ClassName} {Ts Ts' : List Ty} (hC : List.Mem C N) (hC' : Not (List.Mem C' N)) :
     Not (Sub d Delta (.cls C Ts) (.cls C' Ts')) := by
   intro h
@@ -231,26 +231,26 @@ theorem notSub {d : Decls} (N : List ClassName)
       exact hC' h2.2
 
 theorem noSubEx {d : Decls} (N : List ClassName)
-    (hN : forall k, List.Mem k (classes d) -> List.Mem k.name N -> List.Mem k.sup N) {Delta : Bounds}
+    (hN : forall K, List.Mem K (classes d) -> List.Mem K.name N -> List.Mem K.sup N) {Delta : Bounds}
     {C C' : ClassName} {Ts : List Ty} (hC : List.Mem C N) (hC' : Not (List.Mem C' N)) :
     Not (exists Ts', Sub d Delta (.cls C Ts) (.cls C' Ts')) := by
   intro h
   cases h with
   | intro Ts' h => exact notSub N hN hC hC' h
 
-def kTs : K -> List Ty
+def kTs : ClassDecl -> List Ty
   | .dec D => D.Ts
-  | .loc _ _ _ Ts _ _ => Ts
+  | .newLocal _ _ _ Ts _ _ => Ts
 
-def kVars : K -> List TVarName
-  | .dec D => dom D.bounds
-  | .loc _ Fs _ _ _ _ => domF Fs
+def kVars : ClassDecl -> List TVarName
+  | .dec D => dom D.Delta
+  | .newLocal _ Fs _ _ _ _ => domF Fs
 
 abbrev Closed (d : Decls) (N : List ClassName) : Prop :=
-  forall k, List.Mem k (classes d) -> List.Mem k.name N -> List.Mem k.sup N
+  forall K, List.Mem K (classes d) -> List.Mem K.name N -> List.Mem K.sup N
 
 abbrev ObjArgs (d : Decls) : Prop :=
-  forall k, List.Mem k (classes d) -> k.sup = Object -> (kTs k).isEmpty = true
+  forall K, List.Mem K (classes d) -> K.sup = Object -> (kTs K).isEmpty = true
 
 theorem subObjArgs {d : Decls} (hO : ObjArgs d) {Delta : Bounds} {S T : Ty} (h : Sub d Delta S T) :
     (exists C Ts, S = .cls C Ts) -> (forall Ts, S = .cls Object Ts -> Ts = []) ->
@@ -270,7 +270,7 @@ theorem subObjArgs {d : Decls} (hO : ObjArgs d) {Delta : Bounds} {S T : Ty} (h :
     apply ih (Exists.intro _ (Exists.intro _ rfl))
     intro Ts hTs
     simp only [Ty.subst, Ty.cls.injEq] at hTs
-    have h1 := hO (.loc C Fs C' Ts' es Ms) hD.mem hTs.1
+    have h1 := hO (.newLocal C Fs C' Ts' es Ms) hD.mem hTs.1
     simp only [kTs, List.isEmpty_iff] at h1
     rw [<- hTs.2, h1]; rfl
   | subVar _ _ _ =>
@@ -304,18 +304,18 @@ theorem vars_inj : forall {Xs Ys : List TVarName}, vars Xs = vars Ys -> Xs = Ys
     rw [h.1, vars_inj (Xs := Xs) (Ys := Ys) h.2]
 
 theorem genericK {d : Decls} {C : ClassName} {Xs : List TVarName} (h : Generic d C (.cls C (vars Xs))) :
-    exists k, List.Mem k (classes d) /\ k.name = C /\ Xs = kVars k := by
+    exists K, List.Mem K (classes d) /\ K.name = C /\ Xs = kVars K := by
   generalize hT : Ty.cls C (vars Xs) = T at h
   cases h with
   | @dec D hD =>
     injection hT with h1 h2
     exact Exists.intro (.dec D) (And.intro hD.mem (And.intro rfl (vars_inj h2)))
-  | @loc _ Fs C' Ts es Ms hD =>
+  | @newLocal _ Fs C' Ts es Ms hD =>
     injection hT with h1 h2
     exact Exists.intro _ (And.intro hD.mem (And.intro rfl (vars_inj h2)))
 
 theorem castObj {d : Decls} (hN : Closed d [Object]) (hO : ObjArgs d) {C : ClassName}
-    (hG : forall k, List.Mem k (classes d) -> k.name = C -> (kVars k).isEmpty = false) (hC : Not (C = Object))
+    (hG : forall K, List.Mem K (classes d) -> K.name = C -> (kVars K).isEmpty = false) (hC : Not (C = Object))
     {Delta : Bounds} {Ts : List Ty} : Not (Cast d Delta (.cls Object []) (.cls C Ts)) := by
   intro h
   cases h with
@@ -326,8 +326,8 @@ theorem castObj {d : Decls} (hN : Closed d [Object]) (hO : ObjArgs d) {C : Class
       (by intro Ts e; injection e with e; exact absurd e hC) Ts' rfl
     subst hT
     cases genericK hg with
-    | intro k hk =>
-      have h1 := hG k hk.1 hk.2.1
+    | intro K hk =>
+      have h1 := hG K hk.1 hk.2.1
       rw [<- hk.2.2] at h1
       cases Xs with
       | nil => simp at h1
@@ -336,8 +336,8 @@ theorem castObj {d : Decls} (hN : Closed d [Object]) (hO : ObjArgs d) {C : Class
         simp [Ty.ftvList] at h2
         cases h2
 
-theorem inv_var {d Delta gamma x} : forall {e T}, Typing d Delta gamma e T -> e = .var x ->
-    exists T1, gamma.lookup x = some T1 /\ Up d Delta T1 T
+theorem inv_var {d Delta Gamma x} : forall {e T}, Typing d Delta Gamma e T -> e = .var x ->
+    exists T1, Gamma.lookup x = some T1 /\ Up d Delta T1 T
   | _, _, .subs h hk hs, he => by
     cases inv_var h he with
     | intro T1 h1 => exact Exists.intro T1 (And.intro h1.1 (h1.2.trans (Or.inr (And.intro hs hk))))
@@ -350,9 +350,9 @@ theorem inv_var {d Delta gamma x} : forall {e T}, Typing d Delta gamma e T -> e 
   | _, _, .newLocal .., he => by cases he
   | _, _, .ifInstanceof .., he => by cases he
 
-theorem inv_callTop {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : List.Mem D d) (hb : D.bounds = [])
+theorem inv_callTop {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : List.Mem D d) (hb : D.Delta = [])
     (hs : D.C' = Object) (hTs : D.Ts = []) (hN : Closed d [Object])
-    (hObjK : forall k, List.Mem k (classes d) -> k.name = Object -> k.Ms.isEmpty = true)
+    (hObjK : forall K, List.Mem K (classes d) -> K.name = Object -> K.Ms.isEmpty = true)
     {Ts1 : List Ty} {m : MethName} {es : List Expr} {T : Ty} (h : Typing d [] [] (.call (.new D.C [] []) Ts1 m es) T) :
     exists Delta1 T0 ps body T0' Ts', List.Mem (Method.mk Delta1 T0 m ps body) D.Ms /\ Ts1.length = Delta1.length /\
       T0' :: Ts' = Ty.substList (bind Delta1 Ts1) (T0 :: ps.map VarDecl.T) /\ TypingSeq d [] [] es Ts' /\
@@ -383,9 +383,9 @@ theorem inv_callTop {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : List.Mem D d) 
                 | head => rfl
                 | tail _ h => cases h
               cases hw.meth with
-              | intro k hk =>
-                have h6 := hObjK k hk.1.mem (by rw [hk.2.1, e1, hC1])
-                cases hMs : k.Ms with
+              | intro K hk =>
+                have h6 := hObjK K hk.1.mem (by rw [hk.2.1, e1, hC1])
+                cases hMs : K.Ms with
                 | nil => have h7 := hk.2.2; rw [hMs] at h7; cases h7
                 | cons => rw [hMs] at h6; simp at h6
     have hsc := hw.scope
@@ -446,9 +446,9 @@ theorem overDec {d : Decls} (hwf : WFDecls d) (hN : Closed d [Object]) (hO : Obj
     rw [hsup, hTs] at h3
     exact overObj hN hO hD0 hC hMs h3
 
-theorem kNull {d : Decls} {D : Dec} (hD : List.Mem D d) (hb : D.bounds = []) {Delta : Bounds} :
+theorem kNull {d : Decls} {D : Dec} (hD : List.Mem D d) (hb : D.Delta = []) {Delta : Bounds} :
     Kind d Delta (.cls D.C []) :=
-  Kind.wfClass (Delta0 := D.bounds) (Ts0 := []) (Scope.dec (.dec hD)) (by intro T h; cases h) (by rw [hb]; rfl)
+  Kind.wfClass (Delta0 := D.Delta) (Ts0 := []) (Scope.dec (.dec hD)) (by intro T h; cases h) (by rw [hb]; rfl)
     (by rw [hb]; exact .nil)
 
 end Funnelling.ExampleFacts

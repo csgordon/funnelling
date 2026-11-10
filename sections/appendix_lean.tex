@@ -19,7 +19,6 @@
 
 This appendix relates the formalism of Section~\ref{sec:core} to a Lean~4 formalization in the folder \texttt{lean} of the paper repository.
 Rule \textsc{new-local-java}, shown in Section~\ref{sec:funnelling} and used in Section~\ref{sec:java}, is not formalized: Type Soundness concerns only the type system with rule \textsc{new-local}.
-The Lean formalization is set up, but the proofs of the soundness theorems are not done yet.
 
 \subsection{Request}
 This appendix answers the following request, reported verbatim, so that we can check later how much of it is addressed.
@@ -67,14 +66,16 @@ The two proofs are complete: they use no \texttt{sorry}, and they depend on no a
 Section~\ref{app:lean:examples} lists the validation examples.
 \\[1ex]
 The Lean code is written in ASCII:
-\texttt{->} is $\rightarrow$, \texttt{/\char`\\} is $\wedge$, \texttt{\char`\\/} is $\vee$, \texttt{List.Mem x xs} is $x\in xs$, and \texttt{Delta}, \texttt{gamma}, \texttt{sigma} are $\Delta$, $\Gamma$, $\sigma$.
+\texttt{->} is $\rightarrow$, \texttt{/\char`\\} is $\wedge$, \texttt{\char`\\/} is $\vee$, \texttt{List.Mem x xs} is $x\in xs$, and \texttt{Delta}, \texttt{Gamma}, \texttt{sigma} are $\Delta$, $\Gamma$, $\sigma$.
 
 \subsection{Differences Common to All the Pieces}
 \label{app:lean:common}
 The following differences hold for every piece below, and the pieces do not repeat them.
 \begin{itemize}
 \item \textbf{Metavariables.}
-Each metavariable of the paper is a Lean type: \texttt{ClassName} ($C$), \texttt{MethName} ($m$), \texttt{FieldName} ($f$), \texttt{VarName} ($x$), \texttt{TVarName} ($X$), \texttt{Ty} ($T$), \texttt{GTy} ($G$), \texttt{Funnel} ($F$), \texttt{Value} ($v$), \texttt{Expr} ($e$), \texttt{Method} ($M$), \texttt{Dec}, \texttt{K}.
+Each metavariable of the paper is a Lean type: \texttt{ClassName} ($C$), \texttt{MethName} ($m$), \texttt{FieldName} ($f$), \texttt{VarName} ($x$), \texttt{TVarName} ($X$), \texttt{Ty} ($T$), \texttt{GTy} ($G$), \texttt{Funnel} ($F$), \texttt{Value} ($v$), \texttt{Expr} ($e$), \texttt{Method} ($M$), \texttt{Slot} ($S$), \texttt{Bounds} ($\Delta$), \texttt{TypeEnv} ($\Gamma$), \texttt{Dec} ($\mathsf{Dec}$), \texttt{ClassDecl} ($K$), \texttt{EvalCtx} ($\mathcal{E}$), \texttt{ExprCtx} ($\mathcal{C}$).
+A Lean variable, or a field of a Lean structure, has the name of the metavariable of the paper: \texttt{T}, \texttt{Delta}, \texttt{Gamma}, \texttt{K}, \texttt{E}; $T_0$ is \texttt{T0}, $T'$ is \texttt{T'}, and the sequence $\pl{T}$ is \texttt{Ts}.
+Three Lean variables have another name: \texttt{D} is a $\mathsf{Dec}$; \texttt{ctx} is an expression context $\mathcal{C}$, since \texttt{C} is a class name; \texttt{ps} is the sequence of parameters $T_1\gap x_1,\ldots,T_n\gap x_n$ of a method.
 A ground type is also a type, and a value is also an expression: Lean inserts the conversions \texttt{GTy.ty} and \texttt{Value.expr}, and \texttt{GTy.tys} and \texttt{Value.exprs} for lists, where needed.
 A rule written with $G$ or $v$ in the paper is written with a \texttt{GTy} or a \texttt{Value} in Lean.
 A Lean constructor has the name of the rule of the paper: \texttt{subInherit} is \textsc{sub-inherit}, \texttt{callLbRuntime} is \textsc{call-lb-runtime}.
@@ -87,7 +88,7 @@ The premise of \texttt{Step.ctx} is a \texttt{Step}: an evaluation context binds
 \item \textbf{The class table.}
 \decls is an explicit argument \texttt{d} of every judgement.
 \item \textbf{Sequences.}
-A judgement on sequences has its own name: $\kind{\Delta}{\pl{T}}$ is \texttt{KindSeq d Delta Ts}, $\subtype{\Delta}{\pl{T}}{\pl{T}'}$ is \texttt{SubSeq d Delta Ts Ts'}, and $\typing{\Delta}{\Gamma}{\pl{e}}{\pl{T}}$ is \texttt{TypingSeq d Delta gamma es Ts}; $\mok{\Delta}{\Gamma}{\pl{M}}$ is a premise for every method.
+A judgement on sequences has its own name: $\kind{\Delta}{\pl{T}}$ is \texttt{KindSeq d Delta Ts}, $\subtype{\Delta}{\pl{T}}{\pl{T}'}$ is \texttt{SubSeq d Delta Ts Ts'}, and $\typing{\Delta}{\Gamma}{\pl{e}}{\pl{T}}$ is \texttt{TypingSeq d Delta Gamma es Ts}; $\mok{\Delta}{\Gamma}{\pl{M}}$ is a premise for every method.
 \item \textbf{Substitution and lengths.}
 The paper defines $\tsubst{T}{\Delta}{\pl{T}}$ only when $\Delta$ and $\pl{T}$ have the same length.
 $\tsubst{T}{\Delta}{\pl{T}}$ is \texttt{T.subst (bind Delta Ts)} and $\tsubst{T}{\pl{F}}{\pl{T}}$ is \texttt{T.subst (bindF Fs Ts)}; the rule has the premise that the lengths are the same.
@@ -95,6 +96,7 @@ The paper defines a simultaneous substitution only when the names in its domain 
 Rules \textsc{simpleFound} and \textsc{innerFound} have this as premises (\texttt{Nodup}), since their domains hold the names chosen by $\mathsf{fresh}$; in the other rules the domain is distinct by A5, A6 and A7.
 \item \textbf{Definitions.}
 A \textbf{Define} box of the paper with \emph{where} clauses ($\mathsf{declared}$, $\mathrm{generic}$, $\mathsf{scope}$, the pairing, $\mathsf{overrideOk}(T,M)$) is an inductive relation, one constructor per clause; $M\in C$ and $K\gap\mathsf{consistent}$ are definitions with an existential, \texttt{MethodIn} and \texttt{Consistent}.
+In $\mathsf{declared}$, $\mathrm{generic}$, $\mathsf{scope}$ and $\mathsf{overrideOk}(T,M)$, the constructor of the clause for a top-level class is \texttt{dec}, and the constructor of the clause for a local class is \texttt{newLocal}; the clause of $\mathsf{overrideOk}(T,M)$ with $m\not\in\pl{M}$ is \texttt{absent}.
 A definition of a function ($\mathrm{dom}$, $\mathrm{cod}$, $|F|$, $\mathsf{typeOf}$, the substitutions) is a function.
 \end{itemize}
 
@@ -152,12 +154,12 @@ structure VarDecl where
   T : Ty
   x : VarName
 abbrev Bounds := List Bound
-abbrev Gamma := List VarDecl
-def Gamma.lookup (gamma : Gamma) (x : VarName) : Option Ty :=
-  (gamma.find? fun d => d.x == x).map VarDecl.T
+abbrev TypeEnv := List VarDecl
+def TypeEnv.lookup (Gamma : TypeEnv) (x : VarName) : Option Ty :=
+  (Gamma.find? fun d => d.x == x).map VarDecl.T
 \end{lstlisting}
 \end{leanside}
-\mapping{$\ext{X}{T}$ is \texttt{\{ X := X, T := T \}}; $T\gap x$ is \texttt{\{ T := T, x := x \}}; $\Gamma(x)$ is \texttt{gamma.lookup x}, the first $T\gap x$ of $\Gamma$; $\Gamma$ has one $T\gap x$ per $x$, by A4, A7, A8 and $\Gamma\setminus\this$ in rule \textsc{new-local}.}
+\mapping{$\ext{X}{T}$ is \texttt{\{ X := X, T := T \}}; $T\gap x$ is \texttt{\{ T := T, x := x \}}; $\Gamma(x)$ is \texttt{Gamma.lookup x}, the first $T\gap x$ of $\Gamma$; $\Gamma$ has one $T\gap x$ per $x$, by A4, A7, A8 and $\Gamma\setminus\this$ in rule \textsc{new-local}.}
 \end{cmp}
 
 \begin{cmp}{Expressions and methods}
@@ -183,11 +185,11 @@ inductive Expr where
       (es : List Expr) (Ms : List Method)
   | ifInst (e0 : Expr) (T : Ty) (x : VarName) (e1 e2 : Expr)
 inductive Method where
-  | mk (bounds : Bounds) (T0 : Ty) (m : MethName) (params : List VarDecl) (body : Expr)
+  | mk (Delta : Bounds) (T0 : Ty) (m : MethName) (ps : List VarDecl) (e : Expr)
 end
 \end{lstlisting}
 \end{leanside}
-\mapping{The super call $\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}$ is \texttt{superCall}; the local class is \texttt{newLocal}; the type test is \texttt{ifInst}.}
+\mapping{The super call $\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}$ is \texttt{superCall}; the local class is \texttt{newLocal}; the type test is \texttt{ifInst}. \texttt{M.Delta}, \texttt{M.name} and \texttt{M.params} are $\Delta$, $m$ and the parameters of a method $M$.}
 \end{cmp}
 
 \begin{cmp}{Values}
@@ -225,19 +227,19 @@ structure Slot where
   f : FieldName
 structure Dec where
   C : ClassName
-  bounds : Bounds
+  Delta : Bounds
   C' : ClassName
   Ts : List Ty
   Ms : List Method
   Ss : List Slot
-inductive K where
+inductive ClassDecl where
   | dec (D : Dec)
-  | loc (C : ClassName) (Fs : List Funnel) (C' : ClassName) (Ts : List Ty)
+  | newLocal (C : ClassName) (Fs : List Funnel) (C' : ClassName) (Ts : List Ty)
       (es : List Expr) (Ms : List Method)
 abbrev Decls := List Dec
 \end{lstlisting}
 \end{leanside}
-\mapping{$\Delta$ of a declaration is \texttt{bounds}.}
+\mapping{\texttt{K.name}, \texttt{K.sup}, \texttt{K.Ms} and \texttt{K.Fs} are $C$, $C'$, $\pl{M}$ and $\pl{F}$ of a $K$ of either form; \texttt{K.Fs} of a $\mathsf{Dec}$ is empty.}
 \end{cmp}
 
 \begin{cmp}{Evaluation contexts}
@@ -253,19 +255,19 @@ abbrev Decls := List Dec
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-inductive ECtx where
+inductive EvalCtx where
   | hole
-  | callRecv (E : ECtx) (Gs : List GTy) (m : MethName) (es : List Expr)
-  | callArg (v : Value) (Gs : List GTy) (m : MethName) (vs : List Value) (E : ECtx)
+  | callRecv (E : EvalCtx) (Gs : List GTy) (m : MethName) (es : List Expr)
+  | callArg (v : Value) (Gs : List GTy) (m : MethName) (vs : List Value) (E : EvalCtx)
       (es : List Expr)
-  | superRecv (E : ECtx) (G : GTy) (Gs : List GTy) (m : MethName) (es : List Expr)
+  | superRecv (E : EvalCtx) (G : GTy) (Gs : List GTy) (m : MethName) (es : List Expr)
   | superArg (v : Value) (G : GTy) (Gs : List GTy) (m : MethName) (vs : List Value)
-      (E : ECtx) (es : List Expr)
-  | field (E : ECtx) (f : FieldName)
-  | newArg (C : ClassName) (Gs : List GTy) (vs : List Value) (E : ECtx) (es : List Expr)
-  | localArg (C : ClassName) (Gs : List GTy) (C' : ClassName) (Gs' : List GTy)
-      (vs : List Value) (E : ECtx) (es : List Expr) (Ms : List Method)
-  | ifCond (E : ECtx) (G : GTy) (x : VarName) (e1 e2 : Expr)
+      (E : EvalCtx) (es : List Expr)
+  | field (E : EvalCtx) (f : FieldName)
+  | newArg (C : ClassName) (Gs : List GTy) (vs : List Value) (E : EvalCtx) (es : List Expr)
+  | newLocalArg (C : ClassName) (Gs : List GTy) (C' : ClassName) (Gs' : List GTy)
+      (vs : List Value) (E : EvalCtx) (es : List Expr) (Ms : List Method)
+  | ifCond (E : EvalCtx) (G : GTy) (x : VarName) (e1 e2 : Expr)
 \end{lstlisting}
 \end{leanside}
 \mapping{$\mathcal{E}[e]$ is \texttt{E.plug e}.}
@@ -281,10 +283,10 @@ inductive ECtx where
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-abbrev A1 (d : Decls) : Prop := ((classes d).map K.name).Nodup
+abbrev A1 (d : Decls) : Prop := ((classes d).map ClassDecl.name).Nodup
 abbrev A2 (d : Decls) : Prop :=
   forall D, List.Mem D d -> ((superChain d (d.length + 1) D.C).flatMap fun D' => D'.Ss.map Slot.f).Nodup
-abbrev A3 (ks : List K) : Prop := forall k, List.Mem k ks -> (k.Ms.map Method.name).Nodup
+abbrev A3 (Ks : List ClassDecl) : Prop := forall K, List.Mem K Ks -> (K.Ms.map Method.name).Nodup
 \end{lstlisting}
 \end{leanside}
 \mapping{\texttt{classes d} lists the top-level classes and every local class written in their methods. \texttt{superChain d n C} is the chain of superclasses of $C$, cut after $n$ classes; an acyclic chain is never longer than $|\decls|$, and A9 rejects a cyclic one.}
@@ -300,7 +302,7 @@ abbrev A3 (ks : List K) : Prop := forall k, List.Mem k ks -> (k.Ms.map Method.na
 \begin{lstlisting}[style=leanside]
 abbrev A4 (Ms : List Method) : Prop := forall M, List.Mem M Ms -> (M.params.map VarDecl.x).Nodup
 abbrev A5 (Deltas : List Bounds) : Prop := forall Delta, List.Mem Delta Deltas -> (dom Delta).Nodup
-abbrev A6 (ks : List K) : Prop := forall k, List.Mem k ks -> (domF k.Fs).Nodup
+abbrev A6 (Ks : List ClassDecl) : Prop := forall K, List.Mem K Ks -> (domF K.Fs).Nodup
 \end{lstlisting}
 \end{leanside}
 \mapping{Each requirement is applied to all the methods, bounds and local classes of \decls, and of the main expression.}
@@ -326,11 +328,12 @@ def Method.noShadow (Xs : List TVarName) (xs : List VarName) : Method -> Bool
     (dom Delta).all (fun X => !(Xs.contains X)) &&
     (ps.map VarDecl.x).all (fun x => !(xs.contains x)) &&
     e.noShadow (Xs ++ dom Delta) (this :: xs ++ ps.map VarDecl.x)
+abbrev A7 (e : Expr) : Prop := e.noShadow [] [] = true
 abbrev A7Decls (d : Decls) : Prop :=
-  forall D, List.Mem D d -> Method.noShadowList (dom D.bounds) [] D.Ms = true
+  forall D, List.Mem D d -> Method.noShadowList (dom D.Delta) [] D.Ms = true
 \end{lstlisting}
 \end{leanside}
-\mapping{\texttt{Xs} and \texttt{xs} are the type variables and the variables in scope; the cases written \texttt{...} go into the subexpressions. Funnels bind nothing: $\funnel{X}$ refers to the $X$ in scope.}
+\mapping{\texttt{Xs} and \texttt{xs} are the type variables and the variables in scope; the cases written \texttt{...} go into the subexpressions. Funnels bind nothing: $\funnel{X}$ refers to the $X$ in scope. \texttt{A7} is A7 on the main expression, and \texttt{A7Decls} is A7 on \decls.}
 \end{cmp}
 
 \begin{cmp}{A8, A9, A10, A11}
@@ -345,11 +348,11 @@ abbrev A7Decls (d : Decls) : Prop :=
 abbrev A8 (Ms : List Method) (ifVars : List VarName) : Prop :=
   (forall M, List.Mem M Ms -> Not (List.Mem this (M.params.map VarDecl.x))) /\ Not (List.Mem this ifVars)
 abbrev A9 (d : Decls) : Prop :=
-  (exists D, List.Mem D d /\ D.C = Object /\ D.bounds.isEmpty /\ D.C' = Object /\ D.Ts.isEmpty /\
+  (exists D, List.Mem D d /\ D.C = Object /\ D.Delta.isEmpty /\ D.C' = Object /\ D.Ts.isEmpty /\
     D.Ms.isEmpty /\ D.Ss.isEmpty) /\
   forall D, List.Mem D d -> exists D', List.Mem D' (superChain d (d.length + 1) D.C) /\ D'.C = Object
-abbrev A10 (d : Decls) : Prop := forall k, List.Mem k (classes d) -> (findDec d k.sup).isSome
-abbrev A11 (d : Decls) : Prop := forall k, List.Mem k (classes d) -> forall F, List.Mem F k.Fs -> F.isFunnel
+abbrev A10 (d : Decls) : Prop := forall K, List.Mem K (classes d) -> (findDec d K.sup).isSome
+abbrev A11 (d : Decls) : Prop := forall K, List.Mem K (classes d) -> forall F, List.Mem F K.Fs -> F.isFunnel
 \end{lstlisting}
 \end{leanside}
 \mapping{\texttt{ifVars} lists the variables of all the \Q@if@.}
@@ -372,6 +375,7 @@ def Method.closed (Xs : List TVarName) (xs : List VarName) : Method -> Bool
   | .mk Delta T0 _ ps e =>
     (Ty.ftvList (T0 :: cod Delta ++ ps.map VarDecl.T)).all (Xs ++ dom Delta).contains &&
     e.closed (Xs ++ dom Delta) (this :: xs ++ ps.map VarDecl.x)
+abbrev A12 (e : Expr) : Prop := e.closed [] [] = true
 \end{lstlisting}
 \end{leanside}
 \mapping{\texttt{Xs} and \texttt{xs} are the type variables and the variables in scope; the cases written \texttt{...} check the types they hold and go into the subexpressions.}
@@ -386,12 +390,12 @@ The well-formedness requirements A1-A12 of Section~\ref{sec:core} are part of th
 \begin{lstlisting}[style=leanside]
 abbrev WFDecls (d : Decls) : Prop :=
   A1 d /\ A2 d /\ A3 (classes d) /\ A4 d.methods /\
-  A5 (d.map Dec.bounds ++ d.methods.map Method.bounds) /\ A6 (classes d) /\
+  A5 (d.map Dec.Delta ++ d.methods.map Method.Delta) /\ A6 (classes d) /\
   A7Decls d /\ A8 d.methods (d.flatMap fun D => Method.ifVarsList D.Ms) /\
   A9 d /\ A10 d /\ A11 d
 abbrev WFExpr (e : Expr) : Prop :=
-  A3 e.locals /\ A4 e.methods /\ A5 (e.methods.map Method.bounds) /\ A6 e.locals /\
-  e.noShadow [] [] = true /\ A8 e.methods e.ifVars /\ e.closed [] [] = true
+  A3 e.locals /\ A4 e.methods /\ A5 (e.methods.map Method.Delta) /\ A6 e.locals /\
+  A7 e /\ A8 e.methods e.ifVars /\ A12 e
 \end{lstlisting}
 \end{leanside}
 \mapping{\texttt{WFExpr} applies to the main expression the requirements that restrict it, A3-A8 and A12.}
@@ -423,7 +427,7 @@ inductive ExprCtx where
       (ctx : ExprCtx) (es' : List Expr)
   | field (ctx : ExprCtx) (f : FieldName)
   | newArg (C : ClassName) (Ts : List Ty) (es : List Expr) (ctx : ExprCtx) (es' : List Expr)
-  | localArg (C : ClassName) (Fs : List Funnel) (C' : ClassName) (Ts : List Ty)
+  | newLocalArg (C : ClassName) (Fs : List Funnel) (C' : ClassName) (Ts : List Ty)
       (es : List Expr) (ctx : ExprCtx) (es' : List Expr) (Ms : List Method)
   | ifCond (ctx : ExprCtx) (T : Ty) (x : VarName) (e1 e2 : Expr)
   | ifThen (e0 : Expr) (T : Ty) (x : VarName) (ctx : ExprCtx) (e2 : Expr)
@@ -451,14 +455,14 @@ M\in C\textrm{ iff }M\in K\\
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-inductive Declared (d : Decls) : K -> Prop
+inductive Declared (d : Decls) : ClassDecl -> Prop
   | dec {D} : List.Mem D d -> Declared d (.dec D)
-  | loc {k Delta T0 m ps e C0 Fs C' Ts es Ms} :
-      Declared d k -> List.Mem (.mk Delta T0 m ps e) k.Ms ->
+  | newLocal {K Delta T0 m ps e C0 Fs C' Ts es Ms} :
+      Declared d K -> List.Mem (.mk Delta T0 m ps e) K.Ms ->
       OccursIn (.newLocal C0 Fs C' Ts es Ms) e ->
-      Declared d (.loc C0 Fs C' Ts es Ms)
+      Declared d (.newLocal C0 Fs C' Ts es Ms)
 def MethodIn (d : Decls) (M : Method) (C : ClassName) : Prop :=
-  exists k, Declared d k /\ k.name = C /\ List.Mem M k.Ms
+  exists K, Declared d K /\ K.name = C /\ List.Mem M K.Ms
 \end{lstlisting}
 \end{leanside}
 \mapping{$\declared{K}$ is \texttt{Declared d K}; $M\in K$ is \texttt{List.Mem M K.Ms}; $M\in C$ is \texttt{MethodIn d M C}.}
@@ -477,9 +481,9 @@ def MethodIn (d : Decls) (M : Method) (C : ClassName) : Prop :=
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
 inductive Generic (d : Decls) : ClassName -> Ty -> Prop
-  | dec {D} : Declared d (.dec D) -> Generic d D.C (.cls D.C (vars (dom D.bounds)))
-  | loc {C Fs C' Ts es Ms} :
-      Declared d (.loc C Fs C' Ts es Ms) -> Generic d C (.cls C (vars (domF Fs)))
+  | dec {D} : Declared d (.dec D) -> Generic d D.C (.cls D.C (vars (dom D.Delta)))
+  | newLocal {C Fs C' Ts es Ms} :
+      Declared d (.newLocal C Fs C' Ts es Ms) -> Generic d C (.cls C (vars (domF Fs)))
 def Funnel.abs : Funnel -> Ty
   | .ground G => G
   | .funnel X => .var X
@@ -526,8 +530,8 @@ inductive Pairing (Delta : Bounds) : List Funnel -> List Ty -> Bounds -> List Ty
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
 inductive Scope (d : Decls) : Ty -> Bounds -> List Ty -> Prop
-  | dec {D Ts} : Declared d (.dec D) -> Scope d (.cls D.C Ts) D.bounds Ts
-  | loc {C Delta' T0 m ps e C0 Fs C' Ts' es Ms T Delta Ts'' Ts Delta0 Ts0} :
+  | dec {D Ts} : Declared d (.dec D) -> Scope d (.cls D.C Ts) D.Delta Ts
+  | newLocal {C Delta' T0 m ps e C0 Fs C' Ts' es Ms T Delta Ts'' Ts Delta0 Ts0} :
       MethodIn d (.mk Delta' T0 m ps e) C ->
       OccursIn (.newLocal C0 Fs C' Ts' es Ms) e ->
       Generic d C T -> Scope d T Delta Ts'' ->
@@ -704,9 +708,9 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       vs1.length = D.Ss.length ->
       Not (List.Mem f (D.Ss.map Slot.f)) ->
       Not (D.C = Object) ->
-      Gs.length = D.bounds.length ->
+      Gs.length = D.Delta.length ->
       Step d (.field (Value.new D.C Gs (vs1 ++ vs)) f)
-        (.field (.new D.C' (Ty.substList (bind D.bounds (Gs : List Ty)) D.Ts) vs) f)
+        (.field (.new D.C' (Ty.substList (bind D.Delta (Gs : List Ty)) D.Ts) vs) f)
 \end{lstlisting}
 \end{leanside}
 \nomapping
@@ -801,13 +805,13 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       Declared d (.dec D) ->
       List.Mem M D.Ms ->
       FreshM M (.mk Delta' T0 m ps e0) ->
-      Gs.length = D.bounds.length -> Gs'.length = Delta'.length ->
-      (dom D.bounds ++ dom Delta').Nodup ->
+      Gs.length = D.Delta.length -> Gs'.length = Delta'.length ->
+      (dom D.Delta ++ dom Delta').Nodup ->
       (this :: ps.map VarDecl.x).Nodup ->
       ps.length = vs.length ->
-      GSubstDefined (dom D.bounds ++ dom Delta') e0 ->
+      GSubstDefined (dom D.Delta ++ dom Delta') e0 ->
       VSubstDefined (this :: ps.map VarDecl.x) e0 ->
-      e = (e0.gsubst (bind (D.bounds ++ Delta') (Gs ++ Gs'))).vsubst
+      e = (e0.gsubst (bind (D.Delta ++ Delta') (Gs ++ Gs'))).vsubst
         ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
       Step d (.superCall v0 (.cls D.C Gs) Gs' m vs) e
 \end{lstlisting}
@@ -881,9 +885,9 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       Declared d (.dec D) ->
       Not (List.Mem m (D.Ms.map Method.name)) ->
       Not (D.C = Object) ->
-      Gs.length = D.bounds.length ->
+      Gs.length = D.Delta.length ->
       Step d (.superCall v (.cls D.C Gs) Gs' m vs)
-        (.superCall v (.cls D.C' (Ty.substList (bind D.bounds (Gs : List Ty)) D.Ts)) Gs' m vs)
+        (.superCall v (.cls D.C' (Ty.substList (bind D.Delta (Gs : List Ty)) D.Ts)) Gs' m vs)
 \end{lstlisting}
 \end{leanside}
 \nomapping
@@ -901,16 +905,16 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | ctx {E : ECtx} {e e'} :
+  | ctx {E : EvalCtx} {e e'} :
       Step d e e' -> Step d (E.plug e) (E.plug e')
 def Reduces (d : Decls) (e e' : Expr) : Prop := Step d e e' /\ WFExpr e'
-inductive Steps (d : Decls) : Expr -> Expr -> Prop
-  | refl {e} : Steps d e e
-  | step {e e' e''} : Reduces d e e' -> Steps d e' e'' -> Steps d e e''
+inductive ReducesStar (d : Decls) : Expr -> Expr -> Prop
+  | refl {e} : ReducesStar d e e
+  | step {e e' e''} : Reduces d e e' -> ReducesStar d e' e'' -> ReducesStar d e e''
 def IsValue (e : Expr) : Prop := exists v : Value, e = v
 \end{lstlisting}
 \end{leanside}
-\mapping{$\step{e}{e'}$ is \texttt{Reduces d e e'}; $\rightarrow^*$ is \texttt{Steps d}; \emph{$e$ is of form $v$} is \texttt{IsValue e}.}
+\mapping{$\step{e}{e'}$ is \texttt{Reduces d e e'}; $\rightarrow^*$ is \texttt{ReducesStar d}; \emph{$e$ is of form $v$} is \texttt{IsValue e}.}
 \end{cmp}
 
 \subsubsection{Subtyping and Kinding}
@@ -949,12 +953,12 @@ inductive Sub (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
 \begin{lstlisting}[style=leanside]
   | subInherit {D Ts0 T'} :
       Declared d (.dec D) ->
-      Ts0.length = D.bounds.length ->
-      Sub d Delta ((Ty.cls D.C' D.Ts).subst (bind D.bounds Ts0)) T' ->
+      Ts0.length = D.Delta.length ->
+      Sub d Delta ((Ty.cls D.C' D.Ts).subst (bind D.Delta Ts0)) T' ->
       Sub d Delta (.cls D.C Ts0) T'
 \end{lstlisting}
 \end{leanside}
-\mapping{$\Delta_0$ is \texttt{D.bounds}.}
+\mapping{$\Delta_0$ is \texttt{D.Delta}.}
 \end{cmp}
 
 \begin{cmp}{\textsc{sub-inherit-local}}
@@ -969,7 +973,7 @@ inductive Sub (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
   | subInheritLocal {C Fs C' Ts' es Ms Ts T'} :
-      Declared d (.loc C Fs C' Ts' es Ms) ->
+      Declared d (.newLocal C Fs C' Ts' es Ms) ->
       Ts.length = Fs.length ->
       Sub d Delta ((Ty.cls C' Ts').subst (bindF Fs Ts)) T' ->
       Sub d Delta (.cls C Ts) T'
@@ -1077,17 +1081,17 @@ inductive Cast (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
-  | subs {Delta gamma e T1 T2} :
-      Typing d Delta gamma e T1 -> Kind d Delta T2 -> Sub d Delta T1 T2 ->
-      Typing d Delta gamma e T2
-  | var {Delta gamma x T} :
-      gamma.lookup x = some T -> Typing d Delta gamma (.var x) T
-  | newObject {Delta gamma} :
-      Typing d Delta gamma (.new Object [] []) (.cls Object [])
+inductive Typing (d : Decls) : Bounds -> TypeEnv -> Expr -> Ty -> Prop
+  | subs {Delta Gamma e T1 T2} :
+      Typing d Delta Gamma e T1 -> Kind d Delta T2 -> Sub d Delta T1 T2 ->
+      Typing d Delta Gamma e T2
+  | var {Delta Gamma x T} :
+      Gamma.lookup x = some T -> Typing d Delta Gamma (.var x) T
+  | newObject {Delta Gamma} :
+      Typing d Delta Gamma (.new Object [] []) (.cls Object [])
 \end{lstlisting}
 \end{leanside}
-\mapping{$\typing{\Delta}{\Gamma}{e}{T}$ is \texttt{Typing d Delta gamma e T}.}
+\mapping{$\typing{\Delta}{\Gamma}{e}{T}$ is \texttt{Typing d Delta Gamma e T}.}
 \end{cmp}
 
 \begin{cmp}{\textsc{declField}}
@@ -1102,15 +1106,15 @@ inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | declField {Delta gamma e D Ts' T f} :
-      Typing d Delta gamma e (.cls D.C Ts') ->
+  | declField {Delta Gamma e D Ts' T f} :
+      Typing d Delta Gamma e (.cls D.C Ts') ->
       Declared d (.dec D) ->
       List.Mem { T := T, f := f } D.Ss ->
-      Ts'.length = D.bounds.length ->
-      Typing d Delta gamma (.field e f) (T.subst (bind D.bounds Ts'))
+      Ts'.length = D.Delta.length ->
+      Typing d Delta Gamma (.field e f) (T.subst (bind D.Delta Ts'))
 \end{lstlisting}
 \end{leanside}
-\mapping{$\Delta'$ is \texttt{D.bounds}; $\pl{S}$ is \texttt{D.Ss}.}
+\mapping{$\Delta'$ is \texttt{D.Delta}; $\pl{S}$ is \texttt{D.Ss}.}
 \end{cmp}
 
 \begin{cmp}{\textsc{call}}
@@ -1129,18 +1133,18 @@ inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | call {Delta gamma e0 C0 Ts0 Delta0 Ts2 Delta1 T0 m ps body Ts1 es T0' Ts'} :
-      Typing d Delta gamma e0 (.cls C0 Ts0) ->
+  | call {Delta Gamma e0 C0 Ts0 Delta0 Ts2 Delta1 T0 m ps e Ts1 es T0' Ts'} :
+      Typing d Delta Gamma e0 (.cls C0 Ts0) ->
       Scope d (.cls C0 Ts0) Delta0 Ts2 ->
-      MethodIn d (.mk Delta1 T0 m ps body) C0 ->
+      MethodIn d (.mk Delta1 T0 m ps e) C0 ->
       Ts2.length = Delta0.length -> Ts1.length = Delta1.length ->
       T0' :: Ts' = Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ Ts1))
         (T0 :: ps.map VarDecl.T) ->
       KindSeq d Delta Ts1 ->
       SubSeq d Delta Ts1
         (Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ Ts1)) (cod Delta1)) ->
-      TypingSeq d Delta gamma es Ts' ->
-      Typing d Delta gamma (.call e0 Ts1 m es) T0'
+      TypingSeq d Delta Gamma es Ts' ->
+      Typing d Delta Gamma (.call e0 Ts1 m es) T0'
 \end{lstlisting}
 \end{leanside}
 \mapping{$T'_0,\ldots,T'_n$ is \texttt{T0' :: Ts'}.}
@@ -1166,20 +1170,20 @@ inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | callLbRuntime {Delta gamma e0 D Ts D0 Ts0 Delta1 T0 m ps body Ts1 es T0' Ts'} :
+  | callLbRuntime {Delta Gamma e0 D Ts D0 Ts0 Delta1 T0 m ps e Ts1 es T0' Ts'} :
       Sub d Delta (.cls D.C Ts) (.cls D0.C Ts0) ->
       Declared d (.dec D0) ->
-      MethodIn d (.mk Delta1 T0 m ps body) D0.C ->
-      Ts0.length = D0.bounds.length -> Ts1.length = Delta1.length ->
-      T0' :: Ts' = Ty.substList (bind (D0.bounds ++ Delta1) (Ts0 ++ Ts1))
+      MethodIn d (.mk Delta1 T0 m ps e) D0.C ->
+      Ts0.length = D0.Delta.length -> Ts1.length = Delta1.length ->
+      T0' :: Ts' = Ty.substList (bind (D0.Delta ++ Delta1) (Ts0 ++ Ts1))
         (T0 :: ps.map VarDecl.T) ->
       Declared d (.dec D) ->
       Kind d Delta (.cls D.C Ts) ->
       KindSeq d Delta Ts1 ->
       SubSeq d Delta Ts1
-        (Ty.substList (bind (D0.bounds ++ Delta1) (Ts0 ++ Ts1)) (cod Delta1)) ->
-      TypingSeq d Delta gamma (e0 :: es) (.cls D.C Ts :: Ts') ->
-      Typing d Delta gamma (.superCall e0 (.cls D.C Ts) Ts1 m es) T0'
+        (Ty.substList (bind (D0.Delta ++ Delta1) (Ts0 ++ Ts1)) (cod Delta1)) ->
+      TypingSeq d Delta Gamma (e0 :: es) (.cls D.C Ts :: Ts') ->
+      Typing d Delta Gamma (.superCall e0 (.cls D.C Ts) Ts1 m es) T0'
 \end{lstlisting}
 \end{leanside}
 \mapping{$C$ is \texttt{D.C} and $C_0$ is \texttt{D0.C}.}
@@ -1198,13 +1202,13 @@ inductive Typing (d : Decls) : Bounds -> Gamma -> Expr -> Ty -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | newTop {Delta gamma D Ts' es1 es2 T''} :
+  | newTop {Delta Gamma D Ts' es1 es2 T''} :
       Declared d (.dec D) ->
       Kind d Delta (.cls D.C Ts') ->
-      Ts'.length = D.bounds.length ->
-      TypingSeq d Delta gamma es1 (Ty.substList (bind D.bounds Ts') (D.Ss.map Slot.T)) ->
-      Typing d Delta gamma (.new D.C' (Ty.substList (bind D.bounds Ts') D.Ts) es2) T'' ->
-      Typing d Delta gamma (.new D.C Ts' (es1 ++ es2)) (.cls D.C Ts')
+      Ts'.length = D.Delta.length ->
+      TypingSeq d Delta Gamma es1 (Ty.substList (bind D.Delta Ts') (D.Ss.map Slot.T)) ->
+      Typing d Delta Gamma (.new D.C' (Ty.substList (bind D.Delta Ts') D.Ts) es2) T'' ->
+      Typing d Delta Gamma (.new D.C Ts' (es1 ++ es2)) (.cls D.C Ts')
 \end{lstlisting}
 \end{leanside}
 \mapping{$e_1,\ldots,e_n$ is \texttt{es1}; $\pl{e}$ is \texttt{es2}; the $\_$ type is \texttt{T''}.}
@@ -1231,25 +1235,25 @@ $\Gamma\setminus x$ is $\Gamma$ without the variable $x$.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | newLocal {Delta gamma C Fs C0 Ts es Ms Delta' Ts'' T''} :
-      Consistent d (.loc C Fs C0 Ts es Ms) ->
+  | newLocal {Delta Gamma C Fs C0 Ts es Ms Delta' Ts'' T''} :
+      Consistent d (.newLocal C Fs C0 Ts es Ms) ->
       Pairing Delta Fs (abs Fs) Delta' Ts'' ->
       (forall X, List.Mem X (Ty.ftvList (cod Delta')) -> List.Mem X (dom Delta')) ->
       Kind d Delta' (.cls C (abs Fs)) ->
       Kind d Delta' (.cls C0 Ts) ->
-      Typing d Delta gamma (.new C0 Ts es) T'' ->
+      Typing d Delta Gamma (.new C0 Ts es) T'' ->
       (forall M, List.Mem M Ms ->
         MethodOk d Delta'
-          (withoutThis (restrict gamma (Ty.ftvList (abs Fs))) ++
+          (withoutThis (restrict Gamma (Ty.ftvList (abs Fs))) ++
             [{ T := .cls C (abs Fs), x := this }]) M) ->
       OverrideOk d Delta' (.cls C0 Ts) Ms ->
-      Typing d Delta gamma (.newLocal C Fs C0 Ts es Ms) (.cls C (abs Fs))
-def restrict (gamma : Gamma) (Xs : List TVarName) : Gamma :=
-  gamma.filter fun d => (Ty.ftv d.T).all fun X => Xs.contains X
-def withoutThis (gamma : Gamma) : Gamma := gamma.filter fun d => d.x != this
+      Typing d Delta Gamma (.newLocal C Fs C0 Ts es Ms) (.cls C (abs Fs))
+def restrict (Gamma : TypeEnv) (Xs : List TVarName) : TypeEnv :=
+  Gamma.filter fun d => (Ty.ftv d.T).all fun X => Xs.contains X
+def withoutThis (Gamma : TypeEnv) : TypeEnv := Gamma.filter fun d => d.x != this
 \end{lstlisting}
 \end{leanside}
-\mapping{$\Gamma|_{\pl{X}}$ is \texttt{restrict gamma Xs}; $\Gamma\setminus\this$ is \texttt{withoutThis gamma}.}
+\mapping{$\Gamma|_{\pl{X}}$ is \texttt{restrict Gamma Xs}; $\Gamma\setminus\this$ is \texttt{withoutThis Gamma}.}
 \end{cmp}
 
 \begin{cmp}{\textsc{if-instanceof}}
@@ -1266,16 +1270,16 @@ def withoutThis (gamma : Gamma) : Gamma := gamma.filter fun d => d.x != this
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | ifInstanceof {Delta gamma e0 T0 T x e1 e2 T'} :
-      Typing d Delta gamma e0 T0 ->
+  | ifInstanceof {Delta Gamma e0 T0 T x e1 e2 T'} :
+      Typing d Delta Gamma e0 T0 ->
       Kind d Delta T ->
       Cast d Delta T0 T ->
-      Typing d Delta (gamma ++ [{ T := T, x := x }]) e1 T' ->
-      Typing d Delta gamma e2 T' ->
-      Typing d Delta gamma (.ifInst e0 T x e1 e2) T'
+      Typing d Delta (Gamma ++ [{ T := T, x := x }]) e1 T' ->
+      Typing d Delta Gamma e2 T' ->
+      Typing d Delta Gamma (.ifInst e0 T x e1 e2) T'
 \end{lstlisting}
 \end{leanside}
-\mapping{$\Gamma,T\gap x$ is \texttt{gamma ++ [\{ T := T, x := x \}]}.}
+\mapping{$\Gamma,T\gap x$ is \texttt{Gamma ++ [\{ T := T, x := x \}]}.}
 \end{cmp}
 
 \begin{cmp}{Judgements on sequences}
@@ -1289,11 +1293,11 @@ $\typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T_1,\ldots,T_n}$ is $\typing{\Delta}{\G
 \begin{lstlisting}[style=leanside]
 abbrev KindSeq (d : Decls) (Delta : Bounds) (Ts : List Ty) : Prop := forall T, List.Mem T Ts -> Kind d Delta T
 abbrev SubSeq (d : Decls) (Delta : Bounds) : List Ty -> List Ty -> Prop := Seq2 (Sub d Delta)
-inductive TypingSeq (d : Decls) : Bounds -> Gamma -> List Expr -> List Ty -> Prop
-  | nil {Delta gamma} : TypingSeq d Delta gamma [] []
-  | cons {Delta gamma e es T Ts} :
-      Typing d Delta gamma e T -> TypingSeq d Delta gamma es Ts ->
-      TypingSeq d Delta gamma (e :: es) (T :: Ts)
+inductive TypingSeq (d : Decls) : Bounds -> TypeEnv -> List Expr -> List Ty -> Prop
+  | nil {Delta Gamma} : TypingSeq d Delta Gamma [] []
+  | cons {Delta Gamma e es T Ts} :
+      Typing d Delta Gamma e T -> TypingSeq d Delta Gamma es Ts ->
+      TypingSeq d Delta Gamma (e :: es) (T :: Ts)
 inductive Seq2 {A B : Type} (R : A -> B -> Prop) : List A -> List B -> Prop
   | nil : Seq2 R [] []
   | cons {a b as bs} : R a b -> Seq2 R as bs -> Seq2 R (a :: as) (b :: bs)
@@ -1317,10 +1321,10 @@ $\mathrm{names}(\pl{M})$ is the set of the names of the methods in $\pl{M}$.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-def Consistent (d : Decls) : K -> Prop
-  | .loc C Fs C0 Ts _ Ms =>
+def Consistent (d : Decls) : ClassDecl -> Prop
+  | .newLocal C Fs C0 Ts _ Ms =>
     exists Fs' Ts' es' Ms',
-      Declared d (.loc C Fs' C0 Ts' es' Ms') /\
+      Declared d (.newLocal C Fs' C0 Ts' es' Ms') /\
       Fs.length = Fs'.length /\
       Ts = Ty.substList (bindF Fs' (abs Fs)) Ts' /\
       (forall m, List.Mem m (Ms'.map Method.name) <-> List.Mem m (Ms.map Method.name)) /\
@@ -1375,14 +1379,14 @@ inductive OverrideOkM (d : Decls) : Ty -> Method -> Prop
   | dec {D Ts Delta' T0' m ps' e' Delta'' T0 ps e} :
       Declared d (.dec D) ->
       List.Mem (Method.mk Delta'' T0 m ps e) D.Ms ->
-      Ts.length = D.bounds.length -> Delta'.length = Delta''.length ->
-      Ty.substList (bind (D.bounds ++ Delta'') (Ts ++ vars (dom Delta')))
+      Ts.length = D.Delta.length -> Delta'.length = Delta''.length ->
+      Ty.substList (bind (D.Delta ++ Delta'') (Ts ++ vars (dom Delta')))
         (cod Delta'') = cod Delta' ->
-      Ty.substList (bind (D.bounds ++ Delta'') (Ts ++ vars (dom Delta')))
+      Ty.substList (bind (D.Delta ++ Delta'') (Ts ++ vars (dom Delta')))
         (T0 :: ps.map VarDecl.T) = T0' :: ps'.map VarDecl.T ->
       OverrideOkM d (.cls D.C Ts) (.mk Delta' T0' m ps' e')
-  | loc {C Fs C0 Ts0 es Ms Ts Delta' T0' m ps' e' Delta'' T0 ps e} :
-      Declared d (.loc C Fs C0 Ts0 es Ms) ->
+  | newLocal {C Fs C0 Ts0 es Ms Ts Delta' T0' m ps' e' Delta'' T0 ps e} :
+      Declared d (.newLocal C Fs C0 Ts0 es Ms) ->
       List.Mem (Method.mk Delta'' T0 m ps e) Ms ->
       Ts.length = Fs.length -> Delta'.length = Delta''.length ->
       Ty.substList (bindF Fs Ts ++ bind Delta'' (vars (dom Delta')))
@@ -1409,15 +1413,15 @@ inductive OverrideOkM (d : Decls) : Ty -> Method -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-inductive MethodOk (d : Decls) : Bounds -> Gamma -> Method -> Prop
-  | methodOk {Delta gamma Delta' T0 m ps e} :
+inductive MethodOk (d : Decls) : Bounds -> TypeEnv -> Method -> Prop
+  | methodOk {Delta Gamma Delta' T0 m ps e} :
       KindSeq d (Delta ++ Delta') (cod Delta') ->
       KindSeq d (Delta ++ Delta') (T0 :: ps.map VarDecl.T) ->
-      Typing d (Delta ++ Delta') (gamma ++ ps) e T0 ->
-      MethodOk d Delta gamma (.mk Delta' T0 m ps e)
+      Typing d (Delta ++ Delta') (Gamma ++ ps) e T0 ->
+      MethodOk d Delta Gamma (.mk Delta' T0 m ps e)
 \end{lstlisting}
 \end{leanside}
-\mapping{The parameters $T_1\gap x_1,\ldots,T_n\gap x_n$ are a \texttt{Gamma}, so $\Gamma,T_1\gap x_1,\ldots$ is \texttt{gamma ++ ps}.}
+\mapping{The parameters $T_1\gap x_1,\ldots,T_n\gap x_n$ are a \texttt{TypeEnv}, so $\Gamma,T_1\gap x_1,\ldots$ is \texttt{Gamma ++ ps}.}
 \end{cmp}
 
 \begin{cmp}{\textsc{class-ok}}
@@ -1434,11 +1438,11 @@ inductive MethodOk (d : Decls) : Bounds -> Gamma -> Method -> Prop
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
 def ClassOk (d : Decls) (D : Dec) : Prop :=
-  KindSeq d D.bounds (cod D.bounds) /\
-  KindSeq d D.bounds (Ty.cls D.C' D.Ts :: D.Ss.map Slot.T) /\
+  KindSeq d D.Delta (cod D.Delta) /\
+  KindSeq d D.Delta (Ty.cls D.C' D.Ts :: D.Ss.map Slot.T) /\
   (forall M, List.Mem M D.Ms ->
-    MethodOk d D.bounds [{ T := .cls D.C (vars (dom D.bounds)), x := this }] M) /\
-  OverrideOk d D.bounds (.cls D.C' D.Ts) D.Ms
+    MethodOk d D.Delta [{ T := .cls D.C (vars (dom D.Delta)), x := this }] M) /\
+  OverrideOk d D.Delta (.cls D.C' D.Ts) D.Ms
 \end{lstlisting}
 \end{leanside}
 \mapping{A rule with one conclusion and no recursion is a definition: the four premises are the four conjuncts.}
@@ -1468,7 +1472,7 @@ def ProgOk (d : Decls) (e : Expr) : Prop :=
 The Lean statements of the two theorems of Section~\ref{sec:soundness}, Type Soundness and Determinism, are:
 \begin{lstlisting}[language=lean,basicstyle=\scriptsize\ttfamily]
 theorem typeSoundness {d e0 e T} (hwf : WFDecls d) (hok : DeclsOk d) (he0 : WFExpr e0)
-    (ht : Typing d [] [] e0 T) (hs : Steps d e0 e) :
+    (ht : Typing d [] [] e0 T) (hs : ReducesStar d e0 e) :
     Typing d [] [] e T /\ (IsValue e \/ exists e', Reduces d e e')
 theorem determinism {d e e1 e2} (hwf : WFDecls d) (he : WFExpr e) (h1 : Reduces d e e1)
     (h2 : Reduces d e e2) : Fresh e1 e2
@@ -1482,7 +1486,7 @@ In a Lean file that imports \texttt{Funnelling.Soundness}, the commands
 #print axioms Funnelling.determinism
 \end{lstlisting}
 print \texttt{[propext, Classical.choice, Quot.sound]} for both theorems: the proofs use no \texttt{sorry} and no axiom other than propositional extensionality, the axiom of choice and the soundness of quotients, the three standard axioms of Lean.
-Type Soundness follows from progress and preservation, by induction on \texttt{Steps}.
+Type Soundness follows from progress and preservation, by induction on \texttt{ReducesStar}.
 Progress, preservation and the lemmas below are components of the proof, not statements of the paper.
 The proofs of progress, preservation and determinism use these lemmas:
 \begin{enumerate}

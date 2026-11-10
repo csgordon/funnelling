@@ -4,13 +4,13 @@ open Funnelling.SoundSimp
 
 namespace Funnelling
 
-abbrev gdom (gamma : Gamma) : List VarName := gamma.map VarDecl.x
+abbrev gdom (Gamma : TypeEnv) : List VarName := Gamma.map VarDecl.x
 
-theorem lookup_mem_g {x : VarName} {U : Ty} : forall {gamma : Gamma}, gamma.lookup x = some U ->
-    List.Mem { T := U, x := x } gamma
-  | [], h => by simp [Gamma.lookup] at h
-  | d :: gamma, h => by
-    simp only [Gamma.lookup, List.find?_cons] at h
+theorem lookup_mem_g {x : VarName} {U : Ty} : forall {Gamma : TypeEnv}, Gamma.lookup x = some U ->
+    List.Mem { T := U, x := x } Gamma
+  | [], h => by simp [TypeEnv.lookup] at h
+  | d :: Gamma, h => by
+    simp only [TypeEnv.lookup, List.find?_cons] at h
     by_cases e : d.x = x
     . have hb : (d.x == x) = true := by simp [e]
       simp only [hb, Option.map_some] at h
@@ -21,12 +21,12 @@ theorem lookup_mem_g {x : VarName} {U : Ty} : forall {gamma : Gamma}, gamma.look
       simp only [hb] at h
       exact List.Mem.tail _ (lookup_mem_g h)
 
-theorem lookup_of_mem_g {x : VarName} {U : Ty} : forall {gamma : Gamma}, (gdom gamma).Nodup ->
-    List.Mem { T := U, x := x } gamma -> gamma.lookup x = some U
+theorem lookup_of_mem_g {x : VarName} {U : Ty} : forall {Gamma : TypeEnv}, (gdom Gamma).Nodup ->
+    List.Mem { T := U, x := x } Gamma -> Gamma.lookup x = some U
   | [], _, h => by cases h
-  | d :: gamma, hn, h => by
+  | d :: Gamma, hn, h => by
     simp only [gdom, List.map_cons, List.nodup_cons] at hn
-    simp only [Gamma.lookup, List.find?_cons]
+    simp only [TypeEnv.lookup, List.find?_cons]
     cases h with
     | head => simp
     | tail _ h =>
@@ -39,8 +39,8 @@ theorem lookup_of_mem_g {x : VarName} {U : Ty} : forall {gamma : Gamma}, (gdom g
       simp only [hb]
       exact lookup_of_mem_g hn.2 h
 
-theorem gdom_filter_nodup {p : VarDecl -> Bool} {gamma : Gamma} (h : (gdom gamma).Nodup) :
-    (gdom (gamma.filter p)).Nodup := by
+theorem gdom_filter_nodup {p : VarDecl -> Bool} {Gamma : TypeEnv} (h : (gdom Gamma).Nodup) :
+    (gdom (Gamma.filter p)).Nodup := by
   simp only [gdom]
   exact List.Nodup.sublist (List.Sublist.map _ (List.filter_sublist)) h
 
@@ -224,19 +224,19 @@ theorem Cast.mono {d : Decls} {Delta Delta2 : Bounds} (hs : Sub1 Delta Delta2) {
   | castVar hm _ ih => exact Cast.castVar (hs _ hm) ih
   | castDown h1 h2 h3 h4 => exact Cast.castDown (h1.mono hs) h2 h3 h4
 
-abbrev innerG (gamma : Gamma) (Fs : List Funnel) (C : ClassName) : Gamma :=
-  withoutThis (restrict gamma (Ty.ftvList (abs Fs))) ++ [{ T := .cls C (abs Fs), x := this }]
+abbrev innerG (Gamma : TypeEnv) (Fs : List Funnel) (C : ClassName) : TypeEnv :=
+  withoutThis (restrict Gamma (Ty.ftvList (abs Fs))) ++ [{ T := .cls C (abs Fs), x := this }]
 
-theorem innerG_sub {gamma gamma2 : Gamma} (h : Sub1 gamma gamma2) (Fs : List Funnel) (C : ClassName) :
-    Sub1 (innerG gamma Fs C) (innerG gamma2 Fs C) := by
+theorem innerG_sub {Gamma Gamma2 : TypeEnv} (h : Sub1 Gamma Gamma2) (Fs : List Funnel) (C : ClassName) :
+    Sub1 (innerG Gamma Fs C) (innerG Gamma2 Fs C) := by
   intro y hy
   simp only [innerG, withoutThis, restrict, listMem_iff, List.mem_append, List.mem_filter, List.mem_singleton] at hy |-
   rcases hy with hy | hy
   . exact Or.inl (And.intro (And.intro (h y hy.1.1) hy.1.2) hy.2)
   . exact Or.inr hy
 
-theorem innerG_nodup {gamma : Gamma} (h : (gdom gamma).Nodup) (Fs : List Funnel) (C : ClassName) :
-    (gdom (innerG gamma Fs C)).Nodup := by
+theorem innerG_nodup {Gamma : TypeEnv} (h : (gdom Gamma).Nodup) (Fs : List Funnel) (C : ClassName) :
+    (gdom (innerG Gamma Fs C)).Nodup := by
   simp only [innerG, gdom, List.map_append, List.map_cons, List.map_nil]
   apply List.nodup_append.mpr
   refine And.intro (gdom_filter_nodup (gdom_filter_nodup h)) (And.intro (by simp) ?_)
@@ -249,8 +249,8 @@ theorem innerG_nodup {gamma : Gamma} (h : (gdom gamma).Nodup) (Fs : List Funnel)
   rw [hy.2, e] at this
   simp at this
 
-theorem innerG_dom {gamma : Gamma} {xs : List VarName} (h : Sub1 (gdom gamma) xs) (Fs : List Funnel) (C : ClassName) :
-    Sub1 (gdom (innerG gamma Fs C)) (this :: xs.filter fun x => x != this) := by
+theorem innerG_dom {Gamma : TypeEnv} {xs : List VarName} (h : Sub1 (gdom Gamma) xs) (Fs : List Funnel) (C : ClassName) :
+    Sub1 (gdom (innerG Gamma Fs C)) (this :: xs.filter fun x => x != this) := by
   intro y hy
   simp only [innerG, gdom, withoutThis, restrict, listMem_iff, List.map_append, List.mem_append, List.mem_map,
     List.mem_filter, List.map_cons, List.map_nil, List.mem_cons, List.not_mem_nil, or_false] at hy |-
@@ -262,8 +262,8 @@ theorem innerG_dom {gamma : Gamma} {xs : List VarName} (h : Sub1 (gdom gamma) xs
     . rw [<- hz.2]; exact hz.1.2
   . left; exact hy
 
-theorem gdom_append_single {gamma : Gamma} {T : Ty} {x : VarName} :
-    gdom (gamma ++ [{ T := T, x := x }]) = gdom gamma ++ [x] := by simp [gdom]
+theorem gdom_append_single {Gamma : TypeEnv} {T : Ty} {x : VarName} :
+    gdom (Gamma ++ [{ T := T, x := x }]) = gdom Gamma ++ [x] := by simp [gdom]
 
 theorem nodup_snoc {l : List VarName} {x : VarName} (h : l.Nodup) (hx : Not (List.Mem x l)) : (l ++ [x]).Nodup := by
   apply List.nodup_append.mpr
@@ -273,8 +273,8 @@ theorem nodup_snoc {l : List VarName} {x : VarName} (h : l.Nodup) (hx : Not (Lis
   subst hb; subst e
   exact hx ha
 
-theorem scope_snoc {gamma : Gamma} {xs : List VarName} {T : Ty} {x : VarName} (h : Sub1 (gdom gamma) xs) :
-    Sub1 (gdom (gamma ++ [{ T := T, x := x }])) (x :: xs) := by
+theorem scope_snoc {Gamma : TypeEnv} {xs : List VarName} {T : Ty} {x : VarName} (h : Sub1 (gdom Gamma) xs) :
+    Sub1 (gdom (Gamma ++ [{ T := T, x := x }])) (x :: xs) := by
   rw [gdom_append_single]
   intro z hz
   simp only [listMem_iff, List.mem_append, List.mem_singleton] at hz
@@ -282,17 +282,17 @@ theorem scope_snoc {gamma : Gamma} {xs : List VarName} {T : Ty} {x : VarName} (h
   . exact List.Mem.tail _ (h z hz)
   . rw [hz]; exact List.Mem.head _
 
-theorem scope_params {gamma : Gamma} {xs : List VarName} {ps : List VarDecl} (h : Sub1 (gdom gamma) (this :: xs)) :
-    Sub1 (gdom (gamma ++ ps)) (this :: xs ++ ps.map VarDecl.x) := by
+theorem scope_params {Gamma : TypeEnv} {xs : List VarName} {ps : List VarDecl} (h : Sub1 (gdom Gamma) (this :: xs)) :
+    Sub1 (gdom (Gamma ++ ps)) (this :: xs ++ ps.map VarDecl.x) := by
   intro z hz
   simp only [gdom, List.map_append, listMem_iff, List.mem_append] at hz
   rcases hz with hz | hz
   . exact List.mem_append_left _ (h z hz)
   . exact List.mem_append_right _ hz
 
-theorem nodup_params {gamma : Gamma} {xs : List VarName} {ps : List VarDecl} (n1 : (gdom gamma).Nodup)
-    (sc : Sub1 (gdom gamma) (this :: xs)) (hp : (ps.map VarDecl.x).Nodup) (ht : Not (List.Mem this (ps.map VarDecl.x)))
-    (hn : (ps.map VarDecl.x).all (fun x => !(xs.contains x)) = true) : (gdom (gamma ++ ps)).Nodup := by
+theorem nodup_params {Gamma : TypeEnv} {xs : List VarName} {ps : List VarDecl} (n1 : (gdom Gamma).Nodup)
+    (sc : Sub1 (gdom Gamma) (this :: xs)) (hp : (ps.map VarDecl.x).Nodup) (ht : Not (List.Mem this (ps.map VarDecl.x)))
+    (hn : (ps.map VarDecl.x).all (fun x => !(xs.contains x)) = true) : (gdom (Gamma ++ ps)).Nodup := by
   simp only [gdom, List.map_append]
   apply List.nodup_append.mpr
   refine And.intro n1 (And.intro hp ?_)

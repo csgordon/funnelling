@@ -14,7 +14,7 @@ structure VSEnv (rv rvo : VRen) (n1 n2 : VSubst) (S : List VarName) : Prop where
   sv : forall w, List.Mem w S ->
     (exists v, List.lookup w n1 = some v /\ List.lookup (rn rv w) n2 = some v) \/
     (List.lookup w n1 = none /\ List.lookup (rn rv w) n2 = none /\ rn rv w = rn rvo w)
-  k : forall p, List.Mem p rv -> Not (p.1 = this) /\ Not (p.2 = this)
+  K : forall p, List.Mem p rv -> Not (p.1 = this) /\ Not (p.2 = this)
   ko : forall p, List.Mem p rvo -> Not (p.1 = this)
   c1 : forall p, List.Mem p n1 -> p.2.expr.closed [] [] = true
 
@@ -60,11 +60,11 @@ theorem VSEnv.ifExt {rv rvo : VRen} {n1 n2 : VSubst} {S : List VarName} (env : V
       cases hw with
       | head => exact absurd rfl e
       | tail _ h => exact h
-  k := by
+  K := by
     intro p hp
     cases hp with
     | head => exact And.intro hx hy
-    | tail _ hp => exact env.k p hp
+    | tail _ hp => exact env.K p hp
   ko := by
     intro p hp
     cases hp with
@@ -86,7 +86,7 @@ theorem VSEnv.methExt {rv rvo : VRen} {n1 n2 : VSubst} {S : List VarName} (env :
     . rw [rn_zip_not_mem hm, rn_zip_not_mem hm]
       by_cases hwt : w = this
       . subst hwt
-        have h1 : rn rv this = this := rn_this (fun p hp => (env.k p hp).1)
+        have h1 : rn rv this = this := rn_this (fun p hp => (env.K p hp).1)
         have h2 : rn rvo this = this := rn_this env.ko
         rw [h1, h2]
         exact Or.inr (And.intro (lookup_none (fun p hp e => hn1 p hp e))
@@ -98,13 +98,13 @@ theorem VSEnv.methExt {rv rvo : VRen} {n1 n2 : VSubst} {S : List VarName} (env :
           . exact h
           . exact absurd h hm
         exact env.sv w hwS
-  k := by
+  K := by
     intro p hp
     simp only [listMem_iff, List.mem_append] at hp
     rcases hp with hp | hp
     . have h1 := List.of_mem_zip hp
       exact And.intro (fun e => hta (e ▸ h1.1)) (fun e => htb (e ▸ h1.2))
-    . exact env.k p hp
+    . exact env.K p hp
   ko := by
     intro p hp
     exact (List.mem_append.mp hp).elim (fun hp => fun e => hta (e ▸ (List.of_mem_zip hp).1)) (env.ko p)
@@ -116,14 +116,14 @@ theorem VSEnv.filt {rv rvo : VRen} {n1 n2 : VSubst} {S : List VarName} (env : VS
     intro w hw
     by_cases hwt : w = this
     . subst hwt
-      have h1 : rn rv this = this := rn_this (fun p hp => (env.k p hp).1)
+      have h1 : rn rv this = this := rn_this (fun p hp => (env.K p hp).1)
       have h2 : rn rvo this = this := rn_this env.ko
       rw [h1, h2]
       exact Or.inr (And.intro lookup_filter_this_self (And.intro lookup_filter_this_self rfl))
-    . have hne := rn_ne_this (fun p hp => (env.k p hp).2) hwt
+    . have hne := rn_ne_this (fun p hp => (env.K p hp).2) hwt
       rw [lookup_filter_this hwt, lookup_filter_this hne]
       exact env.sv w hw
-  k := env.k
+  K := env.K
   ko := env.ko
   c1 := fun p hp => env.c1 p (List.mem_filter.mp hp).1
 

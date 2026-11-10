@@ -4,27 +4,27 @@ open Funnelling.SoundSimp
 
 namespace Funnelling
 
-theorem ECtx.plug_value {E : ECtx} {a : Expr} {v : Value} (h : E.plug a = v.expr) :
+theorem EvalCtx.plug_value {E : EvalCtx} {a : Expr} {v : Value} (h : E.plug a = v.expr) :
     exists v' : Value, a = v'.expr := by
   induction E generalizing v with
   | hole => exact Exists.intro v h
-  | callRecv => cases v <;> simp [ECtx.plug, Value.expr] at h
-  | callArg => cases v <;> simp [ECtx.plug, Value.expr] at h
-  | superRecv => cases v <;> simp [ECtx.plug, Value.expr] at h
-  | superArg => cases v <;> simp [ECtx.plug, Value.expr] at h
-  | field => cases v <;> simp [ECtx.plug, Value.expr] at h
-  | ifCond => cases v <;> simp [ECtx.plug, Value.expr] at h
+  | callRecv => cases v <;> simp [EvalCtx.plug, Value.expr] at h
+  | callArg => cases v <;> simp [EvalCtx.plug, Value.expr] at h
+  | superRecv => cases v <;> simp [EvalCtx.plug, Value.expr] at h
+  | superArg => cases v <;> simp [EvalCtx.plug, Value.expr] at h
+  | field => cases v <;> simp [EvalCtx.plug, Value.expr] at h
+  | ifCond => cases v <;> simp [EvalCtx.plug, Value.expr] at h
   | newArg C Gs vs E es ih =>
     cases v with
     | new C' Gs' vs' =>
-      simp only [ECtx.plug, Value.expr, Expr.new.injEq] at h
+      simp only [EvalCtx.plug, Value.expr, Expr.new.injEq] at h
       rcases Value.exprs_append_cons h.2.2.symm with ⟨v1, hv1⟩; exact ih hv1
-    | newLocal => simp [ECtx.plug, Value.expr] at h
-  | localArg C Gs C' Gs' vs E es Ms ih =>
+    | newLocal => simp [EvalCtx.plug, Value.expr] at h
+  | newLocalArg C Gs C' Gs' vs E es Ms ih =>
     cases v with
-    | new => simp [ECtx.plug, Value.expr] at h
+    | new => simp [EvalCtx.plug, Value.expr] at h
     | newLocal D Hs D' Hs' ws Ns =>
-      simp only [ECtx.plug, Value.expr, Expr.newLocal.injEq] at h
+      simp only [EvalCtx.plug, Value.expr, Expr.newLocal.injEq] at h
       rcases Value.exprs_append_cons h.2.2.2.2.1.symm with ⟨v1, hv1⟩; exact ih hv1
 
 theorem Step.not_value {d : Decls} {e e' : Expr} (h : Step d e e') :
@@ -42,13 +42,13 @@ theorem Step.not_value {d : Decls} {e e' : Expr} (h : Step d e e') :
   | searchSuper => intro v hv; cases v <;> simp [Value.expr] at hv
   | ctx _ ih =>
     intro v hv
-    rcases ECtx.plug_value hv with ⟨v', hv'⟩; exact ih v' hv'
+    rcases EvalCtx.plug_value hv with ⟨v', hv'⟩; exact ih v' hv'
 
 abbrev NonValue (a : Expr) : Prop := forall v : Value, Not (a = v.expr)
 
-theorem ECtx.plug_nonvalue {E : ECtx} {a : Expr} (ha : NonValue a) : NonValue (E.plug a) := by
+theorem EvalCtx.plug_nonvalue {E : EvalCtx} {a : Expr} (ha : NonValue a) : NonValue (E.plug a) := by
   intro v hv
-  rcases ECtx.plug_value hv with ⟨v', hv'⟩; exact ha v' hv'
+  rcases EvalCtx.plug_value hv with ⟨v', hv'⟩; exact ha v' hv'
 
 theorem exprs_split {vs1 vs2 : List Value} {x y : Expr} {es1 es2 : List Expr}
     (h : Value.exprs vs1 ++ x :: es1 = Value.exprs vs2 ++ y :: es2) (hx : NonValue x)
@@ -72,9 +72,9 @@ theorem exprs_split {vs1 vs2 : List Value} {x y : Expr} {es1 es2 : List Expr}
       exact And.intro (by rw [Value.expr_inj h.1, r.1]) r.2
 
 theorem Step.decompAux {d : Decls} {b b2 : Expr} (hb : Step d b b2) (hbn : NonValue b)
-    (ihb : forall (E : ECtx) (a : Expr), b = E.plug a -> NonValue a ->
+    (ihb : forall (E : EvalCtx) (a : Expr), b = E.plug a -> NonValue a ->
       exists a2, Step d a a2 /\ b2 = E.plug a2) :
-    forall (E2 E : ECtx) (a : Expr), E2.plug b = E.plug a -> NonValue a ->
+    forall (E2 E : EvalCtx) (a : Expr), E2.plug b = E.plug a -> NonValue a ->
       exists a2, Step d a a2 /\ E2.plug b2 = E.plug a2 := by
   intro E2
   induction E2 with
@@ -82,86 +82,86 @@ theorem Step.decompAux {d : Decls} {b b2 : Expr} (hb : Step d b b2) (hbn : NonVa
   | callRecv E2 Gs m es ih =>
     intro E a h ha
     cases E with
-    | hole => simp only [ECtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .callRecv E2 Gs m es) hb) rfl)
+    | hole => simp only [EvalCtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .callRecv E2 Gs m es) hb) rfl)
     | callRecv E Gs' m' es' =>
-      simp only [ECtx.plug, Expr.call.injEq] at h
+      simp only [EvalCtx.plug, Expr.call.injEq] at h
       rcases ih E a h.1 ha with ⟨a2, h2⟩
       refine Exists.intro a2 (And.intro h2.1 ?_)
-      simp only [ECtx.plug]; rw [h2.2, h.2.1, h.2.2.1, h.2.2.2]
+      simp only [EvalCtx.plug]; rw [h2.2, h.2.1, h.2.2.1, h.2.2.2]
     | callArg v Gs' m' vs E es' =>
-      simp only [ECtx.plug, Expr.call.injEq] at h
-      exact absurd h.1 (ECtx.plug_nonvalue hbn v)
-    | _ => simp [ECtx.plug] at h
+      simp only [EvalCtx.plug, Expr.call.injEq] at h
+      exact absurd h.1 (EvalCtx.plug_nonvalue hbn v)
+    | _ => simp [EvalCtx.plug] at h
   | callArg v Gs m vs E2 es ih =>
     intro E a h ha
     cases E with
-    | hole => simp only [ECtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .callArg v Gs m vs E2 es) hb) rfl)
+    | hole => simp only [EvalCtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .callArg v Gs m vs E2 es) hb) rfl)
     | callRecv E Gs' m' es' =>
-      simp only [ECtx.plug, Expr.call.injEq] at h
-      exact absurd h.1.symm (ECtx.plug_nonvalue ha v)
+      simp only [EvalCtx.plug, Expr.call.injEq] at h
+      exact absurd h.1.symm (EvalCtx.plug_nonvalue ha v)
     | callArg v' Gs' m' vs' E es' =>
-      simp only [ECtx.plug, Expr.call.injEq] at h
-      have r := exprs_split h.2.2.2 (ECtx.plug_nonvalue hbn) (ECtx.plug_nonvalue ha)
+      simp only [EvalCtx.plug, Expr.call.injEq] at h
+      have r := exprs_split h.2.2.2 (EvalCtx.plug_nonvalue hbn) (EvalCtx.plug_nonvalue ha)
       rcases ih E a r.2.1 ha with ⟨a2, h2⟩
       refine Exists.intro a2 (And.intro h2.1 ?_)
-      simp only [ECtx.plug]; rw [h2.2, Value.expr_inj h.1, GTy.tys_inj h.2.1, h.2.2.1, r.1, r.2.2]
-    | _ => simp [ECtx.plug] at h
+      simp only [EvalCtx.plug]; rw [h2.2, Value.expr_inj h.1, GTy.tys_inj h.2.1, h.2.2.1, r.1, r.2.2]
+    | _ => simp [EvalCtx.plug] at h
   | superRecv E2 G Gs m es ih =>
     intro E a h ha
     cases E with
-    | hole => simp only [ECtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .superRecv E2 G Gs m es) hb) rfl)
+    | hole => simp only [EvalCtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .superRecv E2 G Gs m es) hb) rfl)
     | superRecv E G' Gs' m' es' =>
-      simp only [ECtx.plug, Expr.superCall.injEq] at h
+      simp only [EvalCtx.plug, Expr.superCall.injEq] at h
       rcases ih E a h.1 ha with ⟨a2, h2⟩
       refine Exists.intro a2 (And.intro h2.1 ?_)
-      simp only [ECtx.plug]; rw [h2.2, GTy.ty_inj h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2]
+      simp only [EvalCtx.plug]; rw [h2.2, GTy.ty_inj h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2]
     | superArg v G' Gs' m' vs E es' =>
-      simp only [ECtx.plug, Expr.superCall.injEq] at h
-      exact absurd h.1 (ECtx.plug_nonvalue hbn v)
-    | _ => simp [ECtx.plug] at h
+      simp only [EvalCtx.plug, Expr.superCall.injEq] at h
+      exact absurd h.1 (EvalCtx.plug_nonvalue hbn v)
+    | _ => simp [EvalCtx.plug] at h
   | superArg v G Gs m vs E2 es ih =>
     intro E a h ha
     cases E with
-    | hole => simp only [ECtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .superArg v G Gs m vs E2 es) hb) rfl)
+    | hole => simp only [EvalCtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .superArg v G Gs m vs E2 es) hb) rfl)
     | superRecv E G' Gs' m' es' =>
-      simp only [ECtx.plug, Expr.superCall.injEq] at h
-      exact absurd h.1.symm (ECtx.plug_nonvalue ha v)
+      simp only [EvalCtx.plug, Expr.superCall.injEq] at h
+      exact absurd h.1.symm (EvalCtx.plug_nonvalue ha v)
     | superArg v' G' Gs' m' vs' E es' =>
-      simp only [ECtx.plug, Expr.superCall.injEq] at h
-      have r := exprs_split h.2.2.2.2 (ECtx.plug_nonvalue hbn) (ECtx.plug_nonvalue ha)
+      simp only [EvalCtx.plug, Expr.superCall.injEq] at h
+      have r := exprs_split h.2.2.2.2 (EvalCtx.plug_nonvalue hbn) (EvalCtx.plug_nonvalue ha)
       rcases ih E a r.2.1 ha with ⟨a2, h2⟩
       refine Exists.intro a2 (And.intro h2.1 ?_)
-      simp only [ECtx.plug]
+      simp only [EvalCtx.plug]
       rw [h2.2, Value.expr_inj h.1, GTy.ty_inj h.2.1, GTy.tys_inj h.2.2.1, h.2.2.2.1, r.1, r.2.2]
-    | _ => simp [ECtx.plug] at h
+    | _ => simp [EvalCtx.plug] at h
   | field E2 f ih =>
     intro E a h ha
     cases E with
-    | hole => simp only [ECtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .field E2 f) hb) rfl)
+    | hole => simp only [EvalCtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .field E2 f) hb) rfl)
     | field E f' =>
-      simp only [ECtx.plug, Expr.field.injEq] at h
+      simp only [EvalCtx.plug, Expr.field.injEq] at h
       rcases ih E a h.1 ha with ⟨a2, h2⟩
       refine Exists.intro a2 (And.intro h2.1 ?_)
-      simp only [ECtx.plug]; rw [h2.2, h.2]
-    | _ => simp [ECtx.plug] at h
+      simp only [EvalCtx.plug]; rw [h2.2, h.2]
+    | _ => simp [EvalCtx.plug] at h
   | newArg C Gs vs E2 es ih =>
     intro E a h ha
     cases E with
-    | hole => simp only [ECtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .newArg C Gs vs E2 es) hb) rfl)
+    | hole => simp only [EvalCtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .newArg C Gs vs E2 es) hb) rfl)
     | newArg C' Gs' vs' E es' =>
-      simp only [ECtx.plug, Expr.new.injEq] at h
-      have r := exprs_split h.2.2 (ECtx.plug_nonvalue hbn) (ECtx.plug_nonvalue ha)
+      simp only [EvalCtx.plug, Expr.new.injEq] at h
+      have r := exprs_split h.2.2 (EvalCtx.plug_nonvalue hbn) (EvalCtx.plug_nonvalue ha)
       rcases ih E a r.2.1 ha with ⟨a2, h2⟩
       refine Exists.intro a2 (And.intro h2.1 ?_)
-      simp only [ECtx.plug]; rw [h2.2, h.1, GTy.tys_inj h.2.1, r.1, r.2.2]
-    | _ => simp [ECtx.plug] at h
-  | localArg C Gs C' Gs' vs E2 es Ms ih =>
+      simp only [EvalCtx.plug]; rw [h2.2, h.1, GTy.tys_inj h.2.1, r.1, r.2.2]
+    | _ => simp [EvalCtx.plug] at h
+  | newLocalArg C Gs C' Gs' vs E2 es Ms ih =>
     intro E a h ha
     cases E with
-    | hole => simp only [ECtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .localArg C Gs C' Gs' vs E2 es Ms) hb) rfl)
-    | localArg D Hs D' Hs' vs' E es' Ms' =>
-      simp only [ECtx.plug, Expr.newLocal.injEq] at h
-      have r := exprs_split h.2.2.2.2.1 (ECtx.plug_nonvalue hbn) (ECtx.plug_nonvalue ha)
+    | hole => simp only [EvalCtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .newLocalArg C Gs C' Gs' vs E2 es Ms) hb) rfl)
+    | newLocalArg D Hs D' Hs' vs' E es' Ms' =>
+      simp only [EvalCtx.plug, Expr.newLocal.injEq] at h
+      have r := exprs_split h.2.2.2.2.1 (EvalCtx.plug_nonvalue hbn) (EvalCtx.plug_nonvalue ha)
       have hG : Gs = Hs := by
         apply GTy.tys_inj
         rw [GTy.tys_eq_map, GTy.tys_eq_map]
@@ -169,66 +169,66 @@ theorem Step.decompAux {d : Decls} {b b2 : Expr} (hb : Step d b b2) (hbn : NonVa
         simpa [List.map_map, Function.comp_def, Funnel.abs] using this
       rcases ih E a r.2.1 ha with ⟨a2, h2⟩
       refine Exists.intro a2 (And.intro h2.1 ?_)
-      simp only [ECtx.plug]
+      simp only [EvalCtx.plug]
       rw [h2.2, h.1, hG, h.2.2.1, GTy.tys_inj h.2.2.2.1, r.1, r.2.2, h.2.2.2.2.2]
-    | _ => simp [ECtx.plug] at h
+    | _ => simp [EvalCtx.plug] at h
   | ifCond E2 G x e1 e2 ih =>
     intro E a h ha
     cases E with
-    | hole => simp only [ECtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .ifCond E2 G x e1 e2) hb) rfl)
+    | hole => simp only [EvalCtx.plug] at h; subst h; exact Exists.intro _ (And.intro (Step.ctx (E := .ifCond E2 G x e1 e2) hb) rfl)
     | ifCond E G' x' e1' e2' =>
-      simp only [ECtx.plug, Expr.ifInst.injEq] at h
+      simp only [EvalCtx.plug, Expr.ifInst.injEq] at h
       rcases ih E a h.1 ha with ⟨a2, h2⟩
       refine Exists.intro a2 (And.intro h2.1 ?_)
-      simp only [ECtx.plug]; rw [h2.2, GTy.ty_inj h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2]
-    | _ => simp [ECtx.plug] at h
+      simp only [EvalCtx.plug]; rw [h2.2, GTy.ty_inj h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2]
+    | _ => simp [EvalCtx.plug] at h
 
-theorem redex_field {E : ECtx} {a : Expr} {v : Value} {f : FieldName} (ha : NonValue a)
+theorem redex_field {E : EvalCtx} {a : Expr} {v : Value} {f : FieldName} (ha : NonValue a)
     (h : Expr.field v.expr f = E.plug a) (hE : Not (E = .hole)) : False := by
   cases E with
   | hole => exact hE rfl
   | field E f' =>
-    simp only [ECtx.plug, Expr.field.injEq] at h
-    exact ECtx.plug_nonvalue ha v h.1.symm
-  | _ => simp [ECtx.plug] at h
+    simp only [EvalCtx.plug, Expr.field.injEq] at h
+    exact EvalCtx.plug_nonvalue ha v h.1.symm
+  | _ => simp [EvalCtx.plug] at h
 
-theorem redex_if {E : ECtx} {a : Expr} {v : Value} {T : Ty} {x : VarName} {e1 e2 : Expr}
+theorem redex_if {E : EvalCtx} {a : Expr} {v : Value} {T : Ty} {x : VarName} {e1 e2 : Expr}
     (ha : NonValue a) (h : Expr.ifInst v.expr T x e1 e2 = E.plug a) (hE : Not (E = .hole)) : False := by
   cases E with
   | hole => exact hE rfl
   | ifCond E G x' e1' e2' =>
-    simp only [ECtx.plug, Expr.ifInst.injEq] at h
-    exact ECtx.plug_nonvalue ha v h.1.symm
-  | _ => simp [ECtx.plug] at h
+    simp only [EvalCtx.plug, Expr.ifInst.injEq] at h
+    exact EvalCtx.plug_nonvalue ha v h.1.symm
+  | _ => simp [EvalCtx.plug] at h
 
-theorem redex_call {E : ECtx} {a : Expr} {v : Value} {Ts : List Ty} {m : MethName}
+theorem redex_call {E : EvalCtx} {a : Expr} {v : Value} {Ts : List Ty} {m : MethName}
     {vs : List Value} (ha : NonValue a) (h : Expr.call v.expr Ts m (Value.exprs vs) = E.plug a)
     (hE : Not (E = .hole)) : False := by
   cases E with
   | hole => exact hE rfl
   | callRecv E Gs m' es =>
-    simp only [ECtx.plug, Expr.call.injEq] at h
-    exact ECtx.plug_nonvalue ha v h.1.symm
+    simp only [EvalCtx.plug, Expr.call.injEq] at h
+    exact EvalCtx.plug_nonvalue ha v h.1.symm
   | callArg v' Gs m' vs' E es =>
-    simp only [ECtx.plug, Expr.call.injEq] at h
-    rcases Value.exprs_append_cons h.2.2.2 with ⟨w, hw⟩; exact ECtx.plug_nonvalue ha w hw
-  | _ => simp [ECtx.plug] at h
+    simp only [EvalCtx.plug, Expr.call.injEq] at h
+    rcases Value.exprs_append_cons h.2.2.2 with ⟨w, hw⟩; exact EvalCtx.plug_nonvalue ha w hw
+  | _ => simp [EvalCtx.plug] at h
 
-theorem redex_super {E : ECtx} {a : Expr} {v : Value} {T : Ty} {Ts : List Ty} {m : MethName}
+theorem redex_super {E : EvalCtx} {a : Expr} {v : Value} {T : Ty} {Ts : List Ty} {m : MethName}
     {vs : List Value} (ha : NonValue a) (h : Expr.superCall v.expr T Ts m (Value.exprs vs) = E.plug a)
     (hE : Not (E = .hole)) : False := by
   cases E with
   | hole => exact hE rfl
   | superRecv E G Gs m' es =>
-    simp only [ECtx.plug, Expr.superCall.injEq] at h
-    exact ECtx.plug_nonvalue ha v h.1.symm
+    simp only [EvalCtx.plug, Expr.superCall.injEq] at h
+    exact EvalCtx.plug_nonvalue ha v h.1.symm
   | superArg v' G Gs m' vs' E es =>
-    simp only [ECtx.plug, Expr.superCall.injEq] at h
-    rcases Value.exprs_append_cons h.2.2.2.2 with ⟨w, hw⟩; exact ECtx.plug_nonvalue ha w hw
-  | _ => simp [ECtx.plug] at h
+    simp only [EvalCtx.plug, Expr.superCall.injEq] at h
+    rcases Value.exprs_append_cons h.2.2.2.2 with ⟨w, hw⟩; exact EvalCtx.plug_nonvalue ha w hw
+  | _ => simp [EvalCtx.plug] at h
 
 theorem Step.decompNonHole {d : Decls} {e e2 : Expr} (h : Step d e e2) :
-    forall (E : ECtx) (a : Expr), e = E.plug a -> NonValue a -> Not (E = .hole) ->
+    forall (E : EvalCtx) (a : Expr), e = E.plug a -> NonValue a -> Not (E = .hole) ->
       exists a2, Step d a a2 /\ e2 = E.plug a2 := by
   induction h with
   | simpleFieldFound => intro E a h ha hE; exact absurd (redex_field ha h hE) id
@@ -246,10 +246,10 @@ theorem Step.decompNonHole {d : Decls} {e e2 : Expr} (h : Step d e e2) :
     refine Step.decompAux hb (Step.not_value hb) ?_ _ E a h ha
     intro E' a' h' ha'
     cases E' with
-    | hole => simp only [ECtx.plug] at h'; subst h'; exact Exists.intro _ (And.intro hb rfl)
+    | hole => simp only [EvalCtx.plug] at h'; subst h'; exact Exists.intro _ (And.intro hb rfl)
     | _ => exact ih _ a' h' ha' (by simp)
 
-theorem Step.decomp {d : Decls} {E : ECtx} {a e2 : Expr} (h : Step d (E.plug a) e2) (ha : NonValue a) :
+theorem Step.decomp {d : Decls} {E : EvalCtx} {a e2 : Expr} (h : Step d (E.plug a) e2) (ha : NonValue a) :
     exists a2, Step d a a2 /\ e2 = E.plug a2 := by
   cases E with
   | hole => exact Exists.intro e2 (And.intro h rfl)
@@ -266,9 +266,9 @@ inductive BaseStep (d : Decls) : Expr -> Expr -> Prop
       vs1.length = D.Ss.length ->
       Not (List.Mem f (D.Ss.map Slot.f)) ->
       Not (D.C = Object) ->
-      Gs.length = D.bounds.length ->
+      Gs.length = D.Delta.length ->
       BaseStep d (.field (Value.new D.C Gs (vs1 ++ vs)) f)
-        (.field (.new D.C' (Ty.substList (bind D.bounds (Gs : List Ty)) D.Ts) vs) f)
+        (.field (.new D.C' (Ty.substList (bind D.Delta (Gs : List Ty)) D.Ts) vs) f)
   | innerFieldSuper {C C' Ms f} {Gs Gs' : List GTy} {vs : List Value} :
       BaseStep d (.field (Value.newLocal C Gs C' Gs' vs Ms) f) (.field (Value.new C' Gs' vs) f)
   | ifThen {C' Ts Ts' x e1 e1' e2} {v : Value} :
@@ -286,13 +286,13 @@ inductive BaseStep (d : Decls) : Expr -> Expr -> Prop
       Declared d (.dec D) ->
       List.Mem M D.Ms ->
       FreshM M (.mk Delta' T0 m ps e0) ->
-      Gs.length = D.bounds.length -> Gs'.length = Delta'.length ->
-      (dom D.bounds ++ dom Delta').Nodup ->
+      Gs.length = D.Delta.length -> Gs'.length = Delta'.length ->
+      (dom D.Delta ++ dom Delta').Nodup ->
       (this :: ps.map VarDecl.x).Nodup ->
       ps.length = vs.length ->
-      GSubstDefined (dom D.bounds ++ dom Delta') e0 ->
+      GSubstDefined (dom D.Delta ++ dom Delta') e0 ->
       VSubstDefined (this :: ps.map VarDecl.x) e0 ->
-      e = (e0.gsubst (bind (D.bounds ++ Delta') (Gs ++ Gs'))).vsubst
+      e = (e0.gsubst (bind (D.Delta ++ Delta') (Gs ++ Gs'))).vsubst
         ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
       BaseStep d (.superCall v0 (.cls D.C Gs) Gs' m vs) e
   | innerFound {C C' Ms M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} :
@@ -315,9 +315,9 @@ inductive BaseStep (d : Decls) : Expr -> Expr -> Prop
       Declared d (.dec D) ->
       Not (List.Mem m (D.Ms.map Method.name)) ->
       Not (D.C = Object) ->
-      Gs.length = D.bounds.length ->
+      Gs.length = D.Delta.length ->
       BaseStep d (.superCall v (.cls D.C Gs) Gs' m vs)
-        (.superCall v (.cls D.C' (Ty.substList (bind D.bounds (Gs : List Ty)) D.Ts)) Gs' m vs)
+        (.superCall v (.cls D.C' (Ty.substList (bind D.Delta (Gs : List Ty)) D.Ts)) Gs' m vs)
 
 theorem BaseStep.toStep {d : Decls} {e e' : Expr} (h : BaseStep d e e') : Step d e e' := by
   cases h with
@@ -332,7 +332,7 @@ theorem BaseStep.toStep {d : Decls} {e e' : Expr} (h : BaseStep d e e') : Step d
   | innerSuper h1 h2 => exact Step.innerSuper h1 h2
   | searchSuper h1 h2 h3 h4 => exact Step.searchSuper h1 h2 h3 h4
 
-theorem BaseStep.nonhole {d : Decls} {e e' : Expr} (h : BaseStep d e e') {E : ECtx} {c : Expr}
+theorem BaseStep.nonhole {d : Decls} {e e' : Expr} (h : BaseStep d e e') {E : EvalCtx} {c : Expr}
     (hE : E.plug c = e) (hne : Not (E = .hole)) (hc : NonValue c) : False := by
   cases h with
   | simpleFieldFound => exact redex_field hc hE.symm hne
@@ -367,7 +367,7 @@ theorem Step.strip {d : Decls} {a b2 : Expr} (h2 : Step d a b2) :
     | hole => exact ih hb
     | _ => exact absurd (hb.nonhole rfl (by simp) (Step.not_value hc)) id
 
-def ECtx.comp : ECtx -> ECtx -> ECtx
+def EvalCtx.comp : EvalCtx -> EvalCtx -> EvalCtx
   | .hole, E' => E'
   | .callRecv E Gs m es, E' => .callRecv (E.comp E') Gs m es
   | .callArg v Gs m vs E es, E' => .callArg v Gs m vs (E.comp E') es
@@ -375,51 +375,51 @@ def ECtx.comp : ECtx -> ECtx -> ECtx
   | .superArg v G Gs m vs E es, E' => .superArg v G Gs m vs (E.comp E') es
   | .field E f, E' => .field (E.comp E') f
   | .newArg C Gs vs E es, E' => .newArg C Gs vs (E.comp E') es
-  | .localArg C Gs C' Gs' vs E es Ms, E' => .localArg C Gs C' Gs' vs (E.comp E') es Ms
+  | .newLocalArg C Gs C' Gs' vs E es Ms, E' => .newLocalArg C Gs C' Gs' vs (E.comp E') es Ms
   | .ifCond E G x e1 e2, E' => .ifCond (E.comp E') G x e1 e2
 
-theorem ECtx.comp_plug : forall (E E' : ECtx) (a : Expr), (E.comp E').plug a = E.plug (E'.plug a)
+theorem EvalCtx.comp_plug : forall (E E' : EvalCtx) (a : Expr), (E.comp E').plug a = E.plug (E'.plug a)
   | .hole, _, _ => rfl
-  | .callRecv E _ _ _, E', a => by simp only [ECtx.comp, ECtx.plug, ECtx.comp_plug E E' a]
-  | .callArg _ _ _ _ E _, E', a => by simp only [ECtx.comp, ECtx.plug, ECtx.comp_plug E E' a]
-  | .superRecv E _ _ _ _, E', a => by simp only [ECtx.comp, ECtx.plug, ECtx.comp_plug E E' a]
-  | .superArg _ _ _ _ _ E _, E', a => by simp only [ECtx.comp, ECtx.plug, ECtx.comp_plug E E' a]
-  | .field E _, E', a => by simp only [ECtx.comp, ECtx.plug, ECtx.comp_plug E E' a]
-  | .newArg _ _ _ E _, E', a => by simp only [ECtx.comp, ECtx.plug, ECtx.comp_plug E E' a]
-  | .localArg _ _ _ _ _ E _ _, E', a => by simp only [ECtx.comp, ECtx.plug, ECtx.comp_plug E E' a]
-  | .ifCond E _ _ _ _, E', a => by simp only [ECtx.comp, ECtx.plug, ECtx.comp_plug E E' a]
+  | .callRecv E _ _ _, E', a => by simp only [EvalCtx.comp, EvalCtx.plug, EvalCtx.comp_plug E E' a]
+  | .callArg _ _ _ _ E _, E', a => by simp only [EvalCtx.comp, EvalCtx.plug, EvalCtx.comp_plug E E' a]
+  | .superRecv E _ _ _ _, E', a => by simp only [EvalCtx.comp, EvalCtx.plug, EvalCtx.comp_plug E E' a]
+  | .superArg _ _ _ _ _ E _, E', a => by simp only [EvalCtx.comp, EvalCtx.plug, EvalCtx.comp_plug E E' a]
+  | .field E _, E', a => by simp only [EvalCtx.comp, EvalCtx.plug, EvalCtx.comp_plug E E' a]
+  | .newArg _ _ _ E _, E', a => by simp only [EvalCtx.comp, EvalCtx.plug, EvalCtx.comp_plug E E' a]
+  | .newLocalArg _ _ _ _ _ E _ _, E', a => by simp only [EvalCtx.comp, EvalCtx.plug, EvalCtx.comp_plug E E' a]
+  | .ifCond E _ _ _ _, E', a => by simp only [EvalCtx.comp, EvalCtx.plug, EvalCtx.comp_plug E E' a]
 
 theorem Step.toBase {d : Decls} {e e' : Expr} (h : Step d e e') :
-    exists (E : ECtx) (a a' : Expr), e = E.plug a /\ e' = E.plug a' /\ BaseStep d a a' := by
+    exists (E : EvalCtx) (a a' : Expr), e = E.plug a /\ e' = E.plug a' /\ BaseStep d a a' := by
   induction h with
   | simpleFieldFound h1 h2 h3 =>
-    exact Exists.intro ECtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.simpleFieldFound h1 h2 h3)))))
+    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.simpleFieldFound h1 h2 h3)))))
   | simpleFieldSuper h1 h2 h3 h4 h5 =>
-    exact Exists.intro ECtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.simpleFieldSuper h1 h2 h3 h4 h5)))))
+    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.simpleFieldSuper h1 h2 h3 h4 h5)))))
   | innerFieldSuper =>
-    exact Exists.intro ECtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl BaseStep.innerFieldSuper))))
+    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl BaseStep.innerFieldSuper))))
   | ifThen h1 h2 h3 =>
-    exact Exists.intro ECtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.ifThen h1 h2 h3)))))
+    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.ifThen h1 h2 h3)))))
   | ifElse h1 =>
-    exact Exists.intro ECtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.ifElse h1)))))
+    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.ifElse h1)))))
   | simpleAddSuper h1 =>
-    exact Exists.intro ECtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.simpleAddSuper h1)))))
+    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.simpleAddSuper h1)))))
   | simpleFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11 =>
-    exact Exists.intro ECtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl
+    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl
       (BaseStep.simpleFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11)))))
   | innerFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 =>
-    exact Exists.intro ECtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl
+    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl
       (BaseStep.innerFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10)))))
   | innerSuper h1 h2 =>
-    exact Exists.intro ECtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.innerSuper h1 h2)))))
+    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.innerSuper h1 h2)))))
   | searchSuper h1 h2 h3 h4 =>
-    exact Exists.intro ECtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.searchSuper h1 h2 h3 h4)))))
+    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.searchSuper h1 h2 h3 h4)))))
   | @ctx E c c2 _ ih =>
     rcases ih with ⟨E', h'⟩
     rcases h' with ⟨a, h'⟩
     rcases h' with ⟨a', h'⟩
     refine Exists.intro (E.comp E') (Exists.intro a (Exists.intro a' (And.intro ?_ (And.intro ?_ h'.2.2))))
-    . rw [ECtx.comp_plug, h'.1]
-    . rw [ECtx.comp_plug, h'.2.1]
+    . rw [EvalCtx.comp_plug, h'.1]
+    . rw [EvalCtx.comp_plug, h'.2.1]
 
 end Funnelling

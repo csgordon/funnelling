@@ -55,7 +55,7 @@ structure Slot where
 
 abbrev Bounds := List Bound
 
-abbrev Gamma := List VarDecl
+abbrev TypeEnv := List VarDecl
 
 mutual
 inductive Expr where
@@ -69,7 +69,7 @@ inductive Expr where
   | ifInst (e0 : Expr) (T : Ty) (x : VarName) (e1 e2 : Expr)
   deriving Repr
 inductive Method where
-  | mk (bounds : Bounds) (T0 : Ty) (m : MethName) (params : List VarDecl) (body : Expr)
+  | mk (Delta : Bounds) (T0 : Ty) (m : MethName) (ps : List VarDecl) (e : Expr)
   deriving Repr
 end
 
@@ -81,16 +81,16 @@ inductive Value where
 
 structure Dec where
   C : ClassName
-  bounds : Bounds
+  Delta : Bounds
   C' : ClassName
   Ts : List Ty
   Ms : List Method
   Ss : List Slot
   deriving Repr
 
-inductive K where
+inductive ClassDecl where
   | dec (D : Dec)
-  | loc (C : ClassName) (Fs : List Funnel) (C' : ClassName) (Ts : List Ty) (es : List Expr)
+  | newLocal (C : ClassName) (Fs : List Funnel) (C' : ClassName) (Ts : List Ty) (es : List Expr)
       (Ms : List Method)
   deriving Repr
 
@@ -128,7 +128,7 @@ instance : Coe (List Value) (List Expr) where
 def Method.name : Method -> MethName
   | .mk _ _ m _ _ => m
 
-def Method.bounds : Method -> Bounds
+def Method.Delta : Method -> Bounds
   | .mk Delta _ _ _ _ => Delta
 
 def Method.params : Method -> List VarDecl
@@ -137,21 +137,21 @@ def Method.params : Method -> List VarDecl
 def Method.body : Method -> Expr
   | .mk _ _ _ _ e => e
 
-def K.name : K -> ClassName
+def ClassDecl.name : ClassDecl -> ClassName
   | .dec D => D.C
-  | .loc C _ _ _ _ _ => C
+  | .newLocal C _ _ _ _ _ => C
 
-def K.Ms : K -> List Method
+def ClassDecl.Ms : ClassDecl -> List Method
   | .dec D => D.Ms
-  | .loc _ _ _ _ _ Ms => Ms
+  | .newLocal _ _ _ _ _ Ms => Ms
 
-def K.sup : K -> ClassName
+def ClassDecl.sup : ClassDecl -> ClassName
   | .dec D => D.C'
-  | .loc _ _ C' _ _ _ => C'
+  | .newLocal _ _ C' _ _ _ => C'
 
-def K.Fs : K -> List Funnel
+def ClassDecl.Fs : ClassDecl -> List Funnel
   | .dec _ => []
-  | .loc _ Fs _ _ _ _ => Fs
+  | .newLocal _ Fs _ _ _ _ => Fs
 
 def dom (Delta : Bounds) : List TVarName := Delta.map Bound.X
 
@@ -179,8 +179,8 @@ def Ty.ftvList : List Ty -> List TVarName
   | T :: Ts => T.ftv ++ Ty.ftvList Ts
 end
 
-def Gamma.lookup (gamma : Gamma) (x : VarName) : Option Ty :=
-  (gamma.find? fun d => d.x == x).map VarDecl.T
+def TypeEnv.lookup (Gamma : TypeEnv) (x : VarName) : Option Ty :=
+  (Gamma.find? fun d => d.x == x).map VarDecl.T
 
 instance memDecidable {A : Type} [DecidableEq A] (a : A) (l : List A) : Decidable (List.Mem a l) :=
   inferInstanceAs (Decidable (Membership.mem l a))

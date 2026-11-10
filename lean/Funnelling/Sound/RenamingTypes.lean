@@ -195,9 +195,9 @@ theorem Sub.inv_subst {d : Decls} (hd : DeclOk d) {Delta Delta2 : Bounds} {s : T
     have e1 := he.1
     have e2 := he.2
     subst e1 e2
-    have hl' : Ts.length = D.bounds.length := by rw [<- hl, substList_length]
-    have heq : (Ty.cls D.C' D.Ts).subst (bind D.bounds (Ty.substList s Ts)) =
-        .cls D.C' (Ty.substList s (Ty.substList (bind D.bounds Ts) D.Ts)) := by
+    have hl' : Ts.length = D.Delta.length := by rw [<- hl, substList_length]
+    have heq : (Ty.cls D.C' D.Ts).subst (bind D.Delta (Ty.substList s Ts)) =
+        .cls D.C' (Ty.substList s (Ty.substList (bind D.Delta Ts) D.Ts)) := by
       simp only [Ty.subst]
       rw [substList_bind_comp hl' (hd.supD D hD)]
     cases ih heq (fun X hX => ftv_bind_sub hl' (hd.supD D hD) X hX |> fun h => Ty.mem_ftvList.mp h |> fun h => by
@@ -275,18 +275,18 @@ theorem ren_disj {Xs Ys : List TVarName} {r : TRen} {Ts : List Ty}
   intro T hT
   exact Ty.ren_congr (fun X hX => rn_zip_not_mem (h X (Ty.mem_ftvList.mpr (Exists.intro T (And.intro hT hX)))))
 
-theorem declMeth_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {k : K} (hk : Declared d k)
-    {Dl : Bounds} {T0 : Ty} {m : MethName} {ps : List VarDecl} {e : Expr} (hM : List.Mem (Method.mk Dl T0 m ps e) k.Ms) :
-    (forall X, List.Mem X (Ty.ftvList (cod Dl)) -> List.Mem X (k.gvars ++ dom Dl)) /\
-      (forall X, List.Mem X (Ty.ftvList (T0 :: ps.map VarDecl.T)) -> List.Mem X (k.gvars ++ dom Dl)) := by
+theorem declMeth_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {K : ClassDecl} (hk : Declared d K)
+    {Dl : Bounds} {T0 : Ty} {m : MethName} {ps : List VarDecl} {e : Expr} (hM : List.Mem (Method.mk Dl T0 m ps e) K.Ms) :
+    (forall X, List.Mem X (Ty.ftvList (cod Dl)) -> List.Mem X (K.gvars ++ dom Dl)) /\
+      (forall X, List.Mem X (Ty.ftvList (T0 :: ps.map VarDecl.T)) -> List.Mem X (K.gvars ++ dom Dl)) := by
   rcases scopeExists hwf hok hk with ⟨Dk, Tk, hs⟩
-  rcases scopeFacts hwf hok hs with ⟨k', hk'⟩
-  have hname : k'.name = k.name := by
+  rcases scopeFacts hwf hok hs with ⟨K', hk'⟩
+  have hname : K'.name = K.name := by
     rcases hk'.2.1 with ⟨Us, hUs⟩
-    rcases K.generic_name k with ⟨Vs, hVs⟩; rw [hVs] at hUs; simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
+    rcases ClassDecl.generic_name K with ⟨Vs, hVs⟩; rw [hVs] at hUs; simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
   have ek := Declared.unique hwf hk'.1 hk hname
   subst ek
-  rcases hk'.2.2.meths _ hM with ⟨gamma, hmo⟩
+  rcases hk'.2.2.meths _ hM with ⟨Gamma, hmo⟩
   have hmi := methodOk_inv hmo
   rw [<- hk'.2.2.gv, <- dom_append]
   refine And.intro ?_ ?_

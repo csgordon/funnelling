@@ -241,7 +241,7 @@ theorem renE_if {e1 e1' e1'' : Expr} {x : VarName} {v : Value} (h1 : RenE [] [] 
       have e : w = x := by simpa using hw
       subst e
       exact Or.inl (Exists.intro v (And.intro lookup_cons_eq lookup_cons_eq))
-    k := fun _ h => by cases h
+    K := fun _ h => by cases h
     ko := fun _ h => by cases h
     c1 := fun p hp => by
       have e : p = (x, v) := by simpa using hp
@@ -353,7 +353,7 @@ theorem renE_meth {M : Method} {B : Bounds} {Gs Gs' : List GTy} {v0 : Value} {vs
           cases hp with
           | head => rw [rn_zip_not_mem htp1]; rfl
           | tail _ hp => exact rn_zip_pair (List.nodup_cons.mp f1.nodupV).2 hp
-      k := fun p hp => by
+      K := fun p hp => by
         simp only [List.append_nil] at hp
         have h12 := List.of_mem_zip hp
         exact And.intro (fun e => htp1 (e ▸ h12.1)) (fun e => htp2 (e ▸ h12.2))

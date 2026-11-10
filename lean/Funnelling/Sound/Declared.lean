@@ -4,14 +4,14 @@ open Funnelling.SoundSimp
 
 namespace Funnelling
 
-abbrev LocClosed (L : List K) : Prop := forall k, List.Mem k L -> Sub1 (Method.localsList k.Ms) L
+abbrev LocClosed (L : List ClassDecl) : Prop := forall K, List.Mem K L -> Sub1 (Method.localsList K.Ms) L
 
-theorem LocClosed.append {L1 L2 : List K} (h1 : LocClosed L1) (h2 : LocClosed L2) : LocClosed (L1 ++ L2) := by
-  intro k hk x hx
+theorem LocClosed.append {L1 L2 : List ClassDecl} (h1 : LocClosed L1) (h2 : LocClosed L2) : LocClosed (L1 ++ L2) := by
+  intro K hk x hx
   simp only [listMem_iff, List.mem_append] at hk |-
   rcases hk with hk | hk
-  . exact Or.inl (h1 k hk x hx)
-  . exact Or.inr (h2 k hk x hx)
+  . exact Or.inl (h1 K hk x hx)
+  . exact Or.inr (h2 K hk x hx)
 
 mutual
 theorem Expr.locClosed : forall (e : Expr), LocClosed e.locals
@@ -21,11 +21,11 @@ theorem Expr.locClosed : forall (e : Expr), LocClosed e.locals
   | .field e _ => by simp only [Expr.locals]; exact Expr.locClosed e
   | .new _ _ es => by simp only [Expr.locals]; exact Expr.locClosedList es
   | .newLocal C Fs C' Ts es Ms => by
-    intro k hk x hx
+    intro K hk x hx
     cases hk with
     | head => exact List.Mem.tail _ (List.mem_append_right _ hx)
     | tail _ hk =>
-      exact List.Mem.tail _ (((Expr.locClosedList es).append (Method.locClosedList Ms)) k hk x hx)
+      exact List.Mem.tail _ (((Expr.locClosedList es).append (Method.locClosedList Ms)) K hk x hx)
   | .ifInst e0 _ _ e1 e2 => ((Expr.locClosed e0).append (Expr.locClosed e1)).append (Expr.locClosed e2)
 theorem Expr.locClosedList : forall (es : List Expr), LocClosed (Expr.localsList es)
   | [] => fun _ h => by cases h
@@ -38,16 +38,16 @@ theorem Method.locClosedList : forall (Ms : List Method), LocClosed (Method.loca
 end
 
 theorem classes_locClosed (d : Decls) : LocClosed (classes d) := by
-  intro k hk x hx
+  intro K hk x hx
   simp only [classes, listMem_iff, List.mem_flatMap] at hk |-
   rcases hk with ⟨D, hD⟩
   refine Exists.intro D (And.intro hD.1 ?_)
   cases hD.2 with
   | head => exact List.Mem.tail _ hx
-  | tail _ hk => exact List.Mem.tail _ (Method.locClosedList D.Ms k hk x hx)
+  | tail _ hk => exact List.Mem.tail _ (Method.locClosedList D.Ms K hk x hx)
 
-theorem ExprCtx.locals_plug {a : Expr} {k : K} (hk : List.Mem k a.locals) :
-    forall (E : ExprCtx), List.Mem k (E.plug a).locals := by
+theorem ExprCtx.locals_plug {a : Expr} {K : ClassDecl} (hk : List.Mem K a.locals) :
+    forall (E : ExprCtx), List.Mem K (E.plug a).locals := by
   intro E
   induction E <;> simp only [ExprCtx.plug, Expr.locals]
   case hole => exact hk
@@ -60,34 +60,34 @@ theorem ExprCtx.locals_plug {a : Expr} {k : K} (hk : List.Mem k a.locals) :
           | exact List.mem_append_left _ (List.mem_append_right _ ih)
 
 theorem OccursIn.locals {C Fs C' Ts es Ms} {e : Expr} (h : OccursIn (.newLocal C Fs C' Ts es Ms) e) :
-    List.Mem (K.loc C Fs C' Ts es Ms) e.locals := by
+    List.Mem (ClassDecl.newLocal C Fs C' Ts es Ms) e.locals := by
   rcases h with ⟨E, hE⟩; rw [hE]; exact ExprCtx.locals_plug (List.Mem.head _) E
 
-theorem Declared.mem {d : Decls} {k : K} (h : Declared d k) : List.Mem k (classes d) := by
+theorem Declared.mem {d : Decls} {K : ClassDecl} (h : Declared d K) : List.Mem K (classes d) := by
   induction h with
   | dec h => exact classes_mem_dec h
-  | @loc k Delta T0 m ps e C0 Fs C' Ts es Ms hk hM hO ih =>
-    exact classes_locClosed d k ih _ (Method.mem_localsList hM hO.locals)
+  | @newLocal K Delta T0 m ps e C0 Fs C' Ts es Ms hk hM hO ih =>
+    exact classes_locClosed d K ih _ (Method.mem_localsList hM hO.locals)
 
-theorem Declared.unique {d : Decls} (hwf : WFDecls d) {k1 k2 : K} (h1 : Declared d k1) (h2 : Declared d k2)
-    (he : k1.name = k2.name) : k1 = k2 :=
+theorem Declared.unique {d : Decls} (hwf : WFDecls d) {K1 K2 : ClassDecl} (h1 : Declared d K1) (h2 : Declared d K2)
+    (he : K1.name = K2.name) : K1 = K2 :=
   nodup_map_inj hwf.1 h1.mem h2.mem he
 
 theorem Declared.dec_loc {d : Decls} (hwf : WFDecls d) {D : Dec} {C Fs C' Ts es Ms}
-    (h1 : Declared d (.dec D)) (h2 : Declared d (.loc C Fs C' Ts es Ms)) (he : D.C = C) : False := by
+    (h1 : Declared d (.dec D)) (h2 : Declared d (.newLocal C Fs C' Ts es Ms)) (he : D.C = C) : False := by
   have := Declared.unique hwf h1 h2 he
   cases this
 
 theorem MethodIn.dec {d : Decls} (hwf : WFDecls d) {M : Method} {D : Dec} (hD : Declared d (.dec D))
     (h : MethodIn d M D.C) : List.Mem M D.Ms := by
-  rcases h with ⟨k, hk⟩
+  rcases h with ⟨K, hk⟩
   have := Declared.unique hwf hk.1 hD hk.2.1
   subst this
   exact hk.2.2
 
-theorem MethodIn.loc {d : Decls} (hwf : WFDecls d) {M : Method} {C Fs C' Ts es Ms}
-    (hD : Declared d (.loc C Fs C' Ts es Ms)) (h : MethodIn d M C) : List.Mem M Ms := by
-  rcases h with ⟨k, hk⟩
+theorem MethodIn.newLocal {d : Decls} (hwf : WFDecls d) {M : Method} {C Fs C' Ts es Ms}
+    (hD : Declared d (.newLocal C Fs C' Ts es Ms)) (h : MethodIn d M C) : List.Mem M Ms := by
+  rcases h with ⟨K, hk⟩
   have := Declared.unique hwf hk.1 hD hk.2.1
   subst this
   exact hk.2.2
@@ -96,12 +96,12 @@ theorem names_unique {Ms : List Method} {M1 M2 : Method} (hn : (Ms.map Method.na
     (h2 : List.Mem M2 Ms) (he : M1.name = M2.name) : M1 = M2 :=
   nodup_map_inj hn h1 h2 he
 
-theorem Declared.namesNodup {d : Decls} (hwf : WFDecls d) {k : K} (h : Declared d k) : (k.Ms.map Method.name).Nodup :=
-  hwf.2.2.1 k h.mem
+theorem Declared.namesNodup {d : Decls} (hwf : WFDecls d) {K : ClassDecl} (h : Declared d K) : (K.Ms.map Method.name).Nodup :=
+  hwf.2.2.1 K h.mem
 
 theorem Sub.dec_step {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : Declared d (.dec D))
     {Ts : List Ty} {T : Ty} (h : Sub d Delta (.cls D.C Ts) T) :
-    T = .cls D.C Ts \/ (Ts.length = D.bounds.length /\ Sub d Delta ((Ty.cls D.C' D.Ts).subst (bind D.bounds Ts)) T) := by
+    T = .cls D.C Ts \/ (Ts.length = D.Delta.length /\ Sub d Delta ((Ty.cls D.C' D.Ts).subst (bind D.Delta Ts)) T) := by
   generalize he : Ty.cls D.C Ts = T0 at h
   cases h with
   | subRefl => exact Or.inl rfl
@@ -117,7 +117,7 @@ theorem Sub.dec_step {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (h
   | subVar => cases he
 
 theorem Sub.loc_step {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {C Fs C' Ts' es Ms}
-    (hD : Declared d (.loc C Fs C' Ts' es Ms)) {Ts : List Ty} {T : Ty} (h : Sub d Delta (.cls C Ts) T) :
+    (hD : Declared d (.newLocal C Fs C' Ts' es Ms)) {Ts : List Ty} {T : Ty} (h : Sub d Delta (.cls C Ts) T) :
     T = .cls C Ts \/ (Ts.length = Fs.length /\ Sub d Delta ((Ty.cls C' Ts').subst (bindF Fs Ts)) T) := by
   generalize he : Ty.cls C Ts = T0 at h
   cases h with
@@ -135,23 +135,23 @@ theorem Sub.loc_step {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {C Fs C' Ts'
 
 theorem Scope.loc_declared {d : Decls} {Delta0 : Bounds} {Ts0 : List Ty} {C0 : ClassName} {Ts : List Ty}
     (h : Scope d (.cls C0 Ts) Delta0 Ts0) :
-    (exists D, Declared d (.dec D) /\ D.C = C0 /\ Delta0 = D.bounds /\ Ts0 = Ts) \/
-    (exists Fs C' Ts' es Ms Delta, Declared d (.loc C0 Fs C' Ts' es Ms) /\ Pairing Delta Fs Ts Delta0 Ts0) := by
+    (exists D, Declared d (.dec D) /\ D.C = C0 /\ Delta0 = D.Delta /\ Ts0 = Ts) \/
+    (exists Fs C' Ts' es Ms Delta, Declared d (.newLocal C0 Fs C' Ts' es Ms) /\ Pairing Delta Fs Ts Delta0 Ts0) := by
   generalize he : Ty.cls C0 Ts = T at h
   cases h with
   | @dec D Ts2 hD =>
     simp only [Ty.cls.injEq] at he
     exact Or.inl (Exists.intro D (And.intro hD (And.intro he.1.symm (And.intro rfl he.2.symm))))
-  | @loc C Delta' T0 m ps e C1 Fs C' Ts' es Ms T Delta Ts'' Ts2 Delta0 Ts0 h1 h2 h3 h4 h5 =>
+  | @newLocal C Delta' T0 m ps e C1 Fs C' Ts' es Ms T Delta Ts'' Ts2 Delta0 Ts0 h1 h2 h3 h4 h5 =>
     simp only [Ty.cls.injEq] at he
-    rcases h1 with ⟨k, hk⟩
-    have hd := Declared.loc hk.1 (by rw [hk.2.1] at hk; exact hk.2.2) h2
+    rcases h1 with ⟨K, hk⟩
+    have hd := Declared.newLocal hk.1 (by rw [hk.2.1] at hk; exact hk.2.2) h2
     rw [he.1, he.2] at *
     exact Or.inr (Exists.intro Fs (Exists.intro C' (Exists.intro Ts' (Exists.intro es (Exists.intro Ms
       (Exists.intro _ (And.intro hd h5)))))))
 
 theorem Scope.dec_eq {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : Declared d (.dec D)) {Ts Ts0 : List Ty}
-    {Delta0 : Bounds} (h : Scope d (.cls D.C Ts) Delta0 Ts0) : Delta0 = D.bounds /\ Ts0 = Ts := by
+    {Delta0 : Bounds} (h : Scope d (.cls D.C Ts) Delta0 Ts0) : Delta0 = D.Delta /\ Ts0 = Ts := by
   rcases h.loc_declared with h' | h'
   . rcases h' with ⟨D', h'⟩
     have e := Declared.unique hwf h'.1 hD h'.2.1
@@ -170,10 +170,10 @@ theorem find_some {A : Type} {p : A -> Bool} : forall {l : List A} {x : A}, l.fi
       have r := find_some h
       exact And.intro (List.Mem.tail _ r.1) r.2
 
-theorem Declared.super {d : Decls} (hwf : WFDecls d) {k : K} (hk : Declared d k) :
-    exists D', Declared d (.dec D') /\ D'.C = k.sup := by
-  have h := hwf.2.2.2.2.2.2.2.2.2.1 k hk.mem
-  cases hf : findDec d k.sup with
+theorem Declared.super {d : Decls} (hwf : WFDecls d) {K : ClassDecl} (hk : Declared d K) :
+    exists D', Declared d (.dec D') /\ D'.C = K.sup := by
+  have h := hwf.2.2.2.2.2.2.2.2.2.1 K hk.mem
+  cases hf : findDec d K.sup with
   | none => rw [hf] at h; cases h
   | some D' =>
     have r := find_some hf
@@ -191,17 +191,17 @@ theorem abs_ground {Gs : List GTy} : abs (Gs.map Funnel.ground) = GTy.tys Gs := 
   simp [abs, List.map_map, Function.comp_def, Funnel.abs]
 
 theorem consistent_unfold {d : Decls} {C : ClassName} {Fs : List Funnel} {C0 : ClassName} {Ts : List Ty}
-    {es : List Expr} {Ms : List Method} (h : Consistent d (.loc C Fs C0 Ts es Ms)) :
-    exists Fs' Ts' es' Ms', Declared d (.loc C Fs' C0 Ts' es' Ms') /\ Fs.length = Fs'.length /\
+    {es : List Expr} {Ms : List Method} (h : Consistent d (.newLocal C Fs C0 Ts es Ms)) :
+    exists Fs' Ts' es' Ms', Declared d (.newLocal C Fs' C0 Ts' es' Ms') /\ Fs.length = Fs'.length /\
       Ts = Ty.substList (bindF Fs' (abs Fs)) Ts' /\
       (forall m, List.Mem m (Ms'.map Method.name) <-> List.Mem m (Ms.map Method.name)) /\
       (forall M, List.Mem M Ms -> OverrideOkM d (.cls C (abs Fs)) M) := h
 
 theorem abs_length {Fs : List Funnel} : (abs Fs).length = Fs.length := by simp [abs]
 
-theorem occ_typing {d : Decls} {Delta : Bounds} {a : Expr} : forall (E : ExprCtx) {gamma : Gamma} {T : Ty},
-    Typing d Delta gamma (E.plug a) T -> exists gamma' Ta, Typing d Delta gamma' a Ta
-  | .hole, gamma, T, h => ⟨gamma, T, h⟩
+theorem occ_typing {d : Decls} {Delta : Bounds} {a : Expr} : forall (E : ExprCtx) {Gamma : TypeEnv} {T : Ty},
+    Typing d Delta Gamma (E.plug a) T -> exists Gamma' Ta, Typing d Delta Gamma' a Ta
+  | .hole, Gamma, T, h => ⟨Gamma, T, h⟩
   | .callRecv E _ _ _, _, _, h => let ⟨_, hw⟩ := inv_call h rfl; occ_typing E hw.ty0
   | .callArg _ _ _ _ E _, _, _, h => let ⟨_, hw⟩ := inv_call h rfl; let ⟨_, hx⟩ := TypingSeq.mid hw.args; occ_typing E hx.1
   | .superRecv E _ _ _ _, _, _, h => by
@@ -211,7 +211,7 @@ theorem occ_typing {d : Decls} {Delta : Bounds} {a : Expr} : forall (E : ExprCtx
     cases hw.args with | cons _ hs => exact let ⟨_, hx⟩ := TypingSeq.mid hs; occ_typing E hx.1
   | .field E _, _, _, h => let ⟨_, hw⟩ := inv_field h rfl; occ_typing E hw.ty
   | .newArg _ _ _ E _, _, _, h => let ⟨_, hx⟩ := typing_new_mid h rfl; occ_typing E hx.1
-  | .localArg _ _ _ _ _ E _ _, _, _, h =>
+  | .newLocalArg _ _ _ _ _ E _ _, _, _, h =>
     let ⟨_, hw⟩ := inv_local h rfl; let ⟨_, hx⟩ := typing_new_mid hw.tyNew rfl; occ_typing E hx.1
   | .ifCond E _ _ _ _, _, _, h => let ⟨_, hw⟩ := inv_if h rfl; occ_typing E hw.ty0
   | .ifThen _ _ _ E _, _, _, h => let ⟨_, hw⟩ := inv_if h rfl; occ_typing E hw.ty1

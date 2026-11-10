@@ -4,88 +4,88 @@ open Funnelling.SoundSimp
 
 namespace Funnelling
 
-theorem ECtx.nodup_replace {a a' : Expr} (h' : forall k, List.Mem k a'.locals -> K.Nodup k) :
-    forall (E : ECtx), (forall k, List.Mem k (E.plug a).locals -> K.Nodup k) ->
-      forall k, List.Mem k (E.plug a').locals -> K.Nodup k := by
+theorem EvalCtx.nodup_replace {a a' : Expr} (h' : forall K, List.Mem K a'.locals -> ClassDecl.Nodup K) :
+    forall (E : EvalCtx), (forall K, List.Mem K (E.plug a).locals -> ClassDecl.Nodup K) ->
+      forall K, List.Mem K (E.plug a').locals -> ClassDecl.Nodup K := by
   intro E
   induction E <;> intro h
   case hole => exact h'
   all_goals
     rename_i ih
-    simp only [ECtx.plug, Expr.locals, Expr.localsList_eq_flatMap, List.flatMap_append, List.flatMap_cons, listMem_iff,
-      List.mem_append, List.mem_cons, or_imp, forall_and, forall_eq, K.Nodup] at h ih |-
-    simp_all only [implies_true, and_self, K.Ms, K.Fs]
+    simp only [EvalCtx.plug, Expr.locals, Expr.localsList_eq_flatMap, List.flatMap_append, List.flatMap_cons, listMem_iff,
+      List.mem_append, List.mem_cons, or_imp, forall_and, forall_eq, ClassDecl.Nodup] at h ih |-
+    simp_all only [implies_true, and_self, ClassDecl.Ms, ClassDecl.Fs]
 
-theorem ECtx.ifVars_replace {a a' : Expr} {x : VarName} (h' : Not (List.Mem x a'.ifVars)) :
-    forall (E : ECtx), Not (List.Mem x (E.plug a).ifVars) -> Not (List.Mem x (E.plug a').ifVars) := by
+theorem EvalCtx.ifVars_replace {a a' : Expr} {x : VarName} (h' : Not (List.Mem x a'.ifVars)) :
+    forall (E : EvalCtx), Not (List.Mem x (E.plug a).ifVars) -> Not (List.Mem x (E.plug a').ifVars) := by
   intro E
   induction E <;> intro h
   case hole => exact h'
   all_goals
     rename_i ih
-    simp only [ECtx.plug, Expr.ifVars, Expr.ifVarsList_eq_flatMap, List.flatMap_append, List.flatMap_cons, listMem_iff,
+    simp only [EvalCtx.plug, Expr.ifVars, Expr.ifVarsList_eq_flatMap, List.flatMap_append, List.flatMap_cons, listMem_iff,
       List.mem_append, List.mem_cons, not_or] at h ih |-
     simp_all
 
-theorem ECtx.noShadow_replace {a a' : Expr} {Xs : List TVarName} {xs : List VarName}
+theorem EvalCtx.noShadow_replace {a a' : Expr} {Xs : List TVarName} {xs : List VarName}
     (h' : a'.noShadow Xs xs = true) :
-    forall (E : ECtx), (E.plug a).noShadow Xs xs = true -> (E.plug a').noShadow Xs xs = true := by
+    forall (E : EvalCtx), (E.plug a).noShadow Xs xs = true -> (E.plug a').noShadow Xs xs = true := by
   intro E
   induction E <;> intro h
   case hole => exact h'
   all_goals
     rename_i ih
-    simp only [ECtx.plug, Expr.noShadow, Expr.noShadowList_eq_all, List.all_append, List.all_cons, Bool.and_eq_true] at h ih |-
+    simp only [EvalCtx.plug, Expr.noShadow, Expr.noShadowList_eq_all, List.all_append, List.all_cons, Bool.and_eq_true] at h ih |-
     simp_all
 
-theorem ECtx.closed_replace {a a' : Expr} {Xs : List TVarName} {xs : List VarName}
+theorem EvalCtx.closed_replace {a a' : Expr} {Xs : List TVarName} {xs : List VarName}
     (h' : a'.closed Xs xs = true) :
-    forall (E : ECtx), (E.plug a).closed Xs xs = true -> (E.plug a').closed Xs xs = true := by
+    forall (E : EvalCtx), (E.plug a).closed Xs xs = true -> (E.plug a').closed Xs xs = true := by
   intro E
   induction E <;> intro h
   case hole => exact h'
   all_goals
     rename_i ih
-    simp only [ECtx.plug, Expr.closed, Expr.closedList_eq_all, List.all_append, List.all_cons, Bool.and_eq_true] at h ih |-
+    simp only [EvalCtx.plug, Expr.closed, Expr.closedList_eq_all, List.all_append, List.all_cons, Bool.and_eq_true] at h ih |-
     simp_all
 
-theorem WFExpr.nodup {e : Expr} (h : WFExpr e) : forall k, List.Mem k e.locals -> K.Nodup k := by
-  intro k hk
-  have hm : forall M, List.Mem M k.Ms -> List.Mem M e.methods := fun M hM => by
+theorem WFExpr.nodup {e : Expr} (h : WFExpr e) : forall K, List.Mem K e.locals -> ClassDecl.Nodup K := by
+  intro K hk
+  have hm : forall M, List.Mem M K.Ms -> List.Mem M e.methods := fun M hM => by
     simp only [Expr.methods, listMem_iff, List.mem_flatMap]
-    exact Exists.intro k (And.intro hk hM)
-  refine And.intro (h.1 k hk) (And.intro (h.2.2.2.1 k hk) (fun M hM => And.intro (h.2.1 M (hm M hM))
-    (And.intro (h.2.2.1 _ (List.mem_map_of_mem (f := Method.bounds) (hm M hM))) (h.2.2.2.2.2.1.1 M (hm M hM)))))
+    exact Exists.intro K (And.intro hk hM)
+  refine And.intro (h.1 K hk) (And.intro (h.2.2.2.1 K hk) (fun M hM => And.intro (h.2.1 M (hm M hM))
+    (And.intro (h.2.2.1 _ (List.mem_map_of_mem (f := Method.Delta) (hm M hM))) (h.2.2.2.2.2.1.1 M (hm M hM)))))
 
-theorem WFExpr.of_nodup {e : Expr} (hk : forall k, List.Mem k e.locals -> K.Nodup k) (hn : e.noShadow [] [] = true)
+theorem WFExpr.of_nodup {e : Expr} (hk : forall K, List.Mem K e.locals -> ClassDecl.Nodup K) (hn : e.noShadow [] [] = true)
     (hi : Not (List.Mem this e.ifVars)) (hc : e.closed [] [] = true) : WFExpr e := by
-  have hm : forall M, List.Mem M e.methods -> exists k, List.Mem k e.locals /\ List.Mem M k.Ms := fun M hM => by
+  have hm : forall M, List.Mem M e.methods -> exists K, List.Mem K e.locals /\ List.Mem M K.Ms := fun M hM => by
     simp only [Expr.methods, listMem_iff, List.mem_flatMap] at hM
     exact hM
-  refine And.intro (fun k h => (hk k h).1) (And.intro ?_ (And.intro ?_ (And.intro (fun k h => (hk k h).2.1)
+  refine And.intro (fun K h => (hk K h).1) (And.intro ?_ (And.intro ?_ (And.intro (fun K h => (hk K h).2.1)
     (And.intro hn (And.intro (And.intro ?_ hi) hc)))))
   . intro M hM
-    rcases hm M hM with ⟨k, h1, h2⟩
-    exact ((hk k h1).2.2 M h2).1
+    rcases hm M hM with ⟨K, h1, h2⟩
+    exact ((hk K h1).2.2 M h2).1
   . intro D hD
     simp only [listMem_iff, List.mem_map] at hD
     rcases hD with ⟨M, hM, e⟩
     subst e
-    rcases hm M hM with ⟨k, h1, h2⟩
-    exact ((hk k h1).2.2 M h2).2.1
+    rcases hm M hM with ⟨K, h1, h2⟩
+    exact ((hk K h1).2.2 M h2).2.1
   . intro M hM
-    rcases hm M hM with ⟨k, h1, h2⟩
-    exact ((hk k h1).2.2 M h2).2.2
+    rcases hm M hM with ⟨K, h1, h2⟩
+    exact ((hk K h1).2.2 M h2).2.2
 
-theorem WFExpr.replace {E : ECtx} {a a' : Expr} (h : WFExpr (E.plug a)) (h' : WFExpr a') :
+theorem WFExpr.replace {E : EvalCtx} {a a' : Expr} (h : WFExpr (E.plug a)) (h' : WFExpr a') :
     WFExpr (E.plug a') :=
-  WFExpr.of_nodup (ECtx.nodup_replace h'.nodup E h.nodup) (ECtx.noShadow_replace h'.noShadow E h.noShadow)
-    (ECtx.ifVars_replace h'.2.2.2.2.2.1.2 E h.2.2.2.2.2.1.2)
-    (ECtx.closed_replace h'.closed E h.closed)
+  WFExpr.of_nodup (EvalCtx.nodup_replace h'.nodup E h.nodup) (EvalCtx.noShadow_replace h'.noShadow E h.noShadow)
+    (EvalCtx.ifVars_replace h'.2.2.2.2.2.1.2 E h.2.2.2.2.2.1.2)
+    (EvalCtx.closed_replace h'.closed E h.closed)
 
 theorem super_ground {d : Decls} (hok : DeclsOk d) {D : Dec} (hD : Declared d (.dec D)) {Gs : List GTy}
-    (hl : Gs.length = D.bounds.length) :
-    Ty.ftvList (Ty.substList (bind D.bounds (GTy.tys Gs)) D.Ts) = [] := by
+    (hl : Gs.length = D.Delta.length) :
+    Ty.ftvList (Ty.substList (bind D.Delta (GTy.tys Gs)) D.Ts) = [] := by
   apply List.eq_nil_iff_forall_not_mem.mpr
   intro X hX
   rw [<- gsubst_ty_bind] at hX
@@ -110,7 +110,7 @@ theorem wf_new_suffix {C C' : ClassName} {Ts Ts' : List Ty} {l r : List Expr} (h
   have hc := h.closed
   simp only [Expr.noShadow, Expr.noShadowList_eq_all, List.all_append, Bool.and_eq_true, Expr.closed, Expr.closedList_eq_all] at hn hc
   refine WFExpr.sub h ?_ ?_ ?_ ?_
-  . intro k hk
+  . intro K hk
     simp only [Expr.locals, Expr.localsList_eq_flatMap, List.flatMap_append, listMem_iff, List.mem_append] at hk |-
     exact Or.inr hk
   . intro x hx
@@ -125,7 +125,7 @@ theorem wf_local_new {C C' : ClassName} {Fs : List Funnel} {Ts : List Ty} {es : 
   have hc := h.closed
   simp only [Expr.noShadow, Bool.and_eq_true, Expr.closed, List.all_append] at hn hc
   refine WFExpr.sub h ?_ ?_ ?_ ?_
-  . intro k hk; simp only [Expr.locals, listMem_iff, List.mem_cons, List.mem_append]; exact Or.inr (Or.inl hk)
+  . intro K hk; simp only [Expr.locals, listMem_iff, List.mem_cons, List.mem_append]; exact Or.inr (Or.inl hk)
   . intro x hx; simp only [Expr.ifVars, listMem_iff, List.mem_append]; exact Or.inl hx
   . exact hn.1
   . simp only [Expr.closed, Bool.and_eq_true]; exact ⟨hc.1.1.2, hc.1.2⟩
@@ -136,7 +136,7 @@ theorem wf_if_else {e0 : Expr} {T : Ty} {x : VarName} {e1 e2 : Expr} (h : WFExpr
   have hc := h.closed
   simp only [Expr.noShadow, Bool.and_eq_true, Expr.closed] at hn hc
   refine WFExpr.sub h ?_ ?_ hn.2 hc.2
-  . intro k hk; simp only [Expr.locals, listMem_iff, List.mem_append, or_assoc]; exact Or.inr (Or.inr hk)
+  . intro K hk; simp only [Expr.locals, listMem_iff, List.mem_append, or_assoc]; exact Or.inr (Or.inr hk)
   . intro y hy; simp only [Expr.ifVars, listMem_iff, List.mem_cons, List.mem_append, or_assoc]; exact Or.inr (Or.inr (Or.inr hy))
 
 theorem wf_call_super {e : Expr} {T : Ty} {Ts : List Ty} {m : MethName} {es : List Expr}
@@ -154,11 +154,11 @@ theorem wf_super_retype {e : Expr} {T T' : Ty} {Ts : List Ty} {m : MethName} {es
   exact ⟨⟨hc.1.1, hc.1.2.2⟩, hc.2⟩
 
 theorem RenM.lens {rv : VRen} {rt : TRen} {M M' : Method} (h : RenM rv rt M M') :
-    M'.bounds.length = M.bounds.length /\ M'.params.length = M.params.length /\ M'.name = M.name := by
+    M'.Delta.length = M.Delta.length /\ M'.params.length = M.params.length /\ M'.name = M.name := by
   cases h with
-  | mk h1 h2 _ => simp [Method.bounds, Method.params, Method.name, h1, h2]
+  | mk h1 h2 _ => simp [Method.Delta, Method.params, Method.name, h1, h2]
 
-theorem wf_vsubst {e : Expr} {n : VSubst} (hk : forall k, List.Mem k e.locals -> K.Nodup k)
+theorem wf_vsubst {e : Expr} {n : VSubst} (hk : forall K, List.Mem K e.locals -> ClassDecl.Nodup K)
     (hn : e.noShadow [] [] = true) (hi : Not (List.Mem this e.ifVars)) (hc : e.closed [] (n.map Prod.fst) = true)
     (hv : forall p, List.Mem p n -> WFExpr p.2.expr)
     (hd : forall p, List.Mem p n -> (forall y, List.Mem y p.2.expr.vbinders -> Not (List.Mem y e.vbinders)) /\
@@ -198,7 +198,7 @@ theorem wf_ifThen {C' : ClassName} {Ts : List Ty} {x : VarName} {e1 e2 : Expr} {
     Expr.closed, NoThis, Expr.vbinders, List.mem_cons, not_or] at hk hn hc ht
   have hv : WFExpr v.expr := by
     refine WFExpr.sub ha ?_ ?_ hn.1.1.1 hc.1.1.1
-    . intro k hk'; simp only [Expr.locals, listMem_iff, List.mem_append]; exact Or.inl (Or.inl hk')
+    . intro K hk'; simp only [Expr.locals, listMem_iff, List.mem_append]; exact Or.inl (Or.inl hk')
     . intro y hy; simp only [Expr.ifVars, listMem_iff, List.mem_append, List.mem_cons]; exact Or.inl (Or.inl (Or.inr hy))
   rcases fresh_avoid e1 (v.expr.vbinders ++ [x]) v.expr.tbinders hk.1.2 hc.1.2 ht.1.2 with
     ⟨e1', hf, hav, hat, hk', hn', hi', hc'⟩
@@ -224,7 +224,7 @@ theorem wf_call_arg {e0 : Expr} {Ts : List Ty} {m : MethName} {es : List Expr} {
 theorem wf_found {M : Method} {m : MethName} {B0 Delta' : Bounds} {T0 : Ty} {ps : List VarDecl} {e0 : Expr}
     {v0 : Value} {Gs Gs' : List GTy} {vs : List Value} (hF : FreshM M (.mk Delta' T0 m ps e0))
     (hG : Gs.length = B0.length) (hG' : Gs'.length = Delta'.length) (hp : ps.length = vs.length)
-    (hnD : (dom B0).Nodup) (hkM : forall k, List.Mem k M.locals -> K.Nodup k)
+    (hnD : (dom B0).Nodup) (hkM : forall K, List.Mem K M.locals -> ClassDecl.Nodup K)
     (hcM : M.closed (dom B0) [] = true) (htM : NoThisM M) (hv0 : WFExpr v0.expr)
     (hvs : forall v, List.Mem v vs -> WFExpr v.expr) :
     exists Delta2 T2 ps2 e2, Found M B0 Delta2 T2 m ps2 e2 Gs Gs' v0 vs := by
@@ -294,14 +294,14 @@ theorem wf_innerFound {C C' : ClassName} {Ms : List Method} {M : Method} {m : Me
   have hk0 := hv0.nodup
   simp only [Value.expr, Expr.locals, listMem_iff, List.mem_cons, List.mem_append, or_imp, forall_and,
     forall_eq] at hk0
-  have hkM : forall k, List.Mem k M.locals -> K.Nodup k := fun k hk => hk0.2.2 k (Method.mem_localsList hM hk)
+  have hkM : forall K, List.Mem K M.locals -> ClassDecl.Nodup K := fun K hk => hk0.2.2 K (Method.mem_localsList hM hk)
   rcases WFExpr.local_method hv0 hM with ⟨-, htM, -, hcM⟩
   exact wf_found (B0 := []) (Gs := []) hF rfl hG' hp List.nodup_nil hkM hcM htM hv0 hvs
 
-theorem WFDecls.nodup {d : Decls} (hwf : WFDecls d) : forall k, List.Mem k (classes d) -> K.Nodup k := by
-  intro k hk
-  have hl := hwf.locOk k hk
-  exact And.intro (hwf.2.2.1 k hk) (And.intro (hwf.2.2.2.2.2.1 k hk)
+theorem WFDecls.nodup {d : Decls} (hwf : WFDecls d) : forall K, List.Mem K (classes d) -> ClassDecl.Nodup K := by
+  intro K hk
+  have hl := hwf.locOk K hk
+  exact And.intro (hwf.2.2.1 K hk) (And.intro (hwf.2.2.2.2.2.1 K hk)
     (fun M hM => And.intro (hl M hM).2.1 (And.intro (hl M hM).1 (hl M hM).2.2)))
 
 theorem kinds_all {d : Decls} {Delta : Bounds} {Ts : List Ty} (h : forall T, List.Mem T Ts -> Kind d Delta T) :
@@ -333,8 +333,8 @@ theorem closedListM_of {T : List TVarName} {S : List VarName} : forall {Ms : Lis
     exact ⟨h M (List.Mem.head _), closedListM_of (fun M' hM' => h M' (List.Mem.tail _ hM'))⟩
 
 mutual
-theorem Typing.closed {d : Decls} : forall {Delta gamma e T}, Typing d Delta gamma e T ->
-    e.closed (dom Delta) (gdom gamma) = true
+theorem Typing.closed {d : Decls} : forall {Delta Gamma e T}, Typing d Delta Gamma e T ->
+    e.closed (dom Delta) (gdom Gamma) = true
   | _, _, _, _, .subs h _ _ => Typing.closed h
   | _, _, _, _, .var hl => List.contains_iff_mem.mpr (List.mem_map_of_mem (f := VarDecl.x) (lookup_mem_g hl))
   | _, _, _, _, .newObject => rfl
@@ -394,14 +394,14 @@ theorem Typing.closed {d : Decls} : forall {Delta gamma e T}, Typing d Delta gam
       rcases hy with hy | hy
       . exact Or.inr hy
       . exact Or.inl hy
-theorem TypingSeq.closed {d : Decls} : forall {Delta gamma es Ts}, TypingSeq d Delta gamma es Ts ->
-    Expr.closedList (dom Delta) (gdom gamma) es = true
+theorem TypingSeq.closed {d : Decls} : forall {Delta Gamma es Ts}, TypingSeq d Delta Gamma es Ts ->
+    Expr.closedList (dom Delta) (gdom Gamma) es = true
   | _, _, _, _, .nil => rfl
   | _, _, _, _, .cons h hs => by
     simp only [Expr.closedList, Bool.and_eq_true]
     exact ⟨Typing.closed h, TypingSeq.closed hs⟩
-theorem MethodOk.closed {d : Decls} : forall {Delta gamma M}, MethodOk d Delta gamma M ->
-    M.closed (dom Delta) (gdom gamma) = true
+theorem MethodOk.closed {d : Decls} : forall {Delta Gamma M}, MethodOk d Delta Gamma M ->
+    M.closed (dom Delta) (gdom Gamma) = true
   | _, _, _, .methodOk h1 h2 h3 => by
     simp only [Method.closed, Bool.and_eq_true]
     rw [<- dom_append]
@@ -420,7 +420,7 @@ theorem MethodOk.closed {d : Decls} : forall {Delta gamma M}, MethodOk d Delta g
 end
 
 theorem dec_method_closed {d : Decls} (hok : DeclsOk d) {D : Dec} (hD : Declared d (.dec D))
-    {M : Method} (hM : List.Mem M D.Ms) : M.closed (dom D.bounds) [] = true :=
+    {M : Method} (hM : List.Mem M D.Ms) : M.closed (dom D.Delta) [] = true :=
   Method.closed_this (MethodOk.closed ((hok D hD.dec_mem).2.2.1 M hM))
 
 theorem wf_super_arg {e0 : Expr} {T : Ty} {Ts : List Ty} {m : MethName} {es : List Expr} {e : Expr}
@@ -434,17 +434,17 @@ theorem wf_super_arg {e0 : Expr} {T : Ty} {Ts : List Ty} {m : MethName} {es : Li
 theorem wf_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec} {M : Method} {m : MethName}
     {Delta' : Bounds} {T0 : Ty} {ps : List VarDecl} {e0 : Expr} {v0 : Value} {Gs Gs' : List GTy} {vs : List Value}
     (hD : Declared d (.dec D)) (hM : List.Mem M D.Ms) (hF : FreshM M (.mk Delta' T0 m ps e0))
-    (hG : Gs.length = D.bounds.length) (hG' : Gs'.length = Delta'.length) (hp : ps.length = vs.length)
+    (hG : Gs.length = D.Delta.length) (hG' : Gs'.length = Delta'.length) (hp : ps.length = vs.length)
     (ha : WFExpr (.superCall v0.expr (.cls D.C (GTy.tys Gs)) (GTy.tys Gs') m (Value.exprs vs))) :
-    exists Delta2 T2 ps2 e2, Found M D.bounds Delta2 T2 m ps2 e2 Gs Gs' v0 vs := by
+    exists Delta2 T2 ps2 e2, Found M D.Delta Delta2 T2 m ps2 e2 Gs Gs' v0 vs := by
   have hd := hD.dec_mem
   rcases WFDecls.method hwf hd hM with ⟨-, htM, -⟩
-  have hkM : forall k, List.Mem k M.locals -> K.Nodup k :=
-    fun k hk => WFDecls.nodup hwf k (classes_mem_loc hd (Method.mem_localsList hM hk))
+  have hkM : forall K, List.Mem K M.locals -> ClassDecl.Nodup K :=
+    fun K hk => WFDecls.nodup hwf K (classes_mem_loc hd (Method.mem_localsList hM hk))
   have hcM := dec_method_closed hok hD hM
   have hv0 : WFExpr v0.expr := WFExpr.plug (E := .superRecv .hole (GTy.cls D.C Gs) Gs' m (Value.exprs vs)) ha
   have hvs : forall v, List.Mem v vs -> WFExpr v.expr := fun v hv => wf_super_arg ha (Value.mem_exprs hv)
-  exact wf_found hF hG hG' hp (hwf.2.2.2.2.1 D.bounds (by
+  exact wf_found hF hG hG' hp (hwf.2.2.2.2.1 D.Delta (by
     simp only [listMem_iff, List.mem_append, List.mem_map]
     exact Or.inl (Exists.intro D (And.intro hd rfl)))) hkM hcM htM hv0 hvs
 
