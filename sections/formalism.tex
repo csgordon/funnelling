@@ -61,7 +61,7 @@ From the perspective of the inside of the local class (the methods $\pl{M}$), th
 From the perspective of the \Q@new@ expression itself, the funnels $\pl{F}$ instantiate those type variables, forming the actual type of the created instance.
 
 To allow a local class instance to exist in the main expression, a funnel is either a ground type $G$ or a funnelled type variable $\funnel{X}$.
-In \decls, all the funnels are of the form $\funnel{X}$, by well-formedness requirement A11.
+In \decls, all the funnels are of the form $\funnel{X}$, by well-formedness requirement A11 (discussed shortly).
 In the main expression, outside of the methods of local classes, all the funnels are of the form $G$, by A12: there, no type variable is in scope.
 When a local class is nested in a method of a local class in the main expression, a mixture of funnels $\funnel{X}$ and $G$ can be present.
 
@@ -83,12 +83,12 @@ We require the following well-formedness conditions:
 \begin{enumerate}
     \item[(A1)] In \decls, class names are unique across top-level and local classes.
     \item[(A2)] In a class, all the field names, including the field names of the superclasses, are disjoint.
-    \item[(A3)] In a class, top-level or local, all the method names are disjoint.
+    \item[(A3)] In a class, whether top-level or local, all the method names are disjoint.
     \item[(A4)] In a method, all the parameter names $x_1,\ldots,x_n$ are disjoint.
     \item[(A5)] In a $\Delta$, all the $X$ in $\mathrm{dom}(\Delta)$ are disjoint.
     \item[(A6)] In a list of funnels $\pl{F}$, all the $X$ in $\mathrm{dom}(\pl{F})$ are disjoint.
     \item[(A7)] There is no shadowing of $X$ or $x$, except for \Q@this@.
-    \item[(A8)] No parameter and no variable of an \Q@if@ is \Q@this@.
+    \item[(A8)] In the syntax \ifthen{\_}{T}{x}{\_}{\_}, \Q@x@ is not \Q@this@, and \Q@this@ does not appear as a method parameter name.
     \item[(A9)] \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every other top-level class reaches \Q@Object@.
     \item[(A10)] In \decls, the superclass of every class, top-level or local, is a top-level class.
     \item[(A11)] In \decls, every funnel is of the form $\funnel{X}$.
@@ -162,12 +162,12 @@ By well-formedness requirement A1, a class name $C$ identifies at most one $K$ w
 $M\in K$ holds when $M$ is a method of the class declaration $K$, top-level or local.
 $M\in C$ holds when $M$ is a method of the declared class $C$, top-level or local.
 For a top-level class $C$ with bounds $\Delta$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$.
-For a local class $C_0$ with funnels $\pl{F}$, $\mathsf{scope}(\gen{C_0}{\pl{T}})=\Delta_0;\pl{T}_0$, where $\Delta_0$ holds, in the order of $\mathrm{dom}(\pl{F})$, the bound $\ext{X}{T}$ in $\Delta,\Delta'$ of each $X\in\mathrm{dom}(\pl{F})$, where $\Delta'$ are the bounds of the method $m$ declaring $C_0$ and $\mathsf{scope}(\generic{C})=\Delta;\_$ for the class $C$ of $m$; note that $m$ could be a method of either a top-level or local class.
+For a local class $C_0$ with funnels $\pl{F}$, $\mathsf{scope}(\gen{C_0}{\pl{T}})=\Delta_0;\pl{T}_0$, where $\Delta_0$ holds, in the order of $\mathrm{dom}(\pl{F})$, the bound $\ext{X}{T}$ in $\Delta,\Delta'$ of each $X\in\mathrm{dom}(\pl{F})$, where $\Delta'$ are the bounds of the method $m$ declaring $C_0$ and $\mathsf{scope}(\generic{C})=\Delta;\_$ for the class $C$ of $m$. Note that $m$ could be a method of either a top-level or local class.
 By A11, every funnel of $\pl{F}$ is of the form $\funnel{X}$, so $\pl{T}_0$ is $\pl{T}$.
 For a top-level class, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$ can return $\Delta$ and $\pl{T}$ of different lengths.
-The usage points of $\mathsf{scope}$ use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length; in the same way, $\tsubst{T}{\pl{F}}{\pl{T}}$ is defined only when $\pl{F}$ and $\pl{T}$ have the same length.
+The usage points of $\mathsf{scope}$ use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length;
+in the same way, $\tsubst{T}{\pl{F}}{\pl{T}}$ is defined only when $\pl{F}$ and $\pl{T}$ have the same length, and $\pl{F}$ contains no ground type.
 A simultaneous substitution, of types or of values, is defined only when the names in its domain are distinct.
-A substitution $\tsubst{T}{\Delta,\Delta'}{\pl{T},\pl{T}'}$ is defined only when $\Delta$ and $\pl{T}$ have the same length, and $\Delta'$ and $\pl{T}'$ have the same length.
 \\[1ex]
 For a type variable $X$, $\Delta(X)$ is the bound of $X$ in $\Delta$.
 $\mathrm{dom}(\Delta)$ is the sequence of the type variables in $\Delta$, and $\mathrm{cod}(\Delta)$ is the sequence $T_1,\ldots,T_n$ of $\Delta=\ext{X_1}{T_1},\ldots,\ext{X_n}{T_n}$.
@@ -542,7 +542,7 @@ The relation $\cast{\Delta}{T}{T'}$ is the \emph{checked cast}: a type test agai
 Rule \textsc{if-instanceof} accepts the type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ only when $\cast{\Delta}{T_0}{T}$, where $T_0$ is a type of $e_0$.
 Rule \textsc{cast-up} accepts a target $T'$ that is a supertype of the source $T$.
 Rule \textsc{cast-var} replaces a source type variable $X$ with the bound of $X$.
-Rule \textsc{cast-down} accepts a target $\gen{C}{\pl{T}}$ that is a subtype of the source $\gen{C'}{\pl{T}_0}$, when the source determines the type arguments $\pl{T}$.
+Rule \textsc{cast-down} accepts a target $\gen{C}{\pl{T}}$ that is a subtype of the source $\gen{C'}{\pl{T}_0}$, \emph{when the source determines the type arguments} $\pl{T}$.\footnote{This is an important place where Java loses information, by allowing casts in cases where the base type does \emph{not} determine parameters\todo[inline]{roughly... write much better}}
 $\generic{C}=\gen{C}{\pl{X}}$ is the class $C$ instantiated with its own type variables $\pl{X}$, and $\gen{C'}{\pl{T}'}$ is the supertype of $\gen{C}{\pl{X}}$ with class $C'$.
 The premise $\subtype{\emptyset}{\gen{C}{\pl{X}}}{\gen{C'}{\pl{T}'}}$ of rule \textsc{cast-down} uses the bounds $\emptyset$: a subtyping derivation between class types uses only rules \textsc{sub-refl}, \textsc{sub-inherit} and \textsc{sub-inherit-local}, which do not read $\Delta$.
 Every type variable of $\pl{X}$ occurs in $\pl{T}'$, thus the type arguments $\pl{T}_0$ of the source fix the type arguments $\pl{T}$ of the target.
