@@ -1,4 +1,7 @@
-\section{The Lambda Class of Example 2}
+\section{Details of the Examples}
+\label{app:examples}
+
+\subsection{The Lambda Class of Example 2}
 \label{app:lambda}
 \texttt{javac} compiles the body of the lambda \Q@s->s@ of Example~2 into a private static method \Q@lambda$main$1(String)@ of the class \Q@Broken@.
 At run time, the first evaluation of the lambda \Q@s->s@ calls \Q@LambdaMetafactory@, which generates the lambda class.
@@ -8,3 +11,31 @@ The stack trace of the \Q@ClassCastException@ does not show the lambda class.
 \Q@LambdaMetafactory@ defines the lambda class as a hidden class, and the JVM omits the frames of the methods of hidden classes from stack traces, unless the JVM runs with the diagnostic option \Q@-XX:+ShowHiddenFrames@.
 So the topmost frame of the stack trace is the frame of \Q@m@, at Line~\ref{line:ex2apply} of Example~2.
 The bytecode of \Q@m@ at Line~\ref{line:ex2apply} does contain a \Q@checkcast@ instruction to \Q@String@, on the result of \Q@f.apply@, but that instruction is never reached.
+
+\subsection{Example 2 with a \Q@switch@}
+\label{app:switch}
+This is the full program of Example~2 with a \Q@switch@ instead of the \Q@if@.
+javac accepts this program with no warning, and this program fails as Example~2 fails.
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=2em]
+// Example 2 with a switch
+public class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    switch(other){
+      case MyFoo local: // no cast, no warnings
+        System.out.println("old was "+f.apply(local.x())); //ClassCastException
+        break;
+      default:
+        break;
+    }
+    return new MyFoo();
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+\end{minipage}
