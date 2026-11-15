@@ -1,4 +1,5 @@
 \section{Related Work}
+\label{sec:related}
 It is not uncommon to have ``intentional unsoundness'' in industrial languages,
 such as Java's covariant array subtyping, or TypeScript's covariant method subtyping.
 However these are intentionally designed into the language to improve ease of use, and in most cases (like Java's array handling)
@@ -24,6 +25,69 @@ Flix has no subtyping.
 The Flix construct closest to a local class is the \Q@new@ expression, which creates an object of an unnamed class that extends a Java class or implements a Java interface~\tocite{Flix anonymous classes}.
 A Flix program can not name such a class, so a Flix program can not write a type test against it, as with the generated classes of C\#.
 Thus the type test of Example~1 can not be written in Flix.
+
+Kotlin~\cite{kotlin_spec} already types a local class as a generic class.
+This is the method \Q@m@ of Example~1 as a Kotlin function:
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}
+open class Foo<X> { open fun x(): X = x() }
+fun <X> m(other: Any, v: X): Foo<X> {
+  class MyFoo : Foo<X>() { override fun x(): X = v }
+  if (other !is MyFoo) { return MyFoo() } // error
+  return other
+}
+\end{lstlisting}
+\end{minipage}
+
+Kotlin types the local class \Q@MyFoo@ as \Q@MyFoo<X>@.
+Kotlin~2.4.21 rejects the type test \Q@other !is MyFoo@ with the error \texttt{cannot check for instance of erased type 'MyFoo<X (of fun <X> m)>'}.
+If the cast \Q@other as MyFoo@ replaces the type test, Kotlin~2.4.21 accepts the function \Q@m@ with the warning \texttt{unchecked cast of 'Any' to 'MyFoo<X (of fun <X> m)>'}.
+Kotlin~1.9.25 reports the same error and the same warning, in different words.
+These are the error and the warning that funnelling brings to Example~1 (Section~\ref{sec:funnelling}).
+Kotlin adds to the type of a local class every type parameter in scope: the type parameters of the enclosing function and the type parameters of the enclosing class.
+Kotlin adds those type parameters also when the local class does not mention them:
+for a local class \Q@Plain@ with an empty body, declared in a function with a type parameter \Q@X@, Kotlin rejects the type test \Q@other is Plain@ with the same error.
+This is granularity (2) of Section~\ref{sec:funnelling}, applied by the type system.
+With funnelling, the type of a local class has only the type variables that the local class funnels.
+Thus \Q@Plain@ needs no funnel, and a type test against \Q@Plain@ is well typed.
+
+This is Example~1 in Scala:
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language=Scala,numbers=left,xleftmargin=2em]
+abstract class Foo[X] { def x: X }
+object Broken {
+  def m[X](other: Any, v: X): Foo[X] = {
+    class MyFoo extends Foo[X] { def x: X = v }
+    other match {
+      case f: MyFoo => f (*\label{line:scalatest}*)
+      case _ => new MyFoo
+    }
+  }
+  def main(a: Array[String]): Unit = {
+    val r1: Foo[Integer] = m[Integer]("anything", 5)
+    val r2: Foo[String] = m[String](r1, "Hi")
+    val s: String = r2.x (*\label{line:scalause}*)
+    println(s.length)
+  }
+}
+\end{lstlisting}
+\end{minipage}
+
+Scala~2.13.18 accepts this program with no warning, as Java accepts Example~1.
+Scala~3.9.0 and Scala~3.10.1 accept this program with the warning \texttt{the type test for MyFoo cannot be checked at runtime because it's a local class} at Line~\ref{line:scalatest}.
+Scala~3 reports this warning for a type test against any local class, also when the enclosing method has no generic parameters.
+On the JVM, this program throws a \Q@ClassCastException@ at Line~\ref{line:scalause}: \Q@r2.x@ returns the \Q@Integer@ \Q@5@ where a \Q@String@ is expected.
+Scala Native~\cite{shabalin2020} compiles Scala to machine code, and GraalVM Native Image~\cite{wimmer2019initialize} compiles JVM bytecode to machine code.
+This program compiled by Scala Native~0.5.12, and Example~1 compiled by the Native Image of GraalVM for JDK~25, throw the same \Q@ClassCastException@.
+
+Scala.js~\cite{scalajs_semantics} compiles Scala to JavaScript.
+In Scala.js, a failing cast is undefined behaviour: a development build checks the cast, and a release build does not.
+With Scala.js~1.22.0, a development build of this program throws an \Q@UndefinedBehaviorError@ at Line~\ref{line:scalause}.
+In a release build, \Q@s@ is the JavaScript number \Q@5@, \Q@s.length@ reads the property \Q@length@ of that number, and the program prints \Q@undefined@.
+Thus with Scala~2.13.18 and a release build of Scala.js, this program has no warning at compile time and no error at run time.
+In Examples~1 to~6, the failure is detected at run time by a check that not every compilation target performs.
 
 The key issues at work in the interaction of method-local inner classes and generics arise from the interaction of (1) nominal dynamic downcasts, (2) design choices about what runtime information about generic parameters is both persisted \emph{and checked} by casts, and (3) (not) tracking all dependencies on type parameters in the type system.
 Essentially, Java and Scala both treat \Q@MyFoo@ as a sort of existential type --- that there exists some \Q@X@  such that

@@ -85,9 +85,8 @@ Example~1 creates heap pollution without any warning: \Q@r2@ has static type \Q@
 
 It is tempting to accept this as a quirk of Java, which is already known to have other sources of unsoundness~\cite{amin2016java}.
 However, this problem is broader in both scope and impact, as we show in the rest of the paper.
-This issue affects the statically typed JVM languages that support local classes, including Scala and Kotlin.
-It also propagates to compilers of those languages that do not target the JVM, such as Scala Native~\tocite{Scala Native},
-and to ahead-of-time compilation of JVM bytecode, such as GraalVM's Native Image.
+This issue is not limited to Java:
+Section~\ref{sec:related} reports how Scala and Kotlin handle Example~1.
 
 In the remainder of this paper:
 \begin{itemize}
