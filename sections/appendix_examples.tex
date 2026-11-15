@@ -12,13 +12,14 @@ The stack trace of the \Q@ClassCastException@ does not show the lambda class.
 So the topmost frame of the stack trace is the frame of \Q@m@, at Line~\ref{line:ex2apply} of Example~2.
 The bytecode of \Q@m@ at Line~\ref{line:ex2apply} does contain a \Q@checkcast@ instruction to \Q@String@, on the result of \Q@f.apply@, but that instruction is never reached.
 
-\subsection{Example 4: Pattern Matching in \Q@switch@}
+\subsection{Example 2 with a \Q@switch@}
 \label{app:switch}
-In Example~4, the case \Q@case MyFoo local@ performs the same type test as the pattern \Q@other instanceof MyFoo local@ of Example~3.
+This is the full program of Example~2 with a \Q@switch@ instead of the \Q@if@.
+javac accepts this program with no warning, and this program fails as Example~2 fails.
 
 \noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
-// Example 4
+// Example 2 with a switch
 public class Broken {
   static <X> Object m(Object other, final X x, Function<X,String> f){
     class MyFoo{ public X x(){ return x; } }
