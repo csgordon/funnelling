@@ -65,7 +65,17 @@ public class Broken {
 
 As in Example~2, the method \Q@apply@ of the lambda class throws the \Q@ClassCastException@.
 
-Example~4 (Appendix~\ref{app:switch}) exercises the same fault with a \Q@switch@ instead of an \Q@instanceof@.
+Example~4 (Appendix~\ref{app:switch}) exercises the same fault with a \Q@switch@ instead of an \Q@instanceof@:
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}
+    switch(other){
+      case MyFoo local: // no cast, no warnings
+        System.out.println("old was "+f.apply(local.x())); //ClassCastException
+      ...
+    }
+\end{lstlisting}
+\end{minipage}
 
 \subsection{Example 5: No \Q@checkcast@ on the Result}
 \todo[inline]{this is redundant with example 2's lambda discussion. Maybe use this code for three examples: Object vs. generic type, switch instead of explicit instanceof, and lambda moving cast failure to synthesized method. actually the actual lambdas are different. Can we fold example 5 into example 2 by changing line 12 to ``""+s.length''?}
