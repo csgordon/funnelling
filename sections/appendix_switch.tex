@@ -1,0 +1,26 @@
+\section{Example 4: Pattern Matching in \Q@switch@}
+\label{app:switch}
+In Example~4, the case \Q@case MyFoo local@ performs the same type test as the pattern \Q@other instanceof MyFoo local@ of Example~3.
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=2em]
+// Example 4
+public class Broken {
+  static <X> Object m(Object other, final X x, Function<X,String> f){
+    class MyFoo{ public X x(){ return x; } }
+    switch(other){
+      case MyFoo local: // no cast, no warnings
+        System.out.println("old was "+f.apply(local.x())); //ClassCastException
+        break;
+      default:
+        break;
+    }
+    return new MyFoo();
+  }
+  public static void main(String[] a) {
+    Object r1= Broken.<Integer>m("anything",5,i->""+i);
+    Broken.<String>m(r1,"Hi",s->s);
+  }
+}
+\end{lstlisting}
+\end{minipage}

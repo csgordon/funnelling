@@ -65,33 +65,7 @@ public class Broken {
 
 As in Example~2, the method \Q@apply@ of the lambda class throws the \Q@ClassCastException@.
 
-\subsection{Example 4: Pattern Matching in \Q@switch@}
-\todo[inline]{Colins ays: this should be one sentence after previous example that a switch can trigger the same thing, and ref to an appendix w/ code}
-Example~4 exercises the same fault with a \Q@switch@ instead of an \Q@instanceof@.
-Here the case \Q@case MyFoo local@ performs the same type test as the pattern \Q@other instanceof MyFoo local@ of Example~3.
-
-\noindent\begin{minipage}{\linewidth}
-\begin{lstlisting}[numbers=left,xleftmargin=2em]
-// Example 4
-public class Broken {
-  static <X> Object m(Object other, final X x, Function<X,String> f){
-    class MyFoo{ public X x(){ return x; } }
-    switch(other){
-      case MyFoo local: // no cast, no warnings
-        System.out.println("old was "+f.apply(local.x())); //ClassCastException
-        break;
-      default:
-        break;
-    }
-    return new MyFoo();
-  }
-  public static void main(String[] a) {
-    Object r1= Broken.<Integer>m("anything",5,i->""+i);
-    Broken.<String>m(r1,"Hi",s->s);
-  }
-}
-\end{lstlisting}
-\end{minipage}
+Example~4 (Appendix~\ref{app:switch}) exercises the same fault with a \Q@switch@ instead of an \Q@instanceof@.
 
 \subsection{Example 5: No \Q@checkcast@ on the Result}
 \todo[inline]{this is redundant with example 2's lambda discussion. Maybe use this code for three examples: Object vs. generic type, switch instead of explicit instanceof, and lambda moving cast failure to synthesized method. actually the actual lambdas are different. Can we fold example 5 into example 2 by changing line 12 to ``""+s.length''?}
