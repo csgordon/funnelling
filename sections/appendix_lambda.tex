@@ -1,0 +1,10 @@
+\section{The Lambda Class of Example 2}
+\label{app:lambda}
+\texttt{javac} compiles the body of the lambda \Q@s->s@ of Example~2 into a private static method \Q@lambda$main$1(String)@ of the class \Q@Broken@.
+At run time, the first evaluation of the lambda \Q@s->s@ calls \Q@LambdaMetafactory@, which generates the lambda class.
+The method \Q@apply(Object)@ of the lambda class casts its argument to \Q@String@, and then calls \Q@lambda$main$1@ with the result of that cast.
+
+The stack trace of the \Q@ClassCastException@ does not show the lambda class.
+\Q@LambdaMetafactory@ defines the lambda class as a hidden class, and the JVM omits the frames of the methods of hidden classes from stack traces, unless the JVM runs with the diagnostic option \Q@-XX:+ShowHiddenFrames@.
+So the topmost frame of the stack trace is the frame of \Q@m@, at Line~\ref{line:ex2apply} of Example~2.
+The bytecode of \Q@m@ at Line~\ref{line:ex2apply} does contain a \Q@checkcast@ instruction to \Q@String@, on the result of \Q@f.apply@, but that instruction is never reached.
