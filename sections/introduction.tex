@@ -52,9 +52,10 @@ Clearly, this is wrong, because there are now two aliased variables of incompati
 The failure itself is contrived.
 The two \Q@println@ calls actually dispatch to different overloads:
 the first to a version accepting an \Q@Object@, and the second to the more specific overload expecting a \Q@String@.
-Java erases \Q@X@ to \Q@Object@, so in the bytecode the method \Q@x@ of \Q@Foo@ returns an \Q@Object@.
-javac inserts a \Q@checkcast@ instruction only where a value of an erased generic type is used at a more specific type:
-the overload accepting an \Q@Object@ needs no \Q@checkcast@, while the overload expecting a \Q@String@ needs a \Q@checkcast@ to \Q@String@, and that \Q@checkcast@ fails on the \Q@Integer@ \Q@5@.
+Overload resolution uses the Java type system \emph{with} generics, where \Q@r1.x()@ has type \Q@Integer@ and \Q@r2.x()@ has type \Q@String@.%
+\footnote{Java erases \Q@X@ to \Q@Object@, so in the bytecode the method \Q@x@ of \Q@Foo@ returns an \Q@Object@.
+The line \Q@System.out.println(r1.x());@ calls \Q@println(Object)@; this overload accepts the \Q@Object@ returned by \Q@x@ as it is, so javac inserts no \Q@checkcast@ instruction.
+The line \Q@System.out.println(r2.x());@ calls \Q@println(String)@; this overload needs a \Q@String@, so javac inserts a \Q@checkcast@ instruction to \Q@String@ on the \Q@Object@ returned by \Q@x@, and that \Q@checkcast@ fails on the \Q@Integer@ \Q@5@.}
 
 A different version of Java could stop this problem at four points, two at compile time and two at run time:
 \begin{itemize}
