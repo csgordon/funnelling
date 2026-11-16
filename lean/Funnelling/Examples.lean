@@ -692,8 +692,8 @@ theorem n4 : Not (ClassOk d6F decFixed2Obj) := by
 
 def myFoo6 : Expr :=
   .newLocal (cn "MyFoo6") [] Object [] []
-    [meth [] (tv "X") "v" [] (ev "x"),
-     meth [] tB "show" [par (.cls (cn "MyFoo6") []) "o"] (call0 (ev "f") "apply" [call0 (ev "o") "v" []])]
+    [meth [] (tv "X") "x" [] (ev "x"),
+     meth [] tB "show" [par (.cls (cn "MyFoo6") []) "o"] (call0 (ev "f") "apply" [call0 (ev "o") "x" []])]
 def decBroken6 : Dec :=
   { C := cn "Broken6", Delta := [], C' := Object, Ts := [],
     Ms := [meth [bnd "X" obj] obj "m" [par obj "other", par (tv "X") "x", par (tFun (tv "X") tB) "f"]
