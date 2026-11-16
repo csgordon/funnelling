@@ -186,15 +186,6 @@ Java does not do the same for the generic parameters of the enclosing method: no
 \section{Funnelling}
 \label{sec:funnelling}
 
-A natural suspicion is that this problem is ``simply'' a consequence of generic erasure:
-a language that cannot distinguish the generic instantiations of a class at run time must have difficulties of this sort.
-There is some truth to this suspicion: javac can accept a cast that the JVM cannot check, because of erasure.
-However, javac does flag uncheckable type tests:
-for \Q@o@ of type \Q@Object@, javac reports an unchecked warning for the cast \Q@(List<String>)o@, and an error for \Q@o instanceof List<String>@.
-javac reports nothing for Examples~1 and~2 because \Q@MyFoo@ is not generic:
-the type test of \Q@other@ against \Q@MyFoo@ has no generic argument to leave unchecked.
-So reification does not change the situation by itself.\todo{this paragraph may duplicate counterexample 7 text, otherwise we should move it there}
-
 The implementations of method-local classes, and of the similar features of other languages, differ in the granularity of the identity of the local class.
 The identity of the local class matters in two places:
 in the type system, where it decides whether two types of the local class are the same type,
