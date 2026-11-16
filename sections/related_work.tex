@@ -17,7 +17,13 @@ two instances allocated in different contexts should be considered the same or n
 Gilad also pointed out that (paraphrasing) the BETA people knew an inner class was a property of the instance, not its own class.
 }
 
-\todo[inline]{discuss C\# casts with reified generics}
+C\# has reified generics~\cite{kennedy2001design}: if \Q@o@ is a \Q@List<int>@, the type test \Q@o is List<string>@ is false and the cast \Q@(List<string>)o@ throws an \Q@InvalidCastException@.
+C\# has no local classes.
+The closest C\# constructs are anonymous types and lambdas, which the C\# compiler translates to generated classes.
+In a generic method \Q@M<X>@ with a parameter \Q@x@ of type \Q@X@, the .NET SDK~10.0.404 translates \Q@new { v= x }@ and \Q@()=>x@ to instances of generated classes that are generic in \Q@X@.
+Thus the objects created by \Q@M<int>@ and by \Q@M<string>@ have different classes: this is granularity (2) of Section~\ref{sec:funnelling}, in the type system and at run time.
+A C\# program can not name a generated class~\cite[Section~12.8.16.7]{csharp_spec}, so a C\# program can not write a type test against a generated class directly.
+A type test \Q@o is T@, with the type variable \Q@T@ inferred as the generated class, is true only for the objects created by the same instantiation of \Q@M@.
 
 Flix~\tocite{Flix FAQ, for monomorphization and no subtyping} is a functional language for the JVM.
 The Flix compiler monomorphizes polymorphic functions, as Rust and MLton do.
