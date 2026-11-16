@@ -790,8 +790,3 @@ Thus the funnelled \Q@mk@ takes \Q@Foo<X> other@ instead of \Q@Object<> other@, 
 The call \Q@a.<Integer>mk(o, i)@, with \Q@o@ of type \Q@Foo<Integer>@, reduces to a value of type \Q@MyFoo<Integer>@, a subtype of \Q@Foo<Integer>@.
 
 \ldots
-
-\todo[inline]{articulate early:
-    It's not just about generic reification: just checking type parameters aren't enough, as our MyFoo cases have no generic params.
-    You need to *deeply* check reified generics, you need to check not just the base type but also check the choice(s) of parent types from the context into the runtime check.
-}
