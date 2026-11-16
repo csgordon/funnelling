@@ -33,7 +33,7 @@
  @string{AmerMathMonthly = "Amer. Math. Monthly"}
  @string{BIT = "{BIT}"}
  @string{BritStatPsych = "British Journal of Mathematical and Statistical
-                         Psychology"}
+                           Psychology"}
  @string{BritStatPsych = "Brit. J. Math. Statist. Psych."}
  @string{CanMathBull = "Canadian Mathematical Bulletin"}
  @string{CanMathBull = "Canad. Math. Bull."}
@@ -64,7 +64,7 @@
  @string{ProcIEEE = "Proceedings of the {IEEE}"}
  @string{ProcIEEE = "Proc. {IEEE}"} % didn't find in AMS MR
  @string{IEEETransAeroElec = "{IEEE} Transactions on Aerospace and Electronic
-                             Systems"}
+                               Systems"}
  @string{IEEETransAeroElec = "{IEEE} Trans. Aerospace Electron. Systems"}
 
  @string{IMANumerAna = "{IMA} Journal of Numerical Analysis"}
@@ -72,19 +72,19 @@
  @string{InfProcLet = "Information Processing Letters"}
  @string{InfProcLet = "Inform. Process. Lett."}
  @string{InstMathApp = "Journal of the Institute of Mathematics and its
-                       Applications"}
+                         Applications"}
  @string{InstMathApp = "J. Inst. Math. Appl."}
  @string{IntControl = "International Journal of Control"}
  @string{IntControl = "Internat. J. Control"}
  @string{IntNumerEng = "International Journal for Numerical Methods in
-                       Engineering"}
+                         Engineering"}
  @string{IntNumerEng = "Internat. J. Numer. Methods Engrg."}
  @string{IntSuper = "International Journal of Supercomputing Applications"}
  @string{IntSuper = "Internat. J. Supercomputing Applic."} % didn't find
 %% in AMS MR
  @string{Kibernetika = "Kibernetika"}
  @string{JResNatBurStand = "Journal of Research of the National Bureau of
-                           Standards"}
+                             Standards"}
  @string{JResNatBurStand = "J. Res. Nat. Bur. Standards"}
  @string{LinAlgApp = "Linear Algebra and its Applications"}
  @string{LinAlgApp = "Linear Algebra Appl."}
@@ -122,10 +122,11 @@
  @string{RevueInstStat = "Rev. Inst. Internat. Statist."}
 
  %SIAM
- @string{JSIAM = "Journal of the Society for Industrial and Applied Mathematics "}
+ @string{JSIAM = "Journal of the Society for Industrial and Applied Mathematics
+                   "}
  @string{JSIAM = "J. Soc. Indust. Appl. Math."}
- @string{JSIAMB = "Journal of the Society for Industrial and Applied Mathematics,
-                  Series B, Numerical Analysis"}
+ @string{JSIAMB = "Journal of the Society for Industrial and Applied
+                    Mathematics, Series B, Numerical Analysis"}
  @string{JSIAMB = "J. Soc. Indust. Appl. Math. Ser. B Numer. Anal."}
  @string{SIAMAlgMeth = "{SIAM} Journal on Algebraic and Discrete Methods"}
  @string{SIAMAlgMeth = "{SIAM} J. Algebraic Discrete Methods"}
@@ -148,7 +149,7 @@
  @string{StatScience = "Statist. Sci."}
  @string{Techno = "Technometrics"}
  @string{USSRCompMathPhys = "{USSR} Computational Mathematics and Mathematical
-                            Physics"}
+                              Physics"}
  @string{USSRCompMathPhys = "{U. S. S. R.} Comput. Math. and Math. Phys."}
  @string{VLSICompSys = "Journal of {VLSI} and Computer Systems"}
  @string{VLSICompSys = "J. {VLSI} Comput. Syst."}
@@ -435,19 +436,29 @@
 
 @inproceedings{interpOfObjs,
     author = {Abadi, Mart\'in and Cardelli, Luca and Viswanathan, Ramesh},
-title = {An Interpretation of Objects and Object Types},
-year = {1996},
-isbn = {0897917693},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-url = {https://doi.org/10.1145/237721.237809},
-doi = {10.1145/237721.237809},
-abstract = {We present an interpretation of typed object-oriented concepts in terms of well-understood, purely procedural concepts. More precisely, we give a compositional subtype-preserving translation of a basic object calculus supporting method invocation, functional method update, and subtyping, into the polymorphic λ-calculus with recursive types and subtyping. The translation techniques apply also to an imperative version of the object calculus which includes in-place method update and object cloning. Finally, the translation easily extends to "Self types" and other interesting object-oriented constructs.},
-booktitle = {Proceedings of the 23rd ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages},
-pages = {396–409},
-numpages = {14},
-location = {St. Petersburg Beach, Florida, USA},
-series = {POPL '96}
+    title = {An Interpretation of Objects and Object Types},
+    year = {1996},
+    isbn = {0897917693},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    url = {https://doi.org/10.1145/237721.237809},
+    doi = {10.1145/237721.237809},
+    abstract = {We present an interpretation of typed object-oriented concepts
+                in terms of well-understood, purely procedural concepts. More
+                precisely, we give a compositional subtype-preserving translation
+                of a basic object calculus supporting method invocation,
+                functional method update, and subtyping, into the polymorphic
+                λ-calculus with recursive types and subtyping. The translation
+                techniques apply also to an imperative version of the object
+                calculus which includes in-place method update and object
+                cloning. Finally, the translation easily extends to "Self types"
+                and other interesting object-oriented constructs.},
+    booktitle = {Proceedings of the 23rd ACM SIGPLAN-SIGACT Symposium on
+                 Principles of Programming Languages},
+    pages = {396–409},
+    numpages = {14},
+    location = {St. Petersburg Beach, Florida, USA},
+    series = {POPL '96},
 }
 
 @inproceedings{javari,
@@ -2481,94 +2492,140 @@ series = {AGERE! 2015}
     publisher = {Cambridge University Press},
 }
 @inproceedings{chakravarty2005associated,
-  title={Associated types with class},
-  author={Chakravarty, Manuel MT and Keller, Gabriele and Jones, Simon Peyton and Marlow, Simon},
-  booktitle={Proceedings of the 32nd ACM SIGPLAN-SIGACT symposium on Principles of programming languages},
-  pages={1--13},
-  year={2005}
+    title = {Associated types with class},
+    author = {Chakravarty, Manuel MT and Keller, Gabriele and Jones, Simon
+              Peyton and Marlow, Simon},
+    booktitle = {Proceedings of the 32nd ACM SIGPLAN-SIGACT symposium on
+                 Principles of programming languages},
+    pages = {1--13},
+    year = {2005},
 }
 @inproceedings{agesen1997adding,
-  title={Adding type parameterization to the Java language},
-  author={Agesen, Ole and Freund, Stephen N and Mitchell, John C},
-  booktitle={Proceedings of the 12th ACM SIGPLAN conference on Object-oriented programming, systems, languages, and applications},
-  pages={49--65},
-  year={1997}
+    title = {Adding type parameterization to the Java language},
+    author = {Agesen, Ole and Freund, Stephen N and Mitchell, John C},
+    booktitle = {Proceedings of the 12th ACM SIGPLAN conference on
+                 Object-oriented programming, systems, languages, and
+                 applications},
+    pages = {49--65},
+    year = {1997},
 }
 @inproceedings{odersky2001two,
-  title={Two ways to bake your pizza—translating parameterised types into Java},
-  author={Odersky, Martin and Runne, Enno and Wadler, Philip},
-  booktitle={Generic Programming: International Seminar on Generic Programming Dagstuhl Castle, Germany, April 27--May 1, 1998 Selected Papers},
-  pages={114--132},
-  year={2001},
-  organization={Springer}
+    title = {Two ways to bake your pizza—translating parameterised types into
+             Java},
+    author = {Odersky, Martin and Runne, Enno and Wadler, Philip},
+    booktitle = {Generic Programming: International Seminar on Generic
+                 Programming Dagstuhl Castle, Germany, April 27--May 1, 1998
+                 Selected Papers},
+    pages = {114--132},
+    year = {2001},
+    organization = {Springer},
 }
 @inproceedings{kennedy2001design,
-  title={Design and implementation of generics for the. net common language runtime},
-  author={Kennedy, Andrew and Syme, Don},
-  booktitle={Proceedings of the ACM SIGPLAN 2001 conference on Programming language design and implementation},
-  pages={1--12},
-  year={2001}
+    title = {Design and implementation of generics for the. net common language
+             runtime},
+    author = {Kennedy, Andrew and Syme, Don},
+    booktitle = {Proceedings of the ACM SIGPLAN 2001 conference on Programming
+                 language design and implementation},
+    pages = {1--12},
+    year = {2001},
 }
 @misc{kotlin_spec,
-  author = {Akhin, Marat and Belyaev, Mikhail},
-  title = {Kotlin language specification},
-  url = {https://kotlinlang.org/spec/},
-  note = {Accessed November 2026}
+    author = {Akhin, Marat and Belyaev, Mikhail},
+    title = {Kotlin language specification},
+    url = {https://kotlinlang.org/spec/},
+    note = {Accessed November 2026},
 }
 @phdthesis{shabalin2020,
-  author = {Shabalin, Denys},
-  title = {Just-in-time performance without warm-up},
-  school = {EPFL},
-  year = {2020},
-  doi = {10.5075/epfl-thesis-9768}
+    author = {Shabalin, Denys},
+    title = {Just-in-time performance without warm-up},
+    school = {EPFL},
+    year = {2020},
+    doi = {10.5075/epfl-thesis-9768},
 }
 @article{wimmer2019initialize,
-  author = {Wimmer, Christian and Stancu, Codrut and Hofer, Peter and Jovanovic, Vojin and W{\"o}gerer, Paul and Kessler, Peter B. and Pliss, Oleg and W{\"u}rthinger, Thomas},
-  title = {Initialize once, start fast: application initialization at build time},
-  journal = {Proceedings of the ACM on Programming Languages},
-  volume = {3},
-  number = {OOPSLA},
-  year = {2019},
-  doi = {10.1145/3360610}
+    author = {Wimmer, Christian and Stancu, Codrut and Hofer, Peter and
+              Jovanovic, Vojin and W{\"o}gerer, Paul and Kessler, Peter B. and
+              Pliss, Oleg and W{\"u}rthinger, Thomas},
+    title = {Initialize once, start fast: application initialization at build
+             time},
+    journal = {Proceedings of the ACM on Programming Languages},
+    volume = {3},
+    number = {OOPSLA},
+    year = {2019},
+    doi = {10.1145/3360610},
 }
 @misc{scalajs_semantics,
-  author = {{Scala.js}},
-  title = {Semantics of {Scala.js}},
-  url = {https://www.scala-js.org/doc/semantics.html},
-  note = {Accessed November 2026}
+    author = {{Scala.js}},
+    title = {Semantics of {Scala.js}},
+    url = {https://www.scala-js.org/doc/semantics.html},
+    note = {Accessed November 2026},
 }
 @incollection{amin2016dot,
-  author = {Amin, Nada and Gr{\"u}tter, Samuel and Odersky, Martin and Rompf, Tiark and Stucki, Sandro},
-  title = {The Essence of Dependent Object Types},
-  booktitle = {A List of Successes That Can Change the World: Essays Dedicated to Philip Wadler on the Occasion of His 60th Birthday},
-  series = {Lecture Notes in Computer Science},
-  volume = {9600},
-  pages = {249--272},
-  publisher = {Springer},
-  year = {2016},
-  doi = {10.1007/978-3-319-30936-1_14}
+    author = {Amin, Nada and Gr{\"u}tter, Samuel and Odersky, Martin and Rompf,
+              Tiark and Stucki, Sandro},
+    title = {The Essence of Dependent Object Types},
+    booktitle = {A List of Successes That Can Change the World: Essays Dedicated
+                 to Philip Wadler on the Occasion of His 60th Birthday},
+    series = {Lecture Notes in Computer Science},
+    volume = {9600},
+    pages = {249--272},
+    publisher = {Springer},
+    year = {2016},
+    doi = {10.1007/978-3-319-30936-1_14},
 }
 @misc{flix_faq,
-  author = {{Flix}},
-  title = {{Flix}: frequently asked questions},
-  url = {https://flix.dev/faq/},
-  note = {Accessed November 2026}
+    author = {{Flix}},
+    title = {{Flix}: frequently asked questions},
+    url = {https://flix.dev/faq/},
+    note = {Accessed November 2026},
 }
 @misc{flix_book,
-  author = {{Flix}},
-  title = {Programming {Flix}},
-  url = {https://doc.flix.dev/},
-  note = {Accessed November 2026}
+    author = {{Flix}},
+    title = {Programming {Flix}},
+    url = {https://doc.flix.dev/},
+    note = {Accessed November 2026},
 }
 @misc{csharp_spec,
-  author = {{Ecma International}},
-  title = {{C\#} language specification, {ECMA-334}, 7th edition},
-  year = {2023},
-  url = {https://ecma-international.org/publications-and-standards/standards/ecma-334/}
+    author = {{Ecma International}},
+    title = {{C\#} language specification, {ECMA-334}, 7th edition},
+    year = {2023},
+    url = {
+           https://ecma-international.org/publications-and-standards/standards/ecma-334/
+           },
 }
 @misc{scala_spec,
-  author = {Odersky, Martin and Altherr, Philippe and Cremet, Vincent and Dubochet, Gilles and Emir, Burak and Haller, Philipp and Micheloud, St{\'e}phane and Mihaylov, Nikolay and Moors, Adriaan and Rytz, Lukas and Schinz, Michel and Stenman, Erik and Zenger, Matthias},
-  title = {Scala language specification, version 2.13},
-  url = {https://scala-lang.org/files/archive/spec/2.13/},
-  note = {Accessed November 2026}
+    author = {Odersky, Martin and Altherr, Philippe and Cremet, Vincent and
+              Dubochet, Gilles and Emir, Burak and Haller, Philipp and Micheloud,
+              St{\'e}phane and Mihaylov, Nikolay and Moors, Adriaan and Rytz,
+              Lukas and Schinz, Michel and Stenman, Erik and Zenger, Matthias},
+    title = {Scala language specification, version 2.13},
+    url = {https://scala-lang.org/files/archive/spec/2.13/},
+    note = {Accessed November 2026},
+}
+@inproceedings{madsen2016from,
+    author = {Madsen, Magnus and Yee, Ming-Ho and Lhot{\'a}k, Ond{\v r}ej},
+    title = {From Datalog to flix: a declarative language for fixed points on
+             lattices},
+    year = {2016},
+    isbn = {9781450342612},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    url = {https://doi.org/10.1145/2908080.2908096},
+    doi = {10.1145/2908080.2908096},
+    booktitle = {Proceedings of the 37th ACM SIGPLAN Conference on Programming
+                 Language Design and Implementation},
+    pages = {194–208},
+    numpages = {15},
+    location = {Santa Barbara, CA, USA},
+    series = {PLDI '16},
+}
+@inproceedings{madsen2023programming,
+    title = {Programming with Purity Reflection: Peaceful Coexistence of Effects
+             , Laziness, and Parallelism},
+    author = {Madsen, Magnus and van de Pol, Jaco},
+    booktitle = {37th European Conference on Object-Oriented Programming (ECOOP
+                 2023)},
+    pages = {18--1},
+    year = {2023},
+    organization = {Schloss Dagstuhl--Leibniz-Zentrum f{\"u}r Informatik},
 }
