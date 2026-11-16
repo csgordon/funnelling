@@ -65,6 +65,10 @@ In \decls, all the funnels are of the form $\funnel{X}$, by well-formedness requ
 In the main expression, outside of the methods of local classes, all the funnels are of the form $G$, by A12: there, no type variable is in scope.
 When a local class is nested in a method of a local class in the main expression, a mixture of funnels $\funnel{X}$ and $G$ can be present.
 
+In Java, a local class can also declare generic parameters of its own, as in \Q@class MyFoo<Y>@.
+Java tracks those generic parameters in the type \Q@MyFoo<T>@, as for a top-level class; the problem is only with the captured type variables.
+Thus the core language has no such generic parameters: the generic parameters of a local class are exactly the funnels of the local class.
+
 A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $\gen{C'}{\pl{T}}$.
 The methods $\pl{M}$ of a local class can use only the visible type variables, and the variables in scope other than \Q@this@ whose types mention only visible type variables.
 The type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ reduces to $e_1$, with $x$ bound to the value of $e_0$, when the class of the value of $e_0$ is a subclass of the class of $T$; otherwise the type test reduces to $e_2$.
@@ -786,8 +790,6 @@ Thus the funnelled \Q@mk@ takes \Q@Foo<X> other@ instead of \Q@Object<> other@, 
 The call \Q@a.<Integer>mk(o, i)@, with \Q@o@ of type \Q@Foo<Integer>@, reduces to a value of type \Q@MyFoo<Integer>@, a subtype of \Q@Foo<Integer>@.
 
 \ldots
-
-\todo[inline]{briefly note that Java allows extra, ``fresh'' generic parameters in local classes}
 
 \todo[inline]{call out that we're allowed to declare return types that mention an inner class; inner classes are ``public'', and our approach works even in this case, the more restrictive case of Java is naturally covered}
 
