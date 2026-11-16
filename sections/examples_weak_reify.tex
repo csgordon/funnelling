@@ -213,6 +213,7 @@ If the type of a local class contained the enclosing method and its generic inst
 then javac would flag the problem for generic methods too, as it does for generic classes.
 A version of Java with reified generics could solve the mismatch in Counterexample~3, between the granularity (1) of the casts and the granularity (2) of the types.
 But reification would not change Examples~1 and~2, unless the types of local classes take the form \Q@A<T1>.m<T2>.MyFoo@.
+A reified type test that also compares the type arguments of the superclasses would be false in the second call of Example~1, where \Q@MyFoo@ extends \Q@Foo<X>@, but still true in Example~2, where \Q@MyFoo@ extends \Q@Object@.
 
 Granularities (1), (2) and (3) are points in a space of design options,
 but other points lie between them.
