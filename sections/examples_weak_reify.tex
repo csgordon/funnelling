@@ -203,7 +203,7 @@ So each method \Q@m<T>@ declares its own local class \Q@MyFoo@, since the body o
 A declaration creates a new class, even for the same instantiation of the generic parameters.
 Scala has this granularity for captured values instead of captured types.
 An instance of an inner class \Q@Inner@ captures its enclosing instance \Q@$outer@, and its type is the path-dependent type \Q@a.Inner@.
-For the pattern \Q@case i: a.Inner@, the Scala compiler emits an ``outer test'' that compares the captured \Q@$outer@ with \Q@a@~\tocite{Scala outer tests}.%
+For the pattern \Q@case i: a.Inner@, the Scala compiler emits an ``outer test'' that compares the captured \Q@$outer@ with \Q@a@~\cite[Section~8.2]{scala_spec}.%
 \footnote{Even here the type system exposes what is captured: inside the class of \Q@a@, \Q@Inner@ means \Q@this.Inner@.}
 This is sound, but it is stricter than needed to avoid the problem at hand.
 \end{enumerate}
