@@ -6,9 +6,9 @@ However, method-local inner classes are named, which allows them to be used with
 For example, one can cast objects to the method-local class type.
 
 Unfortunately, as Servetto et al.~\cite{unsound_presentation} pointed out, there is an unsound interaction with generics.
-A non-generic method-local inner class \Q@MyFoo@ written in a generic method, or in a method of a generic class, can implicitly see the generic types in scope.
-Instances of \Q@MyFoo@ can then escape the lifetime of their enclosing method, where the generics had a certain run-time instantiation,
-and re-enter a second call of the same enclosing method, where the generics could have a different run-time instantiation.
+A non-generic method-local inner class \Q@MyFoo@ written in a generic method can implicitly see the generic parameters in scope.
+Instances of \Q@MyFoo@ can then escape the lifetime of their enclosing method, where the generic parameters had a certain run-time instantiation,
+and re-enter a second call of the same enclosing method, where the generic parameters could have a different run-time instantiation.
 Servetto et al.\ probed the behaviour of JVM languages that support the same feature (Scala and Kotlin) and found that these had the same unsoundness problem for some use cases, but did flag concerns in other cases. However, this was not systematically investigated.
 
 In this paper we clearly articulate the problem they observed, characterize the key properties that lead to the issue, and propose
@@ -32,17 +32,17 @@ public class Broken {
     System.out.println(r2.x()); //Throws ClassCastException: ..
   }
 }
-class Foo<X>{ public X x(){ return x(); } }
+abstract class Foo<X>{ public abstract X x(); }
 \end{lstlisting}
 \end{minipage}
 
 Line~\ref{line:MyFoo} declares a method-local inner class
-\Q@MyFoo@, which depends on the generic parameter instantiation for \Q@X@ when the method is invoked.
-The \Q@main@ method invokes \Q@m@ twice. Line~\ref{line:intcall} invokes \Q@m@ and instantiates \Q@X@ with \Q@Integer@.
-Since the \Q@other@ argument for that call is not a \Q@MyFoo@, the first invocation returns
+\Q@MyFoo@, which depends on the generic parameter instantiation for \Q@X@ when the method is called.
+The \Q@main@ method calls \Q@m@ twice. Line~\ref{line:intcall} calls \Q@m@ and instantiates \Q@X@ with \Q@Integer@.
+Since the \Q@other@ argument for that call is not a \Q@MyFoo@, the first call returns
 a \Q@MyFoo@ which is a \Q@Foo<Integer>@.
 This result is then passed back into the second call to \Q@m@ on Line~\ref{line:strcall}.
-This time, the \Q@instanceof@ check succeeds, because \Q@other@ in this case \emph{is} a \Q@MyFoo@,
+This time, the type test \Q@other instanceof MyFoo@ succeeds, because \Q@other@ in this case \emph{is} a \Q@MyFoo@,
 so the method (successfully) casts the \Q@other@ argument to \Q@MyFoo@.
 Since \Q@MyFoo@ is declared as extending \Q@Foo<X>@, this is a valid result for the method.
 Thus the \Q@Foo<Integer>@ that was passed as the first argument of the second call, on Line~\ref{line:strcall}, is returned
@@ -57,44 +57,45 @@ javac inserts a cast to \Q@String@ on the result of \Q@r2.x()@, and that cast th
 
 A different version of Java could stop this problem at four points, two at compile time and two at run time:
 \begin{itemize}
-\item The \Q@instanceof@ check could have been statically flagged.
+\item The type test could have been statically flagged.
 \item The cast could have been statically flagged.
-\item The \Q@instanceof@ could have returned false in the second invocation, since it was used on a \Q@MyFoo@ from a different generic parameter instantiation.
+\item The type test could have returned false in the second call, since it was used on a \Q@MyFoo@ from a different generic parameter instantiation.
 \item The cast could have failed, again because it was used on a \Q@MyFoo@ from a different generic parameter instantiation.
 \end{itemize}
 
 The source of this unsoundness is that the Java compiler does not treat \Q@MyFoo@ as generic.
-The generic type is seen as `in scope', and it is `captured' exactly as the values of local variables are captured.
-Within a single execution of the enclosing method, this is safe, because the type is constant.
+The generic parameter \Q@X@ is seen as `in scope', and it is `captured' exactly as the values of local variables are captured.
+Within a single call of the enclosing method, this is safe, because the instantiation of \Q@X@ is constant.
 A \Q@MyFoo@ instance is conceptually an instance of a class that captures the
-generic type that is in scope when the instance is created.
-But when such a \Q@MyFoo@ instance escapes one execution of the enclosing method and enters a second execution of the same method,
-the instance is still logically connected to the same class type, with the original captured generic type.
-However, both the static type system and the run-time checks of casts and \Q@instanceof@ treat it as if it were connected to the new class type, with the new captured generic type.
+generic parameter that is in scope when the instance is created.
+But when such a \Q@MyFoo@ instance escapes one call of the enclosing method and enters a second call of the same method,
+the instance is still logically connected to the same class type, with the original instantiation of the captured generic parameter.
+However, both the static type system and the run-time checks of casts and type tests treat it as if it were connected to the new class type, with the new instantiation of the captured generic parameter.
 
-Generalizing closure-capture behaviour to generic types as described above feels natural, but it is unsound in many situations.
+Generalizing closure-capture behaviour to generic parameters as described above feels natural, but it is unsound in many situations.
 Closure capture is intrinsically private: a closure does not show in its external type signature what it has captured. Here it ends up being so private that the type system and the runtime have no access to it either.
 The static type system has to work on the publicly visible type, and in Java that type is not generic.
-This makes the compiler assume that the simplest nominal type identity is sufficient for casts and \Q@instanceof@ checks.
+This makes the compiler assume that the simplest nominal type identity is sufficient for casts and type tests.
 
 This problem touches on Java's erasure of generics, but only indirectly: even languages with reified generics store reified generics for the generic arguments exposed to the type system: a type like \Q@List<Foo>@ would get one reified generic, \Q@Foo@, together with some language-mediated API to access it.
-A type like \Q@MyFoo@ would get no reified generics, since the generic type would have been captured and not exposed by the type.
-Thus, we argue that erasure versus reification is only marginally connected to this problem. The conceptual hurdle is in the distinction between propagating the scope of generic types explicitly and implicitly.%
+A type like \Q@MyFoo@ would get no reified generics, since the generic parameter would have been captured and not exposed by the type.
+Thus, we argue that erasure versus reification is only marginally connected to this problem. The conceptual hurdle is in the distinction between propagating the scope of generic parameters explicitly and implicitly.%
 \footnote{Since Java~16, with \Q@Object o@, \Q@o instanceof Foo<Integer>@ is a compile-time error (before Java~16, every non-reifiable \Q@instanceof@ target was an error), while the cast \Q@(Foo<Integer>)o@ is an unchecked warning; \Q@instanceof@ never warns.
 Modern Java accepts \Q@o instanceof C<Ts>@ only when the static type of \Q@o@ determines \Q@Ts@; in this way an erased and a reified runtime give the same answer, as long as the program has no heap pollution.
 Example~1 creates heap pollution without any warning: \Q@r2@ has static type \Q@Foo<String>@, but it refers to a \Q@Foo<Integer>@.}
 
 It is tempting to accept this as a quirk of Java, which is already known to have other sources of unsoundness~\cite{amin2016java}.
-However, this problem is broader in both scope and impact, as we show in the rest of the paper.
+However, this problem is broader in both scope and impact.
+The failure can be detected far from the method-local inner class, in code that the programmer did not write (Section~\ref{sec:examples}).
 This issue is not limited to Java:
 Section~\ref{sec:related} reports how Scala and Kotlin handle Example~1.
 
 In the remainder of this paper:
 \begin{itemize}
-\item We detail the breadth of the problem, and how it is handled by various existing language implementations.
-\item We develop a core language modelling Java's generics, method-local classes and type tests, and show that typing method-local classes as Java does is unsound.
+\item We detail the breadth of the problem, and how it is handled by various existing language implementations (Sections~\ref{sec:examples} and~\ref{sec:related}).
+\item We develop a core language modelling Java's generics, method-local classes and type tests, and show that typing method-local classes as Java does is unsound (Section~\ref{sec:core}).
 \item We develop a new type system mechanism for systematically tracking dependence of a
-method-local class on generic parameters, and show that it soundly prevents the problem.
-Our solution, \emph{funnelling}, makes the dependency of a method-local class on the generic types in scope explicit in its type:
+method-local class on generic parameters, and show that it soundly prevents the problem (Sections~\ref{sec:funnelling} and~\ref{sec:soundness}).
+Our solution, \emph{funnelling}, makes the dependency of a method-local class on the generic parameters in scope explicit in its type:
 in Example~1 above, \Q@MyFoo@ would funnel \Q@X@ and become \Q@MyFoo<X>@.
 \end{itemize}
