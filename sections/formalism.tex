@@ -66,8 +66,7 @@ In the main expression, outside of the methods of local classes, all the funnels
 When a local class is nested in a method of a local class in the main expression, a mixture of funnels $\funnel{X}$ and $G$ can be present.
 
 In Java, a local class can also declare generic parameters of its own, as in \Q@class MyFoo<Y>@.
-Java tracks those generic parameters in the type \Q@MyFoo<T>@, as for a top-level class; the problem is only with the captured type variables.
-Thus the core language has no such generic parameters: the generic parameters of a local class are exactly the funnels of the local class.
+The core language omits such generic parameters, since Java already tracks the instantiation of \Q@Y@ in the type \Q@MyFoo<T>@.
 
 A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $\gen{C'}{\pl{T}}$.
 The methods $\pl{M}$ of a local class can use only the visible type variables, and the variables in scope other than \Q@this@ whose types mention only visible type variables.
