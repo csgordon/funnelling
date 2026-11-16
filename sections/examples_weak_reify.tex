@@ -1,9 +1,10 @@
 \section{More Failing Examples}
+\label{sec:examples}
 Example~1 is one of a family of programs that Java accepts with no warning and that fail at run time.
 This section shows more programs of this family.
 
 \subsection{Example 2: No Generic Supertype, No Explicit Cast}
-In Example~1, the local class \Q@MyFoo@ mentions \Q@X@ in its supertype \Q@Foo<X>@, and the method \Q@m@ has an explicit cast.
+In Example~1, the method-local class \Q@MyFoo@ mentions \Q@X@ in its supertype \Q@Foo<X>@, and the method \Q@m@ has an explicit cast.
 Example~2 exercises the same fault without needing a generic supertype, and without needing an explicit cast.
 Here \Q@MyFoo@ extends \Q@Object@, and \Q@X@ occurs only in the return type of the method \Q@x()@ of \Q@MyFoo@.
 The method \Q@m@ returns \Q@Object@, so no type outside \Q@m@ mentions \Q@X@.
@@ -178,27 +179,27 @@ At run time the cast succeeds, and the program fails as Example~2 fails.
 So with class generics the program fails only after an unchecked warning, as a program with the cast \Q@(List<String>)o@ may fail.
 In Examples~1 and~2 instead, javac reports nothing.
 
-Thus for the generic parameters of the enclosing class, Java already exposes the captured generic types in the type of the local class,
+Thus for the generic parameters of the enclosing class, Java already exposes the captured generic parameters in the type of the method-local class,
 through the type of its enclosing instance.
-Java does not do the same for the generic parameters of the enclosing method: the type of the local class does not carry the instantiation of the generic parameters of the enclosing method.
+Java does not do the same for the generic parameters of the enclosing method: the type of the method-local class does not carry the instantiation of the generic parameters of the enclosing method.
 
 
 \section{Funnelling}
 \label{sec:funnelling}
 
-The implementations of method-local classes, and of the similar features of other languages, differ in the granularity of the identity of the local class.
-The identity of the local class matters in two places:
-in the type system, where it decides whether two types of the local class are the same type,
+The implementations of method-local classes, and of the similar features of other languages, differ in the granularity of the identity of the method-local class.
+The identity of the method-local class matters in two places:
+in the type system, where it decides whether the type \Q@MyFoo@ of one call of \Q@m@ and the type \Q@MyFoo@ of another call of \Q@m@ are the same type,
 and at run time, where it decides the result of casts and type tests.
 There are three granularities:
 \begin{enumerate}
-\item \textbf{Identity as Declaration Point}: The declaration of a local class is a single point in the source code.
-So the local class \Q@MyFoo@ is one class, and the identity of \Q@MyFoo@ is its declaration point, the same for every instantiation of \Q@m@.
+\item \textbf{Identity as Declaration Point}: The declaration of a method-local class is a single point in the source code.
+So the method-local class \Q@MyFoo@ is one class, and the identity of \Q@MyFoo@ is its declaration point, the same for every instantiation of \Q@m@.
 \item \textbf{Identity as Generic Instantiation}:
 Generic classes and generic methods are functions from generic arguments to concrete classes and methods:
 \Q@static <X> Object m(..)@ declares infinitely many methods \Q@m<Integer>@, \Q@m<String>@, and so on, one for each instantiation of \Q@X@.
 In the same way, the generic class declaration \Q@class Foo<X>@ declares infinitely many classes \Q@Foo<Integer>@, \Q@Foo<String>@, and so on.
-So each method \Q@m<T>@ declares its own local class \Q@MyFoo@, since the body of each \Q@m<T>@ is the body of a different method.
+So each method \Q@m<T>@ declares its own method-local class \Q@MyFoo@, since the body of each \Q@m<T>@ is the body of a different method.
 \item \textbf{Identity as Dynamic Evaluation}: 
 Each evaluation of the declaration creates a new class, even for the same instantiation of the generic parameters.
 Scala has this granularity for captured values instead of captured types.
@@ -209,10 +210,10 @@ This is sound, but it is stricter than needed to avoid the problem at hand.
 \end{enumerate}
 
 For method generics, the Java type system assumes granularity (1), as the casts do, so javac reports nothing and the program fails at run time.
-If the type of a local class contained the enclosing method and its generic instantiation, as in \Q@Box<T1>.m<T2>.MyFoo@,
+If the type of a method-local class contained the enclosing method and its generic instantiation, as in \Q@Box<T1>.m<T2>.MyFoo@,
 then javac would flag the problem for generic methods too, as it does for generic classes.
 A version of Java with reified generics could solve the mismatch in Counterexample~3, between the granularity (1) of the casts and the granularity (2) of the types.
-But reification would not change Examples~1 and~2, unless the types of local classes take the form \Q@Box<T1>.m<T2>.MyFoo@.
+But reification would not change Examples~1 and~2, unless the types of method-local classes take the form \Q@Box<T1>.m<T2>.MyFoo@.
 
 Granularities (1), (2) and (3) are points in a space of design options,
 but other points lie between them.
@@ -231,6 +232,7 @@ The funnels \Q@Fs@ are the generic parameters of \Q@MyFoo@: a funnel \Q@X funnel
 During reduction, \Q@X funnel@ becomes the ground type that instantiates \Q@X@.
 The type test \Q@if (e instanceof T x){ e1 } else { e2 }@ binds \Q@x@ in \Q@e1@; the core language has no cast expression.
 In the listings, we omit the empty \Q@<>@ of methods and calls, and we write \Q@<X>@ for \Q@<X extends Object<>>@.
+The core language has no abstract methods, so the method \Q@x@ of \Q@Foo@ calls itself.
 This is Example~1 in the core language, without funnels:
 
 \begin{lstlisting}
