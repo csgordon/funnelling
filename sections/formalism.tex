@@ -80,6 +80,8 @@ A declaration $\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}$ declares the to
 A method $\method{\Delta}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e}}$ has the type variables bounded by $\Delta$, the return type $T_0$, the parameters $x_1,\ldots,x_n$ and the body $e$.
 Every method has a body; for simplicity, as in FJ, there are no abstract methods.
 A class declaration $K$ is either a top-level declaration $\mathsf{Dec}$ or a local class.
+The name of a local class can be written anywhere in the program, for example as the return type of a method; in Java, the name of a method-local class can be written only inside the method declaring it.
+Funnelling is sound without the restriction of Java (Section~\ref{sec:soundness}), and thus also with that restriction.
 \\[1ex]
 We require the following well-formedness conditions:
 \begin{enumerate}
@@ -788,8 +790,6 @@ Thus the funnelled \Q@mk@ takes \Q@Foo<X> other@ instead of \Q@Object<> other@, 
 The call \Q@a.<Integer>mk(o, i)@, with \Q@o@ of type \Q@Foo<Integer>@, reduces to a value of type \Q@MyFoo<Integer>@, a subtype of \Q@Foo<Integer>@.
 
 \ldots
-
-\todo[inline]{call out that we're allowed to declare return types that mention an inner class; inner classes are ``public'', and our approach works even in this case, the more restrictive case of Java is naturally covered}
 
 \todo[inline]{articulate early:
     It's not just about generic reification: just checking type parameters aren't enough, as our MyFoo cases have no generic params.
