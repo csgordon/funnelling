@@ -56,7 +56,6 @@ The following \Q@switch@ replaces the \Q@if@ of Example~2:
 \end{minipage}
 
 The case \Q@case MyFoo local@ performs the type test of Line~\ref{line:ex2test}.
-The full program is in Appendix~\ref{app:switch}.
 
 The point where the failure is detected depends on Line~\ref{line:ex2last}.
 Only the second call of \Q@m@ calls \Q@f@, so only the last argument of the second call matters.
@@ -86,8 +85,10 @@ The lambdas \Q@s->s@ and \Q@t->t@ have the same body, but the two programs fail 
 The erasure of \Q@T@ is \Q@Object@, so the lambda class of \Q@t->t@ does not cast its argument.
 Thus \Q@f.apply(local.x())@ returns the \Q@Integer@ \Q@5@.
 javac inserts a \Q@checkcast@ instruction where a value of an erased generic type is used at a more specific type.
-At Line~\ref{line:ex2apply}, the string concatenation uses the result of \Q@f.apply@ as a \Q@String@, so the bytecode of \Q@m@ has a \Q@checkcast@ instruction to \Q@String@ on that result.
-With \Q@Function.identity()@, the failure is detected in \Q@m@, by that \Q@checkcast@ instruction.
+At Line~\ref{line:ex2apply}, the string concatenation uses the result of \Q@f.apply@ as a \Q@String@.
+The bytecode of \Q@m@ (same for every version of Line~\ref{line:ex2last}) applies a \Q@checkcast@ \Q@String@ on that result.
+In Example~2, the lambda class throws before that \Q@checkcast@ instruction is reached.
+With \Q@Function.identity()@, that \Q@checkcast@ instruction is reached, and the failure is detected in \Q@m@.
 
 \begin{lstlisting}
     Broken.<String>m(r1,"Hi",Broken.<String>str());
