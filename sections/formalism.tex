@@ -57,7 +57,7 @@ A local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ declares the lo
 
 A program is a class table \decls and a main expression $e$.
 The funnels $\pl{F}$ serve a double role.%
-\footnote{A Java method-local class can declare type variables of its own: \Q@class Local<Y>{..}@, declared inside a method \Q@<X> m(..)@, would juggle \Q@Y@ (declared by \Q@Local@) and \Q@X@ (captured from \Q@m@).
+\footnote{A Java method-local class can declare type variables of its own: \Q@class Local<Y>\{..\}@, declared inside a method \Q@<X> m(..)@, would juggle \Q@Y@ (declared by \Q@Local@) and \Q@X@ (captured from \Q@m@).
 To keep a tight focus in our paper, our local classes do not declare type variables of their own.}
 From the perspective of the inside of the local class (the methods $\pl{M}$), the funnels $\pl{F}$ select the type variables in scope that are visible in the local class.
 From the perspective of the \Q@new@ expression itself, the funnels $\pl{F}$ instantiate those type variables, forming the actual type of the created instance.
