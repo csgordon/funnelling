@@ -180,7 +180,7 @@ In Examples~1 and~2 instead, javac reports nothing.
 
 Thus for the generic parameters of the enclosing class, Java already exposes the captured generic types in the type of the local class,
 through the type of its enclosing instance.
-Java does not do the same for the generic parameters of the enclosing method: no type of the local class carries the instantiation of the generic parameters of a method.
+Java does not do the same for the generic parameters of the enclosing method: the type of the local class does not carry the instantiation of the generic parameters of the enclosing method.
 
 
 \section{Funnelling}
@@ -202,7 +202,7 @@ So each method \Q@m<T>@ declares its own local class \Q@MyFoo@, since the body o
 \item \textbf{Identity as Dynamic Evaluation}: 
 Each evaluation of the declaration creates a new class, even for the same instantiation of the generic parameters.
 Scala has this granularity for captured values instead of captured types.
-An instance of an inner class \Q@Inner@ captures its enclosing instance \Q@$outer@, and its type is the path-dependent type \Q@a.Inner@.
+An instance of an inner class \Q@Inner@ captures its enclosing instance \Q@a@ as \Q@$outer@, and its type is the path-dependent type \Q@a.Inner@.
 For the pattern \Q@case i: a.Inner@, the Scala compiler emits an ``outer test'' that compares the captured \Q@$outer@ with \Q@a@~\cite[Section~8.2]{scala_spec}.%
 \footnote{Even here the type system exposes what is captured: inside the class of \Q@a@, \Q@Inner@ means \Q@this.Inner@.}
 This is sound, but it is stricter than needed to avoid the problem at hand.

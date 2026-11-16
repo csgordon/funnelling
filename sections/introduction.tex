@@ -7,8 +7,8 @@ For example, one can cast objects to the method-local class type.
 
 Unfortunately, as Servetto et al.~\cite{unsound_presentation} pointed out, there is an unsound interaction with generics.
 A non-generic method-local inner class \Q@MyFoo@ written in a generic method, or in a method of a generic class, can implicitly see the generic types in scope.
-Instances of \Q@MyFoo@ can then escape the lifetime of their enclosing method, where the generics had a certain runtime instantiation,
-and re-enter a second call of the same enclosing method, where the generics could have a different runtime instantiation.
+Instances of \Q@MyFoo@ can then escape the lifetime of their enclosing method, where the generics had a certain run-time instantiation,
+and re-enter a second call of the same enclosing method, where the generics could have a different run-time instantiation.
 Servetto et al.\ probed the behaviour of JVM languages that support the same feature (Scala and Kotlin) and found that these had the same unsoundness problem for some use cases, but did flag concerns in other cases. However, this was not systematically investigated.
 
 In this paper we clearly articulate the problem they observed, characterize the key properties that lead to the issue, and propose
@@ -32,7 +32,7 @@ public class Broken {
     System.out.println(r2.x()); //Throws ClassCastException: ..
   }
 }
-class Foo<X>{ public X x() {return x();} }
+class Foo<X>{ public X x(){ return x(); } }
 \end{lstlisting}
 \end{minipage}
 
