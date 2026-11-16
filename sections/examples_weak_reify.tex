@@ -158,7 +158,7 @@ So \Q@MyFoo@ is generic in \Q@X@, and \Q@other instanceof MyFoo@ is the unchecka
 
 The cast is flagged too.
 The following method \Q@m@ replaces the method \Q@m@ of Counterexample~3.
-The type test against \Q@String@ replaces the type test against \Q@MyFoo@, which javac rejects, and the cast of Example~1 follows it.
+The type test against \Q@String@ replaces the type test against \Q@MyFoo@, which javac rejects, and the cast of Example~1 follows that type test.
 
 \noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
@@ -200,7 +200,7 @@ Generic classes and generic methods are functions from generic arguments to conc
 In the same way, the generic class declaration \Q@class Foo<X>@ declares infinitely many classes \Q@Foo<Integer>@, \Q@Foo<String>@, and so on.
 So each method \Q@m<T>@ declares its own local class \Q@MyFoo@, since the body of each \Q@m<T>@ is the body of a different method.
 \item \textbf{Identity as Dynamic Evaluation}: 
-A declaration creates a new class, even for the same instantiation of the generic parameters.
+Each evaluation of the declaration creates a new class, even for the same instantiation of the generic parameters.
 Scala has this granularity for captured values instead of captured types.
 An instance of an inner class \Q@Inner@ captures its enclosing instance \Q@$outer@, and its type is the path-dependent type \Q@a.Inner@.
 For the pattern \Q@case i: a.Inner@, the Scala compiler emits an ``outer test'' that compares the captured \Q@$outer@ with \Q@a@~\cite[Section~8.2]{scala_spec}.%
@@ -212,7 +212,7 @@ For method generics, the Java type system assumes granularity (1), as the casts 
 If the type of a local class contained the enclosing method and its generic instantiation, as in \Q@Box<T1>.m<T2>.MyFoo@,
 then javac would flag the problem for generic methods too, as it does for generic classes.
 A version of Java with reified generics could solve the mismatch in Counterexample~3, between the granularity (1) of the casts and the granularity (2) of the types.
-But reification would not change Examples~1 and~2, unless the types of local classes take the form \Q@A<T1>.m<T2>.MyFoo@.
+But reification would not change Examples~1 and~2, unless the types of local classes take the form \Q@Box<T1>.m<T2>.MyFoo@.
 
 Granularities (1), (2) and (3) are points in a space of design options,
 but other points lie between them.

@@ -2,7 +2,7 @@
 Java includes a useful feature called \emph{method-local inner classes}, which has surprisingly subtle consequences.
 Like anonymous inner classes, this is a way for a method in a Java program to declare a class whose details are defined
 locally, entirely within the method, when the identity of the class is not needed outside the method's scope.
-However, these local classes are named, which allows them to be used with other language features exploiting nominal types.
+However, method-local inner classes are named, which allows them to be used with other language features exploiting nominal types.
 For example, one can cast objects to the method-local class type.
 
 Unfortunately, as Servetto et al.~\cite{unsound_presentation} pointed out, there is an unsound interaction with generics.
@@ -36,23 +36,24 @@ class Foo<X>{ public X x() {return x();} }
 \end{lstlisting}
 \end{minipage}
 
-Line \ref{line:MyFoo} declares a method-local inner class
+Line~\ref{line:MyFoo} declares a method-local inner class
 \Q@MyFoo@, which depends on the generic parameter instantiation for \Q@X@ when the method is invoked.
-The \Q@main@ method invokes \Q@m@ twice. Line \ref{line:intcall} invokes it for \Q@Integer@s.
+The \Q@main@ method invokes \Q@m@ twice. Line~\ref{line:intcall} invokes \Q@m@ and instantiates \Q@X@ with \Q@Integer@.
 Since the \Q@other@ argument for that call is not a \Q@MyFoo@, the first invocation returns
 a \Q@MyFoo@ which is a \Q@Foo<Integer>@.
-This result is then passed back into the second call to \Q@m@ on Line \ref{line:strcall}.
+This result is then passed back into the second call to \Q@m@ on Line~\ref{line:strcall}.
 This time, the \Q@instanceof@ check succeeds, because \Q@other@ in this case \emph{is} a \Q@MyFoo@,
 so the method (successfully) casts the \Q@other@ argument to \Q@MyFoo@.
-Since \Q@MyFoo@ is declared as extending \Q@Foo<X>@, this is a valid result for the function.
-Thus the \Q@Foo<Integer>@ that was passed as the first argument of the second call, on Line \ref{line:strcall}, is returned
+Since \Q@MyFoo@ is declared as extending \Q@Foo<X>@, this is a valid result for the method.
+Thus the \Q@Foo<Integer>@ that was passed as the first argument of the second call, on Line~\ref{line:strcall}, is returned
 as a \Q@Foo<String>@.
 
 Clearly, this is wrong, because there are now two aliased variables of incompatible types; consequently, the later code fails.
 The failure itself is contrived.
 The two \Q@println@ calls actually dispatch to different overloads:
 the first to a version accepting an \Q@Object@, and the second to the more specific overload expecting a \Q@String@.
-Overload resolution uses the Java type system \emph{with} generics, where \Q@r1.x()@ has type \Q@Integer@ and \Q@r2.x()@ has type \Q@String@.%
+Overload resolution uses the Java type system \emph{with} generics, where \Q@r1.x()@ has type \Q@Integer@ and \Q@r2.x()@ has type \Q@String@.
+javac inserts a cast to \Q@String@ on the result of \Q@r2.x()@, and that cast throws the \Q@ClassCastException@.
 
 A different version of Java could stop this problem at four points, two at compile time and two at run time:
 \begin{itemize}
@@ -78,8 +79,8 @@ This makes the compiler assume that the simplest nominal type identity is suffic
 
 This problem touches on Java's erasure of generics, but only indirectly: even languages with reified generics store reified generics for the generic arguments exposed to the type system: a type like \Q@List<Foo>@ would get one reified generic, \Q@Foo@, together with some language-mediated API to access it.
 A type like \Q@MyFoo@ would get no reified generics, since the generic type would have been captured and not exposed by the type.
-Thus, we argue that erasure versus reification is only marginally connected to this problem. The conceptual hurdle is in the distinction between propagating the scope of generic types explicitly or implicitly.%
-\footnote{Since JDK 16, with \Q@Object o@, \Q@o instanceof Foo<Integer>@ is a compile-time error (before JDK 16, every non-reifiable \Q@instanceof@ target was an error), while the cast \Q@(Foo<Integer>)o@ is an unchecked warning; \Q@instanceof@ never warns.
+Thus, we argue that erasure versus reification is only marginally connected to this problem. The conceptual hurdle is in the distinction between propagating the scope of generic types explicitly and implicitly.%
+\footnote{Since Java~16, with \Q@Object o@, \Q@o instanceof Foo<Integer>@ is a compile-time error (before Java~16, every non-reifiable \Q@instanceof@ target was an error), while the cast \Q@(Foo<Integer>)o@ is an unchecked warning; \Q@instanceof@ never warns.
 Modern Java accepts \Q@o instanceof C<Ts>@ only when the static type of \Q@o@ determines \Q@Ts@; in this way an erased and a reified runtime give the same answer, as long as the program has no heap pollution.
 Example~1 creates heap pollution without any warning: \Q@r2@ has static type \Q@Foo<String>@, but it refers to a \Q@Foo<Integer>@.}
 
