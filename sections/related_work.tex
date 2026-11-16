@@ -25,10 +25,10 @@ Thus the objects created by \Q@M<int>@ and by \Q@M<string>@ have different class
 A C\# program can not name a generated class~\cite[Section~12.8.16.7]{csharp_spec}, so a C\# program can not write a type test against a generated class directly.
 A type test \Q@o is T@, with the type variable \Q@T@ inferred as the generated class, is true only for the objects created by the same instantiation of \Q@M@.
 
-Flix~\tocite{Flix FAQ, for monomorphization and no subtyping} is a functional language for the JVM.
+Flix~\cite{flix_faq} is a functional language for the JVM.
 The Flix compiler monomorphizes polymorphic functions, as Rust and MLton do.
 Flix has no subtyping.
-The Flix construct closest to a local class is the \Q@new@ expression, which creates an object of an unnamed class that extends a Java class or implements a Java interface~\tocite{Flix anonymous classes}.
+The Flix construct closest to a local class is the \Q@new@ expression, which creates an object of an unnamed class that extends a Java class or implements a Java interface~\cite[Chapter ``Classes and Interfaces'']{flix_book}.
 A Flix program can not name such a class, so a Flix program can not write a type test against it, as with the generated classes of C\#.
 Thus the type test of Example~1 can not be written in Flix.
 
