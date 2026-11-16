@@ -688,7 +688,7 @@ theorem n4 : Not (ClassOk d6F decFixed2Obj) := by
         rw [e2] at hc
         exact castObj (C := cn "MyFoo4") (by decide) (by decide) (by decide) (by decide) hc
 
--- Example 3: X only in the methods of MyFoo6, and in the captured f.
+-- Example 2 with show: X only in the methods of MyFoo6, and in the captured f.
 
 def myFoo6 : Expr :=
   .newLocal (cn "MyFoo6") [] Object [] []
@@ -708,7 +708,7 @@ def main6 : Expr :=
   .call (Value.new (cn "Broken6") [] []) [tB] (mn "m")
     [.call (Value.new (cn "Broken6") [] []) [tA] (mn "m") [vA, vA, vAToB], vB, vAsB]
 
--- W11: Example 3 in the core language is well formed.
+-- W11: Example 2 with show in the core language is well formed.
 theorem w11 : WFDecls d7 /\ WFExpr main6 := by decide
 
 theorem r15p : ReducesStar d7 main6 stuckB /\ Stuck d7 stuckB :=
@@ -732,14 +732,14 @@ theorem r15p : ReducesStar d7 main6 stuckB /\ Stuck d7 stuckB :=
       ReducesStar.refl))))))))))))))))
     (stuckS (by decide))
 
--- N5: Example 3 is not Ok: MyFoo6 mentions X and captures f, but funnels nothing.
+-- N5: Example 2 with show is not Ok: MyFoo6 mentions X and captures f, but funnels nothing.
 theorem n5 : Not (ProgOk d7 main6) := fun h =>
   h.2.elim fun _ ht => (typeSoundness w11.1 h.1 w11.2 ht r15p.1).2.elim r15p.2.1 fun h' => h'.elim r15p.2.2
 
--- R15: Example 3 reduces to new A<>().[Object<>]onlyB(), which is stuck.
+-- R15: Example 2 with show reduces to new A<>().[Object<>]onlyB(), which is stuck.
 theorem r15 : ReducesStar d7 main6 stuckB /\ Stuck d7 stuckB := r15p
 
--- Counterexample 4: class generics; javac rejects it, and so does funnelling.
+-- Counterexample 3: class generics; javac rejects it, and so does funnelling.
 
 def decBox7 : Dec :=
   { C := cn "Box7", Delta := [bnd "X" obj], C' := Object, Ts := [],
@@ -760,10 +760,10 @@ def main7 : Expr :=
   .call (Value.new (cn "Box7") [gB] []) [] (mn "m")
     [.call (Value.new (cn "Box7") [gA] []) [] (mn "m") [vA, vA, vAToB], vB, vAsB]
 
--- W12: Counterexample 4 is well formed.
+-- W12: Counterexample 3 is well formed.
 theorem w12 : WFDecls d8 /\ WFExpr main7 := by decide
 
--- N6: Counterexample 4 is ill typed: MyFoo7 does not funnel the class type variable X.
+-- N6: Counterexample 3 is ill typed: MyFoo7 does not funnel the class type variable X.
 theorem n6 : Not (ClassOk d8 decBox7) := by
   intro h
   have hm := h.2.2.1 _ (.head _)
@@ -784,7 +784,7 @@ theorem n6 : Not (ClassOk d8 decBox7) := by
           cases hX with
           | wfVar hm => cases hm
 
--- N7: funnelled, Counterexample 4 is still ill typed: Object<> does not determine X; javac reports this error too.
+-- N7: funnelled, Counterexample 3 is still ill typed: Object<> does not determine X; javac reports this error too.
 theorem n7 : Not (ClassOk d8 decBox7F) := by
   intro h
   have hm := h.2.2.1 _ (.head _)
@@ -802,7 +802,7 @@ theorem n7 : Not (ClassOk d8 decBox7F) := by
         rw [e2] at hc
         exact castObj (C := cn "MyFoo7F") (by decide) (by decide) (by decide) (by decide) hc
 
--- R16: Counterexample 4 reduces as Example 2: to new A<>().[Object<>]onlyB(), which is stuck.
+-- R16: Counterexample 3 reduces as Example 2: to new A<>().[Object<>]onlyB(), which is stuck.
 theorem r16 : ReducesStar d8 main7 stuckB /\ Stuck d8 stuckB :=
   And.intro
     (ReducesStar.step (red (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) (by decide))
