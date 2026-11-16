@@ -101,8 +101,6 @@ Essentially, Java and Scala both treat \Q@MyFoo@ as a sort of existential type -
 to assuming that there is only one existential for all instances --- associated with the declaration site --- rather than potentially
 different existentials for different instances. This combined with the fact that the JVM is unable to dynamically check for different instantiations
 leads to the unsoundness.
-Our dynamic solution resolves this with a specific implementation of casts on reified generics.
-\mjnote{under modern Java there is no separate dynamic solution; see the note on the dynamic approach in the introduction.}
 Our static solution effectively prohibits the de facto existential capture of the enclosing type parameter.
 
 
