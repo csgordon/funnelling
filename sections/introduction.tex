@@ -77,7 +77,8 @@ Closure capture is intrinsically private: a closure does not show in its externa
 The static type system has to work on the publicly visible type, and in Java that type is not generic.
 This makes the compiler assume that the simplest nominal type identity is sufficient for casts and type tests.
 
-This problem touches on Java's erasure of generics, but only indirectly: even languages with reified generics store reified generics for the generic arguments exposed to the type system: a type like \Q@List<Foo>@ would get one reified generic, \Q@Foo@, together with some language-mediated API to access it.
+This problem touches on Java's erasure of generics, but only indirectly: even languages with reified generics store reified generics only for the generic arguments exposed to the type system.
+A type like \Q@List<Foo>@ would get one reified generic, \Q@Foo@, together with some language-mediated API to access it.
 A type like \Q@MyFoo@ would get no reified generics, since the generic parameter would have been captured and not exposed by the type.
 Thus, we argue that erasure versus reification is only marginally connected to this problem. The conceptual hurdle is in the distinction between propagating the scope of generic parameters explicitly and implicitly.%
 \footnote{Since Java~16, with \Q@Object o@, \Q@o instanceof Foo<Integer>@ is a compile-time error (before Java~16, every non-reifiable \Q@instanceof@ target was an error), while the cast \Q@(Foo<Integer>)o@ is an unchecked warning; \Q@instanceof@ never warns.

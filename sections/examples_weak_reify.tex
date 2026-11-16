@@ -267,9 +267,7 @@ Rule \textsc{new-local-java} uses the syntax \Q@new C<> extends C'<Ts>(es){Ms}@.
 This syntax is an intermediate form between method-local classes and anonymous classes of Java.
 A method-local class \Q@class C<> extends C'<Ts>{ C(){ super(es); } Ms }@ is declared first, and then instantiated with \Q@new C<>()@.
 An anonymous class \Q@new C'<Ts>(es){Ms}@ is declared and instantiated by a single expression.
-The syntax \Q@new C<> extends C'<Ts>(es){Ms}@ forms a (named) local class.
-A local class creates an instance as an anonymous class does, thus a local class is easy to use in an expression-based language.
-A local class also declares its own name, thus \Q@instanceof@ can test for a local class.
+A local class is declared and instantiated by a single expression too, but a local class declares its own name, thus \Q@instanceof@ can test for a local class.
 \\[1ex]
 Rule \textsc{new-local-java} types the methods $\pl{M}$ of the local class $C$ under all the bounds $\Delta$ and all the variables $\Gamma$ in scope, except \Q@this@, which has type $\gen{C}{}$.
 The example above is well typed using the type rules of Section~\ref{sec:core} and rule \textsc{new-local-java}.
