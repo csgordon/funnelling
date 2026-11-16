@@ -1526,6 +1526,7 @@ The core language has no strings, no lambdas, no \Q@switch@ and no casts.
 The examples of Section~2 use \Q@Fun<X,Y>@ for \Q@Function<X,Y>@, and its subclasses \Q@AToB@ and \Q@AsB@ for the lambdas of the two calls of \Q@m@.
 \Q@AsB@ plays the lambda \Q@s->s@: its method \Q@apply@ uses its argument as a \Q@B<>@, so a failing cast to \Q@String@ becomes the call \Q@new A<>().onlyB()@, which reduces by \textsc{simpleAddSuper} and \textsc{searchSuper} to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
 The other versions of Example~2 in Section~2, except the version with \Q@show@, differ from Example~2 only in the \Q@switch@ and in how the caller of \Q@m@ creates \Q@f@, so they have no counterpart.
+The core language declares a local class in its one \Q@new@ expression, so the version with \Q@show@ (d7) passes that expression to a method \Q@check@, as the parameter \Q@mine@, where the paper writes \Q@new MyFoo()@ twice.
 \begin{lstlisting}
 class Object<> extends Object<>{}
 class A<> extends Object<>{}
@@ -1572,7 +1573,7 @@ class Fixed2Obj<> extends Object<>{ <X extends Object<>> Object<> m(Object<> oth
 // d7, Example 2 with show: Object, A, B, Fun, AToB, AsB, and
 class Broken6<> extends Object<>{
   <X extends Object<>> Object<> m(Object<> other, X x, Fun<X,B<>> f){ return
-    this.check(new MyFoo6<> extends Object<>(){ X v(){ return x; } B<> show(MyFoo6<> o){ return f.apply(o.v()); } },
+    this.check(new MyFoo6<> extends Object<>(){ X x(){ return x; } B<> show(MyFoo6<> o){ return f.apply(o.x()); } },
       other); }
   Object<> check(MyFoo6<> mine, Object<> other){ return
     if (other instanceof MyFoo6<> local){ mine.show(local) } else { mine }; } }
@@ -1650,7 +1651,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[R12] \texttt{r12}: in d5, \Q@new Fixed<>().<A<>>mk(new Foo<A<>>(), new A<>())@ $\rightarrow^*$ \Q@new MyFoo<A<>> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }@: the type test fails by \textsc{ifElse}.
 \item[R13] \texttt{r13}: in d5, \Q@mk@ given that value of \Q@MyFoo<A<>>@ returns it: the type test succeeds by \textsc{ifThen}.
 \item[R14] \texttt{r14}: Example~2 reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck: the second call finds the \Q@MyFoo2@ of the first call, and \Q@AsB@ receives the \Q@A<>@ of the first call.
-\item[R15] \texttt{r15}: Example~2 with \Q@show@ reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck: \Q@mine.show(local)@ applies the \Q@f@ of the second call to the \Q@v()@ of the first call.
+\item[R15] \texttt{r15}: Example~2 with \Q@show@ reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck: \Q@mine.show(local)@ applies the \Q@f@ of the second call to the \Q@x()@ of the first call.
 \item[R16] \texttt{r16}: Counterexample~3 reduces as Example~2, to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
 \item[R17] \texttt{r17}: \Q@new Leaker<>().<B<>>leak(new Leaker<>().<A<>>mk2(new A<>())).x().onlyB()@ reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
 \item[R18] \texttt{r18}: \Q@new Nest<>().<A<>>mk(new A<>()).x()@ $\rightarrow^*$ \Q@new A<>()@, through a value of \Q@Outer@ and a value of \Q@Inner@.
