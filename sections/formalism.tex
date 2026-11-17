@@ -72,12 +72,12 @@ In \decls, all the funnels are of the form $\funnel{X}$, by well-formedness requ
 In the main expression, outside of the methods of local classes, all the funnels are of the form $G$, by A12: there, no type variable is in scope.
 When a local class is nested in a method of a local class in the main expression, a mixture of funnels $\funnel{X}$ and $G$ can be present.
 
-A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $\gen{C'}{\pl{T}}$.
+A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $C'$.
 The methods $\pl{M}$ of a local class can use only the funnelled type variables, and the variables in scope other than \Q@this@ whose types mention only funnelled type variables.
 \\[1ex]
 The conventional type environment $\Gamma$ gives a type to each variable that the expression can use.
 Bounds $\Delta$ give an upper bound to each type variable that the expression can use.
-A declaration $\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}$ declares the top-level class $C$ with the type variables bounded by $\Delta$, the superclass $\gen{C'}{\pl{T}}$, the methods $\pl{M}$ and the fields/slots $\pl{S}$.
+A declaration $\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}$ declares the top-level class $C$ with the type variables bounded by $\Delta$, the supertype $\gen{C'}{\pl{T}}$, the methods $\pl{M}$ and the fields/slots $\pl{S}$.
 A method $\method{\Delta}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e}}$ has the type variables bounded by $\Delta$, the return type $T_0$, the parameters $x_1,\ldots,x_n$ and the body $e$.
 Every method has a body; for simplicity, as in FJ, there are no abstract methods.
 A class declaration $K$ is either a top-level declaration $\mathsf{Dec}$ or a local class.
@@ -540,7 +540,7 @@ $\Delta'$ includes only the funnelled type variables, and $\Gamma|_{\ftv{|\pl{F}
 The bounds $\Delta'$ are computed by $\pairing{\Delta}{\pl{F}}{|\pl{F}|}$, which is undefined when a funnelled type variable is not in $\Delta$.
 The premise $\ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')$ requires the bounds of the funnelled type variables to mention only funnelled type variables.
 However, the rule still uses the \emph{full} $\Delta$ and $\Gamma$ for typing the arguments $\pl{e}$. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., in the type arguments of a method call), but will reduce to a value which no longer depends on such type variables.
-This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ types the object creation of the superclass $\obj{C_0}{\pl{T}}{\pl{e}}$ under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ checks the superclass type $\gen{C_0}{\pl{T}}$ under the more restrictive $\Delta'$.
+This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ types the object creation of the superclass $\obj{C_0}{\pl{T}}{\pl{e}}$ under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ checks the supertype $\gen{C_0}{\pl{T}}$ under the more restrictive $\Delta'$.
 \\[1ex]
 A local class appears in two kinds of places:
 (1) The (original) declaration of the local class is written in the body of a method of a top-level class, possibly nested inside other local classes.
