@@ -329,7 +329,6 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 \end{mathpar}
 \par}
 
-Most of the rules are standard.
 Rules \textsc{simpleFieldFound}, \textsc{simpleFieldSuper} and \textsc{innerFieldSuper} read a field.
 Rule \textsc{simpleFieldFound} reads a field declared by the class of the object.
 Rule \textsc{simpleFieldSuper} reads a field not declared by the class $C$ of the object from the object of the superclass of $C$, made of the remaining values.
@@ -535,12 +534,12 @@ Rule \textsc{new-object} types the creation of an \Q@Object@.
 We need this dedicated rule: \Q@Object@ extends \Q@Object@ (A9), so typing \Q@new Object<>()@ with rule \textsc{new-top} would need an infinite derivation.
 Rule \textsc{new-top} types the creation of an object of another top-level class $C$: the first arguments have the types of the fields of $C$, and the other arguments are typed as an object creation of the superclass of $C$.
 
-Rule \textsc{new-local} is the heart of funnelling, including subtle management of type environments.
+Rule \textsc{new-local} is the heart of funnelling.
 The rule constructs restricted bounds and a restricted type environment, reflecting only the funnelled type variables:
 $\Delta'$ includes only the funnelled type variables, and $\Gamma|_{\ftv{|\pl{F}|}}\setminus\this$ keeps only the variables of $\Gamma$, other than \Q@this@, whose types mention only type variables of the result type $\gen{C}{|\pl{F}|}$ (which must be well kinded under $\Delta'$).
 The bounds $\Delta'$ are computed by $\pairing{\Delta}{\pl{F}}{|\pl{F}|}$, which is undefined when a funnelled type variable is not in $\Delta$.
 The premise $\ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')$ requires the bounds of the funnelled type variables to mention only funnelled type variables.
-However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., in the type arguments of a method call), but will reduce to a value which no longer depends on such type variables.
+However, the rule still uses the \emph{full} $\Delta$ and $\Gamma$ for typing the arguments $\pl{e}$. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., in the type arguments of a method call), but will reduce to a value which no longer depends on such type variables.
 This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ types the object creation of the superclass $\obj{C_0}{\pl{T}}{\pl{e}}$ under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ checks the superclass type $\gen{C_0}{\pl{T}}$ under the more restrictive $\Delta'$.
 \\[1ex]
 A local class appears in two kinds of places:
