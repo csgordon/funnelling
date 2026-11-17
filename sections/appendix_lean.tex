@@ -686,7 +686,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       Step d (.field (Value.new D.C Gs (vs1 ++ vs)) f) v
 \end{lstlisting}
 \end{leanside}
-\mapping{$v_1,\ldots,v_n$ is \texttt{vs1}, as long as the slots; $f_i$ and $v_i$ are a pair of \texttt{zip}.}
+\mapping{$v_1,\ldots,v_n$ is \texttt{vs1}, as long as the fields; $f_i$ and $v_i$ are a pair of \texttt{zip}.}
 \end{cmp}
 
 \begin{cmp}{\textsc{simpleFieldSuper}}

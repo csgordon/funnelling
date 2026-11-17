@@ -25,7 +25,7 @@ Replacing rule \textsc{new-local} with rule \textsc{new-local-java} gives the Ja
 \textrm{Bounds} & \Delta & ::= & \ext{X_1}{T_1},\ldots,\ext{X_n}{T_n}\\
 %// Need T, not F, to be able to do things like (Java) class Bar<X,Y extends X> {}
 \textrm{Declaration} & \mathsf{Dec} & ::= & \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}\\
-\textrm{(Field) Slots} & S & ::= & T\gap f\semi\\
+\textrm{Fields} & S & ::= & T\gap f\semi\\
 \textrm{Methods} & M & ::= & \method{\Delta}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e}}\\
 \textrm{Class Decl.} & K & ::= & \mathsf{Dec} \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}
 %Dec::= class C<Bs> extends C'<Ts>{ Ms Ss} //assume standard constructor
@@ -77,7 +77,7 @@ The methods $\pl{M}$ of a local class can use only the funnelled type variables,
 \\[1ex]
 The conventional type environment $\Gamma$ gives a type to each variable that the expression can use.
 Bounds $\Delta$ give an upper bound to each type variable that the expression can use.
-A declaration $\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}$ declares the top-level class $C$ with the type variables bounded by $\Delta$, the superclass $\gen{C'}{\pl{T}}$, the methods $\pl{M}$ and the fields/slots $\pl{S}$.
+A declaration $\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}$ declares the top-level class $C$ with the type variables bounded by $\Delta$, the superclass $\gen{C'}{\pl{T}}$, the methods $\pl{M}$ and the fields $\pl{S}$.
 A method $\method{\Delta}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e}}$ has the type variables bounded by $\Delta$, the return type $T_0$, the parameters $x_1,\ldots,x_n$ and the body $e$.
 Every method has a body; for simplicity, as in FJ, there are no abstract methods.
 A class declaration $K$ is either a top-level declaration $\mathsf{Dec}$ or a local class.
