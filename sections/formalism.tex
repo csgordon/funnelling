@@ -18,8 +18,8 @@ Replacing rule \textsc{new-local} with rule \textsc{new-local-java} gives the Ja
     &&&\mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\\
     &&& \mid \ifthen{e_0}{T}{x}{e_1}{e_2}\\
 \textrm{Types} & T & ::= & \gen{C}{\pl{T}} \mid X\\
-\textrm{Funnels} & F & ::= & G \mid \funnel{X}\\
 \textrm{Ground Types} & G & ::= & \gen{C}{\pl{G}}\\
+\textrm{Funnels} & F & ::= & G \mid \funnel{X}\\
 \\
 \textrm{Type Env.} & \Gamma & ::= & T_1\gap x_1,\ldots,T_n\gap x_n\\
 \textrm{Bounds} & \Delta & ::= & \ext{X_1}{T_1},\ldots,\ext{X_n}{T_n}\\
@@ -53,7 +53,12 @@ That is, a super call works as a flexible kind of Java \Q@super@ call, attemptin
 An object creation $\obj{C}{\pl{T}}{\pl{e}}$ creates an instance of the top-level class $\gen{C}{\pl{T}}$.
 The first arguments of $\pl{e}$ initialize the fields of $C$; the other arguments are the arguments of the object creation of the superclass of $C$.
 A local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ declares the local class $C$ and creates an instance of $C$.
+The type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ reduces to $e_1$, with $x$ bound to the value of $e_0$, when the class of the value of $e_0$ is a subclass of the class of $T$; otherwise the type test reduces to $e_2$.
 \end{sloppypar}
+
+A type is a class type $\gen{C}{\pl{T}}$ or a type variable $X$.
+A ground type $G$ is a type with no type variables.
+A ground type is the equivalent of a value, but at the type level.
 
 A program is a class table \decls and a main expression $e$.
 The funnels $\pl{F}$ serve a double role.%
@@ -69,11 +74,7 @@ When a local class is nested in a method of a local class in the main expression
 
 A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $\gen{C'}{\pl{T}}$.
 The methods $\pl{M}$ of a local class can use only the visible type variables, and the variables in scope other than \Q@this@ whose types mention only visible type variables.
-The type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ reduces to $e_1$, with $x$ bound to the value of $e_0$, when the class of the value of $e_0$ is a subclass of the class of $T$; otherwise the type test reduces to $e_2$.
 \\[1ex]
-A type is a class type $\gen{C}{\pl{T}}$ or a type variable $X$.
-A ground type $G$ is a type with no type variables.
-A ground type is the equivalent of a value, but at the type level.
 The conventional type environment $\Gamma$ gives a type to each variable that the expression can use.
 Bounds $\Delta$ give an upper bound to each type variable that the expression can use.
 A declaration $\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}$ declares the top-level class $C$ with the type variables bounded by $\Delta$, the superclass $\gen{C'}{\pl{T}}$, the methods $\pl{M}$ and the fields/slots $\pl{S}$.
@@ -133,6 +134,19 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \quad\phantom{\textrm{where }}\method{\_}{\_}{m}{\_}{\ret{e}}\in K\\
 \quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\textrm{ occurs in }e
 \end{Define}
+\begin{Define}{M\in K\qquad M\in C\qquad\generic{C}=T\qquad|F|=T}
+M\in K\textrm{ iff }M\in\pl{M}\\
+\quad\textrm{where }K\in\{\subclass{\_}{\_}{\_}{\_}{\pl{M}}{\_},\innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}\}\\
+M\in C\textrm{ iff }M\in K\\
+\quad\textrm{where }\declared{K}\\
+\quad\phantom{\textrm{where }}K\in\{\subclass{C}{\_}{\_}{\_}{\_}{\_},\innerobj{C}{\_}{\_}{\_}{\_}{\_}\}\\[1ex]
+\generic{C} = \gen{C}{\mathrm{dom}(\Delta)}\\
+\quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}\\
+\generic{C} = \gen{C}{\mathrm{dom}(\pl{F})}\\
+\quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}\\[1ex]
+|\funnel{X}| = X\\
+|G| = G
+\end{Define}
 \begin{Define}{\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}'}
 \mathsf{scope}(\gen{C}{\pl{T}}) = \Delta;\pl{T}\\
 \quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}\\
@@ -146,19 +160,6 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \pairing{\Delta}{\funnel{X},\pl{F}}{T,\pl{T}} = \ext{X}{\Delta(X)},\Delta';T,\pl{T}'\\
 \quad\textrm{where }\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'\\
 \pairing{\Delta}{G,\pl{F}}{G,\pl{T}} = \pairing{\Delta}{\pl{F}}{\pl{T}}
-\end{Define}
-\begin{Define}{M\in K\qquad M\in C\qquad\generic{C}=T\qquad|F|=T}
-M\in K\textrm{ iff }M\in\pl{M}\\
-\quad\textrm{where }K\in\{\subclass{\_}{\_}{\_}{\_}{\pl{M}}{\_},\innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}\}\\
-M\in C\textrm{ iff }M\in K\\
-\quad\textrm{where }\declared{K}\\
-\quad\phantom{\textrm{where }}K\in\{\subclass{C}{\_}{\_}{\_}{\_}{\_},\innerobj{C}{\_}{\_}{\_}{\_}{\_}\}\\[1ex]
-\generic{C} = \gen{C}{\mathrm{dom}(\Delta)}\\
-\quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}\\
-\generic{C} = \gen{C}{\mathrm{dom}(\pl{F})}\\
-\quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}\\[1ex]
-|\funnel{X}| = X\\
-|G| = G
 \end{Define}
 \par}
 
@@ -394,11 +395,6 @@ A substitution can place a value at several positions, so several occurrences of
 \inferrule[var]{ }{\typing{\Delta}{\Gamma}{x}{\Gamma(x)}}
 \end{mathpar}
 \begin{mathpar}
-\begin{array}[b]{c}
-\inferrule[new-object]{ }{
-  \typing{\Delta}{\Gamma}{\obj{\Object}{}{}}{\gen{\Object}{}}
-}
-\\[4ex]
 \inferrule[declField]{
   \typing{\Delta}{\Gamma}{e}{\classtype{C}{\pl{T}'}}\\\\
   \declared{\subclass{C}{\Delta'}{\_}{\_}{\_}{\pl{S}}}\\\\
@@ -408,7 +404,6 @@ A substitution can place a value at several positions, so several occurrences of
   \typing{\Delta}{\Gamma}{e\fstop f}{\tsubst{T}{\Delta'}{\pl{T}'}}
   %\subclass{C_0}{\Delta_0}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}\in\decls
 }
-\end{array}
 \and
 \inferrule[call]{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\\\
@@ -439,6 +434,10 @@ A substitution can place a value at several positions, so several occurrences of
 }
 \end{mathpar}
 \begin{mathpar}
+\inferrule[new-object]{ }{
+  \typing{\Delta}{\Gamma}{\obj{\Object}{}{}}{\gen{\Object}{}}
+}
+\and
 \inferrule[new-top]{
   \declared{\subclass{C}{\Delta'}{C'}{\pl{T}}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}}\\
   \kind{\Delta}{\gen{C}{\pl{T}'}}\\\\
@@ -481,7 +480,15 @@ A substitution can place a value at several positions, so several occurrences of
 %We will replace every occurrence of X when doing substitution, *including* in method signatures in a local class
 %Should be a clearer when substitution is formalized
 %
-\and
+    \end{mathpar}
+\begin{Define}{K\gap\mathsf{consistent}}
+\innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
+\quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C_0}{\pl{T}'}{\_}{\pl{M}'}}\\
+\quad\phantom{\textrm{where }}\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\
+\quad\phantom{\textrm{where }}\mathrm{names}(\pl{M}')=\mathrm{names}(\pl{M})\\
+\quad\phantom{\textrm{where }}\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})
+\end{Define}
+    \begin{mathpar}
 \inferrule[if-instanceof]{
   \typing{\Delta}{\Gamma}{e_0}{T_0}\\
   \kind{\Delta}{T}\\
@@ -515,22 +522,15 @@ A substitution can place a value at several positions, so several occurrences of
   \cast{\Delta}{\gen{C'}{\pl{T}_0}}{\gen{C}{\pl{T}}}
 }
     \end{mathpar}
-\begin{Define}{K\gap\mathsf{consistent}}
-\innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
-\quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C_0}{\pl{T}'}{\_}{\pl{M}'}}\\
-\quad\phantom{\textrm{where }}\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\
-\quad\phantom{\textrm{where }}\mathrm{names}(\pl{M}')=\mathrm{names}(\pl{M})\\
-\quad\phantom{\textrm{where }}\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})
-\end{Define}
 \par}
 
 Rule \textsc{subs} is subsumption, where the supertype $T_2$ must be well kinded; rule \textsc{var} reads the type of a variable from $\Gamma$.
-Rule \textsc{new-object} types the creation of an \Q@Object@.
-We need this dedicated rule: \Q@Object@ extends \Q@Object@ (A9), so typing \Q@new Object<>()@ with rule \textsc{new-top} would need an infinite derivation.
-Rule \textsc{new-top} types the creation of an object of another top-level class $C$: the first arguments have the types of the fields of $C$, and the other arguments are typed as an object creation of the superclass of $C$.
 Rule \textsc{declField} types the access to a field declared by the class $C$ of the receiver, and rule \textsc{call} types the call of a method declared by the class $C_0$ of the receiver.
 In rule \textsc{call}, $\mathsf{scope}$ gives the type variables of $C_0$ and the types replacing them, and the type arguments $\pl{T}_1$ of the call must satisfy the bounds of $m$.
 Rule \textsc{call-lb-runtime} types a super call $\explicitcall{e_0}{\gen{C}{\pl{T}}}{\pl{T}_1}{m}{e_1,\ldots,e_n}$: the receiver $e_0$ has type $\gen{C}{\pl{T}}$, the class $C$ is a top-level class, and the signature of $m$ is read from a class $C_0$ declaring $m$, where $C_0$ is $C$ or a superclass of $C$.
+Rule \textsc{new-object} types the creation of an \Q@Object@.
+We need this dedicated rule: \Q@Object@ extends \Q@Object@ (A9), so typing \Q@new Object<>()@ with rule \textsc{new-top} would need an infinite derivation.
+Rule \textsc{new-top} types the creation of an object of another top-level class $C$: the first arguments have the types of the fields of $C$, and the other arguments are typed as an object creation of the superclass of $C$.
 
 Rule \textsc{new-local} is the heart of funnelling, including subtle management of type environments.
 The rule constructs restricted bounds and a restricted type environment, reflecting only the funnelled type variables:
@@ -551,8 +551,8 @@ The bodies of the methods of $K$ are not required to be those of the declaration
 
 Rules \textsc{call}, \textsc{sub-inherit-local}, \textsc{wf-class} and \textsc{cast-down}, the relation $\mathsf{consistent}$ and the last case of $\mathsf{overrideOk}(T,M)$ read the declaration, while the reduction runs the methods of the copy.
 
-The relation $\cast{\Delta}{T}{T'}$ is the \emph{checked cast}: a type test against $T'$ on a value of static type $T$ is decided by the class of the value alone.
 Rule \textsc{if-instanceof} accepts the type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ only when $\cast{\Delta}{T_0}{T}$, where $T_0$ is a type of $e_0$.
+The relation $\cast{\Delta}{T}{T'}$ is the \emph{checked cast}: a type test against $T'$ on a value of static type $T$ is decided by the class of the value alone.
 Rule \textsc{cast-up} accepts a target $T'$ that is a supertype of the source $T$.
 Rule \textsc{cast-var} replaces a source type variable $X$ with the bound of $X$.
 Rule \textsc{cast-down} accepts a target $\gen{C}{\pl{T}}$ that is a subtype of the source $\gen{C'}{\pl{T}_0}$, \emph{when the source determines the type arguments} $\pl{T}$.\footnote{This is the condition under which a Java cast to a parameterized type is checked~\cite[Section~5.1.6.2]{jls}~\cite{bracha1998making}.
@@ -687,10 +687,10 @@ A funnelled type variable of $C$ that is not in the bounds $\Delta,\Delta'$ of t
   \twolines{\s{e}\fstop\OS\s{T'}\CS\OA\s{\pl{T}''}\CA}{m\OR\s{\pl{e}'}\CR}\\[3ex]
 \s{e\fstop f} & = & \s{e}\fstop f\\[1ex]
 \s{\obj{C}{\pl{T}'}{\pl{e}}} & = & \obj{C}{\s{\pl{T}'}}{\s{\pl{e}}}\\[1ex]
-\twolines{\kw{if}\gap\OR e_0\gap\kw{instanceof}\gap T'\gap x\CR}{\OC\gap e_1\gap\CC\gap\kw{else}\gap\OC\gap e_2\gap\CC\gap\s{}} & = &
-  \twolines{\kw{if}\gap\OR\s{e_0}\gap\kw{instanceof}\gap\s{T'}\gap x\CR}{\OC\gap\s{e_1}\gap\CC\gap\kw{else}\gap\OC\gap\s{e_2}\gap\CC}\\[3ex]
 \twolines{\kw{new}\gap\gen{C}{\pl{F}}\gap\kw{extends}\gap\gen{C'}{\pl{T}'}}{\OR\pl{e}\CR\OC\pl{M}\CC\gap\s{}} & = &
   \twolines{\kw{new}\gap\gen{C}{\s{\pl{F}}}\gap\kw{extends}\gap\gen{C'}{\s{\pl{T}'}}}{\OR\s{\pl{e}}\CR\OC\s{\pl{M}}\CC}\\[3ex]
+\twolines{\kw{if}\gap\OR e_0\gap\kw{instanceof}\gap T'\gap x\CR}{\OC\gap e_1\gap\CC\gap\kw{else}\gap\OC\gap e_2\gap\CC\gap\s{}} & = &
+  \twolines{\kw{if}\gap\OR\s{e_0}\gap\kw{instanceof}\gap\s{T'}\gap x\CR}{\OC\gap\s{e_1}\gap\CC\gap\kw{else}\gap\OC\gap\s{e_2}\gap\CC}\\[3ex]
 \s{\funnel{X'}} & = & \funnel{X'} \quad\textrm{if }X'\not\in\pl{X}\\
 \tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n} & = & T_i\\
 \s{G} & = & G\\[1ex]
@@ -707,11 +707,11 @@ A funnelled type variable of $C$ that is not in the bounds $\Delta,\Delta'$ of t
 Substitution replaces every occurrence of a type variable, \emph{including} the ones in the method signatures of a local class.
 Substitution does not rename the type variables it meets.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
+Since the substituted types are ground, $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground type $G$, and the result is again a funnel.
 Substitution of type variables is defined only when the type variables of the methods it enters are not in its domain.
 In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables:
 $\tsubst{T}{F_1,\ldots,F_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $i\in 1..n$, where $F_i=\funnel{X_i}$.
 No funnel $F_i$ is of the form $G$: the funnels in the domain of a substitution are the funnels of a declared local class, and by A11 every funnel in \decls is of the form $\funnel{X}$.
-Since the substituted types are ground, $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground type $G$, and the result is again a funnel.
 
 \subsection{Substitution of Variables}
 \label{sec:termsubstitution}
@@ -725,12 +725,12 @@ Since the substituted types are ground, $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T
 \s{\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}'}} & = & \explicitcall{\s{e}}{T}{\pl{T}}{m}{\s{\pl{e}'}}\\[1ex]
 \s{e\fstop f} & = & \s{e}\fstop f\\[1ex]
 \s{\obj{C}{\pl{T}}{\pl{e}}} & = & \obj{C}{\pl{T}}{\s{\pl{e}}}\\[1ex]
-\twolines{\kw{if}\gap\OR e_0\gap\kw{instanceof}\gap T\gap x'\CR}{\OC\gap e_1\gap\CC\gap\kw{else}\gap\OC\gap e_2\gap\CC\gap\s{}} & = &
-  \twolines{\kw{if}\gap\OR\s{e_0}\gap\kw{instanceof}\gap T\gap x'\CR}{\OC\gap\s{e_1}\gap\CC\gap\kw{else}\gap\OC\gap\s{e_2}\gap\CC}\\
-  && \quad\textrm{if }x'\not\in\pl{x}\\[3ex]
 \twolines{\kw{new}\gap\gen{C}{\pl{F}}\gap\kw{extends}\gap\gen{C'}{\pl{T}}}{\OR\pl{e}\CR\OC\pl{M}\CC\gap\s{}} & = &
   \twolines{\kw{new}\gap\gen{C}{\pl{F}}\gap\kw{extends}\gap\gen{C'}{\pl{T}}}{\OR\s{\pl{e}}\CR\OC\tsubst{\pl{M}}{\pl{x}'}{\pl{v}'}\CC}\\
   && \quad\textrm{where }\tsubst{}{\pl{x}'}{\pl{v}'}\textrm{ is }\tsubst{}{\pl{x}}{\pl{v}}\textrm{ without the pair of }\this\\[3ex]
+\twolines{\kw{if}\gap\OR e_0\gap\kw{instanceof}\gap T\gap x'\CR}{\OC\gap e_1\gap\CC\gap\kw{else}\gap\OC\gap e_2\gap\CC\gap\s{}} & = &
+  \twolines{\kw{if}\gap\OR\s{e_0}\gap\kw{instanceof}\gap T\gap x'\CR}{\OC\gap\s{e_1}\gap\CC\gap\kw{else}\gap\OC\gap\s{e_2}\gap\CC}\\
+  && \quad\textrm{if }x'\not\in\pl{x}\\[3ex]
 \twolines{\methodsig{\Delta}{T_0}{m}{T_1\gap x'_1,\ldots,T_k\gap x'_k}}{\OC\gap\ret{e}\gap\CC\gap\s{}} & = &
   \twolines{\methodsig{\Delta}{T_0}{m}{T_1\gap x'_1,\ldots,T_k\gap x'_k}}{\OC\gap\ret{\s{e}}\gap\CC}\\
   && \quad\textrm{if }x'_1,\ldots,x'_k\not\in\pl{x}
