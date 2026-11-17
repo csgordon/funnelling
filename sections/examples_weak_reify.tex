@@ -287,7 +287,7 @@ vB = new MyFoo<> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }
 
 The first call of \Q@m@ reduces \Q@eA@ to \Q@vA@ with rules \textsc{simpleAddSuper}, \textsc{simpleFound} and \textsc{ifElse}.
 The type of \Q@vA@ is \Q@MyFoo<>@: the instantiation \Q@A<>@ of \Q@X@ appears only in the supertype \Q@Foo<A<>>@ and in the method \Q@x@.
-In the second call of \Q@m@, rule \textsc{ifThen} checks only that the class of \Q@vA@ is a subclass of \Q@MyFoo@.
+In the second call of \Q@m@, rule \textsc{ifThen} checks only that the class of \Q@vA@ is \Q@MyFoo@.
 Thus the second call returns \Q@vA@, a \Q@Foo<A<>>@, as a \Q@Foo<B<>>@.
 The last expression calls \Q@onlyB@ on an \Q@A<>@, and \Q@A<>@ does not have a method called \Q@onlyB@.
 Rule \textsc{searchSuper} looks for \Q@onlyB@ up to \Q@Object<>@, where no rule applies: the reduction is stuck.
