@@ -6,7 +6,7 @@
 
 We now present the core language of Section~\ref{sec:funnelling}: its syntax, its small step reduction and its type rules.
 The type rules encode funnelling.
-Replacing rule \textsc{new-local} with rule \textsc{new-local-java} of Section~\ref{sec:funnelling} gives the Java typing of local classes.
+Replacing rule \textsc{new-local} with rule \textsc{new-local-java} gives the Java typing of local classes.
 
 \subsection{Syntax}
 \label{sec:syntax}
@@ -700,7 +700,8 @@ Substitution does not rename the type variables it meets.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
 Substitution of type variables is defined only when the type variables of the methods it enters are not in its domain.
 In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables:
-$\tsubst{T}{F_1,\ldots,F_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $i\in 1..n$ such that $F_i=\funnel{X_i}$; the ground funnels are ignored.
+$\tsubst{T}{F_1,\ldots,F_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $i\in 1..n$, where $F_i=\funnel{X_i}$.
+No funnel $F_i$ is of the form $G$: the funnels in the domain of a substitution are the funnels of a declared local class, and by A11 every funnel in \decls is of the form $\funnel{X}$.
 Since the substituted types are ground, $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground type $G$, and the result is again a funnel.
 
 \subsection{Substitution of Variables}
@@ -735,7 +736,7 @@ Substitution of variables is defined only when the variable $x'$ of a type test 
 
 \subsection{Java Typing of Local Classes}
 \label{sec:java}
-Rule \textsc{new-local-java} (Section~\ref{sec:funnelling}) types local classes as Java does.
+Rule \textsc{new-local-java} types local classes as Java does.
 A local class has no funnels, and its methods are typed under the full $\Delta$ and $\Gamma$ in scope, except for \Q@this@.
 Replacing rule \textsc{new-local} with rule \textsc{new-local-java} makes our system unsound for the same reason Java is unsound.
 Consider the method \Q@mk@ below, the method \Q@m@ of Example~1 in our syntax:
