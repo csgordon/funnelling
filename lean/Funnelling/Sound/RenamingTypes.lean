@@ -149,22 +149,8 @@ theorem ftv_var_subst {s : TSubst} {Y X : TVarName} {U : Ty} (hl : List.lookup Y
 theorem mem_bind_snd {A : Type} {Dl : Bounds} {Us : List A} {Y : TVarName} {U : A} (h : List.Mem (Y, U) (bind Dl Us)) :
     List.Mem U Us := (List.of_mem_zip h).2
 
-theorem mem_bindF_snd : forall {Fs : List Funnel} {Us : List Ty} {Y : TVarName} {U : Ty},
-    List.Mem (Y, U) (bindF Fs Us) -> List.Mem U Us
-  | [], _, _, _, h => by simp [bindF] at h
-  | _ :: _, [], _, _, h => by simp [bindF] at h
-  | F :: Fs, U' :: Us, Y, U, h => by
-    cases F with
-    | funnel X =>
-      have e : bindF (.funnel X :: Fs) (U' :: Us) = (X, U') :: bindF Fs Us := by simp [bindF]
-      rw [e] at h
-      cases h with
-      | head => exact List.Mem.head _
-      | tail _ h => exact List.Mem.tail _ (mem_bindF_snd h)
-    | ground G =>
-      have e : bindF (.ground G :: Fs) (U' :: Us) = bindF Fs Us := by simp [bindF]
-      rw [e] at h
-      exact List.Mem.tail _ (mem_bindF_snd h)
+theorem mem_bindF_snd {Fs : List Funnel} {Us : List Ty} {Y : TVarName} {U : Ty} (h : List.Mem (Y, U) (bindF Fs Us)) :
+    List.Mem U Us := (List.of_mem_zip h).2
 
 theorem ftv_bind_sub {Dl : Bounds} {Us : List Ty} {L : List Ty} (hl : Us.length = Dl.length)
     (hL : forall X, List.Mem X (Ty.ftvList L) -> List.Mem X (dom Dl)) :

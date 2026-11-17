@@ -15,10 +15,7 @@ end
 
 def bind {A : Type} (Delta : Bounds) (as : List A) : List (Prod TVarName A) := (dom Delta).zip as
 
-def bindF (Fs : List Funnel) (Ts : List Ty) : TSubst :=
-  (Fs.zip Ts).filterMap fun
-    | (.funnel X, T) => some (X, T)
-    | (.ground _, _) => none
+def bindF (Fs : List Funnel) (Ts : List Ty) : TSubst := (domF Fs).zip Ts
 
 abbrev GSubst := List (Prod TVarName GTy)
 

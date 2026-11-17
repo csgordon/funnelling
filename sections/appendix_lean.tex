@@ -92,6 +92,7 @@ A judgement on sequences has its own name: $\kind{\Delta}{\pl{T}}$ is \texttt{Ki
 \item \textbf{Substitution and lengths.}
 The paper defines $\tsubst{T}{\Delta}{\pl{T}}$ only when $\Delta$ and $\pl{T}$ have the same length.
 $\tsubst{T}{\Delta}{\pl{T}}$ is \texttt{T.subst (bind Delta Ts)} and $\tsubst{T}{\pl{F}}{\pl{T}}$ is \texttt{T.subst (bindF Fs Ts)}; the rule has the premise that the lengths are the same.
+The paper defines $\tsubst{T}{\pl{F}}{\pl{T}}$ only when $\pl{F}$ contains no ground type; in the rules $\pl{F}$ are the funnels of a declared local class, so $\pl{F}$ contains no ground type by A11.
 The paper defines a simultaneous substitution only when the names in its domain are distinct.
 Rules \textsc{simpleFound} and \textsc{innerFound} have this as premises (\texttt{Nodup}), since their domains hold the names chosen by $\mathsf{fresh}$; in the other rules the domain is distinct by A5, A6 and A7.
 \item \textbf{Definitions.}
@@ -583,10 +584,7 @@ def Ty.subst (sigma : TSubst) : Ty -> Ty
   | .var X => (sigma.lookup X).getD (.var X)
   | .cls C Ts => .cls C (Ty.substList sigma Ts)
 def bind {A : Type} (Delta : Bounds) (as : List A) : List (Prod TVarName A) := (dom Delta).zip as
-def bindF (Fs : List Funnel) (Ts : List Ty) : TSubst :=
-  (Fs.zip Ts).filterMap fun
-    | (.funnel X, T) => some (X, T)
-    | (.ground _, _) => none
+def bindF (Fs : List Funnel) (Ts : List Ty) : TSubst := (domF Fs).zip Ts
 abbrev GSubst := List (Prod TVarName GTy)
 def Funnel.gsubst (sigma : GSubst) : Funnel -> Funnel
   | .ground G => .ground G
@@ -598,7 +596,7 @@ abbrev GSubstDefined (Xs : List TVarName) (e : Expr) : Prop :=
   forall X, List.Mem X e.tbinders -> Not (List.Mem X Xs)
 \end{lstlisting}
 \end{leanside}
-\mapping{$[\Delta=\pl{T}]$ is \texttt{bind Delta Ts}, with a premise that the lengths are the same; $[\pl{F}=\pl{T}]$ is \texttt{bindF Fs Ts}. The function \texttt{bindF} is total and skips a ground funnel; with no ground funnel in \texttt{Fs}, \texttt{bindF Fs Ts} is \texttt{(domF Fs).zip Ts} (lemma \texttt{bindF\_funnels}). The function \texttt{Expr.gsubst} is total; a rule that substitutes into an expression \texttt{e} has the premise \texttt{GSubstDefined Xs e}, which is the condition under which the substitution of the paper is defined. Substitution into expressions, \texttt{Expr.gsubst}, takes ground types, so $\tsubst{\funnel{X_i}}{\ldots}{\ldots}$ is again a funnel.}
+\mapping{$[\Delta=\pl{T}]$ is \texttt{bind Delta Ts}, with a premise that the lengths are the same; $[\pl{F}=\pl{T}]$ is \texttt{bindF Fs Ts}. The function \texttt{Expr.gsubst} is total; a rule that substitutes into an expression \texttt{e} has the premise \texttt{GSubstDefined Xs e}, which is the condition under which the substitution of the paper is defined. Substitution into expressions, \texttt{Expr.gsubst}, takes ground types, so $\tsubst{\funnel{X_i}}{\ldots}{\ldots}$ is again a funnel.}
 \end{cmp}
 
 \begin{cmp}{Substitution of variables}

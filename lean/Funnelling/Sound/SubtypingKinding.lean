@@ -49,18 +49,11 @@ theorem bind_map {A : Type} {f : A -> A} {Delta : Bounds} {Us : List A} :
   rw [List.zip_map_right]
   rfl
 
-theorem bindF_map {f : Ty -> Ty} : forall {Fs : List Funnel} {Us : List Ty},
-    bindF Fs (Us.map f) = (bindF Fs Us).map fun p => (p.1, f p.2)
-  | [], _ => by simp [bindF]
-  | _ :: _, [] => by simp [bindF]
-  | F :: Fs, U :: Us => by
-    cases F with
-    | ground G =>
-      simp only [bindF, List.map_cons, List.zip_cons_cons, List.filterMap_cons] at |-
-      exact bindF_map (Fs := Fs) (Us := Us)
-    | funnel X =>
-      simp only [bindF, List.map_cons, List.zip_cons_cons, List.filterMap_cons, List.cons.injEq, true_and] at |-
-      exact bindF_map (Fs := Fs) (Us := Us)
+theorem bindF_map {f : Ty -> Ty} {Fs : List Funnel} {Us : List Ty} :
+    bindF Fs (Us.map f) = (bindF Fs Us).map fun p => (p.1, f p.2) := by
+  simp only [bindF]
+  rw [List.zip_map_right]
+  rfl
 
 theorem bind_lookup_some {A : Type} {Delta : Bounds} {Us : List A} {X : TVarName} (hl : Us.length = Delta.length)
     (hX : List.Mem X (dom Delta)) : exists U, List.lookup X (bind Delta Us) = some U := by
@@ -69,27 +62,12 @@ theorem bind_lookup_some {A : Type} {Delta : Bounds} {Us : List A} {X : TVarName
   rw [zip_map_fst (by simp [dom, hl])]
   exact hX
 
-theorem bindF_lookup_some : forall {Fs : List Funnel} {Us : List Ty} {X : TVarName}, Us.length = Fs.length ->
-    List.Mem X (domF Fs) -> exists U, List.lookup X (bindF Fs Us) = some U
-  | [], _, _, _, h => by simp [domF] at h
-  | _ :: _, [], _, hl, _ => by simp at hl
-  | F :: Fs, U :: Us, X, hl, hX => by
-    rw [domF_cons] at hX
-    cases F with
-    | ground G =>
-      simp only [bindF, List.zip_cons_cons, List.filterMap_cons]
-      rw [show domF [Funnel.ground G] = [] from rfl, List.nil_append] at hX
-      exact bindF_lookup_some (by simpa using hl) hX
-    | funnel Y =>
-      simp only [bindF, List.zip_cons_cons, List.filterMap_cons]
-      by_cases e : X = Y
-      . subst e; exact Exists.intro U lookup_cons_eq
-      . rw [lookup_cons_ne e]
-        simp only [domF, List.filterMap_cons, List.filterMap_nil, listMem_iff, List.mem_append, List.mem_cons,
-          List.not_mem_nil, or_false] at hX
-        rcases hX with h | h
-        . exact absurd h e
-        . exact bindF_lookup_some (by simpa using hl) h
+theorem bindF_lookup_some {Fs : List Funnel} {Us : List Ty} {X : TVarName} (hl : Us.length = Fs.length)
+    (hX : List.Mem X (domF Fs)) : exists U, List.lookup X (bindF Fs Us) = some U := by
+  apply lookup_isSome
+  simp only [bindF]
+  rw [List.map_fst_zip (hl ▸ List.length_filterMap_le _ _)]
+  exact hX
 
 theorem subst_bind_comp {s' : TSubst} {Delta : Bounds} {Us : List Ty} {T : Ty} (hl : Us.length = Delta.length)
     (hT : forall X, List.Mem X T.ftv -> List.Mem X (dom Delta)) :
