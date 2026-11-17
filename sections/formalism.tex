@@ -546,7 +546,7 @@ The relation $\cast{\Delta}{T}{T'}$ is the \emph{checked cast}: a type test agai
 Rule \textsc{if-instanceof} accepts the type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ only when $\cast{\Delta}{T_0}{T}$, where $T_0$ is a type of $e_0$.
 Rule \textsc{cast-up} accepts a target $T'$ that is a supertype of the source $T$.
 Rule \textsc{cast-var} replaces a source type variable $X$ with the bound of $X$.
-Rule \textsc{cast-down} accepts a target $\gen{C}{\pl{T}}$ that is a subtype of the source $\gen{C'}{\pl{T}_0}$, \emph{when the source determines the type arguments} $\pl{T}$.\footnote{This is the condition under which a Java cast to a parameterized type is checked~\cite[Section~5.1.6.2]{jls}.
+Rule \textsc{cast-down} accepts a target $\gen{C}{\pl{T}}$ that is a subtype of the source $\gen{C'}{\pl{T}_0}$, \emph{when the source determines the type arguments} $\pl{T}$.\footnote{This is the condition under which a Java cast to a parameterized type is checked~\cite[Section~5.1.6.2]{jls}~\cite{bracha1998making}.
 When the source does not determine the type arguments, Java rejects the type test \Q@e instanceof C<Ts>@, but accepts the cast \Q@(C<Ts>)e@ with an unchecked warning: at run time, that cast checks only the class \Q@C@.}
 $\generic{C}=\gen{C}{\pl{X}}$ is the class $C$ instantiated with its own type variables $\pl{X}$, and $\gen{C'}{\pl{T}'}$ is the supertype of $\gen{C}{\pl{X}}$ with class $C'$.
 The premise $\subtype{\emptyset}{\gen{C}{\pl{X}}}{\gen{C'}{\pl{T}'}}$ of rule \textsc{cast-down} uses the bounds $\emptyset$: a subtyping derivation between class types uses only rules \textsc{sub-refl}, \textsc{sub-inherit} and \textsc{sub-inherit-local}, which do not read $\Delta$.
