@@ -471,7 +471,7 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
     | exact absurd (FreshM.mem_names (by assumption) (by assumption)) (by assumption)
     | exact ((by assumption : Not (exists Ts', Sub d [] _ (.cls _ Ts'))) ⟨_, (by assumption)⟩).elim
     | skip
-  case simpleFieldFound.simpleFieldFound =>
+  case topFieldFound.topFieldFound =>
     rename_i hm _ _ _ hm' _
     exact zip_unique (fields_nodup hwf (by assumption : Declared d _).dec_mem) hm hm' ▸ Fresh.refl _
   case ifThen.ifThen =>
@@ -483,7 +483,7 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
     simp only [Expr.noShadow, Expr.closed, Bool.and_eq_true, NoThis, Expr.vbinders, listMem_iff, List.mem_append,
       List.mem_cons, not_or] at hn ht hc
     exact fresh_if hf hf2 hd hd2 hw1 hw2 hn.1.2 hu.2.1 ht.1.2 hc.1.1.1
-  case simpleFound.simpleFound =>
+  case topFound.topFound =>
     rename_i hD hM hN hN' hgs hvs _ _ _ _ _ _ _ _ _ _ hF2 hG2' hN2' hp2 hvs2 hF hG hG' hp _ hM2 _ hN2 hgs2 _
     obtain rfl := nodup_map_inj (hwf.2.2.1 _ (classes_mem_dec hD.dec_mem)) hM hM2
       (by rw [FreshM.name hF, FreshM.name hF2])

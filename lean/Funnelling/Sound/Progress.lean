@@ -241,11 +241,11 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         rw [<- List.take_append_drop w2.D.Ss.length vs]
         by_cases hf : List.Mem f (w2.D.Ss.map Slot.f)
         . rcases mem_zip_fst (ys := vs.take w2.D.Ss.length) (by rw [List.length_map, hk]) hf with ⟨v, hv⟩
-          exact ⟨_, Step.simpleFieldFound hw2.decl hk hv⟩
-        . exact ⟨_, Step.simpleFieldSuper hw2.decl hk hf hO hlen⟩
+          exact ⟨_, Step.topFieldFound hw2.decl hk hv⟩
+        . exact ⟨_, Step.topFieldSuper hw2.decl hk hf hO hlen⟩
   | call v Gs' m vs =>
     cases v with
-    | new C Gs vs0 => exact ⟨_, Step.simpleAddSuper (v := Value.new C Gs vs0) rfl⟩
+    | new C Gs vs0 => exact ⟨_, Step.topAddSuper (v := Value.new C Gs vs0) rfl⟩
     | newLocal C Gs C' Gs'' vs0 Ms =>
       by_cases hm : List.Mem m (Ms.map Method.name)
       . rcases List.mem_map.mp hm with ⟨M, hM, hMn⟩
@@ -311,7 +311,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         simp only [Method.noShadow, Bool.and_eq_true, List.nil_append, List.cons_append, NoThisM, Method.vbinders,
           listMem_iff, List.mem_append, not_or, Method.uniq] at hnM htM huM
         have hN : (dom w.D.Delta ++ dom Delta').Nodup := by grind
-        exact ⟨_, Step.simpleFound hw'.decl hM (FreshM.refl _) hkd (by omega) hN
+        exact ⟨_, Step.topFound hw'.decl hM (FreshM.refl _) hkd (by omega) hN
           (List.nodup_cons.mpr ⟨htM.1, huM.2.1⟩) (by omega) (fun X hX => Expr.noShadow_tb hnM.2 X hX)
           (fun y hy => Expr.noShadow_binders hnM.2 htM.2 y hy) rfl⟩
       . have hO : Not (w.D.C = Object) := by

@@ -56,17 +56,17 @@ theorem w3 : Not (A7Decls [decObject, decA, decShadow]) := by decide
 def decOrphan : Dec := { C := cn "Orphan", Delta := [], C' := cn "Missing", Ts := [], Ms := [], Ss := [] }
 theorem w4 : Not (A9 [decObject, decOrphan]) /\ Not (A10 [decObject, decOrphan]) := by decide
 
--- R1: rule simpleFieldFound.
+-- R1: rule topFieldFound.
 theorem r1 : Reduces d1 (.field (Value.new (cn "Box") [gA] [vA]) (fn "val")) vA :=
   And.intro
-    (Step.simpleFieldFound (D := decBox) (vs1 := [vA]) (vs := [])
+    (Step.topFieldFound (D := decBox) (vs1 := [vA]) (vs := [])
       (.dec (.tail _ (.tail _ (.tail _ (.head _))))) rfl (.head _))
     (by decide)
 
--- R2: rule simpleAddSuper.
+-- R2: rule topAddSuper.
 theorem r2 : Reduces d1 (.call (Value.new (cn "C2") [] []) [] (mn "m") [])
     (.superCall (Value.new (cn "C2") [] []) (.cls (cn "C2") []) [] (mn "m") []) :=
-  And.intro (Step.simpleAddSuper (Gs' := []) (vs := []) rfl) (by decide)
+  And.intro (Step.topAddSuper (Gs' := []) (vs := []) rfl) (by decide)
 
 -- R3: rule searchSuper.
 theorem r3 : Reduces d1 (.superCall (Value.new (cn "C2") [] []) (.cls (cn "C2") []) [] (mn "m") [])
@@ -77,10 +77,10 @@ theorem r3 : Reduces d1 (.superCall (Value.new (cn "C2") [] []) (.cls (cn "C2") 
       (by decide) rfl)
     (by decide)
 
--- R4: rule simpleFound, with no names to rename.
+-- R4: rule topFound, with no names to rename.
 theorem r4 : Reduces d1 (.superCall (Value.new (cn "C2") [] []) (.cls (cn "C1") []) [] (mn "m") []) vA :=
   And.intro
-    (Step.simpleFound (D := decC1) (M := .mk [] tA (mn "m") [] vA) (Gs := []) (Gs' := []) (vs := [])
+    (Step.topFound (D := decC1) (M := .mk [] tA (mn "m") [] vA) (Gs := []) (Gs' := []) (vs := [])
       (Delta' := []) (T0 := tA) (ps := []) (e0 := vA)
       (.dec (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))) (.head _)
       (And.intro (.mk (Xs' := []) (xs' := []) rfl rfl (.new .nil)) (.mk (Xs' := []) (xs' := []) rfl rfl (.new .nil))) rfl rfl (by decide) (by decide) rfl (by decide) (by decide) rfl)
@@ -91,7 +91,7 @@ theorem r5 : Reduces d1 (.call (.field (Value.new (cn "Box") [gA] [vA]) (fn "val
     (.call vA [] (mn "m") []) :=
   And.intro
     (Step.ctx (E := .callRecv .hole [] (mn "m") [])
-      (Step.simpleFieldFound (D := decBox) (vs1 := [vA]) (vs := [])
+      (Step.topFieldFound (D := decBox) (vs1 := [vA]) (vs := [])
         (.dec (.tail _ (.tail _ (.tail _ (.head _))))) rfl (.head _)))
     (by decide)
 
@@ -142,11 +142,11 @@ theorem w5 : WFDecls d2 := by decide
 
 def vLocal : Value := .newLocal (cn "MyFoo") [gA] (cn "Foo") [gA] [] [.mk [] tA (mn "x") [] vA]
 
--- R7: rule simpleFound renames Y and y into Y1 and y1, then replaces Y1 and y1.
+-- R7: rule topFound renames Y and y into Y1 and y1, then replaces Y1 and y1.
 theorem r7 : Reduces d2
     (.superCall (Value.new (cn "Maker") [] []) (.cls (cn "Maker") []) [tA] (mn "mk") [vA]) vLocal :=
   And.intro
-    (Step.simpleFound (D := decMaker) (M := mkMethod) (Gs := []) (Gs' := [gA]) (vs := [vA])
+    (Step.topFound (D := decMaker) (M := mkMethod) (Gs := []) (Gs' := [gA]) (vs := [vA])
       (Delta' := [{ X := tn "Y1", T := obj }]) (T0 := tFoo (.var (tn "Y1")))
       (ps := [{ T := .var (tn "Y1"), x := vn "y1" }])
       (e0 := .newLocal (cn "MyFoo") [.funnel (tn "Y1")] (cn "Foo") [.var (tn "Y1")] []
@@ -299,7 +299,7 @@ theorem n1 : Not (ProgOk d3 brokenMain) := fun h =>
   h.2.elim fun _ ht => (typeSoundness w6.1 h.1 w6.2 ht j2.1).2.elim j2.2.1 fun h' => h'.elim j2.2.2
 
 def decLeaker : Dec :=
-  { C := cn "Leaker", Delta := [], C' := Object, Ts := [],
+  { C := cn "Broken", Delta := [], C' := Object, Ts := [],
     Ms := [
       .mk [{ X := tn "Y", T := obj }] (.cls (cn "MyFoo2") []) (mn "mk2") [{ T := .var (tn "Y"), x := vn "y" }]
         (.newLocal (cn "MyFoo2") [] (cn "Foo") [.var (tn "Y")] [] [.mk [] (.var (tn "Y")) (mn "x") [] (.var (vn "y"))]),
@@ -313,7 +313,7 @@ def d4 : Decls := [decObject, decA, decB, decFoo, decLeaker]
 theorem w7 : WFDecls d4 := by decide
 
 
--- L2: the class Leaker is not Ok.
+-- L2: the class Broken of d4 is not Ok.
 theorem l2 : Not (ClassOk d4 decLeaker) := by
   intro h
   have hm := h.2.2.1 _ (.head _)
@@ -343,8 +343,8 @@ def onlyBCall (e : Expr) : Expr := call0 e "onlyB" []
 -- Example 1, funnelled as in Section 4.10.
 
 def decFixed : Dec :=
-  { C := cn "Fixed", Delta := [], C' := Object, Ts := [],
-    Ms := [meth [bnd "X" obj] (tFoo (tv "X")) "mk" [par (tFoo (tv "X")) "other", par (tv "X") "x"]
+  { C := cn "Broken", Delta := [], C' := Object, Ts := [],
+    Ms := [meth [bnd "X" obj] (tFoo (tv "X")) "m" [par (tFoo (tv "X")) "other", par (tv "X") "x"]
       (.ifInst (ev "other") (.cls (cn "MyFoo") [tv "X"]) (vn "w") (ev "w")
         (.newLocal (cn "MyFoo") [.funnel (tn "X")] (cn "Foo") [tv "X"] [] [meth [] (tv "X") "x" [] (ev "x")]))],
     Ss := [] }
@@ -353,7 +353,7 @@ def d5 : Decls := [decObject, decA, decB, decFoo, decFixed]
 
 def vMyFooA : Value := .newLocal (cn "MyFoo") [gA] (cn "Foo") [gA] [] [meth [] tA "x" [] vA]
 
-def fixedCallA : Expr := .call (Value.new (cn "Fixed") [] []) [tA] (mn "mk") [Value.new (cn "Foo") [gA] [], vA]
+def fixedCallA : Expr := .call (Value.new (cn "Broken") [] []) [tA] (mn "m") [Value.new (cn "Foo") [gA] [], vA]
 
 -- W8: the funnelled Example 1 is well formed.
 theorem w8 : WFDecls d5 := by decide
@@ -373,7 +373,7 @@ theorem kFooX5 : Kind d5 [bnd "X" obj] (tFoo (tv "X")) := kFooG mFoo5 kX5 sX5
 
 theorem kMyFooX5 : Kind d5 [bnd "X" obj] (.cls (cn "MyFoo") [tv "X"]) :=
   Kind.kindClass (Delta0 := [bnd "X" obj]) (Ts0 := [tv "X"])
-    (Scope.newLocal (C := cn "Fixed") (T := .cls (cn "Fixed") []) (Delta := []) (Ts'' := [])
+    (Scope.newLocal (C := cn "Broken") (T := .cls (cn "Broken") []) (Delta := []) (Ts'' := [])
       (Exists.intro (.dec decFixed) (And.intro (.dec mF5) (And.intro rfl (.head _))))
       (Exists.intro (.ifElse (ev "other") (.cls (cn "MyFoo") [tv "X"]) (vn "w") (ev "w") .hole) rfl)
       (Generic.dec (.dec mF5)) (Scope.dec (.dec mF5)) (Pairing.funnel (.head _) .nil))
@@ -395,7 +395,7 @@ theorem consMyFoo5 : Consistent d5
           exact OverrideOkM.newLocal (Delta'' := []) (T0 := tv "X") (ps := []) (e := ev "x") myFoo5 (.head _) rfl rfl rfl rfl
         | tail _ h => cases h))))))))
 
--- P1: the class Fixed is Ok.
+-- P1: the class Broken of d5 is Ok.
 theorem p1 : ClassOk d5 decFixed :=
   And.intro (by intro T h; cases h)
   (And.intro (by intro T h; cases h with | head => exact (kNull (D := decObject) (.head _) rfl) | tail _ h => cases h)
@@ -420,7 +420,7 @@ theorem p1 : ClassOk d5 decFixed :=
             kFooX5 (Sub.subInheritLocal myFoo5 rfl .subRefl))))
     (overrideObj (by decide) (by decide) (D0 := decObject) (.head _) rfl rfl)))
 
--- T3: new Fixed<>().<A<>>mk(new Foo<A<>>(), new A<>()) has type Foo<A<>>.
+-- T3: new Broken<>().<A<>>m(new Foo<A<>>(), new A<>()) has type Foo<A<>>.
 theorem t3 : Typing d5 [] [] fixedCallA (tFoo tA) :=
   Typing.call (Delta0 := []) (Ts2 := []) (Delta1 := [bnd "X" obj]) (T0 := tFoo (tv "X"))
     (ps := [par (tFoo (tv "X")) "other", par (tv "X") "x"]) (Ts' := [tFoo tA, tA])
@@ -443,7 +443,7 @@ theorem r12 : ReducesStar d5 fixedCallA vMyFooA :=
     ReducesStar.refl))
 
 -- R13: given a MyFoo<A<>>, the type test succeeds and mk returns it.
-theorem r13 : ReducesStar d5 (.call (Value.new (cn "Fixed") [] []) [tA] (mn "mk") [vMyFooA, vA]) vMyFooA :=
+theorem r13 : ReducesStar d5 (.call (Value.new (cn "Broken") [] []) [tA] (mn "m") [vMyFooA, vA]) vMyFooA :=
   ReducesStar.step (red (sAdd rfl rfl rfl rfl) (by decide))
   (ReducesStar.step (red (sFound (D := decFixed) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) (.head _) rfl rfl rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide))
     (by decide))
@@ -451,7 +451,7 @@ theorem r13 : ReducesStar d5 (.call (Value.new (cn "Fixed") [] []) [tA] (mn "mk"
     ReducesStar.refl))
 
 theorem fixedMk {T R : Ty} {es : List Expr}
-    (h : Typing d5 [] [] (.call (Value.new (cn "Fixed") [] []) [T] (mn "mk") es) R) :
+    (h : Typing d5 [] [] (.call (Value.new (cn "Broken") [] []) [T] (mn "m") es) R) :
     TypingSeq d5 [] [] es [tFoo T, T] /\ Up d5 [] (tFoo T) R := by
   cases inv_callTop w8 (D := decFixed) (.tail _ (.tail _ (.tail _ (.tail _ (.head _))))) rfl rfl rfl (by decide)
     (by decide) h with
@@ -474,9 +474,9 @@ theorem fixedMk {T R : Ty} {es : List Expr}
   subst e1 e2
   exact And.intro h.2.2.2.1 h.2.2.2.2
 
--- N2: the main expression of Example 1, with Fixed, is ill typed: a Foo<A<>> is passed where a Foo<B<>> is expected.
+-- N2: the main expression of Example 1, with the funnelled m, is ill typed: a Foo<A<>> is passed where a Foo<B<>> is expected.
 theorem n2 : Not (exists T, Typing d5 [] []
-    (call0 (call0 (.call (Value.new (cn "Fixed") [] []) [tB] (mn "mk") [fixedCallA, vB]) "x" []) "onlyB" []) T) := by
+    (call0 (call0 (.call (Value.new (cn "Broken") [] []) [tB] (mn "m") [fixedCallA, vB]) "x" []) "onlyB" []) T) := by
   intro h
   cases h with
   | intro T h =>
@@ -822,8 +822,8 @@ theorem r16 : ReducesStar d8 main7 stuckB /\ Stuck d8 stuckB :=
 -- The method leak of Section 4.10.
 
 def leakMain : Expr :=
-  onlyBCall (call0 (.call (Value.new (cn "Leaker") [] []) [tB] (mn "leak")
-    [.call (Value.new (cn "Leaker") [] []) [tA] (mn "mk2") [vA]]) "x" [])
+  onlyBCall (call0 (.call (Value.new (cn "Broken") [] []) [tB] (mn "leak")
+    [.call (Value.new (cn "Broken") [] []) [tA] (mn "mk2") [vA]]) "x" [])
 
 -- R17: leak returns a MyFoo2 built with A<> as a Foo<B<>>; the program reduces to new A<>().[Object<>]onlyB(), which is stuck.
 theorem r17 : ReducesStar d4 leakMain stuckB /\ Stuck d4 stuckB :=
@@ -839,7 +839,7 @@ theorem r17 : ReducesStar d4 leakMain stuckB /\ Stuck d4 stuckB :=
     (stuckS (by decide))
 
 def decLeakerF : Dec :=
-  { C := cn "LeakerF", Delta := [], C' := Object, Ts := [],
+  { C := cn "Broken", Delta := [], C' := Object, Ts := [],
     Ms := [
       meth [bnd "Y" obj] (.cls (cn "MyFoo2F") [tv "Y"]) "mk2" [par (tv "Y") "y"]
         (.newLocal (cn "MyFoo2F") [.funnel (tn "Y")] (cn "Foo") [tv "Y"] [] [meth [] (tv "Y") "x" [] (ev "y")]),
@@ -849,8 +849,8 @@ def decLeakerF : Dec :=
 def d4F : Decls := [decObject, decA, decB, decFoo, decLeakerF]
 
 def leakMainF : Expr :=
-  onlyBCall (call0 (.call (Value.new (cn "LeakerF") [] []) [tB] (mn "leak")
-    [.call (Value.new (cn "LeakerF") [] []) [tA] (mn "mk2") [vA]]) "x" [])
+  onlyBCall (call0 (.call (Value.new (cn "Broken") [] []) [tB] (mn "leak")
+    [.call (Value.new (cn "Broken") [] []) [tA] (mn "mk2") [vA]]) "x" [])
 
 -- W13: the funnelled leak is well formed.
 theorem w13 : WFDecls d4F := by decide
@@ -868,7 +868,7 @@ theorem kFooY4 : Kind d4F [bnd "Y" obj] (tFoo (tv "Y")) := kFooG mFoo4F kY4 sY4
 
 theorem kMyFoo2FY : Kind d4F [bnd "Y" obj] (.cls (cn "MyFoo2F") [tv "Y"]) :=
   Kind.kindClass (Delta0 := [bnd "Y" obj]) (Ts0 := [tv "Y"])
-    (Scope.newLocal (C := cn "LeakerF") (T := .cls (cn "LeakerF") []) (Delta := []) (Ts'' := [])
+    (Scope.newLocal (C := cn "Broken") (T := .cls (cn "Broken") []) (Delta := []) (Ts'' := [])
       (Exists.intro (.dec decLeakerF) (And.intro (.dec mL4F) (And.intro rfl (.head _))))
       (Exists.intro .hole rfl) (Generic.dec (.dec mL4F)) (Scope.dec (.dec mL4F)) (Pairing.funnel (.head _) .nil))
     (by intro T h; cases h with | head => exact kY4 | tail _ h => cases h) rfl (.cons sY4 .nil)
@@ -885,7 +885,7 @@ theorem consMyFoo2F : Consistent d4F
             rfl rfl rfl rfl
         | tail _ h => cases h))))))))
 
--- P3: funnelled, the class LeakerF is Ok: leak takes a MyFoo2F<Y> and returns a Foo<Y>.
+-- P3: funnelled, the class Broken of d4F is Ok: leak takes a MyFoo2F<Y> and returns a Foo<Y>.
 theorem p3 : ClassOk d4F decLeakerF :=
   And.intro (by intro T h; cases h)
   (And.intro (by intro T h; cases h with | head => exact (kNull (D := decObject) (.head _) rfl) | tail _ h => cases h)
@@ -913,7 +913,7 @@ theorem p3 : ClassOk d4F decLeakerF :=
 
 -- N8: funnelled, the main expression of the leak is ill typed: a MyFoo2F<A<>> is passed where a MyFoo2F<B<>> is expected.
 theorem leakFMem {T R : Ty} {es : List Expr} {m : String}
-    (h : Typing d4F [] [] (.call (Value.new (cn "LeakerF") [] []) [T] (mn m) es) R) :
+    (h : Typing d4F [] [] (.call (Value.new (cn "Broken") [] []) [T] (mn m) es) R) :
     exists Delta1 T0 ps body T0' Ts', List.Mem (Method.mk Delta1 T0 (mn m) ps body) decLeakerF.Ms /\
       [T].length = Delta1.length /\ T0' :: Ts' = Ty.substList (bind Delta1 [T]) (T0 :: ps.map VarDecl.T) /\
       TypingSeq d4F [] [] es Ts' /\ Up d4F [] T0' R :=
@@ -1219,12 +1219,12 @@ theorem declDerived : Declared d12 (.dec decDerived) := .dec (.tail _ (.tail _ (
 theorem r20 : ReducesStar d12 derivedF vA :=
   ReducesStar.step
     (And.intro
-      (Step.simpleFieldSuper (D := decDerived) (Gs := []) (vs1 := [vB]) (vs := [vA]) declDerived rfl
+      (Step.topFieldSuper (D := decDerived) (Gs := []) (vs1 := [vB]) (vs := [vA]) declDerived rfl
         (by decide) (by decide) rfl)
       (by decide))
     (ReducesStar.step
       (And.intro
-        (Step.simpleFieldFound (D := decBase) (Gs := [gA]) (vs1 := [vA]) (vs := []) declBase rfl (.head _))
+        (Step.topFieldFound (D := decBase) (Gs := [gA]) (vs1 := [vA]) (vs := []) declBase rfl (.head _))
         (by decide))
       ReducesStar.refl)
 
@@ -1331,12 +1331,12 @@ def kResult : Value := .newLocal (cn "L") [] Object [] [] [meth [] obj "m" [par 
 theorem w24 : Not (Expr.noShadow [] [] (Value.newLocal (cn "L") [] Object [] [] [meth [] obj "m" [par obj "x"] (call0 vL "m" [ev "x"])]) = true) := by
   decide
 
--- R22: rule simpleFound renames y into y1 and x into x1, so the copy of m binds x1 and the result is well formed.
+-- R22: rule topFound renames y into y1 and x into x1, so the copy of m binds x1 and the result is well formed.
 theorem r22 : ReducesStar d13 (call0 (Value.new (cn "K") [] []) "k" [vL]) kResult :=
-  ReducesStar.step (And.intro (Step.simpleAddSuper (Gs' := []) (vs := [vL]) rfl) (by decide))
+  ReducesStar.step (And.intro (Step.topAddSuper (Gs' := []) (vs := [vL]) rfl) (by decide))
     (ReducesStar.step
       (And.intro
-        (Step.simpleFound (D := decK) (M := meth [] obj "k" [par (.cls (cn "L") []) "y"]
+        (Step.topFound (D := decK) (M := meth [] obj "k" [par (.cls (cn "L") []) "y"]
             (.newLocal (cn "L") [] Object [] [] [lMethod]))
           (Gs := []) (Gs' := []) (vs := [vL]) (Delta' := []) (T0 := obj) (ps := [par (.cls (cn "L") []) "y1"])
           (e0 := .newLocal (cn "L") [] Object [] [] [meth [] obj "m" [par obj "x1"] (call0 (ev "y1") "m" [ev "x1"])])
@@ -1378,10 +1378,10 @@ theorem r23 : ReducesStar d1 outerIf vB :=
           (And.intro (.call .var .nil) (.call .var .nil)) (by decide))
         (by decide))
       (ReducesStar.step
-        (And.intro (Step.simpleAddSuper (Gs' := []) (vs := []) rfl) (by decide))
+        (And.intro (Step.topAddSuper (Gs' := []) (vs := []) rfl) (by decide))
         (ReducesStar.step
           (And.intro
-            (Step.simpleFound (D := decB) (M := meth [] tB "onlyB" [] vB) (Gs := []) (Gs' := []) (vs := [])
+            (Step.topFound (D := decB) (M := meth [] tB "onlyB" [] vB) (Gs := []) (Gs' := []) (vs := [])
               (Delta' := []) (T0 := tB) (ps := []) (e0 := vB)
               (.dec (.tail _ (.tail _ (.head _)))) (.head _)
               (And.intro (.mk (Xs' := []) (xs' := []) rfl rfl (.new .nil)) (.mk (Xs' := []) (xs' := []) rfl rfl (.new .nil)))
