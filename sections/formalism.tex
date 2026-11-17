@@ -113,20 +113,24 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
     &&& \mid \explicitcall{\mathcal{E}}{G}{\pl{G}}{m}{\pl{e}} \mid \explicitcall{v}{G}{\pl{G}}{m}{\pl{v},\mathcal{E},\pl{e}}\\
     &&& \mid \mathcal{E}\fstop f \mid \obj{C}{\pl{G}}{\pl{v},\mathcal{E},\pl{e}}\\
     &&& \mid \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v},\mathcal{E},\pl{e}}{\pl{M}}\\
-    &&& \mid \ifthen{\mathcal{E}}{G}{x}{e_1}{e_2}\\
-\textrm{Expr. Ctx.} & \mathcal{C} & ::= & \square \mid \call{\mathcal{C}}{\pl{T}}{m}{\pl{e}} \mid \call{e}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
-    &&& \mid \explicitcall{\mathcal{C}}{T}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
-    &&& \mid \mathcal{C}\fstop f \mid \obj{C}{\pl{T}}{\pl{e},\mathcal{C},\pl{e}'}\\
-    &&& \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e},\mathcal{C},\pl{e}'}{\pl{M}}\\
-    &&& \mid \ifthen{\mathcal{C}}{T}{x}{e_1}{e_2}\\
-    &&& \mid \ifthen{e_0}{T}{x}{\mathcal{C}}{e_2}\\
-    &&& \mid \ifthen{e_0}{T}{x}{e_1}{\mathcal{C}}
+    &&& \mid \ifthen{\mathcal{E}}{G}{x}{e_1}{e_2}
 \end{array}
 \]
+Evaluation contexts $\mathcal{E}$ fix the order of evaluation, left to right, and are used by the reduction.
 
 \subsection{Declarations}
 \label{sec:declarations}
 {\small
+\begin{Define}{e'\textrm{ occurs in }e}
+e'\textrm{ occurs in }e\textrm{ iff }e=\mathcal{C}[e']\\
+\quad\textrm{where }\mathcal{C}::=\square \mid \call{\mathcal{C}}{\pl{T}}{m}{\pl{e}} \mid \call{e}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
+\quad\phantom{\textrm{where }\mathcal{C}::=} \mid \explicitcall{\mathcal{C}}{T}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
+\quad\phantom{\textrm{where }\mathcal{C}::=} \mid \mathcal{C}\fstop f \mid \obj{C}{\pl{T}}{\pl{e},\mathcal{C},\pl{e}'}\\
+\quad\phantom{\textrm{where }\mathcal{C}::=} \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e},\mathcal{C},\pl{e}'}{\pl{M}}\\
+\quad\phantom{\textrm{where }\mathcal{C}::=} \mid \ifthen{\mathcal{C}}{T}{x}{e_1}{e_2}\\
+\quad\phantom{\textrm{where }\mathcal{C}::=} \mid \ifthen{e_0}{T}{x}{\mathcal{C}}{e_2}\\
+\quad\phantom{\textrm{where }\mathcal{C}::=} \mid \ifthen{e_0}{T}{x}{e_1}{\mathcal{C}}
+\end{Define}
 \begin{Define}{\declared{K}}
 \declared{\mathsf{Dec}}\textrm{ iff }\mathsf{Dec}\in\decls\\[1ex]
 \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}\\
@@ -163,6 +167,7 @@ M\in C\textrm{ iff }M\in K\\
 \end{Define}
 \par}
 
+An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for an expression context $\mathcal{C}$.
 By well-formedness requirement A1, a class name $C$ identifies at most one $K$ with $\declared{K}$.
 $M\in K$ holds when $M$ is a method of the class declaration $K$, top-level or local.
 $M\in C$ holds when $M$ is a method of the declared class $C$, top-level or local.
@@ -194,7 +199,6 @@ For a set of type variables $\pl{X}$, $\Gamma|_{\pl{X}}$ keeps the variables $T\
 The pairing $\pairing{\Delta}{\pl{F}}{\pl{T}}$ goes through the funnels $\pl{F}$ and the arguments $\pl{T}$ together, one position at a time, where $\emptyset$ is the empty sequence.
 At the position of a funnel $\funnel{X}$, the pairing adds $\ext{X}{\Delta(X)}$ to the bounds and the argument to the types.
 At the position of a ground funnel $G$, the argument must be $G$ itself, and nothing is added.
-An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for an expression context $\mathcal{C}$.
 Expression contexts $\mathcal{C}$ do not enter the methods of a local class; thus, by A1, A5 and A7, $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
 
 \subsection{Operational Semantics}
