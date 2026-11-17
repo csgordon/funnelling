@@ -303,22 +303,9 @@ theorem pairing_funnels {Delta : Bounds} {Fs : List Funnel} {Ts : List Ty} {D0 :
   | funnel _ _ ih => rw [ih (fun F hF => hf F (List.Mem.tail _ hF))]
   | ground _ _ => have := hf _ (List.Mem.head _); simp [Funnel.isFunnel] at this
 
-theorem bindF_funnels : forall {Fs : List Funnel} {Ts : List Ty}, (forall F, List.Mem F Fs -> F.isFunnel = true) ->
-    bindF Fs Ts = (domF Fs).zip Ts
-  | [], _, _ => by simp [bindF, domF]
-  | _ :: _, [], _ => by simp [bindF, domF]
-  | F :: Fs, T :: Ts, hf => by
-    cases F with
-    | ground G => have := hf _ (List.Mem.head _); simp [Funnel.isFunnel] at this
-    | funnel X =>
-      have ih := bindF_funnels (Fs := Fs) (Ts := Ts) (fun F hF => hf F (List.Mem.tail _ hF))
-      simp only [bindF, domF, List.zip_cons_cons, List.filterMap_cons] at ih |-
-      rw [ih]
-
-theorem bind_eq_bindF {Dl : Bounds} {Fs : List Funnel} (hg : dom Dl = domF Fs)
-    (hall : forall F, List.Mem F Fs -> F.isFunnel = true) (Ts : List Ty) : bind Dl Ts = bindF Fs Ts := by
-  rw [bindF_funnels hall]
-  simp only [bind]
+theorem bind_eq_bindF {Dl : Bounds} {Fs : List Funnel} (hg : dom Dl = domF Fs) (Ts : List Ty) :
+    bind Dl Ts = bindF Fs Ts := by
+  simp only [bind, bindF]
   rw [hg]
 
 theorem kind_chain {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {Delta : Bounds}
@@ -355,7 +342,7 @@ theorem kind_chain {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
         have hsat := bounds_sat sf.ndom h3 h4 h2
         have hK := Kind.subst hd (Delta' := Delta) (fun b hb => (hsat b hb).1)
           (fun b hb => (hsat b hb).2) (sf.supK _ _ _ _ _ _ rfl)
-        rw [bind_eq_bindF sf.gv hall] at hK
+        rw [bind_eq_bindF sf.gv] at hK
         exact ih rfl hK
   | subVar => cases he
 
