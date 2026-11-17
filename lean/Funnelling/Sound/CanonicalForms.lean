@@ -15,7 +15,7 @@ theorem kind_object {d : Decls} (hwf : WFDecls d) {Delta : Bounds} : Kind d Delt
   rcases object_declared hwf with ⟨D, hD⟩
   have hs : Scope d (.cls D.C []) D.Delta [] := Scope.dec hD.1
   rw [hD.2.1, hD.2.2.1] at hs
-  exact Kind.wfClass hs (fun _ h => by cases h) rfl Seq2.nil
+  exact Kind.kindClass hs (fun _ h => by cases h) rfl Seq2.nil
 
 theorem value_typing {d : Decls} (hwf : WFDecls d) {v : Value} {T : Ty} (h : Typing d [] [] v.expr T) :
     Up d [] (typeOf v) T /\ Typing d [] [] v.expr (typeOf v) /\ Kind d [] (typeOf v) := by
@@ -110,7 +110,7 @@ theorem kind_dec_args {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (
       Sub d Delta ((Ty.var b.X).subst (bind D.Delta Ts)) (b.T.subst (bind D.Delta Ts)) /\
       Kind d Delta ((Ty.var b.X).subst (bind D.Delta Ts)) := by
   cases h with
-  | wfClass h1 h2 h3 h4 =>
+  | kindClass h1 h2 h3 h4 =>
     have e := Scope.dec_eq hwf hD h1
     have e1 := e.1
     have e2 := e.2

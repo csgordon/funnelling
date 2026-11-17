@@ -114,9 +114,9 @@ theorem Typing.vmap {d : Decls} : forall {Delta Gamma e T}, Typing d Delta Gamma
       exact hv x v _ hx hl n2 sc' hn'
   | _, _, _, _, .newObject, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ => by
     simp only [Expr.vsubst, Expr.vsubstList]; exact Typing.newObject
-  | _, _, _, _, .declField h1 h2 h3 h4, _, _, _, _, _, _, _, hD, hG, n2, hv, hdef, n1, sc, sc', hn, hn', ht, hu => by
+  | _, _, _, _, .field h1 h2 h3 h4, _, _, _, _, _, _, _, hD, hG, n2, hv, hdef, n1, sc, sc', hn, hn', ht, hu => by
     simp only [Expr.vsubst, Expr.noShadow] at hn' |-
-    exact Typing.declField (Typing.vmap h1 hD hG n2 hv hdef n1 sc sc' hn hn' ht hu) h2 h3 h4
+    exact Typing.field (Typing.vmap h1 hD hG n2 hv hdef n1 sc sc' hn hn' ht hu) h2 h3 h4
   | _, _, _, _, .call h1 h2 h3 h4 h5 h6 h7 h8 h9, _, _, _, _, _, _, _, hD, hG, n2, hv, hdef, n1, sc, sc', hn, hn', ht, hu => by
     simp only [Expr.noShadow, Bool.and_eq_true] at hn
     simp only [Expr.vsubst, Expr.noShadow, Bool.and_eq_true] at hn' |-
@@ -124,13 +124,13 @@ theorem Typing.vmap {d : Decls} : forall {Delta Gamma e T}, Typing d Delta Gamma
     exact Typing.call (Typing.vmap h1 hD hG n2 hv (fun y hy => hdef y (Or.inl hy)) n1 sc sc' hn.1 hn'.1 ht.1 hu.1) h2 h3 h4
       h5 h6 (h7.mono hD) (h8.mono hD)
       (TypingSeq.vmap h9 hD hG n2 hv (fun y hy => hdef y (Or.inr hy)) n1 sc sc' hn.2 hn'.2 ht.2 hu.2)
-  | _, _, _, _, .callLbRuntime h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11, _, _, _, _, _, _, _, hD, hG, n2, hv, hdef, n1, sc, sc',
+  | _, _, _, _, .superCall h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11, _, _, _, _, _, _, _, hD, hG, n2, hv, hdef, n1, sc, sc',
       hn, hn', ht, hu => by
     have := TypingSeq.vmap h11 hD hG n2 hv (fun y hy => hdef y (by simpa [Expr.vbindersList, Expr.vbinders] using hy)) n1 sc
       sc' (by simpa [Expr.noShadowList, Expr.noShadow] using hn)
       (by simp only [Expr.vsubst, Expr.noShadow] at hn'; simpa [Expr.noShadowList, Expr.vsubstList] using hn')
       (by simpa [NoThis, Expr.vbindersList, Expr.vbinders] using ht) (by simpa [Expr.uniqList, Expr.uniq] using hu)
-    exact Typing.callLbRuntime (h1.mono hD) h2 h3 h4 h5 h6 h7 (h8.mono hD) (h9.mono hD) (h10.mono hD) this
+    exact Typing.superCall (h1.mono hD) h2 h3 h4 h5 h6 h7 (h8.mono hD) (h9.mono hD) (h10.mono hD) this
   | _, _, _, _, .newTop h1 h2 h3 h4 h5, _, _, _, _, _, _, _, hD, hG, n2, hv, hdef, n1, sc, sc', hn, hn', ht, hu => by
     simp only [Expr.noShadow, noShadowList_append, Bool.and_eq_true] at hn
     simp only [Expr.vsubst, Expr.vsubstList_append, Expr.noShadow, noShadowList_append, Bool.and_eq_true] at hn' |-

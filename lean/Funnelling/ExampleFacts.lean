@@ -77,7 +77,7 @@ theorem sInner {d : Decls} {C C' : ClassName} {Fs : List Funnel} {Ts0 : List Ty}
     Step d (.call (.newLocal C Fs C' Ts0 es0 Ms) Ts m es)
       ((e0.gsubst (bind Delta' (toGs Ts))).vsubst
         ((this :: ps.map VarDecl.x).zip (toV (.newLocal C Fs C' Ts0 es0 Ms) :: toVs es))) := by
-  have h := Step.innerFound (d := d) (M := .mk Delta' T0 m ps e0) (v0 := toV (.newLocal C Fs C' Ts0 es0 Ms))
+  have h := Step.localFound (d := d) (M := .mk Delta' T0 m ps e0) (v0 := toV (.newLocal C Fs C' Ts0 es0 Ms))
     (Gs' := toGs Ts) (vs := toVs es) rfl hM (freshM _) (by rw [tys_length h2, l2])
     (by rw [exprs_length h4, l3]) n1 n2 g1 g2 rfl
   rw [h1, h2, h4] at h
@@ -343,9 +343,9 @@ theorem inv_var {d Delta Gamma x} : forall {e T}, Typing d Delta Gamma e T -> e 
     | intro T1 h1 => exact Exists.intro T1 (And.intro h1.1 (h1.2.trans (Or.inr (And.intro hs hk))))
   | _, _, .var h, he => by cases he; exact Exists.intro _ (And.intro h Up.refl)
   | _, _, .newObject, he => by cases he
-  | _, _, .declField .., he => by cases he
+  | _, _, .field .., he => by cases he
   | _, _, .call .., he => by cases he
-  | _, _, .callLbRuntime .., he => by cases he
+  | _, _, .superCall .., he => by cases he
   | _, _, .newTop .., he => by cases he
   | _, _, .newLocal .., he => by cases he
   | _, _, .ifInstanceof .., he => by cases he
@@ -448,7 +448,7 @@ theorem overDec {d : Decls} (hwf : WFDecls d) (hN : Closed d [Object]) (hO : Obj
 
 theorem kNull {d : Decls} {D : Dec} (hD : List.Mem D d) (hb : D.Delta = []) {Delta : Bounds} :
     Kind d Delta (.cls D.C []) :=
-  Kind.wfClass (Delta0 := D.Delta) (Ts0 := []) (Scope.dec (.dec hD)) (by intro T h; cases h) (by rw [hb]; rfl)
+  Kind.kindClass (Delta0 := D.Delta) (Ts0 := []) (Scope.dec (.dec hD)) (by intro T h; cases h) (by rw [hb]; rfl)
     (by rw [hb]; exact .nil)
 
 end Funnelling.ExampleFacts
