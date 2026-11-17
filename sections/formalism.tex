@@ -212,7 +212,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 \end{Define}
 \begin{mathpar}
 \fbox{$\step{e}{e'}$}\\
-\inferrule[simpleFieldFound]{
+\inferrule[simple-field-found]{
     \declared{\subclass{C}{\_}{\_}{\_}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}}\\
     f_i\in f_1,\ldots,f_n
 }{
@@ -223,7 +223,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
     }
 }
 \and
-\inferrule[simpleFieldSuper]{
+\inferrule[simple-field-super]{
     \declared{\subclass{C}{\Delta}{C'}{\pl{T}}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}}\\
     f\not\in f_1,\ldots,f_n\\
     C\neq\Object
@@ -236,7 +236,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 }
 \and
 %Note: ok because inner classes currently don't have their own fields
-\inferrule[innerFieldSuper]{
+\inferrule[local-field-super]{
 }{
     \step{
         \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v}}{\pl{M}}\fstop f
@@ -246,7 +246,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 }
 \end{mathpar}
 \begin{mathpar}
-\inferrule[ifThen]{
+\inferrule[if-then]{
     \emptyset\vdash \mathsf{typeOf}(v) <: \gen{C'}{\_}\\
     \mathsf{fresh}(e_1,e'_1)
     %\match{v}{C\langle\_\rangle} = \mathsf{true}
@@ -255,7 +255,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
     {\tsubst{e'_1}{x}{v}}
 }
 \and
-\inferrule[ifElse]{
+\inferrule[if-else]{
     %v\not\in\{\obj{C}{\_}{\_}, \innerobj{C}{\_}{\_}{\_}{\_}{\_}\}
     %\match{v}{C\langle\_\rangle} = \mathsf{false}
     \emptyset\not\vdash \mathsf{typeOf}(v) <: \gen{C'}{\_}
@@ -270,7 +270,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 % Neither Java nor funnelling relies on reification.
 \end{mathpar}
 \begin{mathpar}
-\inferrule[simpleAddSuper]{
+\inferrule[simple-add-super]{
     v = \obj{C}{\pl{G}}{\_}
 }{
     \step{
@@ -280,7 +280,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
     }
 }
 \and
-\inferrule[simpleFound]{
+\inferrule[simple-found]{
     \declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\
     M\in\pl{M}\\
     \mathsf{fresh}(M,\method{\Delta'}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e_0}})\\
@@ -290,7 +290,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 }
 %% ^^ Note: for local classes, this syntax skips the value entirely (this rule is not applicable if C<Gs> is meth local
 \and
-\inferrule[innerFound]{
+\inferrule[local-found]{
     v_0 = \innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}\\
     M\in\pl{M}\\
     \mathsf{fresh}(M,\method{\Delta'}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e_0}})\\
@@ -299,7 +299,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
     \step{\call{v_0}{\pl{G}'}{m}{v_1,\ldots,v_n}}{e}
 }
 \and
-\inferrule[innerSuper]{
+\inferrule[local-super]{
     v_0 = \innerobj{\_}{\_}{C'}{\pl{G}}{\_}{\pl{M}}\\
     m\not\in \pl{M}
 }{
@@ -308,7 +308,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
     }
 }
 \and
-\inferrule[searchSuper]{
+\inferrule[search-super]{
     \declared{\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\_}}\\
     m\not\in \pl{M}\\
     C\neq\Object
@@ -328,23 +328,23 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 \end{mathpar}
 \par}
 
-Rules \textsc{simpleFieldFound}, \textsc{simpleFieldSuper} and \textsc{innerFieldSuper} read a field.
-Rule \textsc{simpleFieldFound} reads a field declared by the class of the object.
-Rule \textsc{simpleFieldSuper} reads a field not declared by the class $C$ of the object from the object of the superclass of $C$, made of the remaining values.
-A local class declares no fields, so rule \textsc{innerFieldSuper} reads every field from the object of the superclass.
+Rules \textsc{simple-field-found}, \textsc{simple-field-super} and \textsc{local-field-super} read a field.
+Rule \textsc{simple-field-found} reads a field declared by the class of the object.
+Rule \textsc{simple-field-super} reads a field not declared by the class $C$ of the object from the object of the superclass of $C$, made of the remaining values.
+A local class declares no fields, so rule \textsc{local-field-super} reads every field from the object of the superclass.
 
-Rules \textsc{ifThen} and \textsc{ifElse} test the class of the value $v$ against the class $C'$ of the type test, ignoring the type arguments $\pl{T}$ of $\gen{C'}{\pl{T}}$.
-Rule \textsc{ifThen} reduces to $e'_1$ with $x$ replaced by $v$, where $e'_1$ is $e_1$ renamed by $\mathsf{fresh}$; rule \textsc{ifElse} reduces to $e_2$.
+Rules \textsc{if-then} and \textsc{if-else} test the class of the value $v$ against the class $C'$ of the type test, ignoring the type arguments $\pl{T}$ of $\gen{C'}{\pl{T}}$.
+Rule \textsc{if-then} reduces to $e'_1$ with $x$ replaced by $v$, where $e'_1$ is $e_1$ renamed by $\mathsf{fresh}$; rule \textsc{if-else} reduces to $e_2$.
 
-Rules \textsc{simpleAddSuper}, \textsc{simpleFound}, \textsc{innerFound}, \textsc{innerSuper} and \textsc{searchSuper} call a method.
-Rule \textsc{simpleAddSuper} turns a call on an object of a top-level class into a super call starting from the class of the object.
-Rule \textsc{simpleFound} runs the method $m$ found in the class of a super call, replacing the type variables of the class and of the method, \Q@this@ and the parameters.
-Rule \textsc{innerFound} runs the method $m$ found in a value of a local class; the funnelled type variables are already replaced in that value, so only the type variables of the method are replaced.
-Rule \textsc{innerSuper} turns a call on a value of a local class without the method $m$ into a super call starting from the superclass of the local class.
-Rule \textsc{searchSuper} moves a super call to the superclass when the class does not declare $m$.
+Rules \textsc{simple-add-super}, \textsc{simple-found}, \textsc{local-found}, \textsc{local-super} and \textsc{search-super} call a method.
+Rule \textsc{simple-add-super} turns a call on an object of a top-level class into a super call starting from the class of the object.
+Rule \textsc{simple-found} runs the method $m$ found in the class of a super call, replacing the type variables of the class and of the method, \Q@this@ and the parameters.
+Rule \textsc{local-found} runs the method $m$ found in a value of a local class; the funnelled type variables are already replaced in that value, so only the type variables of the method are replaced.
+Rule \textsc{local-super} turns a call on a value of a local class without the method $m$ into a super call starting from the superclass of the local class.
+Rule \textsc{search-super} moves a super call to the superclass when the class does not declare $m$.
 Rule \textsc{ctx} reduces inside an evaluation context.
 
-Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} also use the relation $\mathsf{fresh}$.
+Rules \textsc{if-then}, \textsc{simple-found} and \textsc{local-found} also use the relation $\mathsf{fresh}$.
 The names bound in an expression $e$ are the variable of every type test occurring in $e$, and the names bound in every method of a local class occurring in $e$.
 The names bound in a method $M$ are the type variables of its signature, its parameters, and the names bound in its body.
 $\mathsf{fresh}(e,e')$ holds when $e'$ is $e$ with the names bound in $e$ renamed: $e$ and $e'$ are equal up to the names of their binders.
@@ -358,7 +358,7 @@ Object<> k(L<> y){ return
 \end{lstlisting}
 In a call of \Q@k@ with a value \Q@v@ of class \Q@L@, the body of \Q@m@ becomes \Q@v.m(x)@, and the method \Q@m@ of \Q@v@ binds \Q@x@ again.
 Without $\mathsf{fresh}$, the substitution would attempt to place a binder of a name under a binder of the same name, breaking well-formedness requirement A7.
-Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} place values under the binders of the expression they substitute into.
+Rules \textsc{if-then}, \textsc{simple-found} and \textsc{local-found} place values under the binders of the expression they substitute into.
 Requirement A7 on the result requires those binders to differ from the names bound in the values.
 A substitution can place a value at several positions, so several occurrences of a value can bind the same names; those occurrences are never nested, so they do not shadow each other.
 
@@ -396,7 +396,7 @@ A substitution can place a value at several positions, so several occurrences of
 \and
 \inferrule[var]{ }{\typing{\Delta}{\Gamma}{x}{\Gamma(x)}}
 \and
-\inferrule[declField]{
+\inferrule[field]{
   \typing{\Delta}{\Gamma}{e}{\classtype{C}{\pl{T}'}}\\\\
   \declared{\subclass{C}{\Delta'}{\_}{\_}{\_}{\pl{S}}}\\\\
   T\gap f\semi\in\pl{S}
@@ -418,7 +418,7 @@ A substitution can place a value at several positions, so several occurrences of
   \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}}{T'_0}
 }
 \and
-\inferrule[call-lb-runtime]{
+\inferrule[super-call]{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C_0}{\pl{T}_0}}\\\\
   \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\_}{\_}}\\\\
   \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in C_0\\\\
@@ -526,9 +526,9 @@ A substitution can place a value at several positions, so several occurrences of
 \par}
 
 Rule \textsc{subs} is subsumption, where the supertype $T_2$ must be well kinded; rule \textsc{var} reads the type of a variable from $\Gamma$.
-Rule \textsc{declField} types the access to a field declared by the class $C$ of the receiver, and rule \textsc{call} types the call of a method declared by the class $C_0$ of the receiver.
+Rule \textsc{field} types the access to a field declared by the class $C$ of the receiver, and rule \textsc{call} types the call of a method declared by the class $C_0$ of the receiver.
 In rule \textsc{call}, $\mathsf{scope}$ gives the type variables of $C_0$ and the types replacing them, and the type arguments $\pl{T}_1$ of the call must satisfy the bounds of $m$.
-Rule \textsc{call-lb-runtime} types a super call $\explicitcall{e_0}{\gen{C}{\pl{T}}}{\pl{T}_1}{m}{e_1,\ldots,e_n}$: the receiver $e_0$ has type $\gen{C}{\pl{T}}$, the class $C$ is a top-level class, and the signature of $m$ is read from a class $C_0$ declaring $m$, where $C_0$ is $C$ or a superclass of $C$.
+Rule \textsc{super-call} types a super call $\explicitcall{e_0}{\gen{C}{\pl{T}}}{\pl{T}_1}{m}{e_1,\ldots,e_n}$: the receiver $e_0$ has type $\gen{C}{\pl{T}}$, the class $C$ is a top-level class, and the signature of $m$ is read from a class $C_0$ declaring $m$, where $C_0$ is $C$ or a superclass of $C$.
 Rule \textsc{new-object} types the creation of an \Q@Object@.
 We need this dedicated rule: \Q@Object@ extends \Q@Object@ (A9), so typing \Q@new Object<>()@ with rule \textsc{new-top} would need an infinite derivation.
 Rule \textsc{new-top} types the creation of an object of another top-level class $C$: the first arguments have the types of the fields of $C$, and the other arguments are typed as an object creation of the superclass of $C$.
@@ -550,7 +550,7 @@ The supertype and the method signatures of $K$ must be those of the declaration,
 $K$ and the declaration have the same method names.
 The bodies of the methods of $K$ are not required to be those of the declaration: the main expression can hold a local class whose method bodies differ from the declaration, and rule \textsc{new-local} types those method bodies.
 
-Rules \textsc{call}, \textsc{sub-inherit-local}, \textsc{wf-class} and \textsc{cast-down}, the relation $\mathsf{consistent}$ and the last case of $\mathsf{overrideOk}(T,M)$ read the declaration, while the reduction runs the methods of the copy.
+Rules \textsc{call}, \textsc{sub-inherit-local}, \textsc{kind-class} and \textsc{cast-down}, the relation $\mathsf{consistent}$ and the last case of $\mathsf{overrideOk}(T,M)$ read the declaration, while the reduction runs the methods of the copy.
 
 Rule \textsc{if-instanceof} accepts the type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ only when $\cast{\Delta}{T_0}{T}$, where $T_0$ is a type of $e_0$.
 The relation $\cast{\Delta}{T}{T'}$ is the \emph{checked cast}: a type test against $T'$ on a value of static type $T$ is decided by the class of the value alone.
@@ -561,7 +561,7 @@ When the source does not determine the type arguments, Java rejects the type tes
 $\generic{C}=\gen{C}{\pl{X}}$ is the class $C$ instantiated with its own type variables $\pl{X}$, and $\gen{C'}{\pl{T}'}$ is the supertype of $\gen{C}{\pl{X}}$ with class $C'$.
 The premise $\subtype{\emptyset}{\gen{C}{\pl{X}}}{\gen{C'}{\pl{T}'}}$ of rule \textsc{cast-down} uses the bounds $\emptyset$: a subtyping derivation between class types uses only rules \textsc{sub-refl}, \textsc{sub-inherit} and \textsc{sub-inherit-local}, which do not read $\Delta$.
 Every type variable of $\pl{X}$ occurs in $\pl{T}'$, thus the type arguments $\pl{T}_0$ of the source fix the type arguments $\pl{T}$ of the target.
-Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is $C$ or a subclass of $C$ has type $\gen{C}{\pl{T}}$, and rule \textsc{ifThen} compares only class names.
+Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is $C$ or a subclass of $C$ has type $\gen{C}{\pl{T}}$, and rule \textsc{if-then} compares only class names.
 
 
 \subsection{Typing of Programs, Classes and Methods}
@@ -632,13 +632,13 @@ The last case of $\mathsf{overrideOk}(T,M)$ compares a method of a local class w
 {\small
     \begin{mathpar}
 \fbox{\kind{\Delta}{T}}\\
-\inferrule[wf-var]{
+\inferrule[kind-var]{
   \ext{X}{\_}\in\Delta
 }{
   \kind{\Delta}{X}
 }
 \and
-\inferrule[wf-class]{
+\inferrule[kind-class]{
   \mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}_0\\
   \kind{\Delta}{\pl{T}}\\\\
   \subtype{\Delta}{\pl{T}_0}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}_0}}
@@ -672,7 +672,7 @@ The last case of $\mathsf{overrideOk}(T,M)$ compares a method of a local class w
     \end{mathpar}
 \par}
 
-Rule \textsc{wf-class} kinds both top-level and local classes, including a local class written in a method of another local class.
+Rule \textsc{kind-class} kinds both top-level and local classes, including a local class written in a method of another local class.
 Every type in $\pl{T}_0$ is checked against the bound of its type variable in $\Delta_0$.
 A funnelled type variable of $C$ that is not in the bounds $\Delta,\Delta'$ of the definition of $\mathsf{scope}$ leaves $\mathsf{scope}(\gen{C}{\pl{T}})$ undefined; thus no type $\gen{C}{\pl{T}}$ is well kinded.
 
