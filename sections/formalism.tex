@@ -524,6 +524,11 @@ A substitution can place a value at several positions, so several occurrences of
 \end{Define}
 \par}
 
+Rule \textsc{subs} is subsumption, where the supertype $T_2$ must be well kinded; rule \textsc{var} reads the type of a variable from $\Gamma$.
+Rule \textsc{new-object} types the creation of an \Q@Object@.
+Rule \textsc{new-top} types the creation of an object of another top-level class $C$: the first arguments have the types of the fields of $C$, and the other arguments are typed as an object creation of the superclass of $C$.
+Rule \textsc{declField} types the access to a field declared by the class $C$ of the receiver, and rule \textsc{call} types the call of a method declared by the class $C_0$ of the receiver; for a field or a method of a superclass, rule \textsc{subs} first gives the receiver the type of that superclass.
+In rule \textsc{call}, $\mathsf{scope}$ gives the type variables of $C_0$ and the types replacing them, and the type arguments $\pl{T}_1$ of the call must satisfy the bounds of $m$.
 Rule \textsc{call-lb-runtime} types a super call $\explicitcall{e_0}{\gen{C}{\pl{T}}}{\pl{T}_1}{m}{e_1,\ldots,e_n}$: the receiver $e_0$ has type $\gen{C}{\pl{T}}$, the class $C$ is a top-level class, and the signature of $m$ is read from a class $C_0$ declaring $m$, where $C_0$ is $C$ or a superclass of $C$.
 
 Rule \textsc{new-local} is the heart of funnelling, including subtle management of type environments.
