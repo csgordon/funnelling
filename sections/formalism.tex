@@ -73,7 +73,7 @@ In the main expression, outside of the methods of local classes, all the funnels
 When a local class is nested in a method of a local class in the main expression, a mixture of funnels $\funnel{X}$ and $G$ can be present.
 
 A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $\gen{C'}{\pl{T}}$.
-The methods $\pl{M}$ of a local class can use only the visible type variables, and the variables in scope other than \Q@this@ whose types mention only visible type variables.
+The methods $\pl{M}$ of a local class can use only the funnelled type variables and their own type variables, and the variables in scope other than \Q@this@ whose types mention only funnelled type variables.
 \\[1ex]
 The conventional type environment $\Gamma$ gives a type to each variable that the expression can use.
 Bounds $\Delta$ give an upper bound to each type variable that the expression can use.
