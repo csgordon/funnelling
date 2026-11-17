@@ -53,7 +53,7 @@ The failure itself is contrived.
 The two \Q@println@ calls actually dispatch to different overloads:
 the first to a version accepting an \Q@Object@, and the second to the more specific overload expecting a \Q@String@.
 Overload resolution uses the Java type system \emph{with} generics, where \Q@r1.x()@ has type \Q@Integer@ and \Q@r2.x()@ has type \Q@String@.
-javac inserts a cast to \Q@String@ on the result of \Q@r2.x()@, and that cast throws the \Q@ClassCastException@.
+\javac inserts a cast to \Q@String@ on the result of \Q@r2.x()@,\footnote{Java's \emph{raw types} feature for compatibility with pre-generics Java code requires this inserted cast.} and that cast throws the \Q@ClassCastException@.
 
 A different version of Java could stop this problem at four points, two at compile time and two at run time:
 \begin{itemize}
@@ -79,7 +79,7 @@ This makes the compiler assume that the simplest nominal type identity is suffic
 
 This problem touches on Java's erasure of generics, but only indirectly: even languages with reified generics store reified generics only for the generic arguments exposed to the type system.
 A type like \Q@List<Foo>@ would get one reified generic, \Q@Foo@, together with some language-mediated API to access it.
-A type like \Q@MyFoo@ would get no reified generics, since the generic parameter would have been captured and not exposed by the type.
+A type like \Q@MyFoo@ would have no visible generic parameters, since the generic parameter would have been captured and not exposed by the type.
 Thus, we argue that erasure versus reification is only marginally connected to this problem. The conceptual hurdle is in the distinction between propagating the scope of generic parameters explicitly and implicitly.%
 \footnote{Since Java~16, with \Q@Object o@, \Q@o instanceof Foo<Integer>@ is a compile-time error (before Java~16, every non-reifiable \Q@instanceof@ target was an error), while the cast \Q@(Foo<Integer>)o@ is an unchecked warning; \Q@instanceof@ never warns.
 Modern Java accepts \Q@o instanceof C<Ts>@ only when the static type of \Q@o@ determines \Q@Ts@; in this way an erased and a reified runtime give the same answer, as long as the program has no heap pollution.
@@ -89,11 +89,11 @@ It is tempting to accept this as a quirk of Java, which is already known to have
 However, this problem is broader in both scope and impact.
 The failure can be detected far from the method-local inner class, in code that the programmer did not write (Section~\ref{sec:examples}).
 This issue is not limited to Java:
-Section~\ref{sec:related} reports how Scala and Kotlin handle Example~1.
+Section~\ref{sec:impact} reports how Scala and Kotlin handle Example~1.
 
 In the remainder of this paper:
 \begin{itemize}
-\item We detail the breadth of the problem, and how it is handled by various existing language implementations (Sections~\ref{sec:examples} and~\ref{sec:related}).
+\item We detail the breadth of the problem, and how it is handled by various existing language implementations (Sections~\ref{sec:examples} and~\ref{sec:impact}).
 \item We develop a core language modelling Java's generics, method-local classes and type tests, and show that typing method-local classes as Java does is unsound (Section~\ref{sec:core}).
 \item We develop a new type system mechanism for systematically tracking dependence of a
 method-local class on generic parameters, and show that it soundly prevents the problem (Sections~\ref{sec:funnelling} and~\ref{sec:soundness}).
