@@ -23,4 +23,24 @@ If $\step{e}{e_1}$ and $\step{e}{e_2}$, then $\mathsf{fresh}(e_1,e_2)$.
 \end{theorem}
 
 Both theorems are proved in Lean~4 (Appendix~\ref{app:lean}).
+Type Soundness follows from progress and preservation.
+The proof of preservation uses the standard lemmas of weakening, substitution and inversion, and these lemmas specific to our core language:
+a renaming by $\mathsf{fresh}$ preserves typing;
+a copy of a local class has the supertype and the method signatures of the declaration of the local class;
+a method has the same signature in every supertype of the class of the receiver;
+a value that passes a type test accepted by the checked cast has the type of the type test;
+a reduction step preserves the well-formedness requirements.
+Determinism follows from the unique decomposition of an expression into an evaluation context and a redex.
+Appendix~\ref{app:lean:statements} lists all the lemmas.
+
+The formalism of Section~\ref{sec:core} is fully designed by the authors.
+The Lean formalization and the two proofs are written by an AI, Claude Opus~5.5, guided by one of the authors.
+First, for about 16 hours of computation, the AI wrote Lean definitions as close as possible to the formalism of the paper, without attempting any proof.
+A proof attempt gives the AI an incentive to tweak the definitions until the theorems are provable; this first phase has no such incentive.
+The output of this first phase is the side by side comparison of Appendix~\ref{app:lean:sidebyside}: 14 pages relating each piece of the formalism of the paper to the corresponding Lean code.
+Second, the AI proved the two theorems, in about 2 hours.
+Third, for about 8 hours, the AI made the proofs shorter and more readable, and aligned the names inside the Lean code with the names and the terms of the paper; this third phase also used Claude Fable~5.2.
+Finally, the AI wrote the 90 validation examples of Appendix~\ref{app:lean:examples}, to check that the Lean definitions behave as the formalism of the paper:
+each example states a verdict of the rules of the paper on well-formedness, typing or reduction, and Lean proves that verdict.
+The author not involved in guiding the AI then reviewed the process and the side by side comparison, and found no issues.
 % Reified type tests are left out of the formal model on purpose; see Section 2 and the comment after rule ifElse in Figure fig:opsem.
