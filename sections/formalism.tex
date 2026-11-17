@@ -92,8 +92,7 @@ The following are the well-formedness requirements:
     \item[(A4)] In a method, all the parameter names $x_1,\ldots,x_n$ are distinct.
     \item[(A5)] In a $\Delta$, all the $X$ in $\mathrm{dom}(\Delta)$ are distinct.
     \item[(A6)] In a list of funnels $\pl{F}$, all the $X$ in $\mathrm{dom}(\pl{F})$ are distinct.
-    \item[(A7)] There is no shadowing of $X$ or $x$, except for \Q@this@.
-    A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ of the enclosing method.
+    \item[(A7)] There is no shadowing of $X$ or $x$, except for \Q@this@.\footnote{A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ of the enclosing method.}
     \item[(A8)] In the syntax \ifthen{\_}{T}{x}{\_}{\_}, $x$ is not \Q@this@, and \Q@this@ does not appear as a method parameter name.
     \item[(A9)] \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every other top-level class reaches \Q@Object@.
     \item[(A10)] In \decls, the superclass of every class, top-level or local, is a top-level class.
