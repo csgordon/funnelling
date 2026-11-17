@@ -6,7 +6,7 @@
 
 We now present the core language of Section~\ref{sec:funnelling}: its syntax, its small step reduction and its type rules.
 The type rules encode funnelling.
-Replacing rule \textsc{new-local} with rule \textsc{new-local-java} of Section~\ref{sec:funnelling} gives the Java typing of local classes.
+Replacing rule \textsc{new-local} with rule \textsc{new-local-java} gives the Java typing of local classes.
 
 \subsection{Syntax}
 \label{sec:syntax}
@@ -170,7 +170,7 @@ For a local class $C_0$ with funnels $\pl{F}$, $\mathsf{scope}(\gen{C_0}{\pl{T}}
 By A11, every funnel of $\pl{F}$ is of the form $\funnel{X}$, so $\pl{T}_0$ is $\pl{T}$.
 For a top-level class, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$ can return $\Delta$ and $\pl{T}$ of different lengths.
 The usage points of $\mathsf{scope}$ use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length;
-in the same way, $\tsubst{T}{\pl{F}}{\pl{T}}$ is defined only when $\pl{F}$ and $\pl{T}$ have the same length, and $\pl{F}$ contains no ground type.
+in the same way, $\tsubst{T}{\pl{F}}{\pl{T}}$ is defined only when $\pl{F}$ and $\pl{T}$ have the same length.
 A simultaneous substitution, of types or of values, is defined only when the names in its domain are distinct.
 \\[1ex]
 For a type variable $X$, $\Delta(X)$ is the bound of $X$ in $\Delta$.
@@ -735,7 +735,7 @@ Substitution of variables is defined only when the variable $x'$ of a type test 
 
 \subsection{Java Typing of Local Classes}
 \label{sec:java}
-Rule \textsc{new-local-java} (Section~\ref{sec:funnelling}) types local classes as Java does.
+Rule \textsc{new-local-java} types local classes as Java does.
 A local class has no funnels, and its methods are typed under the full $\Delta$ and $\Gamma$ in scope, except for \Q@this@.
 Replacing rule \textsc{new-local} with rule \textsc{new-local-java} makes our system unsound for the same reason Java is unsound.
 Consider the method \Q@mk@ below, the method \Q@m@ of Example~1 in our syntax:
