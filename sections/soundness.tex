@@ -2,7 +2,7 @@
 \label{sec:soundness}
 Section \ref{sec:funnelling} already demonstrated the unsoundness of allowing the rule \textsc{new-local-java} in our core language,
 echoing Java's unsoundness.
-With the full type system developed in Section \ref{sec:core} we can show that funneling definitively resolves the soundness issue:
+With the full type system developed in Section \ref{sec:core} we can show that funnelling definitively resolves the soundness issue:
 
 % With our language primitives in place, we now consider type safety of two variants of our language.
 % The two variants differ only in the typing of local classes:
@@ -21,9 +21,9 @@ We first show that reduction is deterministic, up to the names chosen by $\maths
 If $\step{e}{e_1}$ and $\step{e}{e_2}$, then $\mathsf{fresh}(e_1,e_2)$.
 \end{theorem}
 
-With this in hand, we may establish type safety via progress and preservation~\cite{wright1994syntactic}.\todo{ref supplementary materials for Lean proof}
+With this in hand, we may establish type soundness via progress and preservation~\cite{wright1994syntactic}.\todo{ref supplementary materials for Lean proof}
 
-\begin{theorem}[Type Safety]
+\begin{theorem}[Type Soundness]
 Under a class table $\decls$ such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$:
 if $\typing{\emptyset}{\emptyset}{e_0}{T}$, and $e_0\rightarrow^* e$, then $\typing{\emptyset}{\emptyset}{e}{T}$ and either $e$ is of form $v$, or there is an $e'$ such that $\step{e}{e'}$.
 \end{theorem}

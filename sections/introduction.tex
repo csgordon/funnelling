@@ -65,7 +65,7 @@ A different version of Java could stop this problem at four points, two at compi
 
 The source of this unsoundness is that the Java compiler does not treat \Q@MyFoo@ as generic.
 The generic parameter \Q@X@ is seen as `in scope', and it is `captured' exactly as the values of local variables are captured.
-Within a single call of the enclosing method, this is safe, because the instantiation of \Q@X@ is constant.
+Within a single call of the enclosing method, this is sound, because the instantiation of \Q@X@ is constant.
 A \Q@MyFoo@ instance is conceptually an instance of a class that captures the
 generic parameter that is in scope when the instance is created.
 But when such a \Q@MyFoo@ instance escapes one call of the enclosing method and enters a second call of the same method,
