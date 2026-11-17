@@ -11,7 +11,7 @@ The method \Q@m@ returns \Q@Object@, so no type outside \Q@m@ mentions \Q@X@.
 Here we rely on the \Q@other instanceof MyFoo local@ test to bind
 \Q@local@ in one step.%
 \footnote{Before Java~16, the type test and the cast are two steps, as in Example~1: \Q@other instanceof MyFoo@ and then \Q@(MyFoo)other@.
-javac accepts those two steps with no warning.}
+\javac accepts those two steps with no warning.}
 
 \noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
@@ -38,7 +38,7 @@ In the second call, the type test at Line~\ref{line:ex2test} is true, with no wa
 Then \Q@local.x()@ has static type \Q@String@, but returns the \Q@Integer@ \Q@5@, and \Q@f.apply(local.x())@ at Line~\ref{line:ex2apply} throws a \Q@ClassCastException@.
 
 No instruction of \Q@m@ performs the failing cast.
-At run time, the Java runtime generates a class implementing \Q@Function@ for the lambda \Q@s->s@; we call this class the \emph{lambda class}.
+At run time, the Java runtime generates a class implementing \Q@Function@ for the lambda \Q@s->s@~\cite{jep371}; we call this class the \emph{lambda class}.
 The method \Q@apply(Object)@ of the lambda class casts its argument to \Q@String@, and then runs the body of the lambda \Q@s->s@.
 Thus \Q@f.apply(local.x())@ passes the \Q@Integer@ \Q@5@ to the method \Q@apply@ of the lambda class, and the cast to \Q@String@ in that method throws the \Q@ClassCastException@.
 The failure is detected in the lambda class: in code that the programmer did not write, at a point that depends on how javac and the JVM implement lambdas (Appendix~\ref{app:lambda}).
@@ -46,7 +46,6 @@ The failure is detected in the lambda class: in code that the programmer did not
 A \Q@switch@ exercises the same fault.
 The following \Q@switch@ replaces the \Q@if@ of Example~2:
 
-\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}
     switch(other){
       case MyFoo local: // no cast, no warnings
@@ -54,14 +53,12 @@ The following \Q@switch@ replaces the \Q@if@ of Example~2:
       ...
     }
 \end{lstlisting}
-\end{minipage}
 
 The case \Q@case MyFoo local@ performs the type test of Line~\ref{line:ex2test}.
 
 The fault does not need \Q@X@ in the public signature of \Q@MyFoo@.
-The following code replaces the class \Q@MyFoo@ and the \Q@if@ of Example~2:
+The following code could replace the class \Q@MyFoo@ and the \Q@if@ of Example~2:
 
-\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}
     class MyFoo{
       private X x(){ return x; }
@@ -71,7 +68,6 @@ The following code replaces the class \Q@MyFoo@ and the \Q@if@ of Example~2:
       System.out.println("old was "+new MyFoo().show(local)); //ClassCastException
     }
 \end{lstlisting}
-\end{minipage}
 
 The only public method of \Q@MyFoo@ is \Q@show@, and the type of \Q@show@ does not mention \Q@X@.
 In the second call of \Q@m@, \Q@show@ applies the \Q@f@ of the second call to \Q@o.x()@, the \Q@Integer@ \Q@5@ of the first call.
@@ -80,7 +76,7 @@ The failure is detected as in Example~2.
 The point where the failure is detected depends on Line~\ref{line:ex2last}.
 Only the second call of \Q@m@ calls \Q@f@, so only the last argument of the second call matters.
 We now show four other versions of Line~\ref{line:ex2last}.
-javac accepts each version with no warning.
+\javac accepts each version with no warning.
 
 \begin{lstlisting}
     Broken.<String>m(r1,"Hi",s->""+s.length());
@@ -94,7 +90,7 @@ The same holds for a method reference, for example \Q@String::toString@.
       public String apply(String s){ return s; } });
 \end{lstlisting}
 Here an anonymous class replaces the lambda.
-javac adds to the anonymous class a second method \Q@apply(Object)@, which casts its argument to \Q@String@ and then calls \Q@apply(String)@.
+\javac adds to the anonymous class a second method \Q@apply(Object)@, which casts its argument to \Q@String@ and then calls \Q@apply(String)@.
 The failure is detected in the method \Q@apply(Object)@ of the anonymous class: again in code that the programmer did not write.
 
 \begin{lstlisting}
@@ -104,7 +100,7 @@ The method \Q@identity@ of \Q@Function@ returns the lambda \Q@t->t@, of type \Q@
 The lambdas \Q@s->s@ and \Q@t->t@ have the same body, but the two programs fail at different points.
 The erasure of \Q@T@ is \Q@Object@, so the lambda class of \Q@t->t@ does not cast its argument.
 Thus \Q@f.apply(local.x())@ returns the \Q@Integer@ \Q@5@.
-javac inserts a \Q@checkcast@ instruction where a value of an erased generic type is used at a more specific type.
+\javac inserts a \Q@checkcast@ instruction where a value of an erased generic type is used at a more specific type.
 At Line~\ref{line:ex2apply}, the string concatenation uses the result of \Q@f.apply@ as a \Q@String@.
 The bytecode of \Q@m@ (same for every version of Line~\ref{line:ex2last}) applies a \Q@checkcast@ \Q@String@ on that result.
 In Example~2, the lambda class throws before that \Q@checkcast@ instruction is reached.
@@ -151,15 +147,16 @@ public class Broken {
 \end{lstlisting}
 \end{minipage}
 
-Counterexample~3 marks the boundary of the family: with class generics, javac does flag the fault.
-javac rejects Counterexample~3 at Line~\ref{line:cextest}, with the error \Q@Object cannot be safely cast to MyFoo@.
+Counterexample~3 marks the boundary of the family: with class generics, \javac does flag the fault.
+\javac rejects Counterexample~3 at Line~\ref{line:cextest}, with the error\\
+\centerline{\mbox{\Q@Object cannot be safely cast to MyFoo@}.}
 The method \Q@m@ is an instance method of \Q@Box<X>@, so \Q@MyFoo@ is an inner class of \Q@Box<X>@, with an enclosing instance of type \Q@Box<X>@.
-javac types \Q@MyFoo@ as \Q@Box<X>.MyFoo@, as javac types a member class \Q@MyFoo@ of \Q@Box@.
+\javac types \Q@MyFoo@ as \Q@Box<X>.MyFoo@, as \javac types a member class \Q@MyFoo@ of \Q@Box@.
 So \Q@MyFoo@ is generic in \Q@X@, and \Q@other instanceof MyFoo@ is the uncheckable type test \Q@other instanceof Box<X>.MyFoo@.
 
-The cast is flagged too.
+The cast is flagged as well.
 The following method \Q@m@ replaces the method \Q@m@ of Counterexample~3.
-The type test against \Q@String@ replaces the type test against \Q@MyFoo@, which javac rejects, and the cast of Example~1 follows that type test.
+The type test against \Q@String@ replaces the type test against \Q@MyFoo@, which \javac rejects, and the cast of Example~1 follows that type test.
 
 \noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
@@ -174,10 +171,10 @@ The type test against \Q@String@ replaces the type test against \Q@MyFoo@, which
 \end{lstlisting}
 \end{minipage}
 
-javac accepts this program, but reports an unchecked warning for the cast at Line~\ref{line:cexcast}.
+\javac accepts this program, but reports an unchecked warning for the cast at Line~\ref{line:cexcast}.
 At run time the cast succeeds, and the program fails as Example~2 fails.
 So with class generics the program fails only after an unchecked warning, as a program with the cast \Q@(List<String>)o@ may fail.
-In Examples~1 and~2 instead, javac reports nothing.
+In Examples~1 and~2 instead, \javac reports nothing.
 
 Thus for the generic parameters of the enclosing class, Java already exposes the captured generic parameters in the type of the method-local class,
 through the type of its enclosing instance.
@@ -209,9 +206,9 @@ For the pattern \Q@case i: a.Inner@, the Scala compiler emits an ``outer test'' 
 This is sound, but it is stricter than needed to avoid the problem at hand.
 \end{enumerate}
 
-For method generics, the Java type system assumes granularity (1), as the casts do, so javac reports nothing and the program fails at run time.
+For method generics, the Java type system assumes granularity (1), as the casts do, so \javac reports nothing and the program fails at run time.
 If the type of a method-local class contained the enclosing method and its generic instantiation, as in \Q@Box<T1>.m<T2>.MyFoo@,
-then javac would flag the problem for generic methods too, as it does for generic classes.
+then \javac would flag the problem for generic methods too, as it does for generic classes.
 A version of Java with reified generics could solve the mismatch in Counterexample~3, between the granularity (1) of the casts and the granularity (2) of the types.
 But reification would not change Examples~1 and~2, unless the types of method-local classes take the form \Q@Box<T1>.m<T2>.MyFoo@.
 
