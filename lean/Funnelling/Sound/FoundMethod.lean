@@ -166,7 +166,7 @@ theorem typing {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) (
 
 end Found
 
-theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {D : Dec} {M : Method}
+theorem pres_topFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {D : Dec} {M : Method}
     {m : MethName} {Delta' : Bounds} {T0 : Ty} {ps : List VarDecl} {e0 : Expr} {v0 : Value} {Gs Gs' : List GTy}
     {vs : List Value} {T : Ty} (hD : Declared d (.dec D)) (hM : List.Mem M D.Ms) (hG : Gs.length = D.Delta.length)
     (f : Found M D.Delta Delta' T0 m ps e0 Gs Gs' v0 vs)

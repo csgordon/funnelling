@@ -94,7 +94,7 @@ The paper defines $\tsubst{T}{\Delta}{\pl{T}}$ only when $\Delta$ and $\pl{T}$ h
 $\tsubst{T}{\Delta}{\pl{T}}$ is \texttt{T.subst (bind Delta Ts)} and $\tsubst{T}{\pl{F}}{\pl{T}}$ is \texttt{T.subst (bindF Fs Ts)}; the rule has the premise that the lengths are the same.
 The paper defines $\tsubst{T}{\pl{F}}{\pl{T}}$ only when $\pl{F}$ contains no ground type; in the rules $\pl{F}$ are the funnels of a declared local class, so $\pl{F}$ contains no ground type by A11.
 The paper defines a simultaneous substitution only when the names in its domain are distinct.
-Rules \textsc{simpleFound} and \textsc{localFound} have this as premises (\texttt{Nodup}), since their domains hold the names chosen by $\mathsf{fresh}$; in the other rules the domain is distinct by A5, A6 and A7.
+Rules \textsc{topFound} and \textsc{localFound} have this as premises (\texttt{Nodup}), since their domains hold the names chosen by $\mathsf{fresh}$; in the other rules the domain is distinct by A5, A6 and A7.
 \item \textbf{Definitions.}
 A \textbf{Define} box of the paper with \emph{where} clauses ($\mathsf{declared}$, $\mathrm{generic}$, $\mathsf{scope}$, the pairing, $\mathsf{overrideOk}(T,M)$) is an inductive relation, one constructor per clause; $M\in C$ and $K\gap\mathsf{consistent}$ are definitions with an existential, \texttt{MethodIn} and \texttt{Consistent}.
 In $\mathsf{declared}$, $\mathsf{generic}$, $\mathsf{scope}$ and $\mathsf{overrideOk}(T,M)$, the constructor of the clause for a top-level class is \texttt{dec}, and the constructor of the clause for a local class is \texttt{newLocal}; the clause of $\mathsf{overrideOk}(T,M)$ with $m\not\in\pl{M}$ is \texttt{absent}.
@@ -667,7 +667,7 @@ Thus, in a rule, \texttt{Fresh} is equality up to the names of binders, as in th
 
 \subsubsection{Reduction}
 
-\begin{cmp}{\textsc{simpleFieldFound}}
+\begin{cmp}{\textsc{topFieldFound}}
 \begin{paperside}
 \fit{$\inferrule{
     \declared{\subclass{C}{\_}{\_}{\_}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}}\\
@@ -679,7 +679,7 @@ Thus, in a rule, \texttt{Fresh} is equality up to the names of binders, as in th
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
 inductive Step (d : Decls) : Expr -> Expr -> Prop
-  | simpleFieldFound {D f} {Gs : List GTy} {vs1 vs : List Value} {v : Value} :
+  | topFieldFound {D f} {Gs : List GTy} {vs1 vs : List Value} {v : Value} :
       Declared d (.dec D) ->
       vs1.length = D.Ss.length ->
       List.Mem (f, v) ((D.Ss.map Slot.f).zip vs1) ->
@@ -689,7 +689,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
 \mapping{$v_1,\ldots,v_n$ is \texttt{vs1}, as long as the slots; $f_i$ and $v_i$ are a pair of \texttt{zip}.}
 \end{cmp}
 
-\begin{cmp}{\textsc{simpleFieldSuper}}
+\begin{cmp}{\textsc{topFieldSuper}}
 \begin{paperside}
 \fit{$\inferrule{
     \declared{\subclass{C}{\Delta}{C'}{\pl{T}}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}}\\
@@ -701,7 +701,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | simpleFieldSuper {D f} {Gs : List GTy} {vs1 vs : List Value} :
+  | topFieldSuper {D f} {Gs : List GTy} {vs1 vs : List Value} :
       Declared d (.dec D) ->
       vs1.length = D.Ss.length ->
       Not (List.Mem f (D.Ss.map Slot.f)) ->
@@ -768,7 +768,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
 \nomapping
 \end{cmp}
 
-\begin{cmp}{\textsc{simpleAddSuper}}
+\begin{cmp}{\textsc{topAddSuper}}
 \begin{paperside}
 \fit{$\inferrule{
     v = \obj{C}{\pl{G}}{\_}
@@ -778,7 +778,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | simpleAddSuper {C m} {v : Value} {Gs Gs' : List GTy} {vs0 vs : List Value} :
+  | topAddSuper {C m} {v : Value} {Gs Gs' : List GTy} {vs0 vs : List Value} :
       v = Value.new C Gs vs0 ->
       Step d (.call v Gs' m vs) (.superCall v (.cls C Gs) Gs' m vs)
 \end{lstlisting}
@@ -786,7 +786,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
 \nomapping
 \end{cmp}
 
-\begin{cmp}{\textsc{simpleFound}}
+\begin{cmp}{\textsc{topFound}}
 \begin{paperside}
 \fit{$\inferrule{
     \declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\
@@ -799,7 +799,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | simpleFound {D M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs' : List GTy} {vs : List Value} :
+  | topFound {D M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs' : List GTy} {vs : List Value} :
       Declared d (.dec D) ->
       List.Mem M D.Ms ->
       FreshM M (.mk Delta' T0 m ps e0) ->
@@ -1215,17 +1215,17 @@ inductive Typing (d : Decls) : Bounds -> TypeEnv -> Expr -> Ty -> Prop
 \begin{cmp}{\textsc{newLocal}}
 \begin{paperside}
 \fit{$\inferrule{
-  \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\\\
+  \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\\\
   \pairing{\Delta}{\pl{F}}{|\pl{F}|}=\Delta';\_\\
   \ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')\\\\
   \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\
-  \kind{\Delta'}{\gen{C_0}{\pl{T}}}\\
-  \typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}\\\\
+  \kind{\Delta'}{\gen{C'}{\pl{T}}}\\
+  \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\\\
   \mok{\Delta'}{\Gamma|_{\ftv{|\pl{F}|}}\setminus\this,\gen{C}{|\pl{F}|}\gap\this}{\pl{M}}\\\\
-  \mathsf{overrideOk}(\Delta',\gen{C_0}{\pl{T}},\pl{M})
+  \mathsf{overrideOk}(\Delta',\gen{C'}{\pl{T}},\pl{M})
 }{
   \typing{\Delta}{\Gamma}{
-    \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}
+    \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}
   }{\gen{C}{|\pl{F}|}}
 }$}\\[1ex]
 For a set of type variables $\pl{X}$, $\Gamma|_{\pl{X}}$ keeps the variables $T\gap x$ of $\Gamma$ such that $\ftv{T}\subseteq\pl{X}$.
@@ -1233,19 +1233,19 @@ $\Gamma\setminus x$ is $\Gamma$ without the variable $x$.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | newLocal {Delta Gamma C Fs C0 Ts es Ms Delta' Ts'' T''} :
-      Consistent d (.newLocal C Fs C0 Ts es Ms) ->
+  | newLocal {Delta Gamma C Fs C' Ts es Ms Delta' Ts'' T''} :
+      Consistent d (.newLocal C Fs C' Ts es Ms) ->
       Pairing Delta Fs (abs Fs) Delta' Ts'' ->
       (forall X, List.Mem X (Ty.ftvList (cod Delta')) -> List.Mem X (dom Delta')) ->
       Kind d Delta' (.cls C (abs Fs)) ->
-      Kind d Delta' (.cls C0 Ts) ->
-      Typing d Delta Gamma (.new C0 Ts es) T'' ->
+      Kind d Delta' (.cls C' Ts) ->
+      Typing d Delta Gamma (.new C' Ts es) T'' ->
       (forall M, List.Mem M Ms ->
         MethodOk d Delta'
           (withoutThis (restrict Gamma (Ty.ftvList (abs Fs))) ++
             [{ T := .cls C (abs Fs), x := this }]) M) ->
-      OverrideOk d Delta' (.cls C0 Ts) Ms ->
-      Typing d Delta Gamma (.newLocal C Fs C0 Ts es Ms) (.cls C (abs Fs))
+      OverrideOk d Delta' (.cls C' Ts) Ms ->
+      Typing d Delta Gamma (.newLocal C Fs C' Ts es Ms) (.cls C (abs Fs))
 def restrict (Gamma : TypeEnv) (Xs : List TVarName) : TypeEnv :=
   Gamma.filter fun d => (Ty.ftv d.T).all fun X => Xs.contains X
 def withoutThis (Gamma : TypeEnv) : TypeEnv := Gamma.filter fun d => d.x != this
@@ -1309,8 +1309,8 @@ inductive Seq2 {A B : Type} (R : A -> B -> Prop) : List A -> List B -> Prop
 \begin{cmp}{$K\gap\mathsf{consistent}$}
 \begin{paperside}
 \fit{$\begin{array}{@{}l@{}}
-\innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
-\quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C_0}{\pl{T}'}{\_}{\pl{M}'}}\\
+\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
+\quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C'}{\pl{T}'}{\_}{\pl{M}'}}\\
 \quad\phantom{\textrm{where }}\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\
 \quad\phantom{\textrm{where }}\mathrm{names}(\pl{M}')=\mathrm{names}(\pl{M})\\
 \quad\phantom{\textrm{where }}\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})
@@ -1320,9 +1320,9 @@ $\mathrm{names}(\pl{M})$ is the set of the names of the methods in $\pl{M}$.
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
 def Consistent (d : Decls) : ClassDecl -> Prop
-  | .newLocal C Fs C0 Ts _ Ms =>
+  | .newLocal C Fs C' Ts _ Ms =>
     exists Fs' Ts' es' Ms',
-      Declared d (.newLocal C Fs' C0 Ts' es' Ms') /\
+      Declared d (.newLocal C Fs' C' Ts' es' Ms') /\
       Fs.length = Fs'.length /\
       Ts = Ty.substList (bindF Fs' (abs Fs)) Ts' /\
       (forall m, List.Mem m (Ms'.map Method.name) <-> List.Mem m (Ms.map Method.name)) /\
@@ -1506,7 +1506,7 @@ $T_0\sigma$ is a type variable when $T_0$ is a type variable of a method of a lo
 \item \textbf{Overriding.} By $\mathsf{overrideOk}$ in rules \textsc{classOk} and \textsc{newLocal}, the first class declaring $m$ above the class of the receiver gives $m$ the signature, substituted, of $m$ in every supertype.
 \item \textbf{Checked cast.} If $\emptyset\vdash\mathsf{typeOf}(v)<:\gen{C}{\_}$, $v$ has type $T_0$, $\cast{\emptyset}{T_0}{\gen{C}{\pl{T}}}$ and $\kind{\emptyset}{\gen{C}{\pl{T}}}$, then $v$ has type $\gen{C}{\pl{T}}$.
 The proof uses that the chain of superclasses is unique and that $\pl{X}\subseteq\ftv{\pl{T}'}$ fixes $\pl{T}$.
-\item \textbf{Well-formedness of the result.} A step whose $\mathsf{fresh}$ names are distinct, are not \Q@this@ and avoid the names of the program keeps A7 and A8; by $\mathsf{Dec}\gap\mathrm{Ok}$ for \textsc{simpleFound}, and by A12 of the left side for \textsc{localFound} and \textsc{ifThen}, every variable and every type variable of a method body is bound, so a step keeps A12; the other requirements are local; progress needs it, since a step of the paper reduces to a well-formed expression.
+\item \textbf{Well-formedness of the result.} A step whose $\mathsf{fresh}$ names are distinct, are not \Q@this@ and avoid the names of the program keeps A7 and A8; by $\mathsf{Dec}\gap\mathrm{Ok}$ for \textsc{topFound}, and by A12 of the left side for \textsc{localFound} and \textsc{ifThen}, every variable and every type variable of a method body is bound, so a step keeps A12; the other requirements are local; progress needs it, since a step of the paper reduces to a well-formed expression.
 \item \textbf{Progress} by decomposition of the expression into an evaluation context and a redex, with canonical forms; a call terminates its search at a class declaring the method, before \Q@Object@, since typing found the method in a superclass.
 \item \textbf{Preservation} by induction on the reduction, with the lemmas above.
 \item \textbf{Determinism.} An expression that is not a value decomposes in at most one way as $\ctx{e}$ with $e$ a redex, and no value reduces.
@@ -1522,7 +1522,7 @@ Replacing related names with the same ground types and closed values keeps \text
 Lean proves every example, with no axiom other than the three standard ones, and \leanfile{ExampleFacts.lean} holds the lemmas that the proofs share.
 The core language has no strings, no lambdas, no \Q@switch@ and no casts.
 The examples of Section~2 use \Q@Fun<X,Y>@ for \Q@Function<X,Y>@, and its subclasses \Q@AToB@ and \Q@AsB@ for the lambdas of the two calls of \Q@m@.
-\Q@AsB@ plays the lambda \Q@s->s@: its method \Q@apply@ uses its argument as a \Q@B<>@, so a failing cast to \Q@String@ becomes the call \Q@new A<>().onlyB()@, which reduces by \textsc{simpleAddSuper} and \textsc{searchSuper} to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
+\Q@AsB@ plays the lambda \Q@s->s@: its method \Q@apply@ uses its argument as a \Q@B<>@, so a failing cast to \Q@String@ becomes the call \Q@new A<>().onlyB()@, which reduces by \textsc{topAddSuper} and \textsc{searchSuper} to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
 The other versions of Example~2 in Section~2, except the version with \Q@show@, differ from Example~2 only in the \Q@switch@ and in how the caller of \Q@m@ creates \Q@f@, so they have no counterpart.
 The core language declares a local class in its one \Q@new@ expression, so the version with \Q@show@ (d7) passes that expression to a method \Q@check@, as the parameter \Q@mine@, where the paper writes \Q@new MyFoo()@ twice.
 \begin{lstlisting}
@@ -1545,15 +1545,15 @@ class Broken<> extends Object<>{ <X extends Object<>> Foo<X> m(Object<> other, X
   if (other instanceof MyFoo<> w){ w }
   else { new MyFoo<> extends Foo<X>(){ X x(){ return x; } } }; } }
 // d4: Object, A, B, Foo, and
-class Leaker<> extends Object<>{
+class Broken<> extends Object<>{
   <Y extends Object<>> MyFoo2<> mk2(Y y){ return new MyFoo2<> extends Foo<Y>(){ Y x(){ return y; } }; }
   <Y extends Object<>> Foo<Y> leak(MyFoo2<> z){ return z; } }
 // d4F: Object, A, B, Foo, and
-class LeakerF<> extends Object<>{
+class Broken<> extends Object<>{
   <Y extends Object<>> MyFoo2F<Y> mk2(Y y){ return new MyFoo2F<Y funnel> extends Foo<Y>(){ Y x(){ return y; } }; }
   <Y extends Object<>> Foo<Y> leak(MyFoo2F<Y> z){ return z; } }
 // d5, Example 1 funnelled: Object, A, B, Foo, and
-class Fixed<> extends Object<>{ <X extends Object<>> Foo<X> mk(Foo<X> other, X x){ return
+class Broken<> extends Object<>{ <X extends Object<>> Foo<X> m(Foo<X> other, X x){ return
   if (other instanceof MyFoo<X> w){ w }
   else { new MyFoo<X funnel> extends Foo<X>(){ X x(){ return x; } } }; } }
 // d6, Example 2: Object, A, B, Fun, AToB, AsB, and
@@ -1634,33 +1634,33 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[W27] \texttt{w27}: \texttt{Fresh} relates the program of W25 to the same program with \Q@y@ renamed into \Q@x@; the renamed program violates A7.
 \item[W28] \texttt{w28}: \Q@if (vZ instanceof L<> x){ if (new A<>() instanceof A<> y){ x } else { x } } else { new B<>() }@ violates A12, where \Q@vZ@ is \Q@new L<> extends Object<>(){ Object<> m(){ return z; } }@.
 \item[W29] \texttt{w29}: \Q@if (vT instanceof L<> x){ new L2<> extends Object<>(){ <Y extends Object<>> Object<> k(){ return x; } } } else { new B<>() }@ violates A12, where \Q@vT@ is \Q@new L<> extends Object<>(){ Z m(){ return this; } }@.
-\item[R1] \texttt{r1}: \Q@new Box<A<>>(new A<>()).val@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFieldFound}.
-\item[R2] \texttt{r2}: \Q@new C2<>().m()@ $\rightarrow$ \Q@new C2<>().[C2<>]m()@ by \textsc{simpleAddSuper}.
+\item[R1] \texttt{r1}: \Q@new Box<A<>>(new A<>()).val@ $\rightarrow$ \Q@new A<>()@ by \textsc{topFieldFound}.
+\item[R2] \texttt{r2}: \Q@new C2<>().m()@ $\rightarrow$ \Q@new C2<>().[C2<>]m()@ by \textsc{topAddSuper}.
 \item[R3] \texttt{r3}: \Q@new C2<>().[C2<>]m()@ $\rightarrow$ \Q@new C2<>().[C1<>]m()@ by \textsc{searchSuper}.
-\item[R4] \texttt{r4}: \Q@new C2<>().[C1<>]m()@ $\rightarrow$ \Q@new A<>()@ by \textsc{simpleFound}.
+\item[R4] \texttt{r4}: \Q@new C2<>().[C1<>]m()@ $\rightarrow$ \Q@new A<>()@ by \textsc{topFound}.
 \item[R5] \texttt{r5}: R1 inside the receiver of a call, by \textsc{ctx}.
 \item[R6] \texttt{r6Then}: \Q@if (new A<>() instanceof A<> x){ x } else { new B<>() }@ $\rightarrow$ \Q@new A<>()@ by \textsc{ifThen}.
 \item[R6] \texttt{r6Else}: the same with \Q@B<>@ as the test $\rightarrow$ \Q@new B<>()@ by \textsc{ifElse}.
-\item[R7] \texttt{r7}: \Q@new Maker<>().[Maker<>]<A<>>mk(new A<>())@ $\rightarrow$ \Q@new MyFoo<A<>> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }@ by \textsc{simpleFound}, renaming \Q@Y@ and \Q@y@ into \Q@Y1@ and \Q@y1@.
+\item[R7] \texttt{r7}: \Q@new Maker<>().[Maker<>]<A<>>mk(new A<>())@ $\rightarrow$ \Q@new MyFoo<A<>> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }@ by \textsc{topFound}, renaming \Q@Y@ and \Q@y@ into \Q@Y1@ and \Q@y1@.
 \item[R8] \texttt{r8}: the value of R7 \Q@.x()@ $\rightarrow$ \Q@new A<>()@ by \textsc{localFound}.
 \item[R9] \texttt{r9}: the value of R7 \Q@.other()@ $\rightarrow$ \Q@.[Foo<A<>>]other()@ by \textsc{localSuper}.
 \item[R10] \texttt{r10}: the value of R7 \Q@.f@ $\rightarrow$ \Q@new Foo<A<>>().f@ by \textsc{localFieldSuper}.
 \item[R11] \texttt{r11}: R2, R3, R4 in sequence.
-\item[R12] \texttt{r12}: in d5, \Q@new Fixed<>().<A<>>mk(new Foo<A<>>(), new A<>())@ $\rightarrow^*$ \Q@new MyFoo<A<>> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }@: the type test fails by \textsc{ifElse}.
+\item[R12] \texttt{r12}: in d5, \Q@new Broken<>().<A<>>m(new Foo<A<>>(), new A<>())@ $\rightarrow^*$ \Q@new MyFoo<A<>> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }@: the type test fails by \textsc{ifElse}.
 \item[R13] \texttt{r13}: in d5, \Q@mk@ given that value of \Q@MyFoo<A<>>@ returns it: the type test succeeds by \textsc{ifThen}.
 \item[R14] \texttt{r14}: Example~2 reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck: the second call finds the \Q@MyFoo2@ of the first call, and \Q@AsB@ receives the \Q@A<>@ of the first call.
 \item[R15] \texttt{r15}: Example~2 with \Q@show@ reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck: \Q@mine.show(local)@ applies the \Q@f@ of the second call to the \Q@x()@ of the first call.
 \item[R16] \texttt{r16}: Counterexample~3 reduces as Example~2, to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
-\item[R17] \texttt{r17}: \Q@new Leaker<>().<B<>>leak(new Leaker<>().<A<>>mk2(new A<>())).x().onlyB()@ reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
+\item[R17] \texttt{r17}: \Q@new Broken<>().<B<>>leak(new Broken<>().<A<>>mk2(new A<>())).x().onlyB()@ reduces in d4 to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
 \item[R18] \texttt{r18}: \Q@new Nest<>().<A<>>mk(new A<>()).x()@ $\rightarrow^*$ \Q@new A<>()@, through a value of \Q@Outer@ and a value of \Q@Inner@.
 \item[R19] \texttt{r19}: calling \Q@g<B<>>(new B<>())@ on the value of W16 gives \Q@new Inner2<B<>> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }@.
-\item[R20] \texttt{r20}: \Q@new Derived<>(new B<>(), new A<>()).f@ $\rightarrow$ \Q@new Base<A<>>(new A<>()).f@ $\rightarrow$ \Q@new A<>()@, by \textsc{simpleFieldSuper} and \textsc{simpleFieldFound}.
+\item[R20] \texttt{r20}: \Q@new Derived<>(new B<>(), new A<>()).f@ $\rightarrow$ \Q@new Base<A<>>(new A<>()).f@ $\rightarrow$ \Q@new A<>()@, by \textsc{topFieldSuper} and \textsc{topFieldFound}.
 \item[R21] \texttt{r21}: \Q@if (new A<>() instanceof A<> x){ if (x instanceof A<> y){ y } else { x } } else { new B<>() }@ $\rightarrow$ \Q@if (new A<>() instanceof A<> y1){ y1 } else { new A<>() }@: \textsc{ifThen} renames the inner \Q@y@.
-\item[R22] \texttt{r22}: \Q@new K<>().k(vL)@ $\rightarrow^*$ \Q@new L<> extends Object<>(){ Object<> m(Object<> x1){ return vL.m(x1); } }@, where \Q@vL@ is a value of \Q@L@ whose method \Q@m@ binds \Q@x@: \textsc{simpleFound} renames \Q@y@ and \Q@x@, so the result satisfies A7 (compare W24).
+\item[R22] \texttt{r22}: \Q@new K<>().k(vL)@ $\rightarrow^*$ \Q@new L<> extends Object<>(){ Object<> m(Object<> x1){ return vL.m(x1); } }@, where \Q@vL@ is a value of \Q@L@ whose method \Q@m@ binds \Q@x@: \textsc{topFound} renames \Q@y@ and \Q@x@, so the result satisfies A7 (compare W24).
 \item[R23] \texttt{r23}: the program of W25 reduces to \Q@new B<>()@ in four steps, renaming \Q@y@ into \Q@y1@.
 \item[T1] \texttt{t1}: \Q@new Box<A<>>(new A<>()).val : A<>@.
 \item[T2] \texttt{t2}: \Q@new Box<A<>>(new B<>())@ is ill typed: \Q@B<>@ is not a subtype of \Q@A<>@.
-\item[T3] \texttt{t3}: in d5, \Q@new Fixed<>().<A<>>mk(new Foo<A<>>(), new A<>()) : Foo<A<>>@.
+\item[T3] \texttt{t3}: in d5, \Q@new Broken<>().<A<>>m(new Foo<A<>>(), new A<>()) : Foo<A<>>@.
 \item[T4] \texttt{t4}: \Q@new Derived<>(new B<>(), new A<>()).f : A<>@, by \textsc{subs} to \Q@Base<A<>>@ and then \textsc{field}.
 \item[T5] \texttt{t5}: \Q@new C2<>().[C2<>]m() : A<>@ and \Q@new C2<>().[C1<>]m() : A<>@, the results of R2 and R3, by \textsc{superCall}.
 \item[T6] \texttt{t6}: \Q@if (new A<>() instanceof A<> x){ x } else { new A<>() } : A<>@, by \textsc{ifInstanceof} and \textsc{castUp}.
@@ -1681,9 +1681,9 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[V2] \texttt{v2}: the hypotheses of \texttt{typeSoundness} hold together on d2, with the funnelled local class \Q@MyFoo@, and \Q@new Maker<>().<A<>>mk(new A<>()) : Foo<A<>>@.
 \item[V3] \texttt{v3}: the result of R7, a copy of \Q@MyFoo@ in the main expression, has type \Q@Foo<A<>>@.
 \item[V4] \texttt{v4}: d2 with the main expression of V2 is Ok, by \textsc{progOk}.
-\item[P1] \texttt{p1}: class \Q@Fixed@ is Ok.
+\item[P1] \texttt{p1}: in d5, class \Q@Broken@ is Ok.
 \item[P2] \texttt{p2}: class \Q@Fixed2@ is Ok: \Q@Holder<X>@ determines \Q@X@.
-\item[P3] \texttt{p3}: class \Q@LeakerF@ is Ok.
+\item[P3] \texttt{p3}: in d4F, class \Q@Broken@ is Ok.
 \item[N1] \texttt{n1}: Example~1 is not Ok: rule \textsc{newLocal} fails at $\kind{\emptyset}{\QQ{Foo<X>}}$, since \Q@MyFoo@ funnels nothing.
 Lean derives it from \texttt{typeSoundness}, W6 and J2: the program reduces to a stuck expression.
 \item[N2] \texttt{n2}: in d5, the main expression of Example~1 is ill typed: a \Q@Foo<A<>>@ is passed where a \Q@Foo<B<>>@ is expected.
@@ -1696,6 +1696,6 @@ Lean derives it from \texttt{typeSoundness}, W11 and R15: the program reduces to
 \item[N7] \texttt{n7}: class \Q@Box7F@ is not Ok: \Q@Object<>@ does not determine \Q@X@; javac rejects Counterexample~3 for the same reason.
 \item[N8] \texttt{n8}: in d4F, the main expression of the leak is ill typed: a \Q@MyFoo2F<A<>>@ is passed where a \Q@MyFoo2F<B<>>@ is expected.
 \item[J2] \texttt{j2}: Example~1 reduces to \Q@new A<>().onlyB()@, and then to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
-\item[L2] \texttt{l2}: class \Q@Leaker@ is not Ok: the local class in \Q@mk2@ funnels nothing, as in N1.
+\item[L2] \texttt{l2}: in d4, class \Q@Broken@ is not Ok: the local class in \Q@mk2@ funnels nothing, as in N1.
 \item[S1] \texttt{s1}: \Q@new Object<>().f@ is stuck.
 \end{description}

@@ -73,9 +73,9 @@ def OverrideOk (d : Decls) (Delta : Bounds) (T : Ty) (Ms : List Method) : Prop :
   forall M C Ts, List.Mem M Ms -> Sub d Delta T (.cls C Ts) -> OverrideOkM d (.cls C Ts) M
 
 def Consistent (d : Decls) : ClassDecl -> Prop
-  | .newLocal C Fs C0 Ts _ Ms =>
+  | .newLocal C Fs C' Ts _ Ms =>
     exists Fs' Ts' es' Ms',
-      Declared d (.newLocal C Fs' C0 Ts' es' Ms') /\
+      Declared d (.newLocal C Fs' C' Ts' es' Ms') /\
       Fs.length = Fs'.length /\
       Ts = Ty.substList (bindF Fs' (abs Fs)) Ts' /\
       (forall m, List.Mem m (Ms'.map Method.name) <-> List.Mem m (Ms.map Method.name)) /\
@@ -131,18 +131,18 @@ inductive Typing (d : Decls) : Bounds -> TypeEnv -> Expr -> Ty -> Prop
       TypingSeq d Delta Gamma es1 (Ty.substList (bind D.Delta Ts') (D.Ss.map Slot.T)) ->
       Typing d Delta Gamma (.new D.C' (Ty.substList (bind D.Delta Ts') D.Ts) es2) T'' ->
       Typing d Delta Gamma (.new D.C Ts' (es1 ++ es2)) (.cls D.C Ts')
-  | newLocal {Delta Gamma C Fs C0 Ts es Ms Delta' Ts'' T''} :
-      Consistent d (.newLocal C Fs C0 Ts es Ms) ->
+  | newLocal {Delta Gamma C Fs C' Ts es Ms Delta' Ts'' T''} :
+      Consistent d (.newLocal C Fs C' Ts es Ms) ->
       Pairing Delta Fs (abs Fs) Delta' Ts'' ->
       (forall X, List.Mem X (Ty.ftvList (cod Delta')) -> List.Mem X (dom Delta')) ->
       Kind d Delta' (.cls C (abs Fs)) ->
-      Kind d Delta' (.cls C0 Ts) ->
-      Typing d Delta Gamma (.new C0 Ts es) T'' ->
+      Kind d Delta' (.cls C' Ts) ->
+      Typing d Delta Gamma (.new C' Ts es) T'' ->
       (forall M, List.Mem M Ms ->
         MethodOk d Delta'
           (withoutThis (restrict Gamma (Ty.ftvList (abs Fs))) ++ [{ T := .cls C (abs Fs), x := this }]) M) ->
-      OverrideOk d Delta' (.cls C0 Ts) Ms ->
-      Typing d Delta Gamma (.newLocal C Fs C0 Ts es Ms) (.cls C (abs Fs))
+      OverrideOk d Delta' (.cls C' Ts) Ms ->
+      Typing d Delta Gamma (.newLocal C Fs C' Ts es Ms) (.cls C (abs Fs))
   | ifInstanceof {Delta Gamma e0 T0 T x e1 e2 T'} :
       Typing d Delta Gamma e0 T0 ->
       Kind d Delta T ->

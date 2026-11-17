@@ -30,13 +30,13 @@ theorem EvalCtx.plug_value {E : EvalCtx} {a : Expr} {v : Value} (h : E.plug a = 
 theorem Step.not_value {d : Decls} {e e' : Expr} (h : Step d e e') :
     forall v : Value, Not (e = v.expr) := by
   induction h with
-  | simpleFieldFound => intro v hv; cases v <;> simp [Value.expr] at hv
-  | simpleFieldSuper => intro v hv; cases v <;> simp [Value.expr] at hv
+  | topFieldFound => intro v hv; cases v <;> simp [Value.expr] at hv
+  | topFieldSuper => intro v hv; cases v <;> simp [Value.expr] at hv
   | localFieldSuper => intro v hv; cases v <;> simp [Value.expr] at hv
   | ifThen => intro v hv; cases v <;> simp [Value.expr] at hv
   | ifElse => intro v hv; cases v <;> simp [Value.expr] at hv
-  | simpleAddSuper => intro v hv; cases v <;> simp [Value.expr] at hv
-  | simpleFound => intro v hv; cases v <;> simp [Value.expr] at hv
+  | topAddSuper => intro v hv; cases v <;> simp [Value.expr] at hv
+  | topFound => intro v hv; cases v <;> simp [Value.expr] at hv
   | localFound => intro v hv; cases v <;> simp [Value.expr] at hv
   | localSuper => intro v hv; cases v <;> simp [Value.expr] at hv
   | searchSuper => intro v hv; cases v <;> simp [Value.expr] at hv
@@ -231,13 +231,13 @@ theorem Step.decompNonHole {d : Decls} {e e2 : Expr} (h : Step d e e2) :
     forall (E : EvalCtx) (a : Expr), e = E.plug a -> NonValue a -> Not (E = .hole) ->
       exists a2, Step d a a2 /\ e2 = E.plug a2 := by
   induction h with
-  | simpleFieldFound => intro E a h ha hE; exact absurd (redex_field ha h hE) id
-  | simpleFieldSuper => intro E a h ha hE; exact absurd (redex_field ha h hE) id
+  | topFieldFound => intro E a h ha hE; exact absurd (redex_field ha h hE) id
+  | topFieldSuper => intro E a h ha hE; exact absurd (redex_field ha h hE) id
   | localFieldSuper => intro E a h ha hE; exact absurd (redex_field ha h hE) id
   | ifThen => intro E a h ha hE; exact absurd (redex_if ha h hE) id
   | ifElse => intro E a h ha hE; exact absurd (redex_if ha h hE) id
-  | simpleAddSuper => intro E a h ha hE; exact absurd (redex_call ha h hE) id
-  | simpleFound => intro E a h ha hE; exact absurd (redex_super ha h hE) id
+  | topAddSuper => intro E a h ha hE; exact absurd (redex_call ha h hE) id
+  | topFound => intro E a h ha hE; exact absurd (redex_super ha h hE) id
   | localFound => intro E a h ha hE; exact absurd (redex_call ha h hE) id
   | localSuper => intro E a h ha hE; exact absurd (redex_call ha h hE) id
   | searchSuper => intro E a h ha hE; exact absurd (redex_super ha h hE) id
@@ -256,12 +256,12 @@ theorem Step.decomp {d : Decls} {E : EvalCtx} {a e2 : Expr} (h : Step d (E.plug 
   | _ => exact Step.decompNonHole h _ a rfl ha (by simp)
 
 inductive BaseStep (d : Decls) : Expr -> Expr -> Prop
-  | simpleFieldFound {D f} {Gs : List GTy} {vs1 vs : List Value} {v : Value} :
+  | topFieldFound {D f} {Gs : List GTy} {vs1 vs : List Value} {v : Value} :
       Declared d (.dec D) ->
       vs1.length = D.Ss.length ->
       List.Mem (f, v) ((D.Ss.map Slot.f).zip vs1) ->
       BaseStep d (.field (Value.new D.C Gs (vs1 ++ vs)) f) v
-  | simpleFieldSuper {D f} {Gs : List GTy} {vs1 vs : List Value} :
+  | topFieldSuper {D f} {Gs : List GTy} {vs1 vs : List Value} :
       Declared d (.dec D) ->
       vs1.length = D.Ss.length ->
       Not (List.Mem f (D.Ss.map Slot.f)) ->
@@ -279,10 +279,10 @@ inductive BaseStep (d : Decls) : Expr -> Expr -> Prop
   | ifElse {C' Ts x e1 e2} {v : Value} :
       Not (exists Ts', Sub d [] (typeOf v) (.cls C' Ts')) ->
       BaseStep d (.ifInst v (.cls C' Ts) x e1 e2) e2
-  | simpleAddSuper {C m} {v : Value} {Gs Gs' : List GTy} {vs0 vs : List Value} :
+  | topAddSuper {C m} {v : Value} {Gs Gs' : List GTy} {vs0 vs : List Value} :
       v = Value.new C Gs vs0 ->
       BaseStep d (.call v Gs' m vs) (.superCall v (.cls C Gs) Gs' m vs)
-  | simpleFound {D M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs' : List GTy} {vs : List Value} :
+  | topFound {D M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs' : List GTy} {vs : List Value} :
       Declared d (.dec D) ->
       List.Mem M D.Ms ->
       FreshM M (.mk Delta' T0 m ps e0) ->
@@ -321,13 +321,13 @@ inductive BaseStep (d : Decls) : Expr -> Expr -> Prop
 
 theorem BaseStep.toStep {d : Decls} {e e' : Expr} (h : BaseStep d e e') : Step d e e' := by
   cases h with
-  | simpleFieldFound h1 h2 h3 => exact Step.simpleFieldFound h1 h2 h3
-  | simpleFieldSuper h1 h2 h3 h4 h5 => exact Step.simpleFieldSuper h1 h2 h3 h4 h5
+  | topFieldFound h1 h2 h3 => exact Step.topFieldFound h1 h2 h3
+  | topFieldSuper h1 h2 h3 h4 h5 => exact Step.topFieldSuper h1 h2 h3 h4 h5
   | localFieldSuper => exact Step.localFieldSuper
   | ifThen h1 h2 h3 => exact Step.ifThen h1 h2 h3
   | ifElse h1 => exact Step.ifElse h1
-  | simpleAddSuper h1 => exact Step.simpleAddSuper h1
-  | simpleFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11 => exact Step.simpleFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11
+  | topAddSuper h1 => exact Step.topAddSuper h1
+  | topFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11 => exact Step.topFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11
   | localFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 => exact Step.localFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10
   | localSuper h1 h2 => exact Step.localSuper h1 h2
   | searchSuper h1 h2 h3 h4 => exact Step.searchSuper h1 h2 h3 h4
@@ -335,13 +335,13 @@ theorem BaseStep.toStep {d : Decls} {e e' : Expr} (h : BaseStep d e e') : Step d
 theorem BaseStep.nonhole {d : Decls} {e e' : Expr} (h : BaseStep d e e') {E : EvalCtx} {c : Expr}
     (hE : E.plug c = e) (hne : Not (E = .hole)) (hc : NonValue c) : False := by
   cases h with
-  | simpleFieldFound => exact redex_field hc hE.symm hne
-  | simpleFieldSuper => exact redex_field hc hE.symm hne
+  | topFieldFound => exact redex_field hc hE.symm hne
+  | topFieldSuper => exact redex_field hc hE.symm hne
   | localFieldSuper => exact redex_field hc hE.symm hne
   | ifThen => exact redex_if hc hE.symm hne
   | ifElse => exact redex_if hc hE.symm hne
-  | simpleAddSuper => exact redex_call hc hE.symm hne
-  | simpleFound => exact redex_super hc hE.symm hne
+  | topAddSuper => exact redex_call hc hE.symm hne
+  | topFound => exact redex_super hc hE.symm hne
   | localFound => exact redex_call hc hE.symm hne
   | localSuper => exact redex_call hc hE.symm hne
   | searchSuper => exact redex_super hc hE.symm hne
@@ -349,14 +349,14 @@ theorem BaseStep.nonhole {d : Decls} {e e' : Expr} (h : BaseStep d e e') {E : Ev
 theorem Step.strip {d : Decls} {a b2 : Expr} (h2 : Step d a b2) :
     forall {b1 : Expr}, BaseStep d a b1 -> BaseStep d a b2 := by
   induction h2 with
-  | simpleFieldFound h1 h2 h3 => intro _ _; exact BaseStep.simpleFieldFound h1 h2 h3
-  | simpleFieldSuper h1 h2 h3 h4 h5 => intro _ _; exact BaseStep.simpleFieldSuper h1 h2 h3 h4 h5
+  | topFieldFound h1 h2 h3 => intro _ _; exact BaseStep.topFieldFound h1 h2 h3
+  | topFieldSuper h1 h2 h3 h4 h5 => intro _ _; exact BaseStep.topFieldSuper h1 h2 h3 h4 h5
   | localFieldSuper => intro _ _; exact BaseStep.localFieldSuper
   | ifThen h1 h2 h3 => intro _ _; exact BaseStep.ifThen h1 h2 h3
   | ifElse h1 => intro _ _; exact BaseStep.ifElse h1
-  | simpleAddSuper h1 => intro _ _; exact BaseStep.simpleAddSuper h1
-  | simpleFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11 =>
-    intro _ _; exact BaseStep.simpleFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11
+  | topAddSuper h1 => intro _ _; exact BaseStep.topAddSuper h1
+  | topFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11 =>
+    intro _ _; exact BaseStep.topFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11
   | localFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 =>
     intro _ _; exact BaseStep.localFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10
   | localSuper h1 h2 => intro _ _; exact BaseStep.localSuper h1 h2
@@ -392,21 +392,21 @@ theorem EvalCtx.comp_plug : forall (E E' : EvalCtx) (a : Expr), (E.comp E').plug
 theorem Step.toBase {d : Decls} {e e' : Expr} (h : Step d e e') :
     exists (E : EvalCtx) (a a' : Expr), e = E.plug a /\ e' = E.plug a' /\ BaseStep d a a' := by
   induction h with
-  | simpleFieldFound h1 h2 h3 =>
-    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.simpleFieldFound h1 h2 h3)))))
-  | simpleFieldSuper h1 h2 h3 h4 h5 =>
-    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.simpleFieldSuper h1 h2 h3 h4 h5)))))
+  | topFieldFound h1 h2 h3 =>
+    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.topFieldFound h1 h2 h3)))))
+  | topFieldSuper h1 h2 h3 h4 h5 =>
+    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.topFieldSuper h1 h2 h3 h4 h5)))))
   | localFieldSuper =>
     exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl BaseStep.localFieldSuper))))
   | ifThen h1 h2 h3 =>
     exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.ifThen h1 h2 h3)))))
   | ifElse h1 =>
     exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.ifElse h1)))))
-  | simpleAddSuper h1 =>
-    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.simpleAddSuper h1)))))
-  | simpleFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11 =>
+  | topAddSuper h1 =>
+    exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl (BaseStep.topAddSuper h1)))))
+  | topFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11 =>
     exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl
-      (BaseStep.simpleFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11)))))
+      (BaseStep.topFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11)))))
   | localFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 =>
     exact Exists.intro EvalCtx.hole (Exists.intro _ (Exists.intro _ (And.intro rfl (And.intro rfl
       (BaseStep.localFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10)))))

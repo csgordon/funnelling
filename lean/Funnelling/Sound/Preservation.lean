@@ -170,7 +170,7 @@ theorem pres_localFieldSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {M
       have hnew := typing_new_exact hw2.tyNew
       exact hw.up.typing (Typing.field (Typing.subs hnew hs.2 hs3) hw.decl hw.mem hw.len)
 
-theorem pres_simpleFieldSuper {d : Decls} (hwf : WFDecls d) {D : Dec} {f : FieldName} {Gs : List GTy}
+theorem pres_topFieldSuper {d : Decls} (hwf : WFDecls d) {D : Dec} {f : FieldName} {Gs : List GTy}
     {vs1 vs : List Value} {T : Ty} (hD : Declared d (.dec D)) (hl : vs1.length = D.Ss.length)
     (hf : Not (List.Mem f (D.Ss.map Slot.f))) (hO : Not (D.C = Object))
     (h : Typing d [] [] (.field (Value.new D.C Gs (vs1 ++ vs)).expr f) T) :
@@ -330,15 +330,15 @@ theorem preservationBase {d : Decls} {a a' : Expr} {T : Ty} (hwf : WFDecls d) (h
     (ha' : WFExpr a') (hs : BaseStep d a a') (ht : Typing d [] [] a T) : Typing d [] [] a' T := by
   have hd := declOk hwf hok
   cases hs with
-  | simpleFieldFound h1 h2 h3 => exact pres_fieldFound hwf h1 h2 h3 ht
-  | simpleFieldSuper h1 h2 h3 h4 h5 => exact pres_simpleFieldSuper hwf h1 h2 h3 h4 ht
+  | topFieldFound h1 h2 h3 => exact pres_fieldFound hwf h1 h2 h3 ht
+  | topFieldSuper h1 h2 h3 h4 h5 => exact pres_topFieldSuper hwf h1 h2 h3 h4 ht
   | localFieldSuper => exact pres_localFieldSuper hwf ht
   | ifThen h1 h2 h3 => exact pres_ifThen hwf hok hd h1 h2 h3 ha ha' ht
   | ifElse h1 => exact pres_ifElse ht
-  | simpleAddSuper h1 => exact pres_addSuper hwf h1 ht
-  | simpleFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11 =>
+  | topAddSuper h1 => exact pres_addSuper hwf h1 ht
+  | topFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11 =>
     subst h11
-    exact pres_simpleFound hwf hok hd h1 h2 h4 ⟨h3, h5, h8, h6, h7, h9, h10, ha'⟩ ha ht
+    exact pres_topFound hwf hok hd h1 h2 h4 ⟨h3, h5, h8, h6, h7, h9, h10, ha'⟩ ha ht
   | localFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 =>
     subst h10
     exact pres_localFound hwf hok hd h1 h2 ⟨h3, h4, h5, h6, h7, h8, h9, ha'⟩ ha ht

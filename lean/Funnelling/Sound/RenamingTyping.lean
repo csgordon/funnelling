@@ -80,7 +80,7 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
       have hk2 := Kind.renT hd env.bD h2
       simp only [Ty.ren] at hk2 |-
       exact Typing.newTop h1 hk2 (by rw [renList_length, h3]) ih1 ih2
-  | _, _, _, _, .newLocal (C := C) (Fs := Fs) (C0 := C0) (Ts := Ts) (Ms := Ms) (Delta' := Dp) h1 h2 h3 h4 h5 h6 h7 h8,
+  | _, _, _, _, .newLocal (C := C) (Fs := Fs) (C' := C0) (Ts := Ts) (Ms := Ms) (Delta' := Dp) h1 h2 h3 h4 h5 h6 h7 h8,
       rv, rt, _, Delta', Gamma', Xs, xs, Xs', xs', hr, env, hn, hn', ht, ht', hu, hu' => by
     cases hr with
     | newLocal hr1 hr2 =>

@@ -42,7 +42,7 @@ theorem sAdd {d : Decls} {C : ClassName} {Ts0 : List Ty} {es0 : List Expr} {Ts :
     {es : List Expr} (h0 : GTy.tys (toGs Ts0) = Ts0) (h1 : Value.exprs (toVs es0) = es0)
     (h2 : GTy.tys (toGs Ts) = Ts) (h3 : Value.exprs (toVs es) = es) :
     Step d (.call (.new C Ts0 es0) Ts m es) (.superCall (.new C Ts0 es0) (.cls C Ts0) Ts m es) := by
-  have h := Step.simpleAddSuper (d := d) (C := C) (m := m) (v := .new C (toGs Ts0) (toVs es0)) (Gs := toGs Ts0)
+  have h := Step.topAddSuper (d := d) (C := C) (m := m) (v := .new C (toGs Ts0) (toVs es0)) (Gs := toGs Ts0)
     (Gs' := toGs Ts) (vs0 := toVs es0) (vs := toVs es) rfl
   simp only [Value.expr] at h
   rw [h0, h1, h2, h3] at h
@@ -59,7 +59,7 @@ theorem sFound {d : Decls} {D : Dec} {Delta' : Bounds} {T0 : Ty} {m : MethName} 
     Step d (.superCall r (.cls D.C Ts) Ts' m es)
       ((e0.gsubst (bind (D.Delta ++ Delta') (toGs Ts ++ toGs Ts'))).vsubst
         ((this :: ps.map VarDecl.x).zip (toV r :: toVs es))) := by
-  have h := Step.simpleFound (d := d) (D := D) (M := .mk Delta' T0 m ps e0) (v0 := toV r) (Gs := toGs Ts)
+  have h := Step.topFound (d := d) (D := D) (M := .mk Delta' T0 m ps e0) (v0 := toV r) (Gs := toGs Ts)
     (Gs' := toGs Ts') (vs := toVs es) (.dec hD) hM (freshM _) (by rw [tys_length h2, l1])
     (by rw [tys_length h3, l2]) n1 n2 (by rw [exprs_length h4, l3]) g1 g2 rfl
   rw [h1, h2, h3, h4] at h
@@ -139,7 +139,7 @@ theorem noStepSuper {d : Decls} (hObj : forall D, List.Mem D d -> D.C = Object -
     {m : MethName} : forall {e e' : Expr}, Step d e e' -> e = .superCall v.expr (.cls Object []) [] m [] -> False := by
   intro e e' h
   induction h with
-  | @simpleFound D M _ _ _ _ _ _ _ _ _ _ hD hM =>
+  | @topFound D M _ _ _ _ _ _ _ _ _ _ hD hM =>
     intro he
     simp only [Expr.superCall.injEq, Ty.cls.injEq] at he
     have h0 := hObj _ hD.dec_mem he.2.1.1
@@ -168,7 +168,7 @@ theorem noStepField {d : Decls} {f : FieldName} : forall {e e' : Expr}, Step d e
     e = .field (.new Object [] []) f -> False := by
   intro e e' h
   induction h with
-  | @simpleFieldFound D f' Gs vs1 vs v _ hl hm =>
+  | @topFieldFound D f' Gs vs1 vs v _ hl hm =>
     intro he
     simp only [Value.expr, Expr.field.injEq, Expr.new.injEq] at he
     have h1 : vs1 = [] := by
@@ -179,7 +179,7 @@ theorem noStepField {d : Decls} {f : FieldName} : forall {e e' : Expr}, Step d e
     subst h1
     simp at hm
     cases hm
-  | simpleFieldSuper _ _ _ ho =>
+  | topFieldSuper _ _ _ ho =>
     intro he
     simp only [Value.expr, Expr.field.injEq, Expr.new.injEq] at he
     exact ho he.1.1

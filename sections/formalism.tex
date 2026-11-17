@@ -212,7 +212,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 \end{Define}
 \begin{mathpar}
 \fbox{$\step{e}{e'}$}\\
-\inferrule[simpleFieldFound]{
+\inferrule[topFieldFound]{
     \declared{\subclass{C}{\_}{\_}{\_}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}}\\
     f_i\in f_1,\ldots,f_n
 }{
@@ -223,7 +223,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
     }
 }
 \and
-\inferrule[simpleFieldSuper]{
+\inferrule[topFieldSuper]{
     \declared{\subclass{C}{\Delta}{C'}{\pl{T}}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}}\\
     f\not\in f_1,\ldots,f_n\\
     C\neq\Object
@@ -270,7 +270,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 % Neither Java nor funnelling relies on reification.
 \end{mathpar}
 \begin{mathpar}
-\inferrule[simpleAddSuper]{
+\inferrule[topAddSuper]{
     v = \obj{C}{\pl{G}}{\_}
 }{
     \step{
@@ -280,7 +280,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
     }
 }
 \and
-\inferrule[simpleFound]{
+\inferrule[topFound]{
     \declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\
     M\in\pl{M}\\
     \mathsf{fresh}(M,\method{\Delta'}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e_0}})\\
@@ -328,23 +328,23 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 \end{mathpar}
 \par}
 
-Rules \textsc{simpleFieldFound}, \textsc{simpleFieldSuper} and \textsc{localFieldSuper} read a field.
-Rule \textsc{simpleFieldFound} reads a field declared by the class of the object.
-Rule \textsc{simpleFieldSuper} reads a field not declared by the class $C$ of the object from the object of the superclass of $C$, made of the remaining values.
+Rules \textsc{topFieldFound}, \textsc{topFieldSuper} and \textsc{localFieldSuper} read a field.
+Rule \textsc{topFieldFound} reads a field declared by the class of the object.
+Rule \textsc{topFieldSuper} reads a field not declared by the class $C$ of the object from the object of the superclass of $C$, made of the remaining values.
 A local class declares no fields, so rule \textsc{localFieldSuper} reads every field from the object of the superclass.
 
 Rules \textsc{ifThen} and \textsc{ifElse} test the class of the value $v$ against the class $C'$ of the type test, ignoring the type arguments $\pl{T}$ of $\gen{C'}{\pl{T}}$.
 Rule \textsc{ifThen} reduces to $e'_1$ with $x$ replaced by $v$, where $e'_1$ is $e_1$ renamed by $\mathsf{fresh}$; rule \textsc{ifElse} reduces to $e_2$.
 
-Rules \textsc{simpleAddSuper}, \textsc{simpleFound}, \textsc{localFound}, \textsc{localSuper} and \textsc{searchSuper} call a method.
-Rule \textsc{simpleAddSuper} turns a call on an object of a top-level class into a super call starting from the class of the object.
-Rule \textsc{simpleFound} runs the method $m$ found in the class of a super call, replacing the type variables of the class and of the method, \Q@this@ and the parameters.
+Rules \textsc{topAddSuper}, \textsc{topFound}, \textsc{localFound}, \textsc{localSuper} and \textsc{searchSuper} call a method.
+Rule \textsc{topAddSuper} turns a call on an object of a top-level class into a super call starting from the class of the object.
+Rule \textsc{topFound} runs the method $m$ found in the class of a super call, replacing the type variables of the class and of the method, \Q@this@ and the parameters.
 Rule \textsc{localFound} runs the method $m$ found in a value of a local class; the funnelled type variables are already replaced in that value, so only the type variables of the method are replaced.
 Rule \textsc{localSuper} turns a call on a value of a local class without the method $m$ into a super call starting from the superclass of the local class.
 Rule \textsc{searchSuper} moves a super call to the superclass when the class does not declare $m$.
 Rule \textsc{ctx} reduces inside an evaluation context.
 
-Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{localFound} also use the relation $\mathsf{fresh}$.
+Rules \textsc{ifThen}, \textsc{topFound} and \textsc{localFound} also use the relation $\mathsf{fresh}$.
 The names bound in an expression $e$ are the variable of every type test occurring in $e$, and the names bound in every method of a local class occurring in $e$.
 The names bound in a method $M$ are the type variables of its signature, its parameters, and the names bound in its body.
 $\mathsf{fresh}(e,e')$ holds when $e'$ is $e$ with the names bound in $e$ renamed: $e$ and $e'$ are equal up to the names of their binders.
@@ -358,7 +358,7 @@ Object<> k(L<> y){ return
 \end{lstlisting}
 In a call of \Q@k@ with a value \Q@v@ of class \Q@L@, the body of \Q@m@ becomes \Q@v.m(x)@, and the method \Q@m@ of \Q@v@ binds \Q@x@ again.
 Without $\mathsf{fresh}$, the substitution would attempt to place a binder of a name under a binder of the same name, breaking well-formedness requirement A7.
-Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{localFound} place values under the binders of the expression they substitute into.
+Rules \textsc{ifThen}, \textsc{topFound} and \textsc{localFound} place values under the binders of the expression they substitute into.
 Requirement A7 on the result requires those binders to differ from the names bound in the values.
 A substitution can place a value at several positions, so several occurrences of a value can bind the same names; those occurrences are never nested, so they do not shadow each other.
 
@@ -449,17 +449,17 @@ A substitution can place a value at several positions, so several occurrences of
 }
 \and
 \inferrule[newLocal]{
-  \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\\\
+  \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\\\
   \pairing{\Delta}{\pl{F}}{|\pl{F}|}=\Delta';\_\\
   \ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')\\\\
   \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\
-  \kind{\Delta'}{\gen{C_0}{\pl{T}}}\\
-  \typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}\\\\
+  \kind{\Delta'}{\gen{C'}{\pl{T}}}\\
+  \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\\\
   \mok{\Delta'}{\Gamma|_{\ftv{|\pl{F}|}}\setminus\this,\gen{C}{|\pl{F}|}\gap\this}{\pl{M}}\\\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
-  \mathsf{overrideOk}(\Delta',\gen{C_0}{\pl{T}},\pl{M})
+  \mathsf{overrideOk}(\Delta',\gen{C'}{\pl{T}},\pl{M})
 }{
   \typing{\Delta}{\Gamma}{
-    \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}
+    \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}
   }{\gen{C}{|\pl{F}|}}
 }
 %
@@ -483,8 +483,8 @@ A substitution can place a value at several positions, so several occurrences of
 %
     \end{mathpar}
 \begin{Define}{K\gap\mathsf{consistent}}
-\innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
-\quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C_0}{\pl{T}'}{\_}{\pl{M}'}}\\
+\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
+\quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C'}{\pl{T}'}{\_}{\pl{M}'}}\\
 \quad\phantom{\textrm{where }}\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\
 \quad\phantom{\textrm{where }}\mathrm{names}(\pl{M}')=\mathrm{names}(\pl{M})\\
 \quad\phantom{\textrm{where }}\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})
@@ -539,7 +539,7 @@ $\Delta'$ includes only the funnelled type variables, and $\Gamma|_{\ftv{|\pl{F}
 The bounds $\Delta'$ are computed by $\pairing{\Delta}{\pl{F}}{|\pl{F}|}$, which is undefined when a funnelled type variable is not in $\Delta$.
 The premise $\ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')$ requires the bounds of the funnelled type variables to mention only funnelled type variables.
 However, the rule still uses the \emph{full} $\Delta$ and $\Gamma$ for typing the arguments $\pl{e}$. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., in the type arguments of a method call), but will reduce to a value which no longer depends on such type variables.
-This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ types the object creation of the superclass $\obj{C_0}{\pl{T}}{\pl{e}}$ under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ checks the supertype $\gen{C_0}{\pl{T}}$ under the more restrictive $\Delta'$.
+This is why the premise $\typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}$ types the object creation of the superclass $\obj{C'}{\pl{T}}{\pl{e}}$ under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C'}{\pl{T}}}$ checks the supertype $\gen{C'}{\pl{T}}$ under the more restrictive $\Delta'$.
 \\[1ex]
 A local class appears in two kinds of places:
 (1) The (original) declaration of the local class is written in the body of a method of a top-level class, possibly nested inside other local classes.
