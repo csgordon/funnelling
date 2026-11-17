@@ -573,7 +573,7 @@ def typeOf : Value -> Ty
 \end{array}$}\\[1ex]
 The other cases go into every subterm, including the methods of a local class.
 Substitution of type variables is defined only when the type variables of the methods it enters are not in its domain.
-In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables; the ground funnels are ignored.
+In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables; by A11, no funnel in the domain of a substitution is of the form $G$.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
 \end{paperside}
 \begin{leanside}
@@ -598,7 +598,7 @@ abbrev GSubstDefined (Xs : List TVarName) (e : Expr) : Prop :=
   forall X, List.Mem X e.tbinders -> Not (List.Mem X Xs)
 \end{lstlisting}
 \end{leanside}
-\mapping{$[\Delta=\pl{T}]$ is \texttt{bind Delta Ts}, with a premise that the lengths are the same; $[\pl{F}=\pl{T}]$ is \texttt{bindF Fs Ts}. The function \texttt{Expr.gsubst} is total; a rule that substitutes into an expression \texttt{e} has the premise \texttt{GSubstDefined Xs e}, which is the condition under which the substitution of the paper is defined. Substitution into expressions, \texttt{Expr.gsubst}, takes ground types, so $\tsubst{\funnel{X_i}}{\ldots}{\ldots}$ is again a funnel.}
+\mapping{$[\Delta=\pl{T}]$ is \texttt{bind Delta Ts}, with a premise that the lengths are the same; $[\pl{F}=\pl{T}]$ is \texttt{bindF Fs Ts}. The function \texttt{bindF} is total and skips a ground funnel; with no ground funnel in \texttt{Fs}, \texttt{bindF Fs Ts} is \texttt{(domF Fs).zip Ts} (lemma \texttt{bindF\_funnels}). The function \texttt{Expr.gsubst} is total; a rule that substitutes into an expression \texttt{e} has the premise \texttt{GSubstDefined Xs e}, which is the condition under which the substitution of the paper is defined. Substitution into expressions, \texttt{Expr.gsubst}, takes ground types, so $\tsubst{\funnel{X_i}}{\ldots}{\ldots}$ is again a funnel.}
 \end{cmp}
 
 \begin{cmp}{Substitution of variables}

@@ -170,7 +170,7 @@ For a local class $C_0$ with funnels $\pl{F}$, $\mathsf{scope}(\gen{C_0}{\pl{T}}
 By A11, every funnel of $\pl{F}$ is of the form $\funnel{X}$, so $\pl{T}_0$ is $\pl{T}$.
 For a top-level class, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$ can return $\Delta$ and $\pl{T}$ of different lengths.
 The usage points of $\mathsf{scope}$ use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length;
-in the same way, $\tsubst{T}{\pl{F}}{\pl{T}}$ is defined only when $\pl{F}$ and $\pl{T}$ have the same length.
+in the same way, $\tsubst{T}{\pl{F}}{\pl{T}}$ is defined only when $\pl{F}$ and $\pl{T}$ have the same length, and $\pl{F}$ contains no ground type.
 A simultaneous substitution, of types or of values, is defined only when the names in its domain are distinct.
 \\[1ex]
 For a type variable $X$, $\Delta(X)$ is the bound of $X$ in $\Delta$.
@@ -700,7 +700,8 @@ Substitution does not rename the type variables it meets.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
 Substitution of type variables is defined only when the type variables of the methods it enters are not in its domain.
 In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables:
-$\tsubst{T}{F_1,\ldots,F_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $i\in 1..n$ such that $F_i=\funnel{X_i}$; the ground funnels are ignored.
+$\tsubst{T}{F_1,\ldots,F_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $i\in 1..n$, where $F_i=\funnel{X_i}$.
+No funnel $F_i$ is of the form $G$: the funnels in the domain of a substitution are the funnels of a declared local class, and by A11 every funnel in \decls is of the form $\funnel{X}$.
 Since the substituted types are ground, $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground type $G$, and the result is again a funnel.
 
 \subsection{Substitution of Variables}
