@@ -53,7 +53,7 @@ That is, a super call works as a flexible kind of Java \Q@super@ call, attemptin
 An object creation $\obj{C}{\pl{T}}{\pl{e}}$ creates an instance of the top-level class $\gen{C}{\pl{T}}$.
 The first arguments of $\pl{e}$ initialize the fields of $C$; the other arguments are the arguments of the object creation of the superclass of $C$.
 A local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ declares the local class $C$ and creates an instance of $C$.
-The type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ reduces to $e_1$, with $x$ bound to the value of $e_0$, when the class of the value of $e_0$ is a subclass of the class of $T$; otherwise the type test reduces to $e_2$.
+The type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ reduces to $e_1$, with $x$ bound to the value of $e_0$, when the class of the value of $e_0$ is the class of $T$ or a subclass of the class of $T$; otherwise the type test reduces to $e_2$.
 \end{sloppypar}
 
 A type is a class type $\gen{C}{\pl{T}}$ or a type variable $X$.
@@ -563,7 +563,7 @@ When the source does not determine the type arguments, Java rejects the type tes
 $\generic{C}=\gen{C}{\pl{X}}$ is the class $C$ instantiated with its own type variables $\pl{X}$, and $\gen{C'}{\pl{T}'}$ is the supertype of $\gen{C}{\pl{X}}$ with class $C'$.
 The premise $\subtype{\emptyset}{\gen{C}{\pl{X}}}{\gen{C'}{\pl{T}'}}$ of rule \textsc{cast-down} uses the bounds $\emptyset$: a subtyping derivation between class types uses only rules \textsc{sub-refl}, \textsc{sub-inherit} and \textsc{sub-inherit-local}, which do not read $\Delta$.
 Every type variable of $\pl{X}$ occurs in $\pl{T}'$, thus the type arguments $\pl{T}_0$ of the source fix the type arguments $\pl{T}$ of the target.
-Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is a subclass of $C$ has type $\gen{C}{\pl{T}}$, and rule \textsc{ifThen} compares only class names.
+Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is $C$ or a subclass of $C$ has type $\gen{C}{\pl{T}}$, and rule \textsc{ifThen} compares only class names.
 
 
 \subsection{Typing of Programs, Classes and Methods}
