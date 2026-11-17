@@ -29,12 +29,13 @@ if $\typing{\emptyset}{\emptyset}{e_0}{T}$, and $e_0\rightarrow^* e$, then $\typ
 \end{theorem}
 
 Both theorems are proved in Lean~4 (Appendix~\ref{app:lean}).
-The proof of preservation uses the standard lemmas of weakening, substitution and inversion, and these lemmas specific to our core language:
-a renaming by $\mathsf{fresh}$ preserves typing;
-a copy of a local class has the supertype and the method signatures of the declaration of the local class;
-a method has the same signature in every supertype of the class of the receiver;
-a value that passes a type test accepted by the checked cast has the type of the type test;
-a reduction step preserves the well-formedness requirements.
+The proof of preservation uses the standard lemmas of weakening, substitution and inversion.
+% , and these lemmas specific to our core language:
+% a renaming by $\mathsf{fresh}$ preserves typing;
+% a copy of a local class has the supertype and the method signatures of the declaration of the local class;
+% a method has the same signature in every supertype of the class of the receiver;
+% a value that passes a type test accepted by the checked cast has the type of the type test;
+% a reduction step preserves the well-formedness requirements.
 Determinism follows from the unique decomposition of an expression into an evaluation context and a redex.
 Appendix~\ref{app:lean:statements} lists all the lemmas.
 
@@ -47,4 +48,4 @@ Second, the AI proved the two theorems, in about 2 hours.
 Third, for about 8 hours, the AI made the proofs shorter and more readable, and aligned the names inside the Lean code with the names and the terms of the paper; this third phase also used Claude Fable~5.2.
 Finally, the AI wrote the 90 validation examples of Appendix~\ref{app:lean:examples}, to check that the Lean definitions behave as the formalism of the paper:
 each example states a verdict of the rules of the paper on well-formedness, typing or reduction, and Lean proves that verdict.
-The author not involved in guiding the AI then reviewed the process and the side by side comparison, and found no issues.
+An author with significant experience in formalized metatheory, who was not involved in guiding the AI, reviewed the process, side-by-side comparison, and actual Lean artifact, and found no issues.
