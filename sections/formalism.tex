@@ -385,7 +385,7 @@ A substitution can place a value at several positions, so several occurrences of
     \begin{mathpar}
 \fbox{\typing{\Delta}{\Gamma}{e}{T}}\\
 \inferrule[subs]{
-	\typing{\Delta}{\Gamma}{e}{T_1}\\
+	\typing{\Delta}{\Gamma}{e}{T_1}\\\\
 	\kind{\Delta}{T_2}\\
 	\subtype{\Delta}{T_1}{T_2}
 }{
@@ -393,8 +393,7 @@ A substitution can place a value at several positions, so several occurrences of
 }
 \and
 \inferrule[var]{ }{\typing{\Delta}{\Gamma}{x}{\Gamma(x)}}
-\end{mathpar}
-\begin{mathpar}
+\and
 \inferrule[declField]{
   \typing{\Delta}{\Gamma}{e}{\classtype{C}{\pl{T}'}}\\\\
   \declared{\subclass{C}{\Delta'}{\_}{\_}{\_}{\pl{S}}}\\\\
@@ -404,7 +403,7 @@ A substitution can place a value at several positions, so several occurrences of
   \typing{\Delta}{\Gamma}{e\fstop f}{\tsubst{T}{\Delta'}{\pl{T}'}}
   %\subclass{C_0}{\Delta_0}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}\in\decls
 }
-\and
+\\
 \inferrule[call]{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\\\
   \mathsf{scope}(\gen{C_0}{\pl{T}_0})=\Delta_0;\pl{T}_2\\\\
@@ -416,7 +415,7 @@ A substitution can place a value at several positions, so several occurrences of
 }{
   \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}}{T'_0}
 }
-\\
+\and
 \inferrule[call-lb-runtime]{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C_0}{\pl{T}_0}}\\\\
   \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\_}{\_}}\\\\
