@@ -625,7 +625,7 @@ Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is $C$ or a subclass of $C
 \par}
 
 Rule \textsc{class-ok} types the methods of a top-level class with \Q@this@ of type $\gen{C}{\mathrm{dom}(\Delta)}$.
-A method that a class declares again must keep the signature it has in every superclass, up to the names of its own type variables:
+A method that a class overrides must keep the signature it has in every superclass, up to the names of its own type variables:
 rule \textsc{call} reads the signature from the class chosen by subsumption, while the reduction runs the method of the class of the receiver.
 The last case of $\mathsf{overrideOk}(T,M)$ compares a method of a local class with the method of the same name in the declaration of the local class, in the same way.
 
