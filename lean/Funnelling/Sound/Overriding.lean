@@ -125,7 +125,7 @@ theorem found_sig {d : Decls} (hwf : WFDecls d) {C0 : ClassName} {Ts0 : List Ty}
       have hall : forall F, List.Mem F Fs2 -> F.isFunnel = true := fun F hF => hwf.2.2.2.2.2.2.2.2.2.2 _ h1.mem F hF
       have eT := pairing_funnels hpair hall
       subst eT
-      have hb := bind_eq_bindF (Pairing.dom_eq hpair) hall Ts2
+      have hb := bind_eq_bindF (Pairing.dom_eq hpair) Ts2
       refine And.intro rfl (And.intro h4 (And.intro ?_ ?_))
       . rw [bind_append_len hl2, hb]; exact h5
       . rw [bind_append_len hl2, hb]; exact h6

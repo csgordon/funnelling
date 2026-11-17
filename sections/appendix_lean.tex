@@ -92,6 +92,7 @@ A judgement on sequences has its own name: $\kind{\Delta}{\pl{T}}$ is \texttt{Ki
 \item \textbf{Substitution and lengths.}
 The paper defines $\tsubst{T}{\Delta}{\pl{T}}$ only when $\Delta$ and $\pl{T}$ have the same length.
 $\tsubst{T}{\Delta}{\pl{T}}$ is \texttt{T.subst (bind Delta Ts)} and $\tsubst{T}{\pl{F}}{\pl{T}}$ is \texttt{T.subst (bindF Fs Ts)}; the rule has the premise that the lengths are the same.
+The paper defines $\tsubst{T}{\pl{F}}{\pl{T}}$ only when $\pl{F}$ contains no ground type; in the rules $\pl{F}$ are the funnels of a declared local class, so $\pl{F}$ contains no ground type by A11.
 The paper defines a simultaneous substitution only when the names in its domain are distinct.
 Rules \textsc{simpleFound} and \textsc{innerFound} have this as premises (\texttt{Nodup}), since their domains hold the names chosen by $\mathsf{fresh}$; in the other rules the domain is distinct by A5, A6 and A7.
 \item \textbf{Definitions.}
@@ -573,7 +574,7 @@ def typeOf : Value -> Ty
 \end{array}$}\\[1ex]
 The other cases go into every subterm, including the methods of a local class.
 Substitution of type variables is defined only when the type variables of the methods it enters are not in its domain.
-In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables; the ground funnels are ignored.
+In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables; by A11, no funnel in the domain of a substitution is of the form $G$.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
 \end{paperside}
 \begin{leanside}
@@ -583,10 +584,7 @@ def Ty.subst (sigma : TSubst) : Ty -> Ty
   | .var X => (sigma.lookup X).getD (.var X)
   | .cls C Ts => .cls C (Ty.substList sigma Ts)
 def bind {A : Type} (Delta : Bounds) (as : List A) : List (Prod TVarName A) := (dom Delta).zip as
-def bindF (Fs : List Funnel) (Ts : List Ty) : TSubst :=
-  (Fs.zip Ts).filterMap fun
-    | (.funnel X, T) => some (X, T)
-    | (.ground _, _) => none
+def bindF (Fs : List Funnel) (Ts : List Ty) : TSubst := (domF Fs).zip Ts
 abbrev GSubst := List (Prod TVarName GTy)
 def Funnel.gsubst (sigma : GSubst) : Funnel -> Funnel
   | .ground G => .ground G
