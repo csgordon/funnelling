@@ -739,38 +739,38 @@ Substitution of variables is defined only when the variable $x'$ of a type test 
 Rule \textsc{new-local-java} types local classes as Java does.
 A local class has no funnels, and its methods are typed under the full $\Delta$ and $\Gamma$ in scope, except for \Q@this@.
 Replacing rule \textsc{new-local} with rule \textsc{new-local-java} makes our system unsound for the same reason Java is unsound.
-Consider the method \Q@mk@ below, the method \Q@m@ of Example~1 in our syntax:
+Consider the method \Q@m@ of Example~1 in our syntax:
 \begin{lstlisting}
-<X> Foo<X> mk(Object<> other, X x){ return
+<X> Foo<X> m(Object<> other, X x){ return
   if (other instanceof MyFoo<> w){ w }
   else { new MyFoo<> extends Foo<X>(){ X x(){ return x; } } }; }
 \end{lstlisting}
-Rule \textsc{new-local-java} gives the type \Q@MyFoo<>@ to the object created by \Q@mk@.
-Rule \textsc{sub-inherit-local} reads the declaration of \Q@MyFoo@, so \Q@MyFoo<>@ is a subtype of \Q@Foo<X>@, where \Q@X@ is the type variable of \Q@mk@.
+Rule \textsc{new-local-java} gives the type \Q@MyFoo<>@ to the object created by \Q@m@.
+Rule \textsc{sub-inherit-local} reads the declaration of \Q@MyFoo@, so \Q@MyFoo<>@ is a subtype of \Q@Foo<X>@, where \Q@X@ is the type variable of \Q@m@.
 The type \Q@MyFoo<>@ does not say which type \Q@X@ stood for when the object was created.
 Since $\generic{\QQ{MyFoo}}=\QQ{MyFoo<>}$ has no type variables, rule \textsc{cast-down} accepts the type test \Q@other instanceof MyFoo<>@ from \Q@Object<>@.
-Thus the call \Q@a.<String>mk(a.<Integer>mk(o, i), s)@ has type \Q@Foo<String>@, but it returns a \Q@Foo<Integer>@.
+Thus the call \Q@new Broken<>().<String>m(new Broken<>().<Integer>m(o, i), s)@ has type \Q@Foo<String>@, but it returns a \Q@Foo<Integer>@.
 This is the unsoundness of Java.
-This unsoundness is there even if we keep the restriction of Java that the name of a local class can only be written inside the method declaring it, as \Q@mk@ does.
+This unsoundness is there even if we keep the restriction of Java that the name of a local class can only be written inside the method declaring it, as \Q@m@ does.
 Our formal system shows two more failure points.
 The two failure points are the same failure, shown more explicitly:
 \begin{itemize}
 \item Reduction does not preserve types.
-The call \Q@a.<Integer>mk(o, i)@ has type \Q@Foo<Integer>@.
+The call \Q@new Broken<>().<Integer>m(o, i)@ has type \Q@Foo<Integer>@.
 The value \Q@o@ is not a \Q@MyFoo@, so the type test fails and the call takes the \Q@else@ branch.
 The call reduces to the value
 \begin{lstlisting}
 new MyFoo<> extends Foo<Integer>(){ Integer x(){ return i; } }
 \end{lstlisting}
 The type of this value is \Q@MyFoo<>@, and \Q@MyFoo<>@ is not a subtype of \Q@Foo<Integer>@.
-The supertypes of \Q@MyFoo<>@ come from the declaration of \Q@MyFoo@ in \Q@mk@, not from the value:
-rule \textsc{sub-inherit-local} derives $\subtype{\emptyset}{\QQ{MyFoo<>}}{\QQ{Foo<X>}}$, where \Q@X@ is the type variable of \Q@mk@.
+The supertypes of \Q@MyFoo<>@ come from the declaration of \Q@MyFoo@ in \Q@m@, not from the value:
+rule \textsc{sub-inherit-local} derives $\subtype{\emptyset}{\QQ{MyFoo<>}}{\QQ{Foo<X>}}$, where \Q@X@ is the type variable of \Q@m@.
 Subtyping does not check kinding, so this judgement holds in the empty bounds $\emptyset$, where \Q@X@ is not in scope.
 However, \Q@Foo<X>@ is not well kinded under $\emptyset$, so rule \textsc{subs} cannot give the value the type \Q@Foo<X>@ either.
 Java has no typing of values during reduction, so in Java this failure is invisible.
 \item Typing depends on the names of type variables.
 Our system lets the name of a local class be written anywhere.
-Consider the methods
+Consider two more methods of \Q@Broken@:
 \begin{lstlisting}
 <Y> MyFoo2<> mk2(Y y){
   return new MyFoo2<> extends Foo<Y>(){ Y x(){ return y; } }; }
@@ -780,14 +780,14 @@ The method \Q@leak@ is well typed, since the type variable \Q@Y@ of \Q@leak@ has
 Renaming \Q@Y@ into \Q@Z@ in \Q@leak@ makes \Q@leak@ ill typed.
 The call
 \begin{lstlisting}
-a.<String>leak(a.<Integer>mk2(i))
+new Broken<>().<String>leak(new Broken<>().<Integer>mk2(i))
 \end{lstlisting}
 has type \Q@Foo<String>@, but it returns a \Q@Foo<Integer>@, without type tests.
 \end{itemize}
 Funnelling solves the problem in all three forms.
-Under rule \textsc{new-local}, the object created by \Q@mk@ has type \Q@MyFoo<X>@, written \Q@new MyFoo<X funnel> extends Foo<X>(){..}@.
+Under rule \textsc{new-local}, the object created by \Q@m@ has type \Q@MyFoo<X>@, written \Q@new MyFoo<X funnel> extends Foo<X>(){..}@.
 Since $\generic{\QQ{MyFoo}}=\QQ{MyFoo<X>}$, rule \textsc{cast-down} accepts the type test \Q@instanceof MyFoo<X>@ from \Q@Foo<X>@, but not from \Q@Object<>@.
-Thus the funnelled \Q@mk@ takes \Q@Foo<X> other@ instead of \Q@Object<> other@, and tests \Q@other instanceof MyFoo<X> w@.
-The call \Q@a.<Integer>mk(o, i)@, with \Q@o@ of type \Q@Foo<Integer>@, reduces to a value of type \Q@MyFoo<Integer>@, a subtype of \Q@Foo<Integer>@.
+Thus the funnelled \Q@m@ takes \Q@Foo<X> other@ instead of \Q@Object<> other@, and tests \Q@other instanceof MyFoo<X> w@.
+With \Q@o@ of type \Q@Foo<Integer>@, the call \Q@new Broken<>().<Integer>m(o, i)@ reduces to a value of type \Q@MyFoo<Integer>@, a subtype of \Q@Foo<Integer>@.
 
 \ldots
