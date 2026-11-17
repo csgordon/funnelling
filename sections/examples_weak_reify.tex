@@ -184,7 +184,7 @@ Java does not do the same for the generic parameters of the enclosing method: th
 \section{Funnelling}
 \label{sec:funnelling}
 
-The implementations of method-local classes, and of the similar features of other languages, differ in the granularity of the identity of the method-local class.
+The implementations of method-local classes, and of the similar features of other languages (\S\ref{sec:impact}), differ in the granularity of the identity of the method-local class.
 The identity of the method-local class matters in two places:
 in the type system, where it decides whether the type \Q@MyFoo@ of one call of \Q@m@ and the type \Q@MyFoo@ of another call of \Q@m@ are the same type,
 and at run time, where it decides the result of casts and type tests.
@@ -262,9 +262,9 @@ Rule \textsc{new-local-java} enables the unsound Java typing:
 \end{mathpar}
 Rule \textsc{new-local-java} uses the syntax \Q@new C<> extends C'<Ts>(es){Ms}@.
 This syntax is an intermediate form between method-local classes and anonymous classes of Java.
-A method-local class \Q@class C<> extends C'<Ts>{ C(){ super(es); } Ms }@ is declared first, and then instantiated with \Q@new C<>()@.
-An anonymous class \Q@new C'<Ts>(es){Ms}@ is declared and instantiated by a single expression.
-The syntax \Q@new C<> extends C'<Ts>(es){Ms}@ forms a (named) local class.
+A Java method-local class \Q@class C<> extends C'<Ts>{ C(){ super(es); } ... }@ is declared first, and then instantiated with \Q@new C<>()@.
+A Java anonymous class \Q@new C'<Ts>(es){...}@ is declared and instantiated by a single expression.
+In our core language, the syntax \Q@new C<> extends C'<Ts>(es){Ms}@ forms a (named) local class.
 A local class creates an instance as an anonymous class does, thus a local class is easy to use in an expression-based language.
 A local class also declares its own name, thus \Q@instanceof@ can test for a local class.
 \\[1ex]
@@ -273,7 +273,6 @@ The example above is well typed using the type rules of Section~\ref{sec:core} a
 The main expression is the first line of the reduction below, and it has type \Q@B<>@.
 We now show the small step reduction using the abbreviations \Q@eA@, \Q@vA@ and \Q@vB@, and omitting the renaming of bound variables:
 
-\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}
 eA = new Broken<>().<A<>>m(new Foo<A<>>(), new A<>())
 vA = new MyFoo<> extends Foo<A<>>(){ A<> x(){ return new A<>(); } }
@@ -285,10 +284,9 @@ vB = new MyFoo<> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }
 (*$\rightarrow$*)  vA.x().onlyB()
 (*$\rightarrow$*)  new A<>().onlyB()
 \end{lstlisting}
-\end{minipage}
 
 The first call of \Q@m@ reduces \Q@eA@ to \Q@vA@ with rules \textsc{simpleAddSuper}, \textsc{simpleFound} and \textsc{ifElse}.
-The type of \Q@vA@ is \Q@MyFoo<>@: the instantiation \Q@A<>@ of \Q@X@ shows only in the supertype \Q@Foo<A<>>@ and in the method \Q@x@.
+The type of \Q@vA@ is \Q@MyFoo<>@: the instantiation \Q@A<>@ of \Q@X@ appears only in the supertype \Q@Foo<A<>>@ and in the method \Q@x@.
 In the second call of \Q@m@, rule \textsc{ifThen} checks only that the class of \Q@vA@ is a subclass of \Q@MyFoo@.
 Thus the second call returns \Q@vA@, a \Q@Foo<A<>>@, as a \Q@Foo<B<>>@.
 The last expression calls \Q@onlyB@ on an \Q@A<>@, and \Q@A<>@ does not have a method called \Q@onlyB@.
