@@ -216,7 +216,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
     have vt := value_typing hwf hw'.ty
     have hsv := vt.1.sub
     cases v with
-    | newLocal C Gs C' Gs' vs Ms => exact ⟨_, Step.innerFieldSuper⟩
+    | newLocal C Gs C' Gs' vs Ms => exact ⟨_, Step.localFieldSuper⟩
     | new C Gs vs =>
       have hO : Not (C = Object) := by
         intro hO
@@ -270,10 +270,10 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         have huM : (Method.mk Delta' T0 m' ps e0).uniq := Method.uniqList_mem hM hv0u.2
         simp only [Method.noShadow, Bool.and_eq_true, List.nil_append, List.cons_append, NoThisM, Method.vbinders,
           listMem_iff, List.mem_append, not_or, Method.uniq] at hnM htM huM
-        exact ⟨_, Step.innerFound (v0 := Value.newLocal C Gs C' Gs'' vs0 Ms) rfl hM (FreshM.refl _) hl.1 hl.2
+        exact ⟨_, Step.localFound (v0 := Value.newLocal C Gs C' Gs'' vs0 Ms) rfl hM (FreshM.refl _) hl.1 hl.2
           huM.1 (List.nodup_cons.mpr ⟨htM.1, huM.2.1⟩) (fun X hX => Expr.noShadow_tb hnM.2 X hX)
           (fun y hy => Expr.noShadow_binders hnM.2 htM.2 y hy) rfl⟩
-      . exact ⟨_, Step.innerSuper rfl hm⟩
+      . exact ⟨_, Step.localSuper rfl hm⟩
   | super v G Gs' m vs =>
     rcases inv_super ht rfl with ⟨w, hw'⟩
     have hann := hw'.ann

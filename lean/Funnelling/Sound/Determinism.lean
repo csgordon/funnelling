@@ -496,7 +496,7 @@ theorem det_base {d : Decls} (hwf : WFDecls d) {a a' b1 b2 : Expr} (ha : WFExpr 
         hvals)
       (renE_meth hMf.1 hMf.2.1 hMf.2.2 hG ⟨hF2, hG2', hp2, hN2, hN2', hgs2, hvs2, hw2⟩ ⟨hF, hG', hp, hN, hN', hgs, hvs, hw1⟩
         hvals)
-  case innerFound.innerFound =>
+  case localFound.localFound =>
     rename_i hN hN' hgs hvs _ _ _ _ _ _ _ _ _ _ _ _ _ _ hM2 hF2 hG2 hp2 hN2 hN2' hgs2 hvs2 hF hG hp hM
     obtain rfl := nodup_map_inj (ha.1 _ (List.mem_append_left _ (List.Mem.head _))) hM hM2
       (by rw [FreshM.name hF, FreshM.name hF2])

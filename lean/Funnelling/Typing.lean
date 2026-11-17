@@ -24,8 +24,8 @@ inductive Sub (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
 abbrev SubSeq (d : Decls) (Delta : Bounds) : List Ty -> List Ty -> Prop := Seq2 (Sub d Delta)
 
 inductive Kind (d : Decls) (Delta : Bounds) : Ty -> Prop
-  | wfVar {X T} : List.Mem { X := X, T := T } Delta -> Kind d Delta (.var X)
-  | wfClass {C Ts Delta0 Ts0} :
+  | kindVar {X T} : List.Mem { X := X, T := T } Delta -> Kind d Delta (.var X)
+  | kindClass {C Ts Delta0 Ts0} :
       Scope d (.cls C Ts) Delta0 Ts0 ->
       (forall T, List.Mem T Ts -> Kind d Delta T) ->
       Ts0.length = Delta0.length ->
@@ -96,7 +96,7 @@ inductive Typing (d : Decls) : Bounds -> TypeEnv -> Expr -> Ty -> Prop
       Gamma.lookup x = some T -> Typing d Delta Gamma (.var x) T
   | newObject {Delta Gamma} :
       Typing d Delta Gamma (.new Object [] []) (.cls Object [])
-  | declField {Delta Gamma e D Ts' T f} :
+  | field {Delta Gamma e D Ts' T f} :
       Typing d Delta Gamma e (.cls D.C Ts') ->
       Declared d (.dec D) ->
       List.Mem { T := T, f := f } D.Ss ->
@@ -112,7 +112,7 @@ inductive Typing (d : Decls) : Bounds -> TypeEnv -> Expr -> Ty -> Prop
       SubSeq d Delta Ts1 (Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ Ts1)) (cod Delta1)) ->
       TypingSeq d Delta Gamma es Ts' ->
       Typing d Delta Gamma (.call e0 Ts1 m es) T0'
-  | callLbRuntime {Delta Gamma e0 D Ts D0 Ts0 Delta1 T0 m ps e Ts1 es T0' Ts'} :
+  | superCall {Delta Gamma e0 D Ts D0 Ts0 Delta1 T0 m ps e Ts1 es T0' Ts'} :
       Sub d Delta (.cls D.C Ts) (.cls D0.C Ts0) ->
       Declared d (.dec D0) ->
       MethodIn d (.mk Delta1 T0 m ps e) D0.C ->

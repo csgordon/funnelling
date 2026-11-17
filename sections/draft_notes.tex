@@ -62,7 +62,7 @@ Note, there are multiple semantics/ts:
         AT RUN TIME instanceof only checks base class, ignores generic parameters
         AT COMPLILE TIME, instanceof can be err if the full type (including generics) is not potentially correlated)?? unobvious consider interfaces
         In prose, should explain that we won't flag cast of some type Foo to some type Bar, even though Java sometimes flags unrelated casts
-\mjnote{these three semantics are replaced by the single one of Java 16+: erased run-time check, plus the checked-cast premise of rule \textsc{if-instanceof} (Section~\ref{sec:cast}). Unrelated types are rejected by it, as in Java.}
+\mjnote{these three semantics are replaced by the single one of Java 16+: erased run-time check, plus the checked-cast premise of rule \textsc{ifInstanceof} (Section~\ref{sec:cast}). Unrelated types are rejected by it, as in Java.}
 
 <X extends List<Y funnel>>
 

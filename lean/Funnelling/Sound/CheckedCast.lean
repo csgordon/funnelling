@@ -322,7 +322,7 @@ theorem kind_chain {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
     exact ih rfl hK
   | @subInheritLocal C1 Fs C' Ts' es Ms Ts1 T' hD hl _ ih =>
     cases hk with
-    | @wfClass C9 Ts9 Dl0 Ts0 h1 h2 h3 h4 =>
+    | @kindClass C9 Ts9 Dl0 Ts0 h1 h2 h3 h4 =>
       rcases h1.loc_declared with h' | h'
       . cases h' with
         | intro D hD' => exact absurd (Declared.dec_loc hwf hD'.1 hD hD'.2.1) id
@@ -350,7 +350,7 @@ theorem kind_len {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {C : ClassName} 
     (hk : Kind d Delta (.cls C Us)) (hg : Generic d C (.cls C (vars Xs))) : Us.length = Xs.length := by
   generalize hgT : Ty.cls C (vars Xs) = T at hg
   cases hk with
-  | wfClass h1 h2 h3 h4 =>
+  | kindClass h1 h2 h3 h4 =>
     cases hg with
     | @dec D hD =>
       simp only [Ty.cls.injEq] at hgT

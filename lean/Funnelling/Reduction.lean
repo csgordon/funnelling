@@ -42,7 +42,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       Gs.length = D.Delta.length ->
       Step d (.field (Value.new D.C Gs (vs1 ++ vs)) f)
         (.field (.new D.C' (Ty.substList (bind D.Delta (Gs : List Ty)) D.Ts) vs) f)
-  | innerFieldSuper {C C' Ms f} {Gs Gs' : List GTy} {vs : List Value} :
+  | localFieldSuper {C C' Ms f} {Gs Gs' : List GTy} {vs : List Value} :
       Step d (.field (Value.newLocal C Gs C' Gs' vs Ms) f) (.field (Value.new C' Gs' vs) f)
   | ifThen {C' Ts Ts' x e1 e1' e2} {v : Value} :
       Sub d [] (typeOf v) (.cls C' Ts') ->
@@ -68,7 +68,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       e = (e0.gsubst (bind (D.Delta ++ Delta') (Gs ++ Gs'))).vsubst
         ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
       Step d (.superCall v0 (.cls D.C Gs) Gs' m vs) e
-  | innerFound {C C' Ms M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} :
+  | localFound {C C' Ms M m Delta' T0 ps e0 e} {v0 : Value} {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} :
       v0 = Value.newLocal C Gs C' Gs'' vs0 Ms ->
       List.Mem M Ms ->
       FreshM M (.mk Delta' T0 m ps e0) ->
@@ -80,7 +80,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
       VSubstDefined (this :: ps.map VarDecl.x) e0 ->
       e = (e0.gsubst (bind Delta' Gs')).vsubst ((this :: ps.map VarDecl.x).zip (v0 :: vs)) ->
       Step d (.call v0 Gs' m vs) e
-  | innerSuper {C C' Ms m} {v0 : Value} {Gs0 Gs Gs' : List GTy} {vs0 vs : List Value} :
+  | localSuper {C C' Ms m} {v0 : Value} {Gs0 Gs Gs' : List GTy} {vs0 vs : List Value} :
       v0 = Value.newLocal C Gs0 C' Gs vs0 Ms ->
       Not (List.Mem m (Ms.map Method.name)) ->
       Step d (.call v0 Gs' m vs) (.superCall v0 (.cls C' Gs) Gs' m vs)
