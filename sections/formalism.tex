@@ -789,5 +789,8 @@ Under rule \textsc{new-local}, the object created by \Q@m@ has type \Q@MyFoo<X>@
 Since $\generic{\QQ{MyFoo}}=\QQ{MyFoo<X>}$, rule \textsc{cast-down} accepts the type test \Q@instanceof MyFoo<X>@ from \Q@Foo<X>@, but not from \Q@Object<>@.
 Thus the funnelled \Q@m@ takes \Q@Foo<X> other@ instead of \Q@Object<> other@, and tests \Q@other instanceof MyFoo<X> w@.
 With \Q@o@ of type \Q@Foo<Integer>@, the call \Q@new Broken<>().<Integer>m(o, i)@ reduces to a value of type \Q@MyFoo<Integer>@, a subtype of \Q@Foo<Integer>@.
+In the same way, the object created by \Q@mk2@ has type \Q@MyFoo2<Y>@, and the type \Q@MyFoo2<>@ is not well kinded.
+Thus the funnelled \Q@leak@ takes \Q@MyFoo2<Y> z@, and renaming \Q@Y@ into \Q@Z@ in \Q@leak@ keeps \Q@leak@ well typed: \Q@MyFoo2<Z>@ is a subtype of \Q@Foo<Z>@.
+The call of \Q@leak@ above is ill typed: \Q@leak@ expects a \Q@MyFoo2<String>@, and the argument is a \Q@MyFoo2<Integer>@.
 
 \ldots
