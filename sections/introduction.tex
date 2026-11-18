@@ -48,7 +48,7 @@ Since \Q@MyFoo@ is declared as extending \Q@Foo<X>@, this is a valid result for 
 Thus the \Q@Foo<Integer>@ that was passed as the first argument of the second call, on Line~\ref{line:strcall}, is returned
 as a \Q@Foo<String>@.
 
-Clearly, this is wrong, because there are now two aliased variables of incompatible types; consequently, the later code fails.
+Clearly, this is wrong, because the same object is now aliased by two variables with incompatible types; consequently, the later code fails.
 The failure itself is contrived.
 The two \Q@println@ calls actually dispatch to different overloads:
 the first to a version accepting an \Q@Object@, and the second to the more specific overload expecting a \Q@String@.
