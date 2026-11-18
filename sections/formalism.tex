@@ -6,10 +6,12 @@
 
 We now present the core language of Section~\ref{sec:funnelling}: its syntax, its small step reduction and its type rules.
 The type rules encode funnelling.
-Replacing rule \textsc{newLocal} with rule \textsc{newLocalJava} gives the Java typing of local classes.
+Replacing the type rule \textsc{newLocal} with rule \textsc{newLocalJava} gives the Java typing of local classes.
 
 \subsection{Syntax}
 \label{sec:syntax}
+\begin{figure}
+\vspace{-1em}
 \[
 \begin{array}{rrcl}
 \textrm{Expressions} & e & ::= & x \mid \call{e}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}
@@ -27,7 +29,7 @@ Replacing rule \textsc{newLocal} with rule \textsc{newLocalJava} gives the Java 
 \textrm{Declaration} & \mathsf{Dec} & ::= & \subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}\\
 \textrm{(Field) Slots} & S & ::= & T\gap f\semi\\
 \textrm{Methods} & M & ::= & \method{\Delta}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e}}\\
-\textrm{Class Decl.} & K & ::= & \mathsf{Dec} \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}
+\textrm{Class Decl.} & K & ::= & \mathsf{Dec} \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\\
 %Dec::= class C<Bs> extends C'<Ts>{ Ms Ss} //assume standard constructor
 %S ::= T f; //field/slot
 %M ::= Sig{ return e; }  //no such a thing as an abstract method
@@ -41,10 +43,21 @@ Replacing rule \textsc{newLocal} with rule \textsc{newLocalJava} gives the Java 
 %   | new C<Gs> extends C'<Gs'>(vs [] es){Ms} 
 %   | if ([] instanceof G x){ e1 } else { e2 }
 %
+\\
+\textrm{Values} & v & ::= & \obj{C}{\pl{G}}{\pl{v}} \mid \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v}}{\pl{M}}\\
+\textrm{Eval. Ctx.} & \mathcal{E} & ::= & \square \mid \call{\mathcal{E}}{\pl{G}}{m}{\pl{e}} \mid \call{v}{\pl{G}}{m}{\pl{v},\mathcal{E},\pl{e}}\\
+    &&& \mid \explicitcall{\mathcal{E}}{G}{\pl{G}}{m}{\pl{e}} \mid \explicitcall{v}{G}{\pl{G}}{m}{\pl{v},\mathcal{E},\pl{e}}\\
+    &&& \mid \mathcal{E}\fstop f \mid \obj{C}{\pl{G}}{\pl{v},\mathcal{E},\pl{e}}\\
+    &&& \mid \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v},\mathcal{E},\pl{e}}{\pl{M}}\\
+    &&& \mid \ifthen{\mathcal{E}}{G}{x}{e_1}{e_2}
 \end{array}
 \]
+\vspace{-1em}
+\caption{Syntax for a core language with funnelling, including syntactic values and decomposition by evaluation contexts}
+\label{fig:syntax}
+\end{figure}
 
-\noindent\begin{sloppypar}
+Figure \ref{fig:syntax} gives the syntax of our core language.
 An expression is a variable $x$, a method call $\call{e}{\pl{T}}{m}{\pl{e}}$, a super call $\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}$, a field access $e\fstop f$, an object creation $\obj{C}{\pl{T}}{\pl{e}}$ of a top-level class, a local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ or a type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$.\footnote{The syntax \Q@if (a instanceof B c)@ is valid Java since Java 16.}
 As in FJ, \Q@this@ is just a special case of a variable $x$.
 A method call $\call{e}{\pl{T}}{m}{\pl{e}}$ calls the method $m$ on the receiver $e$, with type arguments $\pl{T}$ and arguments $\pl{e}$.
@@ -67,14 +80,14 @@ To keep a tight focus in our paper, our local classes do not declare type variab
 From the perspective of the inside of the local class (the methods $\pl{M}$), the funnels $\pl{F}$ select the type variables in scope that are visible in the local class.
 From the perspective of the \Q@new@ expression itself, the funnels $\pl{F}$ instantiate those type variables, forming the actual type of the created instance.
 
-To allow a local class instance to exist in the main expression, a funnel is either a ground type $G$ or a funnelled type variable $\funnel{X}$.
+To allow a local class instance to exist in the main expression (e.g., during reduction), a funnel is either a ground type $G$ or a funnelled type variable $\funnel{X}$.
 In \decls, all the funnels are of the form $\funnel{X}$, by well-formedness requirement A11 (discussed shortly).
 In the main expression, outside of the methods of local classes, all the funnels are of the form $G$, by A12: there, no type variable is in scope.
 When a local class is nested in a method of a local class in the main expression, a mixture of funnels $\funnel{X}$ and $G$ can be present.
 
 A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $C'$.
 The methods $\pl{M}$ of a local class can use only the funnelled type variables, and the variables in scope other than \Q@this@ whose types mention only funnelled type variables.
-\\[1ex]
+
 The conventional type environment $\Gamma$ gives a type to each variable that the expression can use.
 Bounds $\Delta$ give an upper bound to each type variable that the expression can use.
 A declaration $\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}$ declares the top-level class $C$ with the type variables bounded by $\Delta$, the supertype $\gen{C'}{\pl{T}}$, the methods $\pl{M}$ and the fields/slots $\pl{S}$.
@@ -83,39 +96,28 @@ Every method has a body; for simplicity, as in FJ, there are no abstract methods
 A class declaration $K$ is either a top-level declaration $\mathsf{Dec}$ or a local class.
 The name of a local class can be written anywhere in the program, for example as the return type of a method; in Java, the name of a method-local class can be written only inside the method declaring it.
 Funnelling is sound without the restriction of Java (Section~\ref{sec:soundness}), and thus also with that restriction.
-\\[1ex]
-The following are the well-formedness requirements:
-\begin{enumerate}
-    \item[(A1)] In \decls, class names are unique across top-level and local classes.
-    \item[(A2)] In a class, all the field names, including the field names of the superclasses, are distinct.
-    \item[(A3)] In a class, whether top-level or local, all the method names are distinct.
-    \item[(A4)] In a method, all the parameter names $x_1,\ldots,x_n$ are distinct.
-    \item[(A5)] In a $\Delta$, all the $X$ in $\mathrm{dom}(\Delta)$ are distinct.
-    \item[(A6)] In a list of funnels $\pl{F}$, all the $X$ in $\mathrm{dom}(\pl{F})$ are distinct.
-    \item[(A7)] There is no shadowing of $X$ or $x$, except for \Q@this@.\footnote{A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ of the enclosing method.}
-    \item[(A8)] In the syntax \ifthen{\_}{T}{x}{\_}{\_}, $x$ is not \Q@this@, and \Q@this@ does not appear as a method parameter name.
-    \item[(A9)] \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every other top-level class reaches \Q@Object@.
-    \item[(A10)] In \decls, the superclass of every class, top-level or local, is a top-level class.
-    \item[(A11)] In \decls, every funnel is of the form $\funnel{X}$.
-    \item[(A12)] The main expression has no free variable and no free type variable.
-\end{enumerate}
+
+Evaluation contexts $\mathcal{E}$ fix the order of evaluation, left to right call-by-value, used by the reduction.
+
+We require the following well-formedness constraints on valid programs:
+\begin{itemize}
+    \item (A1)  In \decls, class names are unique across top-level and local classes.
+    \item (A2)  In a class, all the field names, including in superclasses, are distinct.
+    \item (A3)  In a class, whether top-level or local, all the method names are distinct.
+    \item (A4)  In a method, all the parameter names $x_1,\ldots,x_n$ are distinct.
+    \item (A5)  In a type environment $\Delta$, all the $X$ in $\mathrm{dom}(\Delta)$ are distinct.
+    \item (A6)  In a list of funnels $\pl{F}$, all the $X$ in $\mathrm{dom}(\pl{F})$ are distinct.
+    \item (A7)  There is no shadowing of $X$ or $x$, except for \Q@this@.\footnote{A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ of the enclosing method.}
+    \item (A8)  In the syntax \ifthen{\_}{T}{x}{\_}{\_}, $x$ is not \Q@this@, and \Q@this@ does not appear as a method parameter name.
+    \item (A9)  \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every other top-level class reaches \Q@Object@.
+    \item (A10)  In \decls, the superclass of every class, top-level or local, is a top-level class.
+    \item (A11)  In \decls, every funnel is of the form $\funnel{X}$.
+    \item (A12)  The main expression has no free variable and no free type variable.
+\end{itemize}
 Well-formedness requirements A1-A10 and A12 are common requirements, such as uniqueness of names.
 A11 is the requirement on funnels discussed above.
 Section~\ref{sec:clarifications} states how A1-A12 restrict the metarules.
 
-\subsection{Values and Contexts}
-\label{sec:contexts}
-\[
-\begin{array}{rrcl}
-\textrm{Values} & v & ::= & \obj{C}{\pl{G}}{\pl{v}} \mid \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v}}{\pl{M}}\\
-\textrm{Eval. Ctx.} & \mathcal{E} & ::= & \square \mid \call{\mathcal{E}}{\pl{G}}{m}{\pl{e}} \mid \call{v}{\pl{G}}{m}{\pl{v},\mathcal{E},\pl{e}}\\
-    &&& \mid \explicitcall{\mathcal{E}}{G}{\pl{G}}{m}{\pl{e}} \mid \explicitcall{v}{G}{\pl{G}}{m}{\pl{v},\mathcal{E},\pl{e}}\\
-    &&& \mid \mathcal{E}\fstop f \mid \obj{C}{\pl{G}}{\pl{v},\mathcal{E},\pl{e}}\\
-    &&& \mid \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v},\mathcal{E},\pl{e}}{\pl{M}}\\
-    &&& \mid \ifthen{\mathcal{E}}{G}{x}{e_1}{e_2}
-\end{array}
-\]
-Evaluation contexts $\mathcal{E}$ fix the order of evaluation, left to right, and are used by the reduction.
 
 \subsection{Declarations}
 \label{sec:declarations}
@@ -170,7 +172,7 @@ An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for an expression con
 By well-formedness requirement A1, a class name $C$ identifies at most one $K$ with $\declared{K}$.
 $M\in K$ holds when $M$ is a method of the class declaration $K$, top-level or local.
 $M\in C$ holds when $M$ is a method of the declared class $C$, top-level or local.
-For a top-level class $C$ with bounds $\Delta$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$.
+For a top-level class $C$ with bounds $\Delta$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$, recovering (effectively) a type substitution which can be used with methods of the class.
 For a local class $C_0$ with funnels $\pl{F}$, $\mathsf{scope}(\gen{C_0}{\pl{T}})=\Delta_0;\pl{T}_0$, where $\Delta_0$ holds, in the order of $\mathrm{dom}(\pl{F})$, the bound $\ext{X}{T}$ in $\Delta,\Delta'$ of each $X\in\mathrm{dom}(\pl{F})$, where $\Delta'$ are the bounds of the method $m$ declaring $C_0$ and $\mathsf{scope}(\generic{C})=\Delta;\_$ for the class $C$ of $m$. Note that $m$ could be a method of either a top-level or local class.
 By A11, every funnel of $\pl{F}$ is of the form $\funnel{X}$, so $\pl{T}_0$ is $\pl{T}$.
 For a top-level class, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$ can return $\Delta$ and $\pl{T}$ of different lengths.
