@@ -249,10 +249,10 @@ The type rules of Section~\ref{sec:core} encode funnelling.
 With those type rules, the example above is ill typed: the supertype \Q@Foo<X>@ of \Q@MyFoo@ mentions \Q@X@, but \Q@MyFoo@ does not funnel \Q@X@.
 Rule \textsc{newLocalJava} enables the unsound Java typing:
 \begin{mathpar}
-\inferrule[newLocalJava]{
+\inferrule*[left=newLocalJava]{
   \kind{\Delta}{\gen{C'}{\pl{T}}}\\
   \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\\\
-  \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\gap\this}{\pl{M}}\\\\
+  \mok{\Delta}{\Gamma\setminus\this,\gen{C}{}\gap\this}{\pl{M}}\\
   \mathsf{overrideOk}(\Delta,\gen{C'}{\pl{T}},\pl{M})
 }{
   \typing{\Delta}{\Gamma}{
