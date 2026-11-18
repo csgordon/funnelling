@@ -23,7 +23,7 @@ allows throwing a checked exception as an unchecked exception by exploiting a si
 The most notable example is Amin and Tate's discovery~\cite{amin2016java} that Java and Scala's handling of generic type constraints
 was rendered unsound by the fact that \Q@null@ is treated as inhabiting all reference types, making all
 type constraints (even nonsensical ones) satisfiable.
-Servetto et al.~\cite{unsound_presentation} first pointed out the soundness issue with  publicly, though in the 
+Servetto et al.~\cite{unsound_presentation} first pointed out the soundness issue publicly, though in the 
 Q\&A session after the talk, multiple Java designers were unsurprised --- Gilad Bracha noted ``Once I saw the title of your talk, I understood what the problem was''
 before explaining that these issues were well-known to the creators of \textsc{BETA}~\cite{kristensen2007and} (which lacks static type-checking, but actively views local declarations as tied to their enclosing dynamic context~\cite{kristensen1983abstraction} --- granularity 3 in \S\ref{sec:funnelling}'s taxonomy).
 % \todo[inline]{Colin says: As I listened to the Q\&A session again, James framed this as a question of whether 
