@@ -25,7 +25,7 @@ was rendered unsound by the fact that \Q@null@ is treated as inhabiting all refe
 type constraints (even nonsensical ones) satisfiable.
 Servetto et al.~\cite{unsound_presentation} first pointed out the soundness issue with  publicly, though in the 
 Q\&A session after the talk, multiple Java designers were unsurprised --- Gilad Bracha noted ``Once I saw the title of your talk, I understood what the problem was''
-before explaining that these issues were well-known to the creators of \textsc{BETA}~\todo{cite} (which lacks static type-checking, but actively views local declarations as tied to their enclosing dynamic context --- granularity 3 in \S\ref{sec:funnelling}'s taxonomy).
+before explaining that these issues were well-known to the creators of \textsc{BETA}~\cite{kristensen2007and} (which lacks static type-checking, but actively views local declarations as tied to their enclosing dynamic context~\cite{kristensen1983abstraction} --- granularity 3 in \S\ref{sec:funnelling}'s taxonomy).
 % \todo[inline]{Colin says: As I listened to the Q\&A session again, James framed this as a question of whether 
 % two instances allocated in different contexts should be considered the same or not. I think that might be useful framing to bring up early here.
 % Gilad also pointed out that (paraphrasing) the BETA people knew an inner class was a property of the instance, not its own class.

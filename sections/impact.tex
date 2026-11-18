@@ -13,7 +13,7 @@ similar to Java's anonymous inner classes. Because a Flix program can not name s
 Kotlin~\cite{kotlin_spec} already types a local class as a generic class.
 This is the method \Q@m@ of Example~1 as a Kotlin function:
 
-\begin{lstlisting}
+\begin{lstlisting}[language=Kotlin]
 open class Foo<X> { open fun x(): X = x() }
 fun <X> m(other: Any, v: X): Foo<X> {
   class MyFoo : Foo<X>() { override fun x(): X = v }
@@ -23,11 +23,12 @@ fun <X> m(other: Any, v: X): Foo<X> {
 \end{lstlisting}
 
 Kotlin types the local class \Q@MyFoo@ as \Q@MyFoo<X>@.
-Kotlin~2.4.21 rejects the type test \Q@other !is MyFoo@ with the error \texttt{cannot check for instance of erased type 'MyFoo<X (of fun <X> m)>'} (note that \texttt{MyFoo} has picked up an explicit type parameter that was not present in the source).
+Kotlin~2.4.21 rejects the type test \Q@other !is MyFoo@ with the error\\
+\centerline{\texttt{cannot check for instance of erased type 'MyFoo<X (of fun <X> m)>'}} (note that \texttt{MyFoo} has picked up an explicit type parameter that was not present in the source).
 If the cast \Q@other as MyFoo@ replaces the type test, Kotlin~2.4.21 accepts the function \Q@m@ with the warning \texttt{unchecked cast of 'Any' to 'MyFoo<X (of fun <X> m)>'}.
 Kotlin~1.9.25 reports the same error and the same warning, in different words.
 These are the error and the warning that funnelling brings to Example~1 (Section~\ref{sec:funnelling}).
-Thus if we view Kotlin's implementation as an elaboration of the source language to an internal language using funnelling, our results can be interepreted as a proof that Kotlin's approach does fix this problem with method-local classes.
+Thus we can view our results as enabling a soundness proof by translation for Kotlin's approach, showing that it is guaranteed to avoid Java's unsoundness: Kotlin's automatic addition of type parameters to the local class can be justified by funnelling.
 
 Kotlin conservatively adds to the type of a local class \emph{every} type parameter in scope: the type parameters of the enclosing function and the type parameters of the enclosing class.
 It does this even for type parameters that the local class does not mention or otherwise depend on:
@@ -36,9 +37,8 @@ This is granularity (2) of Section~\ref{sec:funnelling}, applied by the type sys
 With funnelling, the type of a local class requires only the type variables that the local class uses.
 Thus \Q@Plain@ would need no funnel, and a type test against \Q@Plain@ is well typed.
 
-Perhaps the most prominent typed alternative JVM language is Scala.
-This is Example~1 in Scala:
-
+Scala is the most prominent alternative JVM language.
+Example~1 in Scala is:
 \begin{lstlisting}[language=Scala,numbers=left,xleftmargin=2em]
 abstract class Foo[X] { def x: X }
 object Broken {
@@ -60,11 +60,11 @@ object Broken {
 
 Scala~2.13.18 accepts this program with no warning, as Java accepts Example~1.
 Scala~3.9.0 and Scala~3.10.1 accept this program with the warning \texttt{the type test for MyFoo cannot be checked at runtime because it's a local class} at Line~\ref{line:scalatest}.
-Scala~3 reports this warning for a type test against any local class, also when the enclosing method has no generic parameters.
+Scala~3 reports this warning for a type test against any local class, also when the enclosing method has no generic parameters and the type test is actually fine.
 On the JVM, this program throws a \Q@ClassCastException@ at Line~\ref{line:scalause}: \Q@r2.x@ returns the \Q@Integer@ \Q@5@ where a \Q@String@ is expected.
 
 There are also direct ahead-of-time compilers for both Scala and JVM bytecode.
-Scala Native~\cite{shabalin2020} compiles Scala to machine code, and GraalVM Native Image~\cite{wimmer2019initialize} compiles JVM bytecode to machine code.
+Scala Native~\cite{shabalin2020} compiles Scala to machine code, and GraalVM Native Image~\cite{wimmer2019initialize} compiles any JVM bytecode to machine code.
 This program compiled by Scala Native~0.5.12, and Example~1 compiled by the Native Image of GraalVM for JDK~25, throw the same \Q@ClassCastException@.
 
 Scala.js~\cite{scalajs_semantics} compiles Scala to JavaScript.
@@ -96,7 +96,7 @@ def m[Y](other: Any, newx: Y) : Foo2 =
         case _ => MyFoo()
     }
 \end{lstlisting}
-This code compiles with the same warning that the cast cannot be checked because \texttt{MyFoo} is a local class, but in this case the warning is totally spurious:
+This code compiles with the same warning that the cast cannot be checked because \texttt{MyFoo} is a local class, but in this case the warning is spurious:
 compiling the corresponding analogue of Example~1's client code
 \begin{lstlisting}[language=Scala]
 def main(a: Array[String]) : Unit = {
@@ -107,19 +107,20 @@ def main(a: Array[String]) : Unit = {
 }
 \end{lstlisting}
 yields a static type error because the fact that \texttt{r2} (should) wrap a string is abstracted.
-\todo[inline]{do we want to talk about this? kinda weird; would still be rejected by a naive mix of funnelling and DOTs. There's arguably a more general notion of ``capture dependency on enclosing generics'' that this particular example does safely}
 
 \subsection{Other Languages}
 Some other languages have features or feature sets very close to Java's method-local classes, but avoid the problem with alternative language designs.
 
 The most similar language to Java at the source level makes very different design choices.
-C\# has reified generics~\cite{kennedy2001design}: if \Q@o@ is a \Q@List<int>@, the type test \Q@o is List<string>@ is false and the cast \Q@(List<string>)o@ throws an \Q@InvalidCastException@.
+C\# has reified generics implemented via monomorphisation~\cite{kennedy2001design}: if \Q@o@ is a \Q@List<int>@, the type test \Q@o is List<string>@ is false and the cast \Q@(List<string>)o@ throws an \Q@InvalidCastException@.
 C\# has no local classes.
 The closest C\# constructs are anonymous types and lambdas, which the C\# compiler translates to generated classes.
-In a generic method \Q@M<X>@ with a parameter \Q@x@ of type \Q@X@, the .NET SDK~10.0.404 translates \Q@new { v= x }@ and \Q@()=>x@ to instances of generated classes that are generic in \Q@X@.
-Thus the objects created by \Q@M<int>@ and by \Q@M<string>@ have different classes: this is granularity (2) of Section~\ref{sec:funnelling}, in the type system and at run time.
 A C\# program can not name a class that was generated by the compiler,\footnote{The name itself is only chosen during compilation, and the C\# compiler exploits the fact that the .NET CLR admits type names that are not valid C\# source level identifiers, such as \lstinline|<>f__AnonymousType0|.} so a C\# program can not write a type test against a generated class directly.
-As a result of such decisions, most languages that are potentially vulnerable to this issue are JVM languages.
+In a generic method \Q@M<X>@ with a parameter \Q@x@ of type \Q@X@, the C\# 10 compiler translates \Q@new { v= x }@ and \Q@()=>x@ to instances of generated classes that are generic in \Q@X@.
+Thus the objects created by \Q@M<int>@ and by \Q@M<string>@ have different classes at runtime: this is granularity (2) of Section~\ref{sec:funnelling}, in the type system and at run time.
+
+It is tempting but subtly incorrect to read C\#'s behaviour as a sign that reified generics would automatically solve the same problem that funnelling resolves. This is not the case: C\#'s particular implementation via monomorphisation \emph{incidentally} produces distinct runtime types for different generic instantiations of \Q@M@. An alternative implementation of Java that tagged an object's class with a runtime representation of its type parameter instantiation would be reified (the instantiation would be available at runtime, and casts between different generic instantiations could be checked and fail as in C\#). But that alone would not solve the issue, if the dynamic cast between instances of \Q@MyFoo@ did not explicitly check generic parameters.
+
 
 Since version 4.04, OCaml has included local exceptions, where an exception may be declared local to a function.
 These exceptions exhibit category 3 in the taxomony of \S\ref{sec:funnelling}, where each dynamic invocation yields a distinct identity. The documentation~\cite[\S7]{ocamldocs} gives the following example to demonstrate this:
