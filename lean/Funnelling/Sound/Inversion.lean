@@ -52,13 +52,13 @@ theorem inv_field {d Delta Gamma e0 f} : forall {e T}, Typing d Delta Gamma e T 
     exists w, FieldP d Delta Gamma e0 f T w
   | _, _, .subs h hk hs, he => by
     rcases inv_field h he with ⟨w, hw⟩; exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
-  | _, _, .declField h1 h2 h3 h4, he => by
+  | _, _, .field h1 h2 h3 h4, he => by
     cases he
     exact Exists.intro { D := _, Ts' := _, T0 := _ } { ty := h1, decl := h2, mem := h3, len := h4, up := Up.refl }
   | _, _, .var .., he => by cases he
   | _, _, .newObject, he => by cases he
   | _, _, .call .., he => by cases he
-  | _, _, .callLbRuntime .., he => by cases he
+  | _, _, .superCall .., he => by cases he
   | _, _, .newTop .., he => by cases he
   | _, _, .newLocal .., he => by cases he
   | _, _, .ifInstanceof .., he => by cases he
@@ -85,9 +85,9 @@ theorem inv_if {d Delta Gamma e0 T x e1 e2} : forall {e T'}, Typing d Delta Gamm
     exact Exists.intro { T0 := _, T1 := _ } { ty0 := h0, kind := hk, cast := hc, ty1 := h1, ty2 := h2, up := Up.refl }
   | _, _, .var .., he => by cases he
   | _, _, .newObject, he => by cases he
-  | _, _, .declField .., he => by cases he
+  | _, _, .field .., he => by cases he
   | _, _, .call .., he => by cases he
-  | _, _, .callLbRuntime .., he => by cases he
+  | _, _, .superCall .., he => by cases he
   | _, _, .newTop .., he => by cases he
   | _, _, .newLocal .., he => by cases he
 
@@ -125,8 +125,8 @@ theorem inv_call {d Delta Gamma e0 Ts1 m es} : forall {e T}, Typing d Delta Gamm
     exact Exists.intro (CallW.mk _ _ _ _ _ _ _ _ _ _) (CallP.mk h1 h2 h3 h4 h5 h6 h7 h8 h9 Up.refl)
   | _, _, .var .., he => by cases he
   | _, _, .newObject, he => by cases he
-  | _, _, .declField .., he => by cases he
-  | _, _, .callLbRuntime .., he => by cases he
+  | _, _, .field .., he => by cases he
+  | _, _, .superCall .., he => by cases he
   | _, _, .newTop .., he => by cases he
   | _, _, .newLocal .., he => by cases he
   | _, _, .ifInstanceof .., he => by cases he
@@ -163,12 +163,12 @@ theorem inv_super {d Delta Gamma e0 T0 Ts1 m es} : forall {e T}, Typing d Delta 
     e = .superCall e0 T0 Ts1 m es -> exists w, SuperP d Delta Gamma e0 T0 Ts1 m es T w
   | _, _, .subs h hk hs, he => by
     rcases inv_super h he with ⟨w, hw⟩; exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
-  | _, _, .callLbRuntime h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11, he => by
+  | _, _, .superCall h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11, he => by
     cases he
     exact Exists.intro (SuperW.mk _ _ _ _ _ _ _ _ _ _) (SuperP.mk rfl h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11 Up.refl)
   | _, _, .var .., he => by cases he
   | _, _, .newObject, he => by cases he
-  | _, _, .declField .., he => by cases he
+  | _, _, .field .., he => by cases he
   | _, _, .call .., he => by cases he
   | _, _, .newTop .., he => by cases he
   | _, _, .newLocal .., he => by cases he
@@ -201,9 +201,9 @@ theorem inv_local {d Delta Gamma C Fs C0 Ts es Ms} : forall {e T}, Typing d Delt
     exact Exists.intro (LocalW.mk _ _ _) (LocalP.mk h1 h2 h3 h4 h5 h6 h7 h8 Up.refl)
   | _, _, .var .., he => by cases he
   | _, _, .newObject, he => by cases he
-  | _, _, .declField .., he => by cases he
+  | _, _, .field .., he => by cases he
   | _, _, .call .., he => by cases he
-  | _, _, .callLbRuntime .., he => by cases he
+  | _, _, .superCall .., he => by cases he
   | _, _, .newTop .., he => by cases he
   | _, _, .ifInstanceof .., he => by cases he
 
@@ -238,9 +238,9 @@ theorem inv_new {d Delta Gamma C Ts es} : forall {e T}, Typing d Delta Gamma e T
     cases he
     exact Or.inr (Exists.intro (NewW.mk _ _ _ _) (NewP.mk rfl h1 h2 h3 h4 h5 rfl Up.refl))
   | _, _, .var .., he => by cases he
-  | _, _, .declField .., he => by cases he
+  | _, _, .field .., he => by cases he
   | _, _, .call .., he => by cases he
-  | _, _, .callLbRuntime .., he => by cases he
+  | _, _, .superCall .., he => by cases he
   | _, _, .newLocal .., he => by cases he
   | _, _, .ifInstanceof .., he => by cases he
 
@@ -299,9 +299,9 @@ theorem typing_new_mid {d Delta Gamma} {x : Expr} : forall {C Ts l r T} {e : Exp
       rw [h.2, List.append_assoc]
       exact Typing.newTop h1 h2 h3 h4 (hx.2 x' h')
   | _, _, _, _, _, _, .var .., he => by cases he
-  | _, _, _, _, _, _, .declField .., he => by cases he
+  | _, _, _, _, _, _, .field .., he => by cases he
   | _, _, _, _, _, _, .call .., he => by cases he
-  | _, _, _, _, _, _, .callLbRuntime .., he => by cases he
+  | _, _, _, _, _, _, .superCall .., he => by cases he
   | _, _, _, _, _, _, .newLocal .., he => by cases he
   | _, _, _, _, _, _, .ifInstanceof .., he => by cases he
 
@@ -329,7 +329,7 @@ theorem typing_plug {d Delta Gamma} {a : Expr} : forall (E : EvalCtx) {T : Ty},
       refine Exists.intro Ta (And.intro hTa.1 (fun a' h' => ?_))
       simp only [EvalCtx.plug]
       rw [hann]
-      exact hw.up.typing (Typing.callLbRuntime hw.sub hw.decl0 hw.meth hw.len0 hw.len1 hw.sig hw.decl hw.kind
+      exact hw.up.typing (Typing.superCall hw.sub hw.decl0 hw.meth hw.len0 hw.len1 hw.sig hw.decl hw.kind
         hw.kinds hw.subs (TypingSeq.cons (hTa.2 a' h') hs))
   | .superArg v G Gs m vs E es, T, h => by
     rcases inv_super h rfl with ⟨w, hw⟩
@@ -341,13 +341,13 @@ theorem typing_plug {d Delta Gamma} {a : Expr} : forall (E : EvalCtx) {T : Ty},
       refine Exists.intro Ta (And.intro hTa.1 (fun a' h' => ?_))
       simp only [EvalCtx.plug]
       rw [hann]
-      exact hw.up.typing (Typing.callLbRuntime hw.sub hw.decl0 hw.meth hw.len0 hw.len1 hw.sig hw.decl hw.kind
+      exact hw.up.typing (Typing.superCall hw.sub hw.decl0 hw.meth hw.len0 hw.len1 hw.sig hw.decl hw.kind
         hw.kinds hw.subs (TypingSeq.cons h0 (hx.2 _ (hTa.2 a' h'))))
   | .field E f, T, h => by
     rcases inv_field h rfl with ⟨w, hw⟩
     rcases typing_plug E hw.ty with ⟨Ta, hTa⟩
     exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hw.up.typing
-      (Typing.declField (hTa.2 a' h') hw.decl hw.mem hw.len)))
+      (Typing.field (hTa.2 a' h') hw.decl hw.mem hw.len)))
   | .newArg C Gs vs E es, T, h => by
     rcases typing_new_mid h rfl with ⟨Tx, hx⟩
     cases typing_plug E hx.1 with

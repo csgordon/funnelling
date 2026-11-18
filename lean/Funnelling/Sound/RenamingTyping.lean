@@ -18,12 +18,12 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
   | _, _, _, _, .newObject, _, _, _, _, _, _, _, _, _, hr, _, _, _, _, _, _, _ => by
     cases hr with
     | new hs => cases hs; exact Typing.newObject
-  | _, _, _, _, .declField h1 h2 h3 h4, _, _, _, _, _, _, _, _, _, hr, env, hn, hn', ht, ht', hu, hu' => by
+  | _, _, _, _, .field h1 h2 h3 h4, _, _, _, _, _, _, _, _, _, hr, env, hn, hn', ht, ht', hu, hu' => by
     cases hr with
     | field hr1 =>
       have ih := Typing.ren hwf hok hd h1 hr1 env hn hn' ht ht' hu hu'
       rw [ren_bind h4 (field_closed hok h2 h3)]
-      exact Typing.declField ih h2 h3 (by rw [renList_length, h4])
+      exact Typing.field ih h2 h3 (by rw [renList_length, h4])
   | _, _, _, _, .call (Delta0 := Delta0) (Delta1 := Delta1) (Ts2 := Ts2) (Ts1 := Ts1) h1 h2 h3 h4 h5 h6 h7 h8 h9, _, rt, _, _, _, _, _, _, _,
       hr, env, hn, hn', ht, ht', hu, hu' => by
     cases hr with
@@ -40,7 +40,7 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
         (KindSeq.renT hd env.bD h7) ?_ ih2
       have := SubSeq.renT hd env.bD h8
       rwa [renList_bind hlen hcl.2, renList_append] at this
-  | _, _, _, _, .callLbRuntime (D0 := D0) (Ts0 := Ts0) (Delta1 := Delta1) (Ts1 := Ts1) h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11,
+  | _, _, _, _, .superCall (D0 := D0) (Ts0 := Ts0) (Delta1 := Delta1) (Ts1 := Ts1) h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11,
       _, rt, _, _, _, _, _, _, _, hr, env, hn, hn', ht, ht', hu, hu' => by
     cases hr with
     | superCall hr1 hr2 =>
@@ -56,7 +56,7 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
       have hs1 := Sub.renT hd env.bD h1
       have hk8 := Kind.renT hd env.bD h8
       simp only [Ty.ren] at hs1 hk8 |-
-      refine Typing.callLbRuntime hs1 h2 h3 (by rw [renList_length, h4]) (by rw [renList_length, h5]) e6 h7 hk8
+      refine Typing.superCall hs1 h2 h3 (by rw [renList_length, h4]) (by rw [renList_length, h5]) e6 h7 hk8
         (KindSeq.renT hd env.bD h9) ?_ ih
       have := SubSeq.renT hd env.bD h10
       rwa [renList_bind hlen hcl.2, renList_append] at this
@@ -80,7 +80,7 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
       have hk2 := Kind.renT hd env.bD h2
       simp only [Ty.ren] at hk2 |-
       exact Typing.newTop h1 hk2 (by rw [renList_length, h3]) ih1 ih2
-  | _, _, _, _, .newLocal (C := C) (Fs := Fs) (C0 := C0) (Ts := Ts) (Ms := Ms) (Delta' := Dp) h1 h2 h3 h4 h5 h6 h7 h8,
+  | _, _, _, _, .newLocal (C := C) (Fs := Fs) (C' := C0) (Ts := Ts) (Ms := Ms) (Delta' := Dp) h1 h2 h3 h4 h5 h6 h7 h8,
       rv, rt, _, Delta', Gamma', Xs, xs, Xs', xs', hr, env, hn, hn', ht, ht', hu, hu' => by
     cases hr with
     | newLocal hr1 hr2 =>

@@ -39,7 +39,7 @@ theorem pres_addSuper {d : Decls} (hwf : WFDecls d) {C : ClassName} {m : MethNam
   rw [e.1, e.2] at hsig hsubs hlen2
   have vt2 := vt.2.1
   have vk := vt.2.2
-  exact hw.up.typing (Typing.callLbRuntime hsub hD0.1 hmeth hlen2 hw.len1 hsig hD.1 vk hw.kinds hsubs
+  exact hw.up.typing (Typing.superCall hsub hD0.1 hmeth hlen2 hw.len1 hsig hD.1 vk hw.kinds hsubs
     (TypingSeq.cons vt2 hw.args))
 
 theorem pres_searchSuper {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {D : Dec}
@@ -74,10 +74,10 @@ theorem pres_searchSuper {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
     | cons hv hrest =>
       have hv' := Typing.subs hv hK (Sub.subInherit hD (by rw [gtys_length, hG])
         (by simp only [Ty.subst]; rw [<- hsup]; exact Sub.subRefl))
-      exact hw.up.typing (Typing.callLbRuntime hs.2 hw.decl0 hw.meth hw.len0 hw.len1 hw.sig hD'.1 hK
+      exact hw.up.typing (Typing.superCall hs.2 hw.decl0 hw.meth hw.len0 hw.len1 hw.sig hD'.1 hK
         hw.kinds hw.subs (TypingSeq.cons hv' hrest))
 
-theorem pres_innerSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {Ms : List Method} {m : MethName}
+theorem pres_localSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {Ms : List Method} {m : MethName}
     {v0 : Value} {Gs0 Gs Gs' : List GTy} {vs0 vs : List Value} {T : Ty}
     (hv : v0 = Value.newLocal C Gs0 C' Gs vs0 Ms) (hm : Not (List.Mem m (Ms.map Method.name)))
     (h : Typing d [] [] (.call v0.expr (GTy.tys Gs') m (Value.exprs vs)) T) :
@@ -126,7 +126,7 @@ theorem pres_innerSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {Ms : L
     have hv0 := vt.2.1
     have hv1 := Typing.subs hv0 hK (Sub.subInheritLocal hDl hs2.1
       (by simp only [Ty.subst]; rw [<- hts, <- hsup]; exact Sub.subRefl))
-    have hres := Typing.callLbRuntime hs3 hD0.1 hmeth hlen2 hw.len1 hsig hD'.1 hK hw.kinds hsubs
+    have hres := Typing.superCall hs3 hD0.1 hmeth hlen2 hw.len1 hsig hD'.1 hK hw.kinds hsubs
       (TypingSeq.cons hv1 hw.args)
     rw [hsup] at hres
     exact hw.up.typing hres
@@ -146,7 +146,7 @@ theorem TypingSeq.length {d : Decls} {Delta : Bounds} {Gamma : TypeEnv} {es : Li
   | nil => cases h; rfl
   | cons e es ih => cases h with | cons _ h2 => simp [ih h2]
 
-theorem pres_innerFieldSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {Ms : List Method} {f : FieldName}
+theorem pres_localFieldSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {Ms : List Method} {f : FieldName}
     {Gs Gs' : List GTy} {vs : List Value} {T : Ty}
     (h : Typing d [] [] (.field (Value.newLocal C Gs C' Gs' vs Ms).expr f) T) :
     Typing d [] [] (.field (Value.new C' Gs' vs).expr f) T := by
@@ -168,9 +168,9 @@ theorem pres_innerFieldSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {M
       simp only [Ty.subst] at hs3
       rw [<- hts] at hs3
       have hnew := typing_new_exact hw2.tyNew
-      exact hw.up.typing (Typing.declField (Typing.subs hnew hs.2 hs3) hw.decl hw.mem hw.len)
+      exact hw.up.typing (Typing.field (Typing.subs hnew hs.2 hs3) hw.decl hw.mem hw.len)
 
-theorem pres_simpleFieldSuper {d : Decls} (hwf : WFDecls d) {D : Dec} {f : FieldName} {Gs : List GTy}
+theorem pres_topFieldSuper {d : Decls} (hwf : WFDecls d) {D : Dec} {f : FieldName} {Gs : List GTy}
     {vs1 vs : List Value} {T : Ty} (hD : Declared d (.dec D)) (hl : vs1.length = D.Ss.length)
     (hf : Not (List.Mem f (D.Ss.map Slot.f))) (hO : Not (D.C = Object))
     (h : Typing d [] [] (.field (Value.new D.C Gs (vs1 ++ vs)).expr f) T) :
@@ -205,7 +205,7 @@ theorem pres_simpleFieldSuper {d : Decls} (hwf : WFDecls d) {D : Dec} {f : Field
         rw [<- ev] at hsup
         have hnew := typing_new_exact hsup
         have hs3 := hs2.2
-        exact hw.up.typing (Typing.declField (Typing.subs hnew hs.2 hs3) hw.decl hw.mem hw.len)
+        exact hw.up.typing (Typing.field (Typing.subs hnew hs.2 hs3) hw.decl hw.mem hw.len)
 
 theorem field_typing {d : Decls} {Delta : Bounds} {Gamma : TypeEnv} {s : TSubst} {f : FieldName} {v : Value}
     {T0 : Ty} : forall {Ss : List Slot} {vs1 : List Value},
@@ -330,19 +330,19 @@ theorem preservationBase {d : Decls} {a a' : Expr} {T : Ty} (hwf : WFDecls d) (h
     (ha' : WFExpr a') (hs : BaseStep d a a') (ht : Typing d [] [] a T) : Typing d [] [] a' T := by
   have hd := declOk hwf hok
   cases hs with
-  | simpleFieldFound h1 h2 h3 => exact pres_fieldFound hwf h1 h2 h3 ht
-  | simpleFieldSuper h1 h2 h3 h4 h5 => exact pres_simpleFieldSuper hwf h1 h2 h3 h4 ht
-  | innerFieldSuper => exact pres_innerFieldSuper hwf ht
+  | topFieldFound h1 h2 h3 => exact pres_fieldFound hwf h1 h2 h3 ht
+  | topFieldSuper h1 h2 h3 h4 h5 => exact pres_topFieldSuper hwf h1 h2 h3 h4 ht
+  | localFieldSuper => exact pres_localFieldSuper hwf ht
   | ifThen h1 h2 h3 => exact pres_ifThen hwf hok hd h1 h2 h3 ha ha' ht
   | ifElse h1 => exact pres_ifElse ht
-  | simpleAddSuper h1 => exact pres_addSuper hwf h1 ht
-  | simpleFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11 =>
+  | topAddSuper h1 => exact pres_addSuper hwf h1 ht
+  | topFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11 =>
     subst h11
-    exact pres_simpleFound hwf hok hd h1 h2 h4 ⟨h3, h5, h8, h6, h7, h9, h10, ha'⟩ ha ht
-  | innerFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 =>
+    exact pres_topFound hwf hok hd h1 h2 h4 ⟨h3, h5, h8, h6, h7, h9, h10, ha'⟩ ha ht
+  | localFound h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 =>
     subst h10
-    exact pres_innerFound hwf hok hd h1 h2 ⟨h3, h4, h5, h6, h7, h8, h9, ha'⟩ ha ht
-  | innerSuper h1 h2 => exact pres_innerSuper hwf h1 h2 ht
+    exact pres_localFound hwf hok hd h1 h2 ⟨h3, h4, h5, h6, h7, h8, h9, ha'⟩ ha ht
+  | localSuper h1 h2 => exact pres_localSuper hwf h1 h2 ht
   | searchSuper h1 h2 h3 h4 => exact pres_searchSuper hwf hok hd h1 h2 h4 ht
 
 end Funnelling

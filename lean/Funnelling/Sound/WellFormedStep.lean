@@ -283,7 +283,7 @@ theorem wf_found {M : Method} {m : MethName} {B0 Delta' : Bounds} {T0 : Ty} {ps 
       | head => exact Or.inl hX
       | tail _ h => exact Or.inr (Expr.mem_tbindersList (Value.mem_exprs h) hX)
 
-theorem wf_innerFound {C C' : ClassName} {Ms : List Method} {M : Method} {m : MethName} {Delta' : Bounds} {T0 : Ty}
+theorem wf_localFound {C C' : ClassName} {Ms : List Method} {M : Method} {m : MethName} {Delta' : Bounds} {T0 : Ty}
     {ps : List VarDecl} {e0 : Expr} {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} (hM : List.Mem M Ms)
     (hF : FreshM M (.mk Delta' T0 m ps e0)) (hG' : Gs'.length = Delta'.length) (hp : ps.length = vs.length)
     (ha : WFExpr (.call (Value.newLocal C Gs C' Gs'' vs0 Ms).expr (GTy.tys Gs') m (Value.exprs vs))) :
@@ -338,13 +338,13 @@ theorem Typing.closed {d : Decls} : forall {Delta Gamma e T}, Typing d Delta Gam
   | _, _, _, _, .subs h _ _ => Typing.closed h
   | _, _, _, _, .var hl => List.contains_iff_mem.mpr (List.mem_map_of_mem (f := VarDecl.x) (lookup_mem_g hl))
   | _, _, _, _, .newObject => rfl
-  | _, _, _, _, .declField h1 _ _ _ => by
+  | _, _, _, _, .field h1 _ _ _ => by
     simp only [Expr.closed]
     exact Typing.closed h1
   | _, _, _, _, .call h1 _ _ _ _ _ h7 _ h9 => by
     simp only [Expr.closed, Bool.and_eq_true]
     exact ⟨⟨Typing.closed h1, kinds_all h7⟩, TypingSeq.closed h9⟩
-  | _, _, _, _, .callLbRuntime _ _ _ _ _ _ _ h8 h9 _ h11 => by
+  | _, _, _, _, .superCall _ _ _ _ _ _ _ h8 h9 _ h11 => by
     have hs := TypingSeq.closed h11
     simp only [Expr.closedList, Bool.and_eq_true] at hs
     simp only [Expr.closed, Bool.and_eq_true]
@@ -431,7 +431,7 @@ theorem wf_super_arg {e0 : Expr} {T : Ty} {Ts : List Ty} {m : MethName} {es : Li
   exact WFExpr.sub h (fun _ hk => List.mem_append_right _ (Expr.mem_localsList he hk))
     (fun _ hx => List.mem_append_right _ (Expr.mem_ifVarsList he hx)) (Expr.noShadowList_mem he hn.2) (Expr.closedList_mem he hc.2)
 
-theorem wf_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec} {M : Method} {m : MethName}
+theorem wf_topFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec} {M : Method} {m : MethName}
     {Delta' : Bounds} {T0 : Ty} {ps : List VarDecl} {e0 : Expr} {v0 : Value} {Gs Gs' : List GTy} {vs : List Value}
     (hD : Declared d (.dec D)) (hM : List.Mem M D.Ms) (hF : FreshM M (.mk Delta' T0 m ps e0))
     (hG : Gs.length = D.Delta.length) (hG' : Gs'.length = Delta'.length) (hp : ps.length = vs.length)
@@ -451,16 +451,16 @@ theorem wf_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {D : Dec}
 theorem wf_base {d : Decls} {a a' : Expr} (hwf : WFDecls d) (hok : DeclsOk d) (ha : WFExpr a)
     (hs : BaseStep d a a') : exists a'', BaseStep d a a'' /\ WFExpr a'' := by
   cases hs with
-  | simpleFieldFound h1 h2 h3 =>
-    exact ⟨_, BaseStep.simpleFieldFound h1 h2 h3,
+  | topFieldFound h1 h2 h3 =>
+    exact ⟨_, BaseStep.topFieldFound h1 h2 h3,
       wf_new_mem (wf_field.mp ha) (Value.mem_exprs (List.mem_append_left _ (List.of_mem_zip h3).2))⟩
-  | simpleFieldSuper h1 h2 h3 h4 h5 =>
-    refine ⟨_, BaseStep.simpleFieldSuper h1 h2 h3 h4 h5, ?_⟩
+  | topFieldSuper h1 h2 h3 h4 h5 =>
+    refine ⟨_, BaseStep.topFieldSuper h1 h2 h3 h4 h5, ?_⟩
     have hw := wf_field.mp ha
     simp only [Value.expr, exprs_append] at hw
     exact wf_field.mpr (wf_new_suffix hw (super_ground hok h1 h5))
-  | innerFieldSuper =>
-    refine ⟨_, BaseStep.innerFieldSuper, ?_⟩
+  | localFieldSuper =>
+    refine ⟨_, BaseStep.localFieldSuper, ?_⟩
     have hw := wf_field.mp ha
     simp only [Value.expr] at hw |-
     exact wf_field.mpr (wf_local_new hw)
@@ -468,19 +468,19 @@ theorem wf_base {d : Decls} {a a' : Expr} (hwf : WFDecls d) (hok : DeclsOk d) (h
     rcases wf_ifThen ha with ⟨e1', hf, hd, hw⟩
     exact ⟨_, BaseStep.ifThen h1 hf hd, hw⟩
   | ifElse h1 => exact ⟨_, BaseStep.ifElse h1, wf_if_else ha⟩
-  | simpleAddSuper h1 =>
+  | topAddSuper h1 =>
     subst h1
-    exact ⟨_, BaseStep.simpleAddSuper rfl, wf_call_super ha (by simp only [Ty.ftv]; exact GTy.ftv_tys _)⟩
-  | simpleFound h1 h2 h3 h4 h5 _ _ h8 _ _ _ =>
-    rcases wf_simpleFound hwf hok h1 h2 h3 h4 h5 h8 ha with ⟨_, _, _, _, f⟩
-    exact ⟨_, BaseStep.simpleFound h1 h2 f.fresh h4 f.lenT f.nodupT f.nodupV f.lenV f.gdef f.vdef rfl, f.wf⟩
-  | innerFound h1 h2 h3 h4 h5 _ _ _ _ _ =>
+    exact ⟨_, BaseStep.topAddSuper rfl, wf_call_super ha (by simp only [Ty.ftv]; exact GTy.ftv_tys _)⟩
+  | topFound h1 h2 h3 h4 h5 _ _ h8 _ _ _ =>
+    rcases wf_topFound hwf hok h1 h2 h3 h4 h5 h8 ha with ⟨_, _, _, _, f⟩
+    exact ⟨_, BaseStep.topFound h1 h2 f.fresh h4 f.lenT f.nodupT f.nodupV f.lenV f.gdef f.vdef rfl, f.wf⟩
+  | localFound h1 h2 h3 h4 h5 _ _ _ _ _ =>
     subst h1
-    rcases wf_innerFound h2 h3 h4 h5 ha with ⟨_, _, _, _, f⟩
-    exact ⟨_, BaseStep.innerFound rfl h2 f.fresh f.lenT f.lenV f.nodupT f.nodupV f.gdef f.vdef rfl, f.wf⟩
-  | innerSuper h1 h2 =>
+    rcases wf_localFound h2 h3 h4 h5 ha with ⟨_, _, _, _, f⟩
+    exact ⟨_, BaseStep.localFound rfl h2 f.fresh f.lenT f.lenV f.nodupT f.nodupV f.gdef f.vdef rfl, f.wf⟩
+  | localSuper h1 h2 =>
     subst h1
-    exact ⟨_, BaseStep.innerSuper rfl h2, wf_call_super ha (by simp only [Ty.ftv]; exact GTy.ftv_tys _)⟩
+    exact ⟨_, BaseStep.localSuper rfl h2, wf_call_super ha (by simp only [Ty.ftv]; exact GTy.ftv_tys _)⟩
   | searchSuper h1 h2 h3 h4 =>
     exact ⟨_, BaseStep.searchSuper h1 h2 h3 h4,
       wf_super_retype ha (by simp only [Ty.ftv]; exact super_ground hok h1 h4)⟩

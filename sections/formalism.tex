@@ -6,7 +6,7 @@
 
 We now present the core language of Section~\ref{sec:funnelling}: its syntax, its small step reduction and its type rules.
 The type rules encode funnelling.
-Replacing rule \textsc{new-local} with rule \textsc{new-local-java} gives the Java typing of local classes.
+Replacing rule \textsc{newLocal} with rule \textsc{newLocalJava} gives the Java typing of local classes.
 
 \subsection{Syntax}
 \label{sec:syntax}
@@ -18,8 +18,8 @@ Replacing rule \textsc{new-local} with rule \textsc{new-local-java} gives the Ja
     &&&\mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\\
     &&& \mid \ifthen{e_0}{T}{x}{e_1}{e_2}\\
 \textrm{Types} & T & ::= & \gen{C}{\pl{T}} \mid X\\
-\textrm{Funnels} & F & ::= & G \mid \funnel{X}\\
 \textrm{Ground Types} & G & ::= & \gen{C}{\pl{G}}\\
+\textrm{Funnels} & F & ::= & G \mid \funnel{X}\\
 \\
 \textrm{Type Env.} & \Gamma & ::= & T_1\gap x_1,\ldots,T_n\gap x_n\\
 \textrm{Bounds} & \Delta & ::= & \ext{X_1}{T_1},\ldots,\ext{X_n}{T_n}\\
@@ -53,7 +53,12 @@ That is, a super call works as a flexible kind of Java \Q@super@ call, attemptin
 An object creation $\obj{C}{\pl{T}}{\pl{e}}$ creates an instance of the top-level class $\gen{C}{\pl{T}}$.
 The first arguments of $\pl{e}$ initialize the fields of $C$; the other arguments are the arguments of the object creation of the superclass of $C$.
 A local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ declares the local class $C$ and creates an instance of $C$.
+The type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ reduces to $e_1$, with $x$ bound to the value of $e_0$, when the class of the value of $e_0$ is the class of $T$ or a subclass of the class of $T$; otherwise the type test reduces to $e_2$.
 \end{sloppypar}
+
+A type is a class type $\gen{C}{\pl{T}}$ or a type variable $X$.
+A ground type $G$ is a type with no type variables.
+A ground type is the equivalent of a value, but at the type level.
 
 A program is a class table \decls and a main expression $e$.
 The funnels $\pl{F}$ serve a double role.%
@@ -67,16 +72,12 @@ In \decls, all the funnels are of the form $\funnel{X}$, by well-formedness requ
 In the main expression, outside of the methods of local classes, all the funnels are of the form $G$, by A12: there, no type variable is in scope.
 When a local class is nested in a method of a local class in the main expression, a mixture of funnels $\funnel{X}$ and $G$ can be present.
 
-A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $\gen{C'}{\pl{T}}$.
-The methods $\pl{M}$ of a local class can use only the visible type variables, and the variables in scope other than \Q@this@ whose types mention only visible type variables.
-The type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ reduces to $e_1$, with $x$ bound to the value of $e_0$, when the class of the value of $e_0$ is a subclass of the class of $T$; otherwise the type test reduces to $e_2$.
+A local class has no fields: the arguments $\pl{e}$ are the arguments of the object creation of the superclass $C'$.
+The methods $\pl{M}$ of a local class can use only the funnelled type variables, and the variables in scope other than \Q@this@ whose types mention only funnelled type variables.
 \\[1ex]
-A type is a class type $\gen{C}{\pl{T}}$ or a type variable $X$.
-A ground type $G$ is a type with no type variables.
-A ground type is the equivalent of a value, but at the type level.
 The conventional type environment $\Gamma$ gives a type to each variable that the expression can use.
 Bounds $\Delta$ give an upper bound to each type variable that the expression can use.
-A declaration $\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}$ declares the top-level class $C$ with the type variables bounded by $\Delta$, the superclass $\gen{C'}{\pl{T}}$, the methods $\pl{M}$ and the fields/slots $\pl{S}$.
+A declaration $\subclass{C}{\Delta}{C'}{\pl{T}}{\pl{M}}{\pl{S}}$ declares the top-level class $C$ with the type variables bounded by $\Delta$, the supertype $\gen{C'}{\pl{T}}$, the methods $\pl{M}$ and the fields/slots $\pl{S}$.
 A method $\method{\Delta}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e}}$ has the type variables bounded by $\Delta$, the return type $T_0$, the parameters $x_1,\ldots,x_n$ and the body $e$.
 Every method has a body; for simplicity, as in FJ, there are no abstract methods.
 A class declaration $K$ is either a top-level declaration $\mathsf{Dec}$ or a local class.
@@ -91,7 +92,7 @@ The following are the well-formedness requirements:
     \item[(A4)] In a method, all the parameter names $x_1,\ldots,x_n$ are distinct.
     \item[(A5)] In a $\Delta$, all the $X$ in $\mathrm{dom}(\Delta)$ are distinct.
     \item[(A6)] In a list of funnels $\pl{F}$, all the $X$ in $\mathrm{dom}(\pl{F})$ are distinct.
-    \item[(A7)] There is no shadowing of $X$ or $x$, except for \Q@this@.
+    \item[(A7)] There is no shadowing of $X$ or $x$, except for \Q@this@.\footnote{A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ of the enclosing method.}
     \item[(A8)] In the syntax \ifthen{\_}{T}{x}{\_}{\_}, $x$ is not \Q@this@, and \Q@this@ does not appear as a method parameter name.
     \item[(A9)] \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every other top-level class reaches \Q@Object@.
     \item[(A10)] In \decls, the superclass of every class, top-level or local, is a top-level class.
@@ -101,7 +102,6 @@ The following are the well-formedness requirements:
 Well-formedness requirements A1-A10 and A12 are common requirements, such as uniqueness of names.
 A11 is the requirement on funnels discussed above.
 Section~\ref{sec:clarifications} states how A1-A12 restrict the metarules.
-A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ of the enclosing method.
 
 \subsection{Values and Contexts}
 \label{sec:contexts}
@@ -112,26 +112,43 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
     &&& \mid \explicitcall{\mathcal{E}}{G}{\pl{G}}{m}{\pl{e}} \mid \explicitcall{v}{G}{\pl{G}}{m}{\pl{v},\mathcal{E},\pl{e}}\\
     &&& \mid \mathcal{E}\fstop f \mid \obj{C}{\pl{G}}{\pl{v},\mathcal{E},\pl{e}}\\
     &&& \mid \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v},\mathcal{E},\pl{e}}{\pl{M}}\\
-    &&& \mid \ifthen{\mathcal{E}}{G}{x}{e_1}{e_2}\\
-\textrm{Expr. Ctx.} & \mathcal{C} & ::= & \square \mid \call{\mathcal{C}}{\pl{T}}{m}{\pl{e}} \mid \call{e}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
-    &&& \mid \explicitcall{\mathcal{C}}{T}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
-    &&& \mid \mathcal{C}\fstop f \mid \obj{C}{\pl{T}}{\pl{e},\mathcal{C},\pl{e}'}\\
-    &&& \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e},\mathcal{C},\pl{e}'}{\pl{M}}\\
-    &&& \mid \ifthen{\mathcal{C}}{T}{x}{e_1}{e_2}\\
-    &&& \mid \ifthen{e_0}{T}{x}{\mathcal{C}}{e_2}\\
-    &&& \mid \ifthen{e_0}{T}{x}{e_1}{\mathcal{C}}
+    &&& \mid \ifthen{\mathcal{E}}{G}{x}{e_1}{e_2}
 \end{array}
 \]
+Evaluation contexts $\mathcal{E}$ fix the order of evaluation, left to right, and are used by the reduction.
 
 \subsection{Declarations}
 \label{sec:declarations}
 {\small
+\begin{Define}{e'\textrm{ occurs in }e}
+e'\textrm{ occurs in }e\textrm{ iff }e=\mathcal{C}[e']\\
+\quad\textrm{where }\mathcal{C}::=\square \mid \call{\mathcal{C}}{\pl{T}}{m}{\pl{e}} \mid \call{e}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
+\quad\phantom{\textrm{where }\mathcal{C}::=} \mid \explicitcall{\mathcal{C}}{T}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
+\quad\phantom{\textrm{where }\mathcal{C}::=} \mid \mathcal{C}\fstop f \mid \obj{C}{\pl{T}}{\pl{e},\mathcal{C},\pl{e}'}\\
+\quad\phantom{\textrm{where }\mathcal{C}::=} \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e},\mathcal{C},\pl{e}'}{\pl{M}}\\
+\quad\phantom{\textrm{where }\mathcal{C}::=} \mid \ifthen{\mathcal{C}}{T}{x}{e_1}{e_2}\\
+\quad\phantom{\textrm{where }\mathcal{C}::=} \mid \ifthen{e_0}{T}{x}{\mathcal{C}}{e_2}\\
+\quad\phantom{\textrm{where }\mathcal{C}::=} \mid \ifthen{e_0}{T}{x}{e_1}{\mathcal{C}}
+\end{Define}
 \begin{Define}{\declared{K}}
 \declared{\mathsf{Dec}}\textrm{ iff }\mathsf{Dec}\in\decls\\[1ex]
 \declared{\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}}\\
 \quad\textrm{where }\declared{K}\\
 \quad\phantom{\textrm{where }}\method{\_}{\_}{m}{\_}{\ret{e}}\in K\\
 \quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\textrm{ occurs in }e
+\end{Define}
+\begin{Define}{M\in K\qquad M\in C\qquad\generic{C}=T\qquad|F|=T}
+M\in K\textrm{ iff }M\in\pl{M}\\
+\quad\textrm{where }K\in\{\subclass{\_}{\_}{\_}{\_}{\pl{M}}{\_},\innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}\}\\
+M\in C\textrm{ iff }M\in K\\
+\quad\textrm{where }\declared{K}\\
+\quad\phantom{\textrm{where }}K\in\{\subclass{C}{\_}{\_}{\_}{\_}{\_},\innerobj{C}{\_}{\_}{\_}{\_}{\_}\}\\[1ex]
+\generic{C} = \gen{C}{\mathrm{dom}(\Delta)}\\
+\quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}\\
+\generic{C} = \gen{C}{\mathrm{dom}(\pl{F})}\\
+\quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}\\[1ex]
+|\funnel{X}| = X\\
+|G| = G
 \end{Define}
 \begin{Define}{\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}'}
 \mathsf{scope}(\gen{C}{\pl{T}}) = \Delta;\pl{T}\\
@@ -147,21 +164,9 @@ A method body of a local class also binds \Q@this@, thus shadowing the \Q@this@ 
 \quad\textrm{where }\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'\\
 \pairing{\Delta}{G,\pl{F}}{G,\pl{T}} = \pairing{\Delta}{\pl{F}}{\pl{T}}
 \end{Define}
-\begin{Define}{M\in K\qquad M\in C\qquad\generic{C}=T\qquad|F|=T}
-M\in K\textrm{ iff }M\in\pl{M}\\
-\quad\textrm{where }K\in\{\subclass{\_}{\_}{\_}{\_}{\pl{M}}{\_},\innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}\}\\
-M\in C\textrm{ iff }M\in K\\
-\quad\textrm{where }\declared{K}\\
-\quad\phantom{\textrm{where }}K\in\{\subclass{C}{\_}{\_}{\_}{\_}{\_},\innerobj{C}{\_}{\_}{\_}{\_}{\_}\}\\[1ex]
-\generic{C} = \gen{C}{\mathrm{dom}(\Delta)}\\
-\quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}\\
-\generic{C} = \gen{C}{\mathrm{dom}(\pl{F})}\\
-\quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}\\[1ex]
-|\funnel{X}| = X\\
-|G| = G
-\end{Define}
 \par}
 
+An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for an expression context $\mathcal{C}$.
 By well-formedness requirement A1, a class name $C$ identifies at most one $K$ with $\declared{K}$.
 $M\in K$ holds when $M$ is a method of the class declaration $K$, top-level or local.
 $M\in C$ holds when $M$ is a method of the declared class $C$, top-level or local.
@@ -193,7 +198,6 @@ For a set of type variables $\pl{X}$, $\Gamma|_{\pl{X}}$ keeps the variables $T\
 The pairing $\pairing{\Delta}{\pl{F}}{\pl{T}}$ goes through the funnels $\pl{F}$ and the arguments $\pl{T}$ together, one position at a time, where $\emptyset$ is the empty sequence.
 At the position of a funnel $\funnel{X}$, the pairing adds $\ext{X}{\Delta(X)}$ to the bounds and the argument to the types.
 At the position of a ground funnel $G$, the argument must be $G$ itself, and nothing is added.
-An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for an expression context $\mathcal{C}$.
 Expression contexts $\mathcal{C}$ do not enter the methods of a local class; thus, by A1, A5 and A7, $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
 
 \subsection{Operational Semantics}
@@ -208,7 +212,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 \end{Define}
 \begin{mathpar}
 \fbox{$\step{e}{e'}$}\\
-\inferrule[simpleFieldFound]{
+\inferrule[topFieldFound]{
     \declared{\subclass{C}{\_}{\_}{\_}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}}\\
     f_i\in f_1,\ldots,f_n
 }{
@@ -219,7 +223,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
     }
 }
 \and
-\inferrule[simpleFieldSuper]{
+\inferrule[topFieldSuper]{
     \declared{\subclass{C}{\Delta}{C'}{\pl{T}}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}}\\
     f\not\in f_1,\ldots,f_n\\
     C\neq\Object
@@ -232,7 +236,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 }
 \and
 %Note: ok because inner classes currently don't have their own fields
-\inferrule[innerFieldSuper]{
+\inferrule[localFieldSuper]{
 }{
     \step{
         \innerobj{C}{\pl{G}}{C'}{\pl{G}'}{\pl{v}}{\pl{M}}\fstop f
@@ -266,7 +270,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 % Neither Java nor funnelling relies on reification.
 \end{mathpar}
 \begin{mathpar}
-\inferrule[simpleAddSuper]{
+\inferrule[topAddSuper]{
     v = \obj{C}{\pl{G}}{\_}
 }{
     \step{
@@ -276,7 +280,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
     }
 }
 \and
-\inferrule[simpleFound]{
+\inferrule[topFound]{
     \declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\
     M\in\pl{M}\\
     \mathsf{fresh}(M,\method{\Delta'}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e_0}})\\
@@ -286,7 +290,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 }
 %% ^^ Note: for local classes, this syntax skips the value entirely (this rule is not applicable if C<Gs> is meth local
 \and
-\inferrule[innerFound]{
+\inferrule[localFound]{
     v_0 = \innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}\\
     M\in\pl{M}\\
     \mathsf{fresh}(M,\method{\Delta'}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e_0}})\\
@@ -295,7 +299,7 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
     \step{\call{v_0}{\pl{G}'}{m}{v_1,\ldots,v_n}}{e}
 }
 \and
-\inferrule[innerSuper]{
+\inferrule[localSuper]{
     v_0 = \innerobj{\_}{\_}{C'}{\pl{G}}{\_}{\pl{M}}\\
     m\not\in \pl{M}
 }{
@@ -324,24 +328,23 @@ $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 \end{mathpar}
 \par}
 
-Most of the rules are standard.
-Rules \textsc{simpleFieldFound}, \textsc{simpleFieldSuper} and \textsc{innerFieldSuper} read a field.
-Rule \textsc{simpleFieldFound} reads a field declared by the class of the object.
-Rule \textsc{simpleFieldSuper} reads a field not declared by the class $C$ of the object from the object of the superclass of $C$, made of the remaining values.
-A local class declares no fields, so rule \textsc{innerFieldSuper} reads every field from the object of the superclass.
+Rules \textsc{topFieldFound}, \textsc{topFieldSuper} and \textsc{localFieldSuper} read a field.
+Rule \textsc{topFieldFound} reads a field declared by the class of the object.
+Rule \textsc{topFieldSuper} reads a field not declared by the class $C$ of the object from the object of the superclass of $C$, made of the remaining values.
+A local class declares no fields, so rule \textsc{localFieldSuper} reads every field from the object of the superclass.
 
 Rules \textsc{ifThen} and \textsc{ifElse} test the class of the value $v$ against the class $C'$ of the type test, ignoring the type arguments $\pl{T}$ of $\gen{C'}{\pl{T}}$.
 Rule \textsc{ifThen} reduces to $e'_1$ with $x$ replaced by $v$, where $e'_1$ is $e_1$ renamed by $\mathsf{fresh}$; rule \textsc{ifElse} reduces to $e_2$.
 
-Rules \textsc{simpleAddSuper}, \textsc{simpleFound}, \textsc{innerFound}, \textsc{innerSuper} and \textsc{searchSuper} call a method.
-Rule \textsc{simpleAddSuper} turns a call on an object of a top-level class into a super call starting from the class of the object.
-Rule \textsc{simpleFound} runs the method $m$ found in the class of a super call, replacing the type variables of the class and of the method, \Q@this@ and the parameters.
-Rule \textsc{innerFound} runs the method $m$ found in a value of a local class; the funnelled type variables are already replaced in that value, so only the type variables of the method are replaced.
-Rule \textsc{innerSuper} turns a call on a value of a local class without the method $m$ into a super call starting from the superclass of the local class.
+Rules \textsc{topAddSuper}, \textsc{topFound}, \textsc{localFound}, \textsc{localSuper} and \textsc{searchSuper} call a method.
+Rule \textsc{topAddSuper} turns a call on an object of a top-level class into a super call starting from the class of the object.
+Rule \textsc{topFound} runs the method $m$ found in the class of a super call, replacing the type variables of the class and of the method, \Q@this@ and the parameters.
+Rule \textsc{localFound} runs the method $m$ found in a value of a local class; the funnelled type variables are already replaced in that value, so only the type variables of the method are replaced.
+Rule \textsc{localSuper} turns a call on a value of a local class without the method $m$ into a super call starting from the superclass of the local class.
 Rule \textsc{searchSuper} moves a super call to the superclass when the class does not declare $m$.
 Rule \textsc{ctx} reduces inside an evaluation context.
 
-Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} also use the relation $\mathsf{fresh}$.
+Rules \textsc{ifThen}, \textsc{topFound} and \textsc{localFound} also use the relation $\mathsf{fresh}$.
 The names bound in an expression $e$ are the variable of every type test occurring in $e$, and the names bound in every method of a local class occurring in $e$.
 The names bound in a method $M$ are the type variables of its signature, its parameters, and the names bound in its body.
 $\mathsf{fresh}(e,e')$ holds when $e'$ is $e$ with the names bound in $e$ renamed: $e$ and $e'$ are equal up to the names of their binders.
@@ -355,7 +358,7 @@ Object<> k(L<> y){ return
 \end{lstlisting}
 In a call of \Q@k@ with a value \Q@v@ of class \Q@L@, the body of \Q@m@ becomes \Q@v.m(x)@, and the method \Q@m@ of \Q@v@ binds \Q@x@ again.
 Without $\mathsf{fresh}$, the substitution would attempt to place a binder of a name under a binder of the same name, breaking well-formedness requirement A7.
-Rules \textsc{ifThen}, \textsc{simpleFound} and \textsc{innerFound} place values under the binders of the expression they substitute into.
+Rules \textsc{ifThen}, \textsc{topFound} and \textsc{localFound} place values under the binders of the expression they substitute into.
 Requirement A7 on the result requires those binders to differ from the names bound in the values.
 A substitution can place a value at several positions, so several occurrences of a value can bind the same names; those occurrences are never nested, so they do not shadow each other.
 
@@ -384,7 +387,7 @@ A substitution can place a value at several positions, so several occurrences of
     \begin{mathpar}
 \fbox{\typing{\Delta}{\Gamma}{e}{T}}\\
 \inferrule[subs]{
-	\typing{\Delta}{\Gamma}{e}{T_1}\\
+	\typing{\Delta}{\Gamma}{e}{T_1}\\\\
 	\kind{\Delta}{T_2}\\
 	\subtype{\Delta}{T_1}{T_2}
 }{
@@ -392,14 +395,8 @@ A substitution can place a value at several positions, so several occurrences of
 }
 \and
 \inferrule[var]{ }{\typing{\Delta}{\Gamma}{x}{\Gamma(x)}}
-\end{mathpar}
-\begin{mathpar}
-\begin{array}[b]{c}
-\inferrule[new-object]{ }{
-  \typing{\Delta}{\Gamma}{\obj{\Object}{}{}}{\gen{\Object}{}}
-}
-\\[4ex]
-\inferrule[declField]{
+\and
+\inferrule[field]{
   \typing{\Delta}{\Gamma}{e}{\classtype{C}{\pl{T}'}}\\\\
   \declared{\subclass{C}{\Delta'}{\_}{\_}{\_}{\pl{S}}}\\\\
   T\gap f\semi\in\pl{S}
@@ -408,8 +405,7 @@ A substitution can place a value at several positions, so several occurrences of
   \typing{\Delta}{\Gamma}{e\fstop f}{\tsubst{T}{\Delta'}{\pl{T}'}}
   %\subclass{C_0}{\Delta_0}{C'}{\overline{T'}}{\overline{M}}{\overline{S}}\in\decls
 }
-\end{array}
-\and
+\\
 \inferrule[call]{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\\\
   \mathsf{scope}(\gen{C_0}{\pl{T}_0})=\Delta_0;\pl{T}_2\\\\
@@ -421,8 +417,8 @@ A substitution can place a value at several positions, so several occurrences of
 }{
   \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}}{T'_0}
 }
-\\
-\inferrule[call-lb-runtime]{
+\and
+\inferrule[superCall]{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C_0}{\pl{T}_0}}\\\\
   \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\_}{\_}}\\\\
   \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in C_0\\\\
@@ -439,7 +435,11 @@ A substitution can place a value at several positions, so several occurrences of
 }
 \end{mathpar}
 \begin{mathpar}
-\inferrule[new-top]{
+\inferrule[newObject]{ }{
+  \typing{\Delta}{\Gamma}{\obj{\Object}{}{}}{\gen{\Object}{}}
+}
+\and
+\inferrule[newTop]{
   \declared{\subclass{C}{\Delta'}{C'}{\pl{T}}{\_}{T_1\gap f_1\semi\ldots T_n\gap f_n\semi}}\\
   \kind{\Delta}{\gen{C}{\pl{T}'}}\\\\
   \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{\tsubst{T_1,\ldots,T_n}{\Delta'}{\pl{T}'}}\\
@@ -448,18 +448,18 @@ A substitution can place a value at several positions, so several occurrences of
   \typing{\Delta}{\Gamma}{\obj{C}{\pl{T}'}{e_1,\ldots,e_n,\pl{e}}}{\gen{C}{\pl{T}'}}
 }
 \and
-\inferrule[new-local]{
-  \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\\\
+\inferrule[newLocal]{
+  \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\\\
   \pairing{\Delta}{\pl{F}}{|\pl{F}|}=\Delta';\_\\
   \ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')\\\\
   \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\
-  \kind{\Delta'}{\gen{C_0}{\pl{T}}}\\
-  \typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}\\\\
+  \kind{\Delta'}{\gen{C'}{\pl{T}}}\\
+  \typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}\\\\
   \mok{\Delta'}{\Gamma|_{\ftv{|\pl{F}|}}\setminus\this,\gen{C}{|\pl{F}|}\gap\this}{\pl{M}}\\\\ % remove all the x:T when FTV(T) not a subset of FTV(T1..Tn)
-  \mathsf{overrideOk}(\Delta',\gen{C_0}{\pl{T}},\pl{M})
+  \mathsf{overrideOk}(\Delta',\gen{C'}{\pl{T}},\pl{M})
 }{
   \typing{\Delta}{\Gamma}{
-    \innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}
+    \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}
   }{\gen{C}{|\pl{F}|}}
 }
 %
@@ -481,8 +481,16 @@ A substitution can place a value at several positions, so several occurrences of
 %We will replace every occurrence of X when doing substitution, *including* in method signatures in a local class
 %Should be a clearer when substitution is formalized
 %
-\and
-\inferrule[if-instanceof]{
+    \end{mathpar}
+\begin{Define}{K\gap\mathsf{consistent}}
+\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
+\quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C'}{\pl{T}'}{\_}{\pl{M}'}}\\
+\quad\phantom{\textrm{where }}\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\
+\quad\phantom{\textrm{where }}\mathrm{names}(\pl{M}')=\mathrm{names}(\pl{M})\\
+\quad\phantom{\textrm{where }}\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})
+\end{Define}
+    \begin{mathpar}
+\inferrule[ifInstanceof]{
   \typing{\Delta}{\Gamma}{e_0}{T_0}\\
   \kind{\Delta}{T}\\
   \cast{\Delta}{T_0}{T}\\\\
@@ -493,20 +501,20 @@ A substitution can place a value at several positions, so several occurrences of
 }
 \\
 \fbox{\cast{\Delta}{T}{T'}}\\
-\inferrule[cast-up]{
+\inferrule[castUp]{
   \subtype{\Delta}{T}{T'}
 }{
   \cast{\Delta}{T}{T'}
 }
 \and
-\inferrule[cast-var]{
+\inferrule[castVar]{
   \ext{X}{T}\in\Delta\\\\
   \cast{\Delta}{T}{T'}
 }{
   \cast{\Delta}{X}{T'}
 }
 \and
-\inferrule[cast-down]{
+\inferrule[castDown]{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C'}{\pl{T}_0}}\\
   \generic{C}=\gen{C}{\pl{X}}\\\\
   \subtype{\emptyset}{\gen{C}{\pl{X}}}{\gen{C'}{\pl{T}'}}\\
@@ -515,24 +523,23 @@ A substitution can place a value at several positions, so several occurrences of
   \cast{\Delta}{\gen{C'}{\pl{T}_0}}{\gen{C}{\pl{T}}}
 }
     \end{mathpar}
-\begin{Define}{K\gap\mathsf{consistent}}
-\innerobj{C}{\pl{F}}{C_0}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
-\quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C_0}{\pl{T}'}{\_}{\pl{M}'}}\\
-\quad\phantom{\textrm{where }}\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\
-\quad\phantom{\textrm{where }}\mathrm{names}(\pl{M}')=\mathrm{names}(\pl{M})\\
-\quad\phantom{\textrm{where }}\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})
-\end{Define}
 \par}
 
-Rule \textsc{call-lb-runtime} types a super call $\explicitcall{e_0}{\gen{C}{\pl{T}}}{\pl{T}_1}{m}{e_1,\ldots,e_n}$: the receiver $e_0$ has type $\gen{C}{\pl{T}}$, the class $C$ is a top-level class, and the signature of $m$ is read from a class $C_0$ declaring $m$, where $C_0$ is $C$ or a superclass of $C$.
+Rule \textsc{subs} is subsumption, where the supertype $T_2$ must be well kinded; rule \textsc{var} reads the type of a variable from $\Gamma$.
+Rule \textsc{field} types the access to a field declared by the class $C$ of the receiver, and rule \textsc{call} types the call of a method declared by the class $C_0$ of the receiver.
+In rule \textsc{call}, $\mathsf{scope}$ gives the type variables of $C_0$ and the types replacing them, and the type arguments $\pl{T}_1$ of the call must satisfy the bounds of $m$.
+Rule \textsc{superCall} types a super call $\explicitcall{e_0}{\gen{C}{\pl{T}}}{\pl{T}_1}{m}{e_1,\ldots,e_n}$: the receiver $e_0$ has type $\gen{C}{\pl{T}}$, the class $C$ is a top-level class, and the signature of $m$ is read from a class $C_0$ declaring $m$, where $C_0$ is $C$ or a superclass of $C$.
+Rule \textsc{newObject} types the creation of an \Q@Object@.
+We need this dedicated rule: \Q@Object@ extends \Q@Object@ (A9), so typing \Q@new Object<>()@ with rule \textsc{newTop} would need an infinite derivation.
+Rule \textsc{newTop} types the creation of an object of another top-level class $C$: the first arguments have the types of the fields of $C$, and the other arguments are typed as an object creation of the superclass of $C$.
 
-Rule \textsc{new-local} is the heart of funnelling, including subtle management of type environments.
+Rule \textsc{newLocal} is the heart of funnelling.
 The rule constructs restricted bounds and a restricted type environment, reflecting only the funnelled type variables:
 $\Delta'$ includes only the funnelled type variables, and $\Gamma|_{\ftv{|\pl{F}|}}\setminus\this$ keeps only the variables of $\Gamma$, other than \Q@this@, whose types mention only type variables of the result type $\gen{C}{|\pl{F}|}$ (which must be well kinded under $\Delta'$).
 The bounds $\Delta'$ are computed by $\pairing{\Delta}{\pl{F}}{|\pl{F}|}$, which is undefined when a funnelled type variable is not in $\Delta$.
 The premise $\ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')$ requires the bounds of the funnelled type variables to mention only funnelled type variables.
-However, the rule still uses the \emph{full} ambient environments for checking certain subexpressions. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., in the type arguments of a method call), but will reduce to a value which no longer depends on such type variables.
-This is why the premise $\typing{\Delta}{\Gamma}{\obj{C_0}{\pl{T}}{\pl{e}}}{\_}$ types the object creation of the superclass $\obj{C_0}{\pl{T}}{\pl{e}}$ under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C_0}{\pl{T}}}$ checks the superclass type $\gen{C_0}{\pl{T}}$ under the more restrictive $\Delta'$.
+However, the rule still uses the \emph{full} $\Delta$ and $\Gamma$ for typing the arguments $\pl{e}$. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., in the type arguments of a method call), but will reduce to a value which no longer depends on such type variables.
+This is why the premise $\typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}$ types the object creation of the superclass $\obj{C'}{\pl{T}}{\pl{e}}$ under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C'}{\pl{T}}}$ checks the supertype $\gen{C'}{\pl{T}}$ under the more restrictive $\Delta'$.
 \\[1ex]
 A local class appears in two kinds of places:
 (1) The (original) declaration of the local class is written in the body of a method of a top-level class, possibly nested inside other local classes.
@@ -541,20 +548,20 @@ A local class appears in two kinds of places:
 The relation $K\gap\mathsf{consistent}$ trivially holds for case (1). For case (2), the first condition of the definition finds the declaration of $K$.
 The supertype and the method signatures of $K$ must be those of the declaration, with the funnelled type variables of $\pl{F}'$ replaced by $|\pl{F}|$, up to the names of the type variables of each method.
 $K$ and the declaration have the same method names.
-The bodies of the methods of $K$ are not required to be those of the declaration: the main expression can hold a local class whose method bodies differ from the declaration, and rule \textsc{new-local} types those method bodies.
+The bodies of the methods of $K$ are not required to be those of the declaration: the main expression can hold a local class whose method bodies differ from the declaration, and rule \textsc{newLocal} types those method bodies.
 
-Rules \textsc{call}, \textsc{sub-inherit-local}, \textsc{wf-class} and \textsc{cast-down}, the relation $\mathsf{consistent}$ and the last case of $\mathsf{overrideOk}(T,M)$ read the declaration, while the reduction runs the methods of the copy.
+Rules \textsc{call}, \textsc{subInheritLocal}, \textsc{kindClass} and \textsc{castDown}, the relation $\mathsf{consistent}$ and the last case of $\mathsf{overrideOk}(T,M)$ read the declaration, while the reduction runs the methods of the copy.
 
+Rule \textsc{ifInstanceof} accepts the type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ only when $\cast{\Delta}{T_0}{T}$, where $T_0$ is a type of $e_0$.
 The relation $\cast{\Delta}{T}{T'}$ is the \emph{checked cast}: a type test against $T'$ on a value of static type $T$ is decided by the class of the value alone.
-Rule \textsc{if-instanceof} accepts the type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ only when $\cast{\Delta}{T_0}{T}$, where $T_0$ is a type of $e_0$.
-Rule \textsc{cast-up} accepts a target $T'$ that is a supertype of the source $T$.
-Rule \textsc{cast-var} replaces a source type variable $X$ with the bound of $X$.
-Rule \textsc{cast-down} accepts a target $\gen{C}{\pl{T}}$ that is a subtype of the source $\gen{C'}{\pl{T}_0}$, \emph{when the source determines the type arguments} $\pl{T}$.\footnote{This is the condition under which a Java cast to a parameterized type is checked~\cite[Section~5.1.6.2]{jls}~\cite{bracha1998making}.
+Rule \textsc{castUp} accepts a target $T'$ that is a supertype of the source $T$.
+Rule \textsc{castVar} replaces a source type variable $X$ with the bound of $X$.
+Rule \textsc{castDown} accepts a target $\gen{C}{\pl{T}}$ that is a subtype of the source $\gen{C'}{\pl{T}_0}$, \emph{when the source determines the type arguments} $\pl{T}$.\footnote{This is the condition under which a Java cast to a parameterized type is checked~\cite[Section~5.1.6.2]{jls}~\cite{bracha1998making}.
 When the source does not determine the type arguments, Java rejects the type test \Q@e instanceof C<Ts>@, but accepts the cast \Q@(C<Ts>)e@ with an unchecked warning: at run time, that cast checks only the class \Q@C@.}
 $\generic{C}=\gen{C}{\pl{X}}$ is the class $C$ instantiated with its own type variables $\pl{X}$, and $\gen{C'}{\pl{T}'}$ is the supertype of $\gen{C}{\pl{X}}$ with class $C'$.
-The premise $\subtype{\emptyset}{\gen{C}{\pl{X}}}{\gen{C'}{\pl{T}'}}$ of rule \textsc{cast-down} uses the bounds $\emptyset$: a subtyping derivation between class types uses only rules \textsc{sub-refl}, \textsc{sub-inherit} and \textsc{sub-inherit-local}, which do not read $\Delta$.
+The premise $\subtype{\emptyset}{\gen{C}{\pl{X}}}{\gen{C'}{\pl{T}'}}$ of rule \textsc{castDown} uses the bounds $\emptyset$: a subtyping derivation between class types uses only rules \textsc{subRefl}, \textsc{subInherit} and \textsc{subInheritLocal}, which do not read $\Delta$.
 Every type variable of $\pl{X}$ occurs in $\pl{T}'$, thus the type arguments $\pl{T}_0$ of the source fix the type arguments $\pl{T}$ of the target.
-Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is a subclass of $C$ has type $\gen{C}{\pl{T}}$, and rule \textsc{ifThen} compares only class names.
+Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is $C$ or a subclass of $C$ has type $\gen{C}{\pl{T}}$, and rule \textsc{ifThen} compares only class names.
 
 
 \subsection{Typing of Programs, Classes and Methods}
@@ -563,7 +570,7 @@ Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is a subclass of $C$ has t
     \begin{mathpar}
 \begin{array}[t]{@{}c@{}}
 \fbox{$\vdash\decls\gap e\gap\mathrm{Ok}$}\cr\noalign{\vskip 2ex}
-\inferrule[prog-ok]{
+\inferrule[progOk]{
   \forall\mathsf{Dec}\in\decls\ldotp\mathsf{Dec}\gap\mathrm{Ok}\\\\
   \typing{\emptyset}{\emptyset}{e}{\_}
 }{
@@ -573,7 +580,7 @@ Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is a subclass of $C$ has t
 \and
 \begin{array}[t]{@{}c@{}}
 \fbox{\mok{\Delta}{\Gamma}{M}}\cr\noalign{\vskip 2ex}
-\inferrule[method-ok]{
+\inferrule[methodOk]{
   \kind{\Delta,\Delta'}{\mathrm{cod}(\Delta')}\\
   \kind{\Delta,\Delta'}{T_0,\ldots,T_n}\\\\
   \typing{\Delta,\Delta'}{\Gamma,T_1\gap x_1,\ldots,T_n\gap x_n}{e}{T_0}
@@ -583,7 +590,7 @@ Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is a subclass of $C$ has t
 \end{array}
 \\
 \fbox{$\mathsf{Dec}\gap\mathrm{Ok}$}\\
-\inferrule[class-ok]{
+\inferrule[classOk]{
   \kind{\Delta}{\mathrm{cod}(\Delta)}\\
   \kind{\Delta}{\gen{C'}{\pl{T}},T_1,\ldots,T_n}\\\\
   \mok{\Delta}{\gen{C}{\mathrm{dom}(\Delta)}\gap\this}{\pl{M}}\\\\
@@ -615,8 +622,8 @@ Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is a subclass of $C$ has t
 \end{Define}
 \par}
 
-Rule \textsc{class-ok} types the methods of a top-level class with \Q@this@ of type $\gen{C}{\mathrm{dom}(\Delta)}$.
-A method that a class declares again must keep the signature it has in every superclass, up to the names of its own type variables:
+Rule \textsc{classOk} types the methods of a top-level class with \Q@this@ of type $\gen{C}{\mathrm{dom}(\Delta)}$.
+A method that a class overrides must keep the signature it has in every superclass, up to the names of its own type variables:
 rule \textsc{call} reads the signature from the class chosen by subsumption, while the reduction runs the method of the class of the receiver.
 The last case of $\mathsf{overrideOk}(T,M)$ compares a method of a local class with the method of the same name in the declaration of the local class, in the same way.
 
@@ -625,13 +632,13 @@ The last case of $\mathsf{overrideOk}(T,M)$ compares a method of a local class w
 {\small
     \begin{mathpar}
 \fbox{\kind{\Delta}{T}}\\
-\inferrule[wf-var]{
+\inferrule[kindVar]{
   \ext{X}{\_}\in\Delta
 }{
   \kind{\Delta}{X}
 }
 \and
-\inferrule[wf-class]{
+\inferrule[kindClass]{
   \mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}_0\\
   \kind{\Delta}{\pl{T}}\\\\
   \subtype{\Delta}{\pl{T}_0}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}_0}}
@@ -640,23 +647,23 @@ The last case of $\mathsf{overrideOk}(T,M)$ compares a method of a local class w
 }
 \\
 \fbox{\subtype{\Delta}{T}{T'}}\\
-\inferrule[sub-refl]{ }{\subtype{\Delta}{T}{T}}
+\inferrule[subRefl]{ }{\subtype{\Delta}{T}{T}}
 \and
-\inferrule[sub-inherit]{
+\inferrule[subInherit]{
   \declared{\subclass{C}{\Delta_0}{C'}{\pl{T}}{\_}{\_}}\\\\
   \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}}}{\Delta_0}{\pl{T}_0}}{T'}
 }{
   \subtype{\Delta}{\gen{C}{\pl{T}_0}}{T'}
 }
 \and
-\inferrule[sub-inherit-local]{
+\inferrule[subInheritLocal]{
   \declared{\innerobj{C}{\pl{F}}{C'}{\pl{T}'}{\_}{\_}}\\\\
   \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}'}}{\pl{F}}{\pl{T}}}{T'}
 }{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{T'}
 }
 \and
-\inferrule[sub-var]{
+\inferrule[subVar]{
   \ext{X}{T}\in\Delta\\
   \subtype{\Delta}{T}{T'}
 }{
@@ -665,7 +672,7 @@ The last case of $\mathsf{overrideOk}(T,M)$ compares a method of a local class w
     \end{mathpar}
 \par}
 
-Rule \textsc{wf-class} kinds both top-level and local classes, including a local class written in a method of another local class.
+Rule \textsc{kindClass} kinds both top-level and local classes, including a local class written in a method of another local class.
 Every type in $\pl{T}_0$ is checked against the bound of its type variable in $\Delta_0$.
 A funnelled type variable of $C$ that is not in the bounds $\Delta,\Delta'$ of the definition of $\mathsf{scope}$ leaves $\mathsf{scope}(\gen{C}{\pl{T}})$ undefined; thus no type $\gen{C}{\pl{T}}$ is well kinded.
 
@@ -681,10 +688,10 @@ A funnelled type variable of $C$ that is not in the bounds $\Delta,\Delta'$ of t
   \twolines{\s{e}\fstop\OS\s{T'}\CS\OA\s{\pl{T}''}\CA}{m\OR\s{\pl{e}'}\CR}\\[3ex]
 \s{e\fstop f} & = & \s{e}\fstop f\\[1ex]
 \s{\obj{C}{\pl{T}'}{\pl{e}}} & = & \obj{C}{\s{\pl{T}'}}{\s{\pl{e}}}\\[1ex]
-\twolines{\kw{if}\gap\OR e_0\gap\kw{instanceof}\gap T'\gap x\CR}{\OC\gap e_1\gap\CC\gap\kw{else}\gap\OC\gap e_2\gap\CC\gap\s{}} & = &
-  \twolines{\kw{if}\gap\OR\s{e_0}\gap\kw{instanceof}\gap\s{T'}\gap x\CR}{\OC\gap\s{e_1}\gap\CC\gap\kw{else}\gap\OC\gap\s{e_2}\gap\CC}\\[3ex]
 \twolines{\kw{new}\gap\gen{C}{\pl{F}}\gap\kw{extends}\gap\gen{C'}{\pl{T}'}}{\OR\pl{e}\CR\OC\pl{M}\CC\gap\s{}} & = &
   \twolines{\kw{new}\gap\gen{C}{\s{\pl{F}}}\gap\kw{extends}\gap\gen{C'}{\s{\pl{T}'}}}{\OR\s{\pl{e}}\CR\OC\s{\pl{M}}\CC}\\[3ex]
+\twolines{\kw{if}\gap\OR e_0\gap\kw{instanceof}\gap T'\gap x\CR}{\OC\gap e_1\gap\CC\gap\kw{else}\gap\OC\gap e_2\gap\CC\gap\s{}} & = &
+  \twolines{\kw{if}\gap\OR\s{e_0}\gap\kw{instanceof}\gap\s{T'}\gap x\CR}{\OC\gap\s{e_1}\gap\CC\gap\kw{else}\gap\OC\gap\s{e_2}\gap\CC}\\[3ex]
 \s{\funnel{X'}} & = & \funnel{X'} \quad\textrm{if }X'\not\in\pl{X}\\
 \tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n} & = & T_i\\
 \s{G} & = & G\\[1ex]
@@ -701,11 +708,11 @@ A funnelled type variable of $C$ that is not in the bounds $\Delta,\Delta'$ of t
 Substitution replaces every occurrence of a type variable, \emph{including} the ones in the method signatures of a local class.
 Substitution does not rename the type variables it meets.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
+Since the substituted types are ground, $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground type $G$, and the result is again a funnel.
 Substitution of type variables is defined only when the type variables of the methods it enters are not in its domain.
 In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables:
 $\tsubst{T}{F_1,\ldots,F_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $i\in 1..n$, where $F_i=\funnel{X_i}$.
 No funnel $F_i$ is of the form $G$: the funnels in the domain of a substitution are the funnels of a declared local class, and by A11 every funnel in \decls is of the form $\funnel{X}$.
-Since the substituted types are ground, $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground type $G$, and the result is again a funnel.
 
 \subsection{Substitution of Variables}
 \label{sec:termsubstitution}
@@ -719,12 +726,12 @@ Since the substituted types are ground, $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T
 \s{\explicitcall{e}{T}{\pl{T}}{m}{\pl{e}'}} & = & \explicitcall{\s{e}}{T}{\pl{T}}{m}{\s{\pl{e}'}}\\[1ex]
 \s{e\fstop f} & = & \s{e}\fstop f\\[1ex]
 \s{\obj{C}{\pl{T}}{\pl{e}}} & = & \obj{C}{\pl{T}}{\s{\pl{e}}}\\[1ex]
-\twolines{\kw{if}\gap\OR e_0\gap\kw{instanceof}\gap T\gap x'\CR}{\OC\gap e_1\gap\CC\gap\kw{else}\gap\OC\gap e_2\gap\CC\gap\s{}} & = &
-  \twolines{\kw{if}\gap\OR\s{e_0}\gap\kw{instanceof}\gap T\gap x'\CR}{\OC\gap\s{e_1}\gap\CC\gap\kw{else}\gap\OC\gap\s{e_2}\gap\CC}\\
-  && \quad\textrm{if }x'\not\in\pl{x}\\[3ex]
 \twolines{\kw{new}\gap\gen{C}{\pl{F}}\gap\kw{extends}\gap\gen{C'}{\pl{T}}}{\OR\pl{e}\CR\OC\pl{M}\CC\gap\s{}} & = &
   \twolines{\kw{new}\gap\gen{C}{\pl{F}}\gap\kw{extends}\gap\gen{C'}{\pl{T}}}{\OR\s{\pl{e}}\CR\OC\tsubst{\pl{M}}{\pl{x}'}{\pl{v}'}\CC}\\
   && \quad\textrm{where }\tsubst{}{\pl{x}'}{\pl{v}'}\textrm{ is }\tsubst{}{\pl{x}}{\pl{v}}\textrm{ without the pair of }\this\\[3ex]
+\twolines{\kw{if}\gap\OR e_0\gap\kw{instanceof}\gap T\gap x'\CR}{\OC\gap e_1\gap\CC\gap\kw{else}\gap\OC\gap e_2\gap\CC\gap\s{}} & = &
+  \twolines{\kw{if}\gap\OR\s{e_0}\gap\kw{instanceof}\gap T\gap x'\CR}{\OC\gap\s{e_1}\gap\CC\gap\kw{else}\gap\OC\gap\s{e_2}\gap\CC}\\
+  && \quad\textrm{if }x'\not\in\pl{x}\\[3ex]
 \twolines{\methodsig{\Delta}{T_0}{m}{T_1\gap x'_1,\ldots,T_k\gap x'_k}}{\OC\gap\ret{e}\gap\CC\gap\s{}} & = &
   \twolines{\methodsig{\Delta}{T_0}{m}{T_1\gap x'_1,\ldots,T_k\gap x'_k}}{\OC\gap\ret{\s{e}}\gap\CC}\\
   && \quad\textrm{if }x'_1,\ldots,x'_k\not\in\pl{x}
@@ -737,19 +744,19 @@ Substitution of variables is defined only when the variable $x'$ of a type test 
 
 \subsection{Java Typing of Local Classes}
 \label{sec:java}
-Rule \textsc{new-local-java} types local classes as Java does.
+Rule \textsc{newLocalJava} types local classes as Java does.
 A local class has no funnels, and its methods are typed under the full $\Delta$ and $\Gamma$ in scope, except for \Q@this@.
-Replacing rule \textsc{new-local} with rule \textsc{new-local-java} makes our system unsound for the same reason Java is unsound.
+Replacing rule \textsc{newLocal} with rule \textsc{newLocalJava} makes our system unsound for the same reason Java is unsound.
 Consider the method \Q@m@ of Example~1 in our syntax:
 \begin{lstlisting}
 <X> Foo<X> m(Object<> other, X x){ return
   if (other instanceof MyFoo<> w){ w }
   else { new MyFoo<> extends Foo<X>(){ X x(){ return x; } } }; }
 \end{lstlisting}
-Rule \textsc{new-local-java} gives the type \Q@MyFoo<>@ to the object created by \Q@m@.
-Rule \textsc{sub-inherit-local} reads the declaration of \Q@MyFoo@, so \Q@MyFoo<>@ is a subtype of \Q@Foo<X>@, where \Q@X@ is the type variable of \Q@m@.
+Rule \textsc{newLocalJava} gives the type \Q@MyFoo<>@ to the object created by \Q@m@.
+Rule \textsc{subInheritLocal} reads the declaration of \Q@MyFoo@, so \Q@MyFoo<>@ is a subtype of \Q@Foo<X>@, where \Q@X@ is the type variable of \Q@m@.
 The type \Q@MyFoo<>@ does not say which type \Q@X@ stood for when the object was created.
-Since $\generic{\QQ{MyFoo}}=\QQ{MyFoo<>}$ has no type variables, rule \textsc{cast-down} accepts the type test \Q@other instanceof MyFoo<>@ from \Q@Object<>@.
+Since $\generic{\QQ{MyFoo}}=\QQ{MyFoo<>}$ has no type variables, rule \textsc{castDown} accepts the type test \Q@other instanceof MyFoo<>@ from \Q@Object<>@.
 Thus the call \Q@new Broken<>().<String>m(new Broken<>().<Integer>m(o, i), s)@ has type \Q@Foo<String>@, but it returns a \Q@Foo<Integer>@.
 This is the unsoundness of Java.
 This unsoundness is there even if we keep the restriction of Java that the name of a local class can only be written inside the method declaring it, as \Q@m@ does.
@@ -765,7 +772,7 @@ new MyFoo<> extends Foo<Integer>(){ Integer x(){ return i; } }
 \end{lstlisting}
 The type of this value is \Q@MyFoo<>@, and \Q@MyFoo<>@ is not a subtype of \Q@Foo<Integer>@.
 The supertypes of \Q@MyFoo<>@ come from the declaration of \Q@MyFoo@ in \Q@m@, not from the value:
-rule \textsc{sub-inherit-local} derives $\subtype{\emptyset}{\QQ{MyFoo<>}}{\QQ{Foo<X>}}$, where \Q@X@ is the type variable of \Q@m@.
+rule \textsc{subInheritLocal} derives $\subtype{\emptyset}{\QQ{MyFoo<>}}{\QQ{Foo<X>}}$, where \Q@X@ is the type variable of \Q@m@.
 Subtyping does not check kinding, so this judgement holds in the empty bounds $\emptyset$, where \Q@X@ is not in scope.
 However, \Q@Foo<X>@ is not well kinded under $\emptyset$, so rule \textsc{subs} cannot give the value the type \Q@Foo<X>@ either.
 Java has no typing of values during reduction, so in Java this failure is invisible.
@@ -786,7 +793,7 @@ new Broken<>().<String>leak(new Broken<>().<Integer>mk2(i))
 has type \Q@Foo<String>@, but it returns a \Q@Foo<Integer>@, without type tests.
 \end{itemize}
 Funnelling solves the problem in all three forms.
-Under rule \textsc{new-local}, the object created by \Q@m@ has type \Q@MyFoo<X>@, written \Q@new MyFoo<X funnel> extends Foo<X>(){..}@.
-Since $\generic{\QQ{MyFoo}}=\QQ{MyFoo<X>}$, rule \textsc{cast-down} accepts the type test \Q@instanceof MyFoo<X>@ from \Q@Foo<X>@, but not from \Q@Object<>@.
+Under rule \textsc{newLocal}, the object created by \Q@m@ has type \Q@MyFoo<X>@, written \Q@new MyFoo<X funnel> extends Foo<X>(){..}@.
+Since $\generic{\QQ{MyFoo}}=\QQ{MyFoo<X>}$, rule \textsc{castDown} accepts the type test \Q@instanceof MyFoo<X>@ from \Q@Foo<X>@, but not from \Q@Object<>@.
 Thus the funnelled \Q@m@ takes \Q@Foo<X> other@ instead of \Q@Object<> other@, and tests \Q@other instanceof MyFoo<X> w@.
 With \Q@o@ of type \Q@Foo<Integer>@, the call \Q@new Broken<>().<Integer>m(o, i)@ reduces to a value of type \Q@MyFoo<Integer>@, a subtype of \Q@Foo<Integer>@.

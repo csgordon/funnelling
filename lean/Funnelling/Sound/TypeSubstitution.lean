@@ -403,10 +403,10 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
       (Sub.subst hd hg.substCtx.sub hs)
   | _, _, _, _, .var hl, _, _, _, _, _, _, _, _, _, _ => Typing.var (TypeEnv.lookup_gsubG hl)
   | _, _, _, _, .newObject, _, _, _, _, _, _, _, _, _, _ => Typing.newObject
-  | _, _, _, _, .declField h1 h2 h3 h4, s, _, _, hg, hdis, n1, sc, hn, ht, hu => by
+  | _, _, _, _, .field h1 h2 h3 h4, s, _, _, hg, hdis, n1, sc, hn, ht, hu => by
     have ih := Typing.gsub hwf hok hd h1 hg hdis n1 sc hn ht hu
     rw [subst_bind_comp h4 (field_closed hok h2 h3)]
-    exact Typing.declField ih h2 h3 (by rw [substList_length, h4])
+    exact Typing.field ih h2 h3 (by rw [substList_length, h4])
   | _, _, _, _, .call (Delta0 := Delta0) (Delta1 := Delta1) (Ts2 := Ts2) (Ts1 := Ts1) h1 h2 h3 h4 h5 h6 h7 h8 h9, s, _, _,
       hg, hdis, n1, sc, hn, ht, hu => by
     simp only [Expr.noShadow, Bool.and_eq_true, Expr.tbinders, listMem_iff, List.mem_append, NoThis, Expr.vbinders,
@@ -422,7 +422,7 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
       (KindSeq.substC hd hg.substCtx h7) ?_ ih2
     have := SubSeq.subst hd hg.substCtx.sub h8
     rwa [substList_bind_comp hlen hcl.2, substList_app] at this
-  | _, _, _, _, .callLbRuntime (D0 := D0) (Ts0 := Ts0) (Delta1 := Delta1) (Ts1 := Ts1) h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11,
+  | _, _, _, _, .superCall (D0 := D0) (Ts0 := Ts0) (Delta1 := Delta1) (Ts1 := Ts1) h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11,
       s, _, _, hg, hdis, n1, sc, hn, ht, hu => by
     have hcl := methodIn_closed hwf hok (Scope.dec (Ts := Ts0) h2) h3
     have ih := TypingSeq.gsub hwf hok hd h11 hg
@@ -435,7 +435,7 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
     rw [substList_bind_comp hlen hcl.1, substList_app] at e6
     have hs1 := Sub.subst hd hg.substCtx.sub h1
     have hk8 := Kind.subst hd hg.substCtx.sub hg.substCtx.kind h8
-    refine Typing.callLbRuntime hs1 h2 h3 (by rw [substList_length, h4]) (by rw [substList_length, h5]) e6 h7 hk8
+    refine Typing.superCall hs1 h2 h3 (by rw [substList_length, h4]) (by rw [substList_length, h5]) e6 h7 hk8
       (KindSeq.substC hd hg.substCtx h9) ?_ ih
     have := SubSeq.subst hd hg.substCtx.sub h10
     rwa [substList_bind_comp hlen hcl.2, substList_app] at this

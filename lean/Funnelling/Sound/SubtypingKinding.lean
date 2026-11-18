@@ -159,20 +159,20 @@ theorem Scope.subst {d : Decls} {s : TSubst} {T : Ty} {Delta0 : Bounds} {Ts0 : L
 theorem Kind.ftv {d : Decls} {Delta : Bounds} {T : Ty} (h : Kind d Delta T) :
     forall X, List.Mem X T.ftv -> List.Mem X (dom Delta) := by
   induction h with
-  | @wfVar X T hm =>
+  | @kindVar X T hm =>
     intro Y hY
     have e : Y = X := by simpa [Ty.ftv] using hY
     subst e
     exact List.mem_map_of_mem (f := Bound.X) hm
-  | @wfClass C Ts Delta0 Ts0 _ _ _ _ ih =>
+  | @kindClass C Ts Delta0 Ts0 _ _ _ _ ih =>
     intro Y hY
     rcases (Ty.mem_ftvList.mp hY) with ⟨T, hT⟩; exact ih T hT.1 Y hT.2
 
 theorem Kind.mono {d : Decls} {Delta Delta' : Bounds} (hs : Sub1 Delta Delta') {T : Ty}
     (h : Kind d Delta T) : Kind d Delta' T := by
   induction h with
-  | wfVar hm => exact Kind.wfVar (hs _ hm)
-  | wfClass h1 _ h3 h4 ih => exact Kind.wfClass h1 ih h3 (seq2_mono h4)
+  | kindVar hm => exact Kind.kindVar (hs _ hm)
+  | kindClass h1 _ h3 h4 ih => exact Kind.kindClass h1 ih h3 (seq2_mono h4)
 where
   seq2_mono {Ts Us : List Ty} (h : SubSeq d Delta Ts Us) : SubSeq d Delta' Ts Us := by
     induction h with
@@ -191,11 +191,11 @@ theorem Kind.subst {d : Decls} (hd : DeclOk d) {Delta Delta' : Bounds} {s : TSub
     (hk : forall b, List.Mem b Delta -> Kind d Delta' ((Ty.var b.X).subst s)) {T : Ty}
     (h : Kind d Delta T) : Kind d Delta' (T.subst s) := by
   induction h with
-  | @wfVar X T hm => exact hk { X := X, T := T } hm
-  | @wfClass C Ts Delta0 Ts0 h1 _ h3 h4 ih =>
+  | @kindVar X T hm => exact hk { X := X, T := T } hm
+  | @kindClass C Ts Delta0 Ts0 h1 _ h3 h4 ih =>
     have hsc := h1.subst (s := s)
     simp only [Ty.subst] at hsc |-
-    refine Kind.wfClass hsc ?_ (by rw [substList_length, h3]) ?_
+    refine Kind.kindClass hsc ?_ (by rw [substList_length, h3]) ?_
     . intro T hT
       rw [substList_eq_map] at hT
       rcases List.mem_map.mp hT with ⟨U, hU⟩; rw [<- hU.2]; exact ih U hU.1
@@ -213,7 +213,7 @@ theorem RenCtx.sub {d : Decls} {Delta Delta' : Bounds} {s : TSubst} (h : RenCtx 
 theorem RenCtx.kind {d : Decls} {Delta Delta' : Bounds} {s : TSubst} (h : RenCtx Delta Delta' s) :
     forall b, List.Mem b Delta -> Kind d Delta' ((Ty.var b.X).subst s) := by
   intro b hb
-  rcases h b hb with ⟨X', hX⟩; rw [hX.1]; exact Kind.wfVar hX.2
+  rcases h b hb with ⟨X', hX⟩; rw [hX.1]; exact Kind.kindVar hX.2
 
 theorem Cast.ren {d : Decls} (hd : DeclOk d) {Delta Delta' : Bounds} {s : TSubst} (hr : RenCtx Delta Delta' s)
     {T0 T : Ty} (h : Cast d Delta T0 T) : Cast d Delta' (T0.subst s) (T.subst s) := by
@@ -247,7 +247,7 @@ theorem SubstCtx.kind {d : Decls} {Delta Delta' : Bounds} {s : TSubst} (h : Subs
   intro b hb
   rcases h b hb with h' | h'
   . cases h' with
-    | intro X' hX => rw [hX.1]; exact Kind.wfVar hX.2
+    | intro X' hX => rw [hX.1]; exact Kind.kindVar hX.2
   . exact h'.2.1
 
 theorem Cast.gsub {d : Decls} (hd : DeclOk d) {Delta Delta' : Bounds} {s : TSubst} (hc : SubstCtx d Delta Delta' s)

@@ -166,7 +166,7 @@ theorem typing {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) (
 
 end Found
 
-theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {D : Dec} {M : Method}
+theorem pres_topFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {D : Dec} {M : Method}
     {m : MethName} {Delta' : Bounds} {T0 : Ty} {ps : List VarDecl} {e0 : Expr} {v0 : Value} {Gs Gs' : List GTy}
     {vs : List Value} {T : Ty} (hD : Declared d (.dec D)) (hM : List.Mem M D.Ms) (hG : Gs.length = D.Delta.length)
     (f : Found M D.Delta Delta' T0 m ps e0 Gs Gs' v0 vs)
@@ -233,7 +233,7 @@ theorem pres_simpleFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : D
   . rw [<- h5, f.sig hG hUt h3 h4 hcl0.2]; exact hw.subs
   . simp only [Ty.subst]; rw [hv1.1]; exact hw.args
 
-theorem pres_innerFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {C C' : ClassName}
+theorem pres_localFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {C C' : ClassName}
     {Ms : List Method} {M : Method} {m : MethName} {Delta' : Bounds} {T0 : Ty} {ps : List VarDecl} {e0 : Expr}
     {v0 : Value} {Gs Gs'' Gs' : List GTy} {vs0 vs : List Value} {T : Ty} (hv : v0 = Value.newLocal C Gs C' Gs'' vs0 Ms)
     (hM : List.Mem M Ms) (f : Found M [] Delta' T0 m ps e0 [] Gs' v0 vs)
