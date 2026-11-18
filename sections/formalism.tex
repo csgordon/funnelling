@@ -135,16 +135,12 @@ e'\textrm{ occurs in }e\textrm{ iff }e=\mathcal{C}[e']\\
 \quad\phantom{\textrm{where }}\method{\_}{\_}{m}{\_}{\ret{e}}\in K\\
 \quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\textrm{ occurs in }e
 \end{Define}
-\begin{Define}{M\in K\qquad M\in C\qquad\generic{C}=T\qquad|F|=T}
+\begin{Define}{M\in K\qquad M\in C\qquad|F|=T}
 M\in K\textrm{ iff }M\in\pl{M}\\
 \quad\textrm{where }K\in\{\subclass{\_}{\_}{\_}{\_}{\pl{M}}{\_},\innerobj{\_}{\_}{\_}{\_}{\_}{\pl{M}}\}\\
 M\in C\textrm{ iff }M\in K\\
 \quad\textrm{where }\declared{K}\\
 \quad\phantom{\textrm{where }}K\in\{\subclass{C}{\_}{\_}{\_}{\_}{\_},\innerobj{C}{\_}{\_}{\_}{\_}{\_}\}\\[1ex]
-\generic{C} = \gen{C}{\mathrm{dom}(\Delta)}\\
-\quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}\\
-\generic{C} = \gen{C}{\mathrm{dom}(\pl{F})}\\
-\quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}\\[1ex]
 |\funnel{X}| = X\\
 |G| = G
 \end{Define}
@@ -168,8 +164,7 @@ $M\in K$ holds when $M$ is a method of the class declaration $K$, top-level or l
 $M\in C$ holds when $M$ is a method of the declared class $C$, top-level or local.
 For a top-level class $C$ with bounds $\Delta$, $\mathsf{scope}(C)=\Delta$; with the type arguments $\pl{T}$ of a type $\gen{C}{\pl{T}}$, this recovers (effectively) a type substitution which can be used with methods of the class.
 For a local class $C_0$ with funnels $\pl{F}$, $\mathsf{scope}(C_0)=\Delta_0$, where $\Delta_0$ holds, in the order of $\mathrm{dom}(\pl{F})$, the bound $\ext{X}{T}$ in $\Delta,\Delta'$ of each $X\in\mathrm{dom}(\pl{F})$, where $\Delta'$ are the bounds of the method $m$ declaring $C_0$ and $\mathsf{scope}(C)=\Delta$ for the class $C$ of $m$. Note that $m$ could be a method of either a top-level or local class.
-The usage points of $\mathsf{scope}$ use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length;
-in the same way, $\tsubst{T}{\pl{F}}{\pl{T}}$ is defined only when $\pl{F}$ and $\pl{T}$ have the same length, and $\pl{F}$ contains no ground type.
+The usage points of $\mathsf{scope}$ use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length.
 A simultaneous substitution, of types or of values, is defined only when the names in its domain are distinct.
 \\[1ex]
 For a type variable $X$, $\Delta(X)$ is the bound of $X$ in $\Delta$.
@@ -415,7 +410,7 @@ A substitution can place a value at several positions, so several occurrences of
 \and
 \inferrule[superCall]{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C_0}{\pl{T}_0}}\\
-  \declared{\subclass{C_0}{\Delta_0}{\_}{\_}{\_}{\_}}\\
+  \mathsf{scope}(C_0)=\Delta_0\\
   \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in C_0\\
   \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\
   \declared{\subclass{C}{\_}{\_}{\_}{\_}{\_}}\\
@@ -502,9 +497,9 @@ A substitution can place a value at several positions, so several occurrences of
 \and
 \inferrule[castDown]{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C'}{\pl{T}_0}}\\
-  \generic{C}=\gen{C}{\pl{X}}\\\\
-  \subtype{\emptyset}{\gen{C}{\pl{X}}}{\gen{C'}{\pl{T}'}}\\
-  \pl{X}\subseteq\ftv{\pl{T}'}
+  \mathsf{scope}(C)=\Delta_0\\\\
+  \subtype{\emptyset}{\gen{C}{\mathrm{dom}(\Delta_0)}}{\gen{C'}{\pl{T}'}}\\
+  \mathrm{dom}(\Delta_0)\subseteq\ftv{\pl{T}'}
 }{
   \cast{\Delta}{\gen{C'}{\pl{T}_0}}{\gen{C}{\pl{T}}}
 }
@@ -545,7 +540,8 @@ The relation $K\gap\mathsf{consistent}$ ensures that copies in the second case a
 \begin{Define}{K\gap\mathsf{consistent}}
 \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
 \quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C'}{\pl{T}'}{\_}{\pl{M}'}}\\
-\quad\phantom{\textrm{where }}\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\
+\quad\phantom{\textrm{where }}\mathsf{scope}(C)=\Delta_0\\
+\quad\phantom{\textrm{where }}\pl{T}=\tsubst{\pl{T}'}{\Delta_0}{|\pl{F}|}\\
 \quad\phantom{\textrm{where }}\mathrm{names}(\pl{M}')=\mathrm{names}(\pl{M})\\
 \quad\phantom{\textrm{where }}\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})
 \end{Define}
@@ -553,7 +549,7 @@ $K\gap\mathsf{consistent}$ trivially holds for case (1). For case (2), the first
 The supertype and the method signatures of $K$ must be those of the declaration, with the funnelled type variables of $\pl{F}'$ replaced by $|\pl{F}|$, up to the names of the type variables of each method.
 $K$ and the declaration have the same method names.
 The bodies of the methods of $K$ are not required to be those of the declaration: the main expression can hold a local class whose method bodies differ from the declaration, and rule \textsc{newLocal} types those method bodies.
-Rules \textsc{call}, \textsc{subInheritLocal}, \textsc{kindClass} and \textsc{castDown}, the relation $\mathsf{consistent}$ and the last case of $\mathsf{overrideOk}(T,M)$ read the declaration, while the reduction runs the methods of the copy.
+Rules \textsc{call}, \textsc{subInheritLocal}, \textsc{kindClass} and \textsc{castDown}, the relation $\mathsf{consistent}$ and $\mathsf{overrideOk}(T,M)$ read the declaration, while the reduction runs the methods of the copy.
 
 Rule \textsc{ifInstanceof} accepts the type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ only when $\cast{\Delta}{T_0}{T}$, where $T_0$ is a type of $e_0$.
 The relation $\cast{\Delta}{T}{T'}$ is the \emph{checked cast}: a type test against $T'$ on a value of static type $T$ is decided by the class of the value alone.
@@ -561,9 +557,9 @@ Rule \textsc{castUp} accepts a target $T'$ that is a supertype of the source $T$
 Rule \textsc{castVar} replaces a source type variable $X$ with the bound of $X$.
 Rule \textsc{castDown} accepts a target $\gen{C}{\pl{T}}$ that is a subtype of the source $\gen{C'}{\pl{T}_0}$, \emph{when the source determines the type arguments} $\pl{T}$.\footnote{This is the condition under which a Java cast to a parameterized type is checked~\cite[Section~5.1.6.2]{jls}~\cite{bracha1998making}.
 When the source does not determine the type arguments, Java rejects the type test \Q@e instanceof C<Ts>@, but accepts the cast \Q@(C<Ts>)e@ with an unchecked warning: at run time, that cast checks only the class \Q@C@.\looseness=-1}
-$\generic{C}=\gen{C}{\pl{X}}$ is the class $C$ instantiated with its own type variables $\pl{X}$, and $\gen{C'}{\pl{T}'}$ is the supertype of $\gen{C}{\pl{X}}$ with class $C'$.
-The premise $\subtype{\emptyset}{\gen{C}{\pl{X}}}{\gen{C'}{\pl{T}'}}$ of rule \textsc{castDown} uses the bounds $\emptyset$: a subtyping derivation between class types uses only rules \textsc{subRefl}, \textsc{subInherit} and \textsc{subInheritLocal}, which do not read $\Delta$.
-Every type variable of $\pl{X}$ occurs in $\pl{T}'$, thus the type arguments $\pl{T}_0$ of the source fix the type arguments $\pl{T}$ of the target.
+$\gen{C}{\mathrm{dom}(\Delta_0)}$ is the class $C$ instantiated with its own type variables, and $\gen{C'}{\pl{T}'}$ is the supertype of $\gen{C}{\mathrm{dom}(\Delta_0)}$ with class $C'$.
+The premise $\subtype{\emptyset}{\gen{C}{\mathrm{dom}(\Delta_0)}}{\gen{C'}{\pl{T}'}}$ of rule \textsc{castDown} uses the bounds $\emptyset$: a subtyping derivation between class types uses only rules \textsc{subRefl}, \textsc{subInherit} and \textsc{subInheritLocal}, which do not read $\Delta$.
+Every type variable of $\mathrm{dom}(\Delta_0)$ occurs in $\pl{T}'$, thus the type arguments $\pl{T}_0$ of the source fix the type arguments $\pl{T}$ of the target.
 Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is $C$ or a subclass of $C$ has type $\gen{C}{\pl{T}}$, and rule \textsc{ifThen} compares only class names.
 
 \textsc{ifInstance} and \textsc{newLocal} work together to ensure type soundness: local classes are required to track dependencies on type parameters, and down-casts are consistency-checked to ensure that checking the class name only is sufficient to determine the generic instantiation.
@@ -633,8 +629,9 @@ Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is $C$ or a subclass of $C
 }
 \and
 \inferrule[subInheritLocal]{
-  \declared{\innerobj{C}{\pl{F}}{C'}{\pl{T}'}{\_}{\_}}\\\\
-  \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}'}}{\pl{F}}{\pl{T}}}{T'}
+  \declared{\innerobj{C}{\_}{C'}{\pl{T}'}{\_}{\_}}\\
+  \mathsf{scope}(C)=\Delta_0\\\\
+  \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}'}}{\Delta_0}{\pl{T}}}{T'}
 }{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{T'}
 }
@@ -659,15 +656,10 @@ Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is $C$ or a subclass of $C
 \quad\textrm{where }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\
 \quad\phantom{\textrm{where }}m\not\in\pl{M}\\[1ex]
 \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_n\gap x_n}{\_})\\
-\quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\
-\quad\phantom{\textrm{where }}\method{\Delta''}{T_0}{m}{T_1\gap x'_1,\ldots,T_n\gap x'_n}{\_}\in\pl{M}\\
+\quad\textrm{where }\method{\Delta''}{T_0}{m}{T_1\gap x'_1,\ldots,T_n\gap x'_n}{\_}\in C\\
+\quad\phantom{\textrm{where }}\mathsf{scope}(C)=\Delta\\
 \quad\phantom{\textrm{where }}\tsubst{\mathrm{cod}(\Delta'')}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\
-\quad\phantom{\textrm{where }}\tsubst{T_0,\ldots,T_n}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n\\[1ex]
-\mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_n\gap x_n}{\_})\\
-\quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\pl{M}}}\\
-\quad\phantom{\textrm{where }}\method{\Delta''}{T_0}{m}{T_1\gap x'_1,\ldots,T_n\gap x'_n}{\_}\in\pl{M}\\
-\quad\phantom{\textrm{where }}\tsubst{\mathrm{cod}(\Delta'')}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\
-\quad\phantom{\textrm{where }}\tsubst{T_0,\ldots,T_n}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n
+\quad\phantom{\textrm{where }}\tsubst{T_0,\ldots,T_n}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n
 \end{Define}
 \par}
 
@@ -675,7 +667,7 @@ Figure \ref{fig:progtyping} shows (as the first three judgment forms) typing of 
 Rule \textsc{classOk} types the methods of a top-level class with \Q@this@ of type $\gen{C}{\mathrm{dom}(\Delta)}$.
 A method that a class overrides must keep the signature it has in every superclass, up to the names of its own type variables:
 rule \textsc{call} reads the signature from the class chosen by subsumption, while the reduction runs the method of the class of the receiver.
-The last case of $\mathsf{overrideOk}(T,M)$ compares a method of a local class with the method of the same name in the declaration of the local class, in the same way.
+For a local class $C$, $\mathsf{overrideOk}(\gen{C}{\pl{T}},M)$ compares a method of a local class with the method of the same name in the declaration of the local class, in the same way.
 
 \subsection{Kinding and Subtyping}
 \label{sec:kinding}
@@ -724,9 +716,7 @@ Substitution does not rename the type variables it meets.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
 Since the substituted types are ground, $\tsubst{\funnel{X_i}}{X_1,\ldots,X_n}{T_1,\ldots,T_n}=T_i$ is a ground type $G$, and the result is again a funnel.
 Substitution of type variables is defined only when the type variables of the methods it enters are not in its domain.
-In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables:
-$\tsubst{T}{F_1,\ldots,F_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $i\in 1..n$, where $F_i=\funnel{X_i}$.
-No funnel $F_i$ is of the form $G$: the funnels in the domain of a substitution are the funnels of a declared local class, and by A11 every funnel in \decls is of the form $\funnel{X}$.
+In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$.
 
 \subsection{Substitution of Variables}
 \label{sec:termsubstitution}
@@ -774,7 +764,7 @@ Consider the method \Q@m@ of Example~1 in our syntax:
 Rule \textsc{newLocalJava} gives the type \Q@MyFoo<>@ to the object created by \Q@m@.
 Rule \textsc{subInheritLocal} reads the declaration of \Q@MyFoo@, so \Q@MyFoo<>@ is a subtype of \Q@Foo<X>@, where \Q@X@ is the type variable of \Q@m@.
 The type \Q@MyFoo<>@ does not say which type \Q@X@ stood for when the object was created.
-Since $\generic{\QQ{MyFoo}}=\QQ{MyFoo<>}$ has no type variables, rule \textsc{castDown} accepts the type test \Q@other instanceof MyFoo<>@ from \Q@Object<>@.
+Since $\mathsf{scope}(\QQ{MyFoo})$ is empty, \Q@MyFoo@ has no type variables, and rule \textsc{castDown} accepts the type test \Q@other instanceof MyFoo<>@ from \Q@Object<>@.
 Thus the call \Q@new Broken<>().<String>m(new Broken<>().<Integer>m(o, i), s)@ has type \Q@Foo<String>@, but it returns a \Q@Foo<Integer>@.
 This is the unsoundness of Java.
 This unsoundness is there even if we keep the restriction of Java that the name of a local class can only be written inside the method declaring it, as \Q@m@ does.
@@ -812,6 +802,6 @@ has type \Q@Foo<String>@, but it returns a \Q@Foo<Integer>@, without type tests.
 \end{itemize}
 Funnelling solves the problem in all three forms.
 Under rule \textsc{newLocal}, the object created by \Q@m@ has type \Q@MyFoo<X>@, written \Q@new MyFoo<X funnel> extends Foo<X>(){..}@.
-Since $\generic{\QQ{MyFoo}}=\QQ{MyFoo<X>}$, rule \textsc{castDown} accepts the type test \Q@instanceof MyFoo<X>@ from \Q@Foo<X>@, but not from \Q@Object<>@.
+Since $\mathsf{scope}(\QQ{MyFoo})$ holds the bound of \Q@X@, rule \textsc{castDown} accepts the type test \Q@instanceof MyFoo<X>@ from \Q@Foo<X>@, but not from \Q@Object<>@.
 Thus the funnelled \Q@m@ takes \Q@Foo<X> other@ instead of \Q@Object<> other@, and tests \Q@other instanceof MyFoo<X> w@.
 With \Q@o@ of type \Q@Foo<Integer>@, the call \Q@new Broken<>().<Integer>m(o, i)@ reduces to a value of type \Q@MyFoo<Integer>@, a subtype of \Q@Foo<Integer>@.
