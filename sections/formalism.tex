@@ -67,7 +67,6 @@ An object creation $\obj{C}{\pl{T}}{\pl{e}}$ creates an instance of the top-leve
 The first arguments of $\pl{e}$ initialize the fields of $C$; the other arguments are the arguments of the object creation of the superclass of $C$.
 A local class $\innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}$ declares the local class $C$ and creates an instance of $C$.
 The type test $\ifthen{e_0}{T}{x}{e_1}{e_2}$ reduces to $e_1$, with $x$ bound to the value of $e_0$, when the class of the value of $e_0$ is the class of $T$ or a subclass of the class of $T$; otherwise the type test reduces to $e_2$.
-\end{sloppypar}
 
 A type is a class type $\gen{C}{\pl{T}}$ or a type variable $X$.
 A ground type $G$ is a type with no type variables.
