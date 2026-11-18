@@ -104,12 +104,11 @@ The bytecode of \Q@m@ (same for every version of Line~\ref{line:ex2last}) applie
 In Example~2, the lambda class throws before that \Q@checkcast@ instruction is reached.
 With \Q@Function.identity()@, that \Q@checkcast@ instruction is reached, and the failure is detected in \Q@m@.
 
-\begin{lstlisting}
-    Broken.<String>m(r1,"Hi",Broken.<String>str());
-\end{lstlisting}
-Here \Q@str@ is one more method of \Q@Broken@:
+The last version of Line~\ref{line:ex2last} relies on one more method of \Q@Broken@, the method \Q@str@:
 \begin{lstlisting}
   static <T> Function<T,String> str(){ return t->""+t; }
+  ...
+    Broken.<String>m(r1,"Hi",Broken.<String>str());
 \end{lstlisting}
 As for \Q@t->t@, the lambda class of \Q@t->""+t@ does not cast its argument.
 The result of \Q@f.apply@ is the \Q@String@ \Q@"5"@, so the \Q@checkcast@ instruction in \Q@m@ succeeds.
@@ -120,25 +119,21 @@ Thus the same fault of \Q@m@ is detected in the lambda class, in the anonymous c
 
 \subsection{Counterexample 3: Class Generics}
 Counterexample~3 moves Example~2 into a generic class:
-\Q@X@ is a generic parameter of the class \Q@Box@ instead of a generic parameter of the method \Q@m@.
+\Q@X@ is a generic parameter of the class \Q@NotBroken@ instead of a generic parameter of the method \Q@m@.
 
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
 // Counterexample 3
-class Box<X> {
-  final X x;
-  Box(X x){ this.x= x; }
-  Object m(Object other, Function<X,String> f){
+public class NotBroken<X> {
+  Object m(Object other, final X x, Function<X,String> f){
     class MyFoo{ public X x(){ return x; } }
-    if(other instanceof MyFoo local){ // error: Object cannot be safely cast to MyFoo (*\label{line:cextest}*)
+    if(other instanceof MyFoo local){ // error (*\label{line:cextest}*)
       System.out.println("old was "+f.apply(local.x()));
     }
     return new MyFoo();
   }
-}
-public class Broken {
-  public static void main(String[] a){
-    Object r1= new Box<Integer>(5).m("anything",i->""+i);
-    new Box<String>("Hi").m(r1,s->s);
+  public static void main(String[] a) {
+    Object r1= new NotBroken<Integer>().m("anything",5,i->""+i);
+    new NotBroken<String>().m(r1,"Hi",s->s);
   }
 }
 \end{lstlisting}
@@ -146,17 +141,17 @@ public class Broken {
 Counterexample~3 marks the boundary of the family: with class generics, \javac does flag the fault.
 \javac rejects Counterexample~3 at Line~\ref{line:cextest}, with the error\\
 \centerline{\mbox{\Q@Object cannot be safely cast to MyFoo@}.}
-The method \Q@m@ is an instance method of \Q@Box<X>@, so \Q@MyFoo@ is an inner class of \Q@Box<X>@, with an enclosing instance of type \Q@Box<X>@.
-\javac types \Q@MyFoo@ as \Q@Box<X>.MyFoo@, as \javac types a member class \Q@MyFoo@ of \Q@Box@.
-So \Q@MyFoo@ is generic in \Q@X@, and \Q@other instanceof MyFoo@ is the uncheckable type test \Q@other instanceof Box<X>.MyFoo@.
+The method \Q@m@ is an instance method of \Q@NotBroken<X>@, so \Q@MyFoo@ is an inner class of \Q@NotBroken<X>@, with an enclosing instance of type \Q@NotBroken<X>@.
+\javac types \Q@MyFoo@ as \Q@NotBroken<X>.MyFoo@, as \javac types a member class \Q@MyFoo@ of \Q@NotBroken@.
+So \Q@MyFoo@ is generic in \Q@X@, and the type test against \Q@MyFoo@ is the uncheckable type test against \Q@NotBroken<X>.MyFoo@.
 
 The cast is flagged as well.
 The following method \Q@m@ replaces the method \Q@m@ of Counterexample~3.
 The type test against \Q@String@ replaces the type test against \Q@MyFoo@, which \javac rejects, and the cast of Example~1 follows that type test.
 
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
-// Counterexample 3 with a cast: the method m of Box
-  Object m(Object other, Function<X,String> f){
+// Counterexample 3 with a cast: the method m of NotBroken
+  Object m(Object other, final X x, Function<X,String> f){
     class MyFoo{ public X x(){ return x; } }
     if(other instanceof String){ return new MyFoo(); }
     MyFoo local= (MyFoo)other; // warning: [unchecked] unchecked cast (*\label{line:cexcast}*)
@@ -201,10 +196,10 @@ This is sound, but it is stricter than needed to avoid the problem at hand.
 \end{enumerate}
 
 For method generics, the Java type system assumes granularity (1), as the casts do, so \javac reports nothing and the program fails at run time.
-If the type of a method-local class contained the enclosing method and its generic instantiation, as in \Q@Box<T1>.m<T2>.MyFoo@,
+If the type of a method-local class contained the enclosing method and its generic instantiation, as in \Q@NotBroken<T1>.m<T2>.MyFoo@,
 then \javac would flag the problem for generic methods too, as it does for generic classes.
 A version of Java with reified generics could solve the mismatch in Counterexample~3, between the granularity (1) of the casts and the granularity (2) of the types.
-But reification would not change Examples~1 and~2, unless the types of method-local classes take the form \Q@Box<T1>.m<T2>.MyFoo@.
+But reification would not change Examples~1 and~2, unless the types of method-local classes take the form \Q@NotBroken<T1>.m<T2>.MyFoo@.
 
 Granularities (1), (2) and (3) are points in a space of design options,
 but other points lie between them.
