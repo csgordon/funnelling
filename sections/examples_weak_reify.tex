@@ -126,7 +126,7 @@ Counterexample~3 moves Example~2 into a generic class:
 public class NotBroken<X> {
   Object m(Object other, final X x, Function<X,String> f){
     class MyFoo{ public X x(){ return x; } }
-    if(other instanceof MyFoo local){ // error (*\label{line:cextest}*)
+    if(other instanceof MyFoo local){ // type error (*\label{line:cextest}*)
       System.out.println("old was "+f.apply(local.x()));
     }
     return new MyFoo();
