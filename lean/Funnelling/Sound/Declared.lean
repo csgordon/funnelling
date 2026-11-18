@@ -278,4 +278,19 @@ theorem abs_funnels {Fs : List Funnel} (h : forall F, List.Mem F Fs -> F.isFunne
       simp only [abs, List.map_cons, Funnel.abs, domF, List.filterMap_cons, vars] at ih' |-
       rw [ih']
 
+theorem Pairing.types_eq {Delta : Bounds} {Fs : List Funnel} {Ts : List Ty} {Delta0 : Bounds} {Ts0 : List Ty}
+    (h : Pairing Delta Fs Ts Delta0 Ts0) (hall : forall F, List.Mem F Fs -> F.isFunnel = true) : Ts0 = Ts := by
+  induction h with
+  | nil => rfl
+  | funnel _ _ ih => rw [ih (fun F hF => hall F (List.Mem.tail _ hF))]
+  | ground _ _ => have := hall _ (List.Mem.head _); simp [Funnel.isFunnel] at this
+
+theorem Scope.types_eq {d : Decls} (hwf : WFDecls d) {C : ClassName} {Ts Ts0 : List Ty} {Delta0 : Bounds}
+    (h : Scope d (.cls C Ts) Delta0 Ts0) : Ts0 = Ts := by
+  rcases h.loc_declared with h' | h'
+  . rcases h' with ⟨D, h'⟩
+    exact h'.2.2.2
+  . rcases h' with ⟨Fs, C', Ts', es, Ms, Delta, h'⟩
+    exact h'.2.types_eq (fun F hF => hwf.2.2.2.2.2.2.2.2.2.2 _ h'.1.mem F hF)
+
 end Funnelling

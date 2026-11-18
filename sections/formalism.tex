@@ -169,8 +169,7 @@ By well-formedness requirement A1, a class name $C$ identifies at most one $K$ w
 $M\in K$ holds when $M$ is a method of the class declaration $K$, top-level or local.
 $M\in C$ holds when $M$ is a method of the declared class $C$, top-level or local.
 For a top-level class $C$ with bounds $\Delta$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$, recovering (effectively) a type substitution which can be used with methods of the class.
-For a local class $C_0$ with funnels $\pl{F}$, $\mathsf{scope}(\gen{C_0}{\pl{T}})=\Delta_0;\pl{T}_0$, where $\Delta_0$ holds, in the order of $\mathrm{dom}(\pl{F})$, the bound $\ext{X}{T}$ in $\Delta,\Delta'$ of each $X\in\mathrm{dom}(\pl{F})$, where $\Delta'$ are the bounds of the method $m$ declaring $C_0$ and $\mathsf{scope}(\generic{C})=\Delta;\_$ for the class $C$ of $m$. Note that $m$ could be a method of either a top-level or local class.
-By A11, every funnel of $\pl{F}$ is of the form $\funnel{X}$, so $\pl{T}_0$ is $\pl{T}$.
+For a local class $C_0$ with funnels $\pl{F}$, $\mathsf{scope}(\gen{C_0}{\pl{T}})=\Delta_0;\pl{T}$, where $\Delta_0$ holds, in the order of $\mathrm{dom}(\pl{F})$, the bound $\ext{X}{T}$ in $\Delta,\Delta'$ of each $X\in\mathrm{dom}(\pl{F})$, where $\Delta'$ are the bounds of the method $m$ declaring $C_0$ and $\mathsf{scope}(\generic{C})=\Delta;\_$ for the class $C$ of $m$. Note that $m$ could be a method of either a top-level or local class.
 For a top-level class, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$ can return $\Delta$ and $\pl{T}$ of different lengths.
 The usage points of $\mathsf{scope}$ use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length;
 in the same way, $\tsubst{T}{\pl{F}}{\pl{T}}$ is defined only when $\pl{F}$ and $\pl{T}$ have the same length, and $\pl{F}$ contains no ground type.
@@ -410,11 +409,11 @@ A substitution can place a value at several positions, so several occurrences of
 \and
 \inferrule[call]{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\
-  \mathsf{scope}(\gen{C_0}{\pl{T}_0})=\Delta_0;\pl{T}_2\\
+  \mathsf{scope}(\gen{C_0}{\pl{T}_0})=\Delta_0;\pl{T}_0\\
   \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in C_0\\
-  \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_2,\pl{T}_1}\\
+  \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\
   \kind{\Delta}{\pl{T}_1}\\
-  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_2,\pl{T}_1}}\\
+  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}\\
   \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T'_1,\ldots,T'_n}
 }{
   \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}}{T'_0}
@@ -622,9 +621,9 @@ Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is $C$ or a subclass of $C
 }
 \and
 \inferrule[kindClass]{
-  \mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}_0\\
+  \mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}\\
   \kind{\Delta}{\pl{T}}\\\\
-  \subtype{\Delta}{\pl{T}_0}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}_0}}
+  \subtype{\Delta}{\pl{T}}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}}}
 }{
   \kind{\Delta}{\gen{C}{\pl{T}}}
 }
@@ -689,7 +688,7 @@ The last case of $\mathsf{overrideOk}(T,M)$ compares a method of a local class w
 
 Figure \ref{fig:progtyping} also gives kinding and subtyping rules.
 Rule \textsc{kindClass} kinds both top-level and local classes, including a local class written in a method of another local class.
-Every type in $\pl{T}_0$ is checked against the bound of its type variable in $\Delta_0$.
+Every type in $\pl{T}$ is checked against the bound of its type variable in $\Delta_0$.
 A funnelled type variable of $C$ that is not in the bounds $\Delta,\Delta'$ of the definition of $\mathsf{scope}$ leaves $\mathsf{scope}(\gen{C}{\pl{T}})$ undefined; thus no type $\gen{C}{\pl{T}}$ is well kinded.
 
 \subsection{Substitution of Type Variables}

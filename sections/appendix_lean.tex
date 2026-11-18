@@ -971,9 +971,9 @@ inductive Sub (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
   \kind{\Delta}{X}
 }$}\\[1ex]
 \fit{$\inferrule{
-  \mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}_0\\
+  \mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}\\
   \kind{\Delta}{\pl{T}}\\\\
-  \subtype{\Delta}{\pl{T}_0}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}_0}}
+  \subtype{\Delta}{\pl{T}}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}}}
 }{
   \kind{\Delta}{\gen{C}{\pl{T}}}
 }$}
@@ -990,7 +990,7 @@ inductive Kind (d : Decls) (Delta : Bounds) : Ty -> Prop
       Kind d Delta (.cls C Ts)
 \end{lstlisting}
 \end{leanside}
-\nomapping
+\mapping{The second result of $\mathsf{scope}$ is \texttt{Ts0}; by A11, \texttt{Ts0} is \texttt{Ts} (\texttt{Scope.types\_eq}).}
 \end{cmp}
 
 \subsubsection{Checked Cast}
@@ -1102,11 +1102,11 @@ inductive Typing (d : Decls) : Bounds -> TypeEnv -> Expr -> Ty -> Prop
 \begin{paperside}
 \fit{$\inferrule{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\\\
-  \mathsf{scope}(\gen{C_0}{\pl{T}_0})=\Delta_0;\pl{T}_2\\\\
+  \mathsf{scope}(\gen{C_0}{\pl{T}_0})=\Delta_0;\pl{T}_0\\\\
   \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in C_0\\\\
-  \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_2,\pl{T}_1}\\\\
+  \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\\\
   \kind{\Delta}{\pl{T}_1}\\\\
-  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_2,\pl{T}_1}}\\\\
+  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}\\\\
   \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T'_1,\ldots,T'_n}
 }{
   \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}}{T'_0}
@@ -1128,7 +1128,7 @@ inductive Typing (d : Decls) : Bounds -> TypeEnv -> Expr -> Ty -> Prop
       Typing d Delta Gamma (.call e0 Ts1 m es) T0'
 \end{lstlisting}
 \end{leanside}
-\mapping{$T'_0,\ldots,T'_n$ is \texttt{T0' :: Ts'}.}
+\mapping{$T'_0,\ldots,T'_n$ is \texttt{T0' :: Ts'}. The second result of $\mathsf{scope}$ is \texttt{Ts2}; by A11, \texttt{Ts2} is \texttt{Ts0} (\texttt{Scope.types\_eq}).}
 \end{cmp}
 
 \begin{cmp}{\textsc{superCall}}
