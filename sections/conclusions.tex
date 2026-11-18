@@ -1,20 +1,19 @@
 \section{Conclusions}
 \label{sec:conclusions}
 Since Java~5, a method-local class can capture a generic parameter of its enclosing method without showing that generic parameter in its type.
-A type test or a cast on such a class then lets an object created under one instantiation of the generic parameter be used under another instantiation.
-Java accepts the program with no warning, and the program fails at run time, possibly far from the method-local class and in code that the programmer did not write.
+A type test or a cast on such a class lets an object created under one instantiation of the generic parameter be used under another instantiation.
+With the right set up, Java gives no warning and the program fails at run time.
 The cause is not the erasure of generics.
-The cause is that the generic parameters in scope reach the method-local class implicitly, so the type of the class does not say what the class depends on.
-Funnelling makes that dependency explicit in the type: the method-local class \Q@MyFoo@ of Example~1 becomes \Q@MyFoo<X>@, and the rules that Java already has for casts to generic types then report the type test as an error and the cast as unchecked.
+The cause is that the generic parameters in scope reach the method-local class implicitly, so the type of the class does not say what it depends on.
+Funnelling (our contribution) makes that dependency explicit in the type: the method-local class \Q@MyFoo@ of Example~1 becomes \Q@MyFoo<X>@, and the rules that Java already has for casts to generic types then report the type test as an error and the cast as unchecked.
 We modelled generics, local classes and type tests in a core language, we showed that the Java typing of local classes is unsound, and we proved in Lean that the core language with funnelling is sound.
 
 Kotlin already adds to the type of a local class every generic parameter in scope.
 Funnelling justifies that choice, and shows that the generic parameters that the local class uses are enough.
 More generally, the unsoundness needs three ingredients together:
-a local declaration with a name;
-a type test or a cast on that name that, at run time, does not distinguish the instantiations of the generic parameters in scope;
-and a type for the declaration that does not show the generic parameters that the declaration captures.
+(A) a local declaration with a name;
+(B) a type test or a cast on that name that does not distinguish the instantiations of the generic parameters in scope;
+and (C) a type for the declaration that does not show the generic parameters that the declaration captures.
 Java and Scala have all three.
 Every language of Section~\ref{sec:impact} that avoids the problem lacks one of the three:
 in Flix and in C\# the class has no name, in OCaml each evaluation of a local exception has its own identity at run time, and in Kotlin the type of a local class shows the generic parameters in scope.
-Funnelling keeps the first two ingredients and removes the third.
