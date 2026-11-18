@@ -97,16 +97,14 @@ theorem slots_closed {d : Decls} (hok : DeclsOk d) {D : Dec} (hD : Declared d (.
   intro X hX
   rcases Ty.mem_ftvList.mp hX with ⟨T, hT⟩; exact Kind.ftv ((hok D hD.dec_mem).2.1 T (List.Mem.tail _ hT.1)) X hT.2
 
-theorem methodIn_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {C0 : ClassName} {Ts0 : List Ty}
-    {Delta0 : Bounds} {Ts2 : List Ty} {Delta1 : Bounds} {T0 : Ty} {m : MethName} {ps : List VarDecl} {e : Expr}
-    (hs : Scope d (.cls C0 Ts0) Delta0 Ts2) (hm : MethodIn d (.mk Delta1 T0 m ps e) C0) :
+theorem methodIn_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {C0 : ClassName}
+    {Delta0 : Bounds} {Delta1 : Bounds} {T0 : Ty} {m : MethName} {ps : List VarDecl} {e : Expr}
+    (hs : Scope d C0 Delta0) (hm : MethodIn d (.mk Delta1 T0 m ps e) C0) :
     (forall X, List.Mem X (Ty.ftvList (T0 :: ps.map VarDecl.T)) -> List.Mem X (dom (Delta0 ++ Delta1))) /\
       (forall X, List.Mem X (Ty.ftvList (cod Delta1)) -> List.Mem X (dom (Delta0 ++ Delta1))) := by
   rcases scopeFacts hwf hok hs with ⟨K, hk⟩
   rcases hm with ⟨K', hk'⟩
-  have hname : K.name = K'.name := by
-    rcases hk.2.1 with ⟨Us, hUs⟩; simp only [Ty.cls.injEq] at hUs; rw [<- hUs.1, hk'.2.1]
-  have ek := Declared.unique hwf hk.1 hk'.1 hname
+  have ek := Declared.unique hwf hk.1 hk'.1 (by rw [hk.2.1, hk'.2.1])
   subst ek
   rcases hk.2.2.meths _ hk'.2.2 with ⟨Gamma, hmo⟩
   have hmi := methodOk_inv hmo
@@ -288,8 +286,8 @@ theorem REnv.meth {rv : VRen} {rt : TRen} {Delta Delta' : Bounds} {Gamma Gamma' 
     . exact env.kv p hp
 
 theorem REnv.inner {rv : VRen} {rt : TRen} {Delta Delta' : Bounds} {Gamma Gamma' : TypeEnv} {Xs : List TVarName}
-    {xs xs' : List VarName} (env : REnv rv rt Delta Delta' Gamma Gamma' Xs xs xs') {Fs : List Funnel} {Ts : List Ty}
-    {Dp : Bounds} {Tp : List Ty} (hp : Pairing Delta Fs Ts Dp Tp)
+    {xs xs' : List VarName} (env : REnv rv rt Delta Delta' Gamma Gamma' Xs xs xs') {Fs : List Funnel}
+    {Dp : Bounds} (hp : RestrictB Delta Fs Dp)
     (hk : forall X, List.Mem X (Ty.ftvList (abs Fs)) -> List.Mem X Xs) (C : ClassName) :
     REnv rv rt Dp (Dp.map fun b => ({ X := rn rt b.X, T := b.T.ren rt } : Bound)) (innerG Gamma Fs C)
       (innerG Gamma' (Fs.map (Funnel.ren rt)) C) Xs (this :: xs.filter fun x => x != this)

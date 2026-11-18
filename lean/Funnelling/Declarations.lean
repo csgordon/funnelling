@@ -47,22 +47,21 @@ inductive Generic (d : Decls) : ClassName -> Ty -> Prop
   | newLocal {C Fs C' Ts es Ms} :
       Declared d (.newLocal C Fs C' Ts es Ms) -> Generic d C (.cls C (vars (domF Fs)))
 
-inductive Pairing (Delta : Bounds) : List Funnel -> List Ty -> Bounds -> List Ty -> Prop
-  | nil : Pairing Delta [] [] [] []
-  | funnel {X T T0 Fs Ts Delta' Ts'} :
-      List.Mem { X := X, T := T } Delta -> Pairing Delta Fs Ts Delta' Ts' ->
-      Pairing Delta (.funnel X :: Fs) (T0 :: Ts) ({ X := X, T := T } :: Delta') (T0 :: Ts')
-  | ground {G Fs Ts Delta' Ts'} :
-      Pairing Delta Fs Ts Delta' Ts' -> Pairing Delta (.ground G :: Fs) (G.ty :: Ts) Delta' Ts'
+inductive RestrictB (Delta : Bounds) : List Funnel -> Bounds -> Prop
+  | nil : RestrictB Delta [] []
+  | funnel {X T Fs Delta'} :
+      List.Mem { X := X, T := T } Delta -> RestrictB Delta Fs Delta' ->
+      RestrictB Delta (.funnel X :: Fs) ({ X := X, T := T } :: Delta')
+  | ground {G Fs Delta'} : RestrictB Delta Fs Delta' -> RestrictB Delta (.ground G :: Fs) Delta'
 
-inductive Scope (d : Decls) : Ty -> Bounds -> List Ty -> Prop
-  | dec {D Ts} : Declared d (.dec D) -> Scope d (.cls D.C Ts) D.Delta Ts
-  | newLocal {C Delta' T0 m ps e C0 Fs C' Ts' es Ms T Delta Ts'' Ts Delta0 Ts0} :
+inductive Scope (d : Decls) : ClassName -> Bounds -> Prop
+  | dec {D} : Declared d (.dec D) -> Scope d D.C D.Delta
+  | newLocal {C Delta' T0 m ps e C0 Fs C' Ts' es Ms Delta Delta0} :
       MethodIn d (.mk Delta' T0 m ps e) C ->
       OccursIn (.newLocal C0 Fs C' Ts' es Ms) e ->
-      Generic d C T -> Scope d T Delta Ts'' ->
-      Pairing (Delta ++ Delta') Fs Ts Delta0 Ts0 ->
-      Scope d (.cls C0 Ts) Delta0 Ts0
+      Scope d C Delta ->
+      RestrictB (Delta ++ Delta') Fs Delta0 ->
+      Scope d C0 Delta0
 
 def typeOf : Value -> Ty
   | .new C Gs _ => .cls C Gs

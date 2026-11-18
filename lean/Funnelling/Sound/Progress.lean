@@ -175,12 +175,12 @@ theorem inner_lens {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {Gs Gs'' Gs'
     {e0 : Expr} {T : Ty} (hM : List.Mem (Method.mk Delta' T0 m ps e0) Ms)
     (h : Typing d [] [] (.call (Value.newLocal C Gs C' Gs'' vs0 Ms).expr (GTy.tys Gs') m (Value.exprs vs)) T) :
     Gs'.length = Delta'.length /\ ps.length = vs.length := by
-  rcases inv_call h rfl with ⟨⟨C0, Ts0, Delta0, Ts2, Delta1, T0c, psc, body, T0', Ts'⟩, hw⟩
+  rcases inv_call h rfl with ⟨⟨C0, Ts0, Delta0, Delta1, T0c, psc, body, T0', Ts'⟩, hw⟩
   have vt := value_typing hwf hw.ty0
   have hsv := vt.1.sub
   have hty0 := vt.2.1
   rcases inv_local hty0 rfl with ⟨w2, hw2⟩
-  have hD2 := pairing_ground_nil hw2.pair
+  have hD2 := restrictB_ground_nil hw2.restr
   have hover := hw2.over
   rw [hD2] at hover
   rcases consistent_unfold hw2.cons with ⟨Fs', Ts'd, es', Ms'd, hcd, _, hcts, _, hcov⟩
@@ -196,7 +196,7 @@ theorem inner_lens {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {Gs Gs'' Gs'
       rw [abs_ground] at hcts
       rw [<- hcts] at hs2
       exact hover _ C0 Ts0 hM hs2
-  rcases found_sig hwf hw.scope hw.meth hw.len2 hO with ⟨_, h4, _, h6⟩
+  rcases found_sig hwf hw.scope hw.meth hw.len0 hO with ⟨h4, _, h6⟩
   have hl6 := congrArg List.length h6
   have hls := congrArg List.length hw.sig
   have hla : vs.length = Ts'.length := by
@@ -295,7 +295,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         have hd := declOk hwf hok
         rcases dec_override hwf hok hd hw'.decl hM hw'.decl0 hkd0 hw'.sub with ⟨Us, hUs, hO, _⟩
         have hl2 : Us.length = w.D0.Delta.length := by rw [<- hw'.len0, hUs, substList_length]
-        rcases found_sig hwf (Scope.dec hw'.decl0) hw'.meth hl2 hO with ⟨_, h4, _, h6⟩
+        rcases found_sig hwf (Scope.dec hw'.decl0) hw'.meth hl2 hO with ⟨h4, _, h6⟩
         have hl6 := congrArg List.length h6
         have hls := congrArg List.length hw'.sig
         have hla := TypingSeq.length hw'.args

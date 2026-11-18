@@ -201,12 +201,12 @@ theorem Method.noShadowList_mono : forall {Ms : List Method} {Xs Xs2 : List TVar
       (Method.noShadowList_mono h.2 (fun X hX => hT X (Or.inr hX)) (fun y hy => hs y (Or.inr hy)))
 end
 
-theorem Pairing.mono {Delta Delta2 : Bounds} (hs : Sub1 Delta Delta2) {Fs : List Funnel} {Ts : List Ty}
-    {D0 : Bounds} {T0 : List Ty} (h : Pairing Delta Fs Ts D0 T0) : Pairing Delta2 Fs Ts D0 T0 := by
+theorem RestrictB.mono {Delta Delta2 : Bounds} (hs : Sub1 Delta Delta2) {Fs : List Funnel}
+    {D0 : Bounds} (h : RestrictB Delta Fs D0) : RestrictB Delta2 Fs D0 := by
   induction h with
-  | nil => exact Pairing.nil
-  | funnel hm _ ih => exact Pairing.funnel (hs _ hm) ih
-  | ground _ ih => exact Pairing.ground ih
+  | nil => exact RestrictB.nil
+  | funnel hm _ ih => exact RestrictB.funnel (hs _ hm) ih
+  | ground _ ih => exact RestrictB.ground ih
 
 theorem KindSeq.mono {d : Decls} {Delta Delta2 : Bounds} (hs : Sub1 Delta Delta2) {Ts : List Ty}
     (h : KindSeq d Delta Ts) : KindSeq d Delta2 Ts := fun T hT => (h T hT).mono hs

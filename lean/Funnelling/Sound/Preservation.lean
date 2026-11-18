@@ -35,11 +35,11 @@ theorem pres_addSuper {d : Decls} (hwf : WFDecls d) {C : ClassName} {m : MethNam
   have e := Scope.dec_eq hwf hD0.1 hscope
   have hsig := hw.sig
   have hsubs := hw.subs
-  have hlen2 := hw.len2
-  rw [e.1, e.2] at hsig hsubs hlen2
+  have hlen0 := hw.len0
+  rw [e] at hsig hsubs hlen0
   have vt2 := vt.2.1
   have vk := vt.2.2
-  exact hw.up.typing (Typing.superCall hsub hD0.1 hmeth hlen2 hw.len1 hsig hD.1 vk hw.kinds hsubs
+  exact hw.up.typing (Typing.superCall hsub hD0.1 hmeth hlen0 hw.len1 hsig hD.1 vk hw.kinds hsubs
     (TypingSeq.cons vt2 hw.args))
 
 theorem pres_searchSuper {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {D : Dec}
@@ -118,15 +118,15 @@ theorem pres_localSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {Ms : L
     have e := Scope.dec_eq hwf hD0.1 hscope
     have hsig := hw.sig
     have hsubs := hw.subs
-    have hlen2 := hw.len2
-    rw [e.1, e.2] at hsig hsubs hlen2
+    have hlen0 := hw.len0
+    rw [e] at hsig hsubs hlen0
     have hK := hw2.kindS
-    rw [pairing_ground_nil hw2.pair] at hK
+    rw [restrictB_ground_nil hw2.restr] at hK
     rw [<- hsup] at hK
     have hv0 := vt.2.1
     have hv1 := Typing.subs hv0 hK (Sub.subInheritLocal hDl hs2.1
       (by simp only [Ty.subst]; rw [<- hts, <- hsup]; exact Sub.subRefl))
-    have hres := Typing.superCall hs3 hD0.1 hmeth hlen2 hw.len1 hsig hD'.1 hK hw.kinds hsubs
+    have hres := Typing.superCall hs3 hD0.1 hmeth hlen0 hw.len1 hsig hD'.1 hK hw.kinds hsubs
       (TypingSeq.cons hv1 hw.args)
     rw [hsup] at hres
     exact hw.up.typing hres

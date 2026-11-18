@@ -296,13 +296,6 @@ theorem sub_unique_dec {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {T1 : Ty}
   | subVar =>
     simp_all
 
-theorem pairing_funnels {Delta : Bounds} {Fs : List Funnel} {Ts : List Ty} {D0 : Bounds} {T0 : List Ty}
-    (h : Pairing Delta Fs Ts D0 T0) (hf : forall F, List.Mem F Fs -> F.isFunnel = true) : T0 = Ts := by
-  induction h with
-  | nil => rfl
-  | funnel _ _ ih => rw [ih (fun F hF => hf F (List.Mem.tail _ hF))]
-  | ground _ _ => have := hf _ (List.Mem.head _); simp [Funnel.isFunnel] at this
-
 theorem bind_eq_bindF {Dl : Bounds} {Fs : List Funnel} (hg : dom Dl = domF Fs) (Ts : List Ty) :
     bind Dl Ts = bindF Fs Ts := by
   simp only [bind, bindF]
@@ -322,28 +315,16 @@ theorem kind_chain {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
     exact ih rfl hK
   | @subInheritLocal C1 Fs C' Ts' es Ms Ts1 T' hD hl _ ih =>
     cases hk with
-    | @kindClass C9 Ts9 Dl0 Ts0 h1 h2 h3 h4 =>
-      rcases h1.loc_declared with h' | h'
-      . cases h' with
-        | intro D hD' => exact absurd (Declared.dec_loc hwf hD'.1 hD hD'.2.1) id
-      . rcases scopeFacts hwf hok h1 with ⟨K', hk'⟩
-        have hname : K'.name = C1 := by
-          rcases hk'.2.1 with ⟨Us, hUs⟩; simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
-        have ek := Declared.unique hwf hk'.1 hD hname
-        subst ek
-        have sf := hk'.2.2
-        have hall : forall F, List.Mem F Fs -> F.isFunnel = true :=
-          fun F hF => hwf.2.2.2.2.2.2.2.2.2.2 _ hD.mem F hF
-        rcases h' with ⟨Fs2, C2, Ts2, es2, Ms2, Dl, hp⟩
-        have ek2 := Declared.unique hwf hp.1 hD rfl
-        cases ek2
-        have e0 := pairing_funnels hp.2 hall
-        subst e0
-        have hsat := bounds_sat sf.ndom h3 h4 h2
-        have hK := Kind.subst hd (Delta' := Delta) (fun b hb => (hsat b hb).1)
-          (fun b hb => (hsat b hb).2) (sf.supK _ _ _ _ _ _ rfl)
-        rw [bind_eq_bindF sf.gv] at hK
-        exact ih rfl hK
+    | kindClass h1 h2 h3 h4 =>
+      rcases scopeFacts hwf hok h1 with ⟨K', hk'⟩
+      have ek := Declared.unique hwf hk'.1 hD hk'.2.1
+      subst ek
+      have sf := hk'.2.2
+      have hsat := bounds_sat sf.ndom h3 h4 h2
+      have hK := Kind.subst hd (Delta' := Delta) (fun b hb => (hsat b hb).1)
+        (fun b hb => (hsat b hb).2) (sf.supK _ _ _ _ _ _ rfl)
+      rw [bind_eq_bindF sf.gv] at hK
+      exact ih rfl hK
   | subVar => cases he
 
 theorem kind_len {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {C : ClassName} {Us : List Ty} {Xs : List TVarName}
@@ -356,8 +337,7 @@ theorem kind_len {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {C : ClassName} 
       simp only [Ty.cls.injEq] at hgT
       have hlx := congrArg List.length hgT.2
       simp only [vars, List.length_map, dom] at hlx
-      have e := Scope.dec_eq hwf hD h1
-      rw [e.1, e.2] at h3
+      rw [Scope.dec_eq hwf hD h1] at h3
       rw [h3, hlx]
     | @newLocal C0 Fs C' Ts' es Ms hD =>
       simp only [Ty.cls.injEq] at hgT
@@ -369,10 +349,6 @@ theorem kind_len {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {C : ClassName} 
       . rcases h' with ⟨Fs2, C2, Ts2, es2, Ms2, Dl, hp⟩
         have ek2 := Declared.unique hwf hp.1 hD rfl
         cases ek2
-        have hall : forall F, List.Mem F Fs -> F.isFunnel = true :=
-          fun F hF => hwf.2.2.2.2.2.2.2.2.2.2 _ hD.mem F hF
-        have e0 := pairing_funnels hp.2 hall
-        rw [e0] at h3
         have hd := congrArg List.length hp.2.dom_eq
         simp only [dom, List.length_map] at hd
         rw [h3, hd, hlx]

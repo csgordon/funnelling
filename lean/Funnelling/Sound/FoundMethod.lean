@@ -189,7 +189,7 @@ theorem pres_topFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Decl
     (fun X hX hm => Method.noShadow_dom hwm.2.2 X hm (hUf X hX)) hwm.1
   rw [Ty.renList_id (fun _ _ => rn_nil)] at hO'
   have h3 : Us.length = D0.Delta.length := by rw [<- hw.len0, hUs, substList_length]
-  rcases found_sig hwf (Scope.dec hw.decl0) hw.meth h3 hO' with ⟨_, h4, h5, h6⟩
+  rcases found_sig hwf (Scope.dec hw.decl0) hw.meth h3 hO' with ⟨h4, h5, h6⟩
   have hv1 := f.subst_vars hG
   have hcomp1 : forall L, (forall X, List.Mem X (Ty.ftvList L) -> List.Mem X (dom D.Delta)) ->
       Ty.substList (GSubst.ty (bind (D.Delta ++ Delta') (Gs ++ Gs'))) L =
@@ -199,7 +199,7 @@ theorem pres_topFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Decl
     rw [substList_bind_comp (by simp [vars, dom]) hL, hv1.1]
   have hUt : Ty.substList (GSubst.ty (bind (D.Delta ++ Delta') (Gs ++ Gs'))) Us = Ts0 := by
     rw [hcomp1 Us hUf]; exact hUs.symm
-  have hcl0 := methodIn_closed hwf hok (Scope.dec (Ts := Us) hw.decl0) hw.meth
+  have hcl0 := methodIn_closed hwf hok (Scope.dec hw.decl0) hw.meth
   have hmo := (hok D hD.dec_mem).2.2.1 M hM
   have env : REnv [] [] D.Delta D.Delta [{ T := .cls D.C (vars (dom D.Delta)), x := this }]
       [{ T := .cls D.C (vars (dom D.Delta)), x := this }] (dom D.Delta) [this] [this] :=
@@ -243,7 +243,7 @@ theorem pres_localFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
   have hv0 : WFExpr v0.expr := WFExpr.plug (E := .callRecv .hole Gs' m (Value.exprs vs)) ha
   rw [hv] at hv0
   rcases WFExpr.local_method hv0 hM with ⟨hnM, htM, huM, -⟩
-  rcases inv_call h rfl with ⟨⟨C0, Ts0, Delta0, Ts2, Delta1, T0c, psc, body, T0', Ts'⟩, hw⟩
+  rcases inv_call h rfl with ⟨⟨C0, Ts0, Delta0, Delta1, T0c, psc, body, T0', Ts'⟩, hw⟩
   have vt := value_typing hwf hw.ty0
   have hsv : Sub d [] (typeOf v0) (.cls C0 Ts0) := by
     rcases vt.1 with e | e
@@ -253,7 +253,7 @@ theorem pres_localFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
   have hty0 := vt.2.1
   rw [hv] at hsv hty0
   rcases inv_local hty0 rfl with ⟨w2, hw2⟩
-  have hD2 := pairing_ground_nil hw2.pair
+  have hD2 := restrictB_ground_nil hw2.restr
   have hmeth := hw2.meths M hM
   rw [hD2, abs_ground] at hmeth
   have hover := hw2.over
@@ -276,9 +276,8 @@ theorem pres_localFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
     cases this
   have hO' := OverrideOkM.ren (rv := []) (rt := []) hwf hok hO f.fresh.1 (fun X hX _ => hTs0 X hX) huM
   rw [Ty.renList_id (fun _ _ => rn_nil)] at hO'
-  rcases found_sig hwf hw.scope hw.meth hw.len2 hO' with ⟨eT2, h4, h5, h6⟩
-  obtain rfl : Ts2 = Ts0 := eT2
-  have hT2 : Ty.substList (GSubst.ty (bind ([] ++ Delta') ([] ++ Gs'))) Ts2 = Ts2 :=
+  rcases found_sig hwf hw.scope hw.meth hw.len0 hO' with ⟨h4, h5, h6⟩
+  have hT0 : Ty.substList (GSubst.ty (bind ([] ++ Delta') ([] ++ Gs'))) Ts0 = Ts0 :=
     Ty.substList_id (fun X hX => absurd hX (hTs0 X))
   have hcl0 := methodIn_closed hwf hok hw.scope hw.meth
   have env : REnv [] [] [] [] [{ T := .cls C (GTy.tys Gs), x := this }]
@@ -293,8 +292,8 @@ theorem pres_localFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
     simpa [typeOf] using this
   refine hw.up.typing (f.typing (Ts' := Ts') hwf hok hd rfl hmo' (fun _ h => by cases h) (fun _ h => by cases h) ?_ ?_ hw.kinds ?_
     ha.noShadow (WFExpr.noThis ha) (WFExpr.uniq ha))
-  . rw [<- h6, f.sig rfl hT2 hw.len2 h4 hcl0.1]; exact hw.sig.symm
-  . rw [<- h5, f.sig rfl hT2 hw.len2 h4 hcl0.2]; exact hw.subs
+  . rw [<- h6, f.sig rfl hT0 hw.len0 h4 hcl0.1]; exact hw.sig.symm
+  . rw [<- h5, f.sig rfl hT0 hw.len0 h4 hcl0.2]; exact hw.subs
   . have eg : (Ty.cls C (GTy.tys Gs)).subst (GSubst.ty (bind ([] ++ Delta') ([] ++ Gs'))) = Ty.cls C (GTy.tys Gs) :=
       GTy.subst_ty (GTy.cls C Gs)
     rw [eg]; exact TypingSeq.cons htv0 hw.args

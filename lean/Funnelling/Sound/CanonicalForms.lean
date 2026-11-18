@@ -13,7 +13,7 @@ theorem object_declared {d : Decls} (hwf : WFDecls d) : exists D, Declared d (.d
 
 theorem kind_object {d : Decls} (hwf : WFDecls d) {Delta : Bounds} : Kind d Delta (.cls Object []) := by
   rcases object_declared hwf with ⟨D, hD⟩
-  have hs : Scope d (.cls D.C []) D.Delta [] := Scope.dec hD.1
+  have hs : Scope d D.C D.Delta := Scope.dec hD.1
   rw [hD.2.1, hD.2.2.1] at hs
   exact Kind.kindClass hs (fun _ h => by cases h) rfl Seq2.nil
 
@@ -36,13 +36,13 @@ theorem value_typing {d : Decls} (hwf : WFDecls d) {v : Value} {T : Ty} (h : Typ
   | newLocal C Gs C' Gs' vs Ms =>
     simp only [Value.expr] at h |-
     rcases inv_local h rfl with ⟨w, hw⟩
-    have hD := pairing_ground_nil hw.pair
+    have hD := restrictB_ground_nil hw.restr
     have hk := hw.kindC
     rw [hD, abs_ground] at hk
     have hup := hw.up
     rw [abs_ground] at hup
     refine And.intro hup (And.intro ?_ hk)
-    have := Typing.newLocal hw.cons hw.pair hw.closedB hw.kindC hw.kindS hw.tyNew hw.meths hw.over
+    have := Typing.newLocal hw.cons hw.restr hw.closedB hw.kindC hw.kindS hw.tyNew hw.meths hw.over
     rwa [abs_ground] at this
 
 theorem Sub.top_target {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : Declared d (.dec D))
@@ -112,9 +112,7 @@ theorem kind_dec_args {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (
   cases h with
   | kindClass h1 h2 h3 h4 =>
     have e := Scope.dec_eq hwf hD h1
-    have e1 := e.1
-    have e2 := e.2
-    subst e1 e2
+    subst e
     have hn : (dom D.Delta).Nodup := hwf.2.2.2.2.1 D.Delta (by
       simp only [listMem_iff, List.mem_append, List.mem_map]
       exact Or.inl (Exists.intro D (And.intro hD.dec_mem rfl)))

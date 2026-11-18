@@ -133,25 +133,17 @@ theorem Sub.loc_step {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {C Fs C' Ts'
     exact Or.inr (And.intro hl h')
   | subVar => cases he
 
-theorem Scope.loc_declared {d : Decls} {Delta0 : Bounds} {Ts0 : List Ty} {C0 : ClassName} {Ts : List Ty}
-    (h : Scope d (.cls C0 Ts) Delta0 Ts0) :
-    (exists D, Declared d (.dec D) /\ D.C = C0 /\ Delta0 = D.Delta /\ Ts0 = Ts) \/
-    (exists Fs C' Ts' es Ms Delta, Declared d (.newLocal C0 Fs C' Ts' es Ms) /\ Pairing Delta Fs Ts Delta0 Ts0) := by
-  generalize he : Ty.cls C0 Ts = T at h
+theorem Scope.loc_declared {d : Decls} {Delta0 : Bounds} {C0 : ClassName} (h : Scope d C0 Delta0) :
+    (exists D, Declared d (.dec D) /\ D.C = C0 /\ Delta0 = D.Delta) \/
+    (exists Fs C' Ts' es Ms Delta, Declared d (.newLocal C0 Fs C' Ts' es Ms) /\ RestrictB Delta Fs Delta0) := by
   cases h with
-  | @dec D Ts2 hD =>
-    simp only [Ty.cls.injEq] at he
-    exact Or.inl (Exists.intro D (And.intro hD (And.intro he.1.symm (And.intro rfl he.2.symm))))
-  | @newLocal C Delta' T0 m ps e C1 Fs C' Ts' es Ms T Delta Ts'' Ts2 Delta0 Ts0 h1 h2 h3 h4 h5 =>
-    simp only [Ty.cls.injEq] at he
+  | @dec D hD => exact Or.inl ⟨D, hD, rfl, rfl⟩
+  | newLocal h1 h2 _ h4 =>
     rcases h1 with ⟨K, hk⟩
-    have hd := Declared.newLocal hk.1 (by rw [hk.2.1] at hk; exact hk.2.2) h2
-    rw [he.1, he.2] at *
-    exact Or.inr (Exists.intro Fs (Exists.intro C' (Exists.intro Ts' (Exists.intro es (Exists.intro Ms
-      (Exists.intro _ (And.intro hd h5)))))))
+    exact Or.inr ⟨_, _, _, _, _, _, Declared.newLocal hk.1 hk.2.2 h2, h4⟩
 
-theorem Scope.dec_eq {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : Declared d (.dec D)) {Ts Ts0 : List Ty}
-    {Delta0 : Bounds} (h : Scope d (.cls D.C Ts) Delta0 Ts0) : Delta0 = D.Delta /\ Ts0 = Ts := by
+theorem Scope.dec_eq {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : Declared d (.dec D))
+    {Delta0 : Bounds} (h : Scope d D.C Delta0) : Delta0 = D.Delta := by
   rcases h.loc_declared with h' | h'
   . rcases h' with ⟨D', h'⟩
     have e := Declared.unique hwf h'.1 hD h'.2.1
@@ -179,12 +171,12 @@ theorem Declared.super {d : Decls} (hwf : WFDecls d) {K : ClassDecl} (hk : Decla
     have r := find_some hf
     exact Exists.intro D' (And.intro (Declared.dec r.1) (by simpa using r.2))
 
-theorem pairing_ground_nil {Delta : Bounds} : forall {Gs : List GTy} {Ts : List Ty} {Delta' : Bounds} {Ts'' : List Ty},
-    Pairing Delta (Gs.map Funnel.ground) Ts Delta' Ts'' -> Delta' = []
-  | [], _, _, _, h => by cases h; rfl
-  | G :: Gs, _, _, _, h => by
+theorem restrictB_ground_nil {Delta : Bounds} : forall {Gs : List GTy} {Delta' : Bounds},
+    RestrictB Delta (Gs.map Funnel.ground) Delta' -> Delta' = []
+  | [], _, h => by cases h; rfl
+  | G :: Gs, _, h => by
     cases h with
-    | ground h => exact pairing_ground_nil h
+    | ground h => exact restrictB_ground_nil h
 
 theorem abs_ground {Gs : List GTy} : abs (Gs.map Funnel.ground) = GTy.tys Gs := by
   rw [GTy.tys_eq_map]
@@ -228,15 +220,15 @@ theorem occ_noShadow {Xs : List TVarName} {C Fs C' Ts es Ms} : forall (E : ExprC
           | exact ih (Expr.noShadowList_mem mem_mid h) | exact ih (Expr.noShadowList_mem mem_mid h.1)
           | exact ih (Expr.noShadowList_mem mem_mid h.2)
 
-theorem Pairing.dom_eq {Delta : Bounds} {Fs : List Funnel} {Ts : List Ty} {Delta0 : Bounds} {Ts0 : List Ty}
-    (h : Pairing Delta Fs Ts Delta0 Ts0) : dom Delta0 = domF Fs := by
+theorem RestrictB.dom_eq {Delta : Bounds} {Fs : List Funnel} {Delta0 : Bounds}
+    (h : RestrictB Delta Fs Delta0) : dom Delta0 = domF Fs := by
   induction h with
   | nil => rfl
   | funnel _ _ ih => simp only [dom, List.map_cons]; rw [show List.map Bound.X _ = dom _ from rfl, ih]; simp [domF]
   | ground _ ih => rw [ih]; simp [domF]
 
-theorem Pairing.sub {Delta : Bounds} {Fs : List Funnel} {Ts : List Ty} {Delta0 : Bounds} {Ts0 : List Ty}
-    (h : Pairing Delta Fs Ts Delta0 Ts0) : Sub1 Delta0 Delta := by
+theorem RestrictB.sub {Delta : Bounds} {Fs : List Funnel} {Delta0 : Bounds}
+    (h : RestrictB Delta Fs Delta0) : Sub1 Delta0 Delta := by
   induction h with
   | nil => intro _ hx; cases hx
   | funnel hm _ ih =>
@@ -252,30 +244,17 @@ theorem bound_unique {Delta : Bounds} (hn : (dom Delta).Nodup) {X : TVarName} {T
   simp only [Bound.mk.injEq] at this
   exact this.2
 
-theorem Pairing.unique {Delta : Bounds} (hn : (dom Delta).Nodup) {Fs : List Funnel} {Ts : List Ty}
-    {D1 : Bounds} {T1 : List Ty} (h1 : Pairing Delta Fs Ts D1 T1) :
-    forall {Ts' : List Ty} {D2 : Bounds} {T2 : List Ty}, Pairing Delta Fs Ts' D2 T2 -> D1 = D2 := by
+theorem RestrictB.unique {Delta : Bounds} (hn : (dom Delta).Nodup) {Fs : List Funnel}
+    {D1 : Bounds} (h1 : RestrictB Delta Fs D1) : forall {D2 : Bounds}, RestrictB Delta Fs D2 -> D1 = D2 := by
   induction h1 with
-  | nil => intro _ _ _ h2; cases h2; rfl
+  | nil => intro _ h2; cases h2; rfl
   | funnel hm _ ih =>
-    intro _ _ _ h2
+    intro _ h2
     cases h2 with
     | funnel hm2 h2' => rw [bound_unique hn hm hm2, ih h2']
   | ground _ ih =>
-    intro _ _ _ h2
+    intro _ h2
     cases h2 with
     | ground h2' => exact ih h2'
-
-theorem abs_funnels {Fs : List Funnel} (h : forall F, List.Mem F Fs -> F.isFunnel = true) :
-    abs Fs = vars (domF Fs) := by
-  induction Fs with
-  | nil => rfl
-  | cons F Fs ih =>
-    have ih' := ih (fun F' hF' => h F' (List.Mem.tail _ hF'))
-    cases F with
-    | ground G => have := h _ (List.Mem.head _); simp [Funnel.isFunnel] at this
-    | funnel X =>
-      simp only [abs, List.map_cons, Funnel.abs, domF, List.filterMap_cons, vars] at ih' |-
-      rw [ih']
 
 end Funnelling
