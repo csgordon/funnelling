@@ -1558,10 +1558,10 @@ class Broken6<> extends Object<>{
   Object<> check(MyFoo6<> mine, Object<> other){ return
     if (other instanceof MyFoo6<> local){ mine.show(local) } else { mine }; } }
 // d8, Counterexample 3: Object, A, B, Fun, AToB, AsB, and
-class Box7<X extends Object<>> extends Object<>{ Object<> m(Object<> other, X x, Fun<X,B<>> f){ return
+class NotBroken<X extends Object<>> extends Object<>{ Object<> m(Object<> other, X x, Fun<X,B<>> f){ return
   if (other instanceof MyFoo7<> local){ f.apply(local.x()) }
   else { new MyFoo7<> extends Object<>(){ X x(){ return x; } } }; } }
-class Box7F<X extends Object<>> extends Object<>{ Object<> m(Object<> other, X x, Fun<X,B<>> f){ return
+class NotBrokenF<X extends Object<>> extends Object<>{ Object<> m(Object<> other, X x, Fun<X,B<>> f){ return
   if (other instanceof MyFoo7F<X> local){ f.apply(local.x()) }
   else { new MyFoo7F<X funnel> extends Object<>(){ X x(){ return x; } } }; } }
 // d9, nested local classes: Object, A, B, Foo, and
@@ -1674,8 +1674,8 @@ Lean derives it from \texttt{typeSoundness}, W9 and R14: the program reduces to 
 \item[N4] \texttt{n4}: class \Q@Fixed2Obj@ is not Ok: \Q@MyFoo4@ funnels \Q@X@, but \Q@Object<>@ does not determine \Q@X@, so the type test is rejected.
 \item[N5] \texttt{n5}: Example~2 with \Q@show@ is not Ok: \Q@MyFoo6@ mentions \Q@X@ and captures \Q@f@, but funnels nothing.
 Lean derives it from \texttt{typeSoundness}, W11 and R15: the program reduces to a stuck expression.
-\item[N6] \texttt{n6}: class \Q@Box7@ is not Ok: \Q@MyFoo7@ does not funnel the class type variable \Q@X@.
-\item[N7] \texttt{n7}: class \Q@Box7F@ is not Ok: \Q@Object<>@ does not determine \Q@X@; javac rejects Counterexample~3 for the same reason.
+\item[N6] \texttt{n6}: class \Q@NotBroken@ is not Ok: \Q@MyFoo7@ does not funnel the class type variable \Q@X@.
+\item[N7] \texttt{n7}: class \Q@NotBrokenF@ is not Ok: \Q@Object<>@ does not determine \Q@X@; javac rejects Counterexample~3 for the same reason.
 \item[N8] \texttt{n8}: in d4F, the main expression of the leak is ill typed: a \Q@MyFoo2F<A<>>@ is passed where a \Q@MyFoo2F<B<>>@ is expected.
 \item[J1] \texttt{j1}: Example~1 reduces to \Q@new A<>().onlyB()@, and then to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
 \item[L1] \texttt{l1}: in d4, class \Q@Broken@ is not Ok: the local class in \Q@mk2@ funnels nothing, as in N1.

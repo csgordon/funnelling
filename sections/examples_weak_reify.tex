@@ -143,7 +143,7 @@ Counterexample~3 marks the boundary of the family: with class generics, \javac d
 \centerline{\mbox{\Q@Object cannot be safely cast to MyFoo@}.}
 The method \Q@m@ is an instance method of \Q@NotBroken<X>@, so \Q@MyFoo@ is an inner class of \Q@NotBroken<X>@, with an enclosing instance of type \Q@NotBroken<X>@.
 \javac types \Q@MyFoo@ as \Q@NotBroken<X>.MyFoo@, as \javac types a member class \Q@MyFoo@ of \Q@NotBroken@.
-So \Q@MyFoo@ is generic in \Q@X@, and the type test against \Q@MyFoo@ is the uncheckable type test against \Q@NotBroken<X>.MyFoo@.
+So \Q@MyFoo@ is generic in \Q@X@, and \Q@other@ \Q@instanceof@ \Q@MyFoo@ is expanded into the uncheckable type test \Q@other@ \Q@instanceof@ \Q@NotBroken<X>.MyFoo@.
 
 The cast is flagged as well.
 The following method \Q@m@ replaces the method \Q@m@ of Counterexample~3.
@@ -162,7 +162,7 @@ The type test against \Q@String@ replaces the type test against \Q@MyFoo@, which
 
 \javac accepts this program, but reports an unchecked warning for the cast at Line~\ref{line:cexcast}.
 At run time the cast succeeds, and the program fails as Example~2 fails.
-So with class generics the program fails only after an unchecked warning, as a program with the cast \Q@(List<String>)o@ may fail.
+So with class generics the program fails only after an unchecked warning, as any program with an unchecked cast may.
 In Examples~1 and~2 instead, \javac reports nothing.
 
 Thus for the generic parameters of the enclosing class, Java already exposes the captured generic parameters in the type of the method-local class,
@@ -188,7 +188,7 @@ In the same way, the generic class declaration \Q@class Foo<X>@ declares infinit
 So each method \Q@m<T>@ declares its own method-local class \Q@MyFoo@, since the body of each \Q@m<T>@ is the body of a different method.
 \item \textbf{Identity as Dynamic Evaluation}: 
 Each evaluation of the declaration creates a new class, even for the same instantiation of the generic parameters.
-Scala has this granularity for captured values instead of captured types.
+Scala has this granularity for inner classes.
 An instance of an inner class \Q@Inner@ captures its enclosing instance \Q@a@ as \Q@$outer@, and its type is the path-dependent type \Q@a.Inner@.
 For the pattern \Q@case i: a.Inner@, the Scala compiler emits an ``outer test'' that compares the captured \Q@$outer@ with \Q@a@~\cite[Section~8.2]{scala_spec}.%
 \footnote{Even here the type system exposes what is captured: inside the class of \Q@a@, \Q@Inner@ means \Q@this.Inner@.}
