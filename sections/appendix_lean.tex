@@ -385,6 +385,7 @@ abbrev WFExpr (e : Expr) : Prop :=
 
 \begin{cmp}{Expression contexts and \emph{occurs in}}
 \begin{paperside}
+$e'\textrm{ occurs in }e\textrm{ iff }e=\mathcal{C}[e']$, where\\[1ex]
 \fit{$\begin{array}{rcl}
 \mathcal{C} & ::= & \square \mid \call{\mathcal{C}}{\pl{T}}{m}{\pl{e}} \mid \call{e}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
 && \mid \explicitcall{\mathcal{C}}{T}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e},\mathcal{C},\pl{e}'}\\
@@ -392,8 +393,7 @@ abbrev WFExpr (e : Expr) : Prop :=
 && \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e},\mathcal{C},\pl{e}'}{\pl{M}}\\
 && \mid \ifthen{\mathcal{C}}{T}{x}{e_1}{e_2} \mid \ifthen{e_0}{T}{x}{\mathcal{C}}{e_2}\\
 && \mid \ifthen{e_0}{T}{x}{e_1}{\mathcal{C}}
-\end{array}$}\\[1ex]
-An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for an expression context $\mathcal{C}$.
+\end{array}$}
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
@@ -553,7 +553,9 @@ def typeOf : Value -> Ty
 \end{array}$}\\[1ex]
 The other cases go into every subterm, including the methods of a local class.
 Substitution of type variables is defined only when the type variables of the methods it enters are not in its domain.
-In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables; by A11, no funnel in the domain of a substitution is of the form $G$.
+In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables:
+$\tsubst{T}{F_1,\ldots,F_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $i\in 1..n$, where $F_i=\funnel{X_i}$.
+No funnel $F_i$ is of the form $G$: the funnels in the domain of a substitution are the funnels of a declared local class, and by A11 every funnel in \decls is of the form $\funnel{X}$.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
 \end{paperside}
 \begin{leanside}
@@ -1501,9 +1503,9 @@ Each validation example states a verdict of the rules of the paper, and Lean pro
 \leanfile{Examples.lean} defines the class tables below and the examples.
 Lean proves every example, with no axiom other than the three standard ones, and \leanfile{ExampleFacts.lean} holds the lemmas that the proofs share.
 The core language has no strings, no lambdas, no \Q@switch@ and no casts.
-The examples of Section~2 use \Q@Fun<X,Y>@ for \Q@Function<X,Y>@, and its subclasses \Q@AToB@ and \Q@AsB@ for the lambdas of the two calls of \Q@m@.
+The examples of Section~\ref{sec:examples} use \Q@Fun<X,Y>@ for \Q@Function<X,Y>@, and its subclasses \Q@AToB@ and \Q@AsB@ for the lambdas of the two calls of \Q@m@.
 \Q@AsB@ plays the lambda \Q@s->s@: its method \Q@apply@ uses its argument as a \Q@B<>@, so a failing cast to \Q@String@ becomes the call \Q@new A<>().onlyB()@, which reduces by \textsc{topAddSuper} and \textsc{searchSuper} to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
-The other versions of Example~2 in Section~2, except the version with \Q@show@, differ from Example~2 only in the \Q@switch@ and in how the caller of \Q@m@ creates \Q@f@, so they have no counterpart.
+The other versions of Example~2 in Section~\ref{sec:examples}, except the version with \Q@show@, differ from Example~2 only in the \Q@switch@ and in how the caller of \Q@m@ creates \Q@f@, so they have no counterpart.
 The core language declares a local class in its one \Q@new@ expression, so the version with \Q@show@ (d7) passes that expression to a method \Q@check@, as the parameter \Q@mine@, where the paper writes \Q@new MyFoo()@ twice.
 \begin{lstlisting}
 class Object<> extends Object<>{}
