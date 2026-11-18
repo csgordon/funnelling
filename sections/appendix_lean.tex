@@ -20,27 +20,6 @@
 This appendix relates the formalism of Section~\ref{sec:core} to a Lean~4 formalization in the folder \texttt{lean} of the paper repository.
 Rule \textsc{newLocalJava}, shown in Section~\ref{sec:funnelling} and used in Section~\ref{sec:java}, is not formalized: Type Soundness concerns only the type system with rule \textsc{newLocal}.
 
-\subsection{Request}
-This appendix answers the following request, reported verbatim, so that we can check later how much of it is addressed.
-\begin{lstlisting}[language={},basicstyle=\small\ttfamily,breaklines=true,columns=fullflexible]
-
-The Appendix, for each piece of formalism we report the following:
-
-(A)Original formalism
-
-(B)Corresponding Lean formalism
-
-(C)English explanation of the differences and either
-- why it ok for those differences to be there.
-- or what the more appropriate form of the original formalism should be
-
-(D)A clear report of the lean statements and an high level description of the proofs.
-
-(E)A list of validation examples. Those are:
-- programs that Do pass the lean type system AND the paper type system, or  that do not pass both the lean type system and the paper type system.
-- programs that reduce in some steps equally in both the paper type system and the lean type system. Basically, this is 'testing': we are empirically checking that the two formalism are the same by checking that they behave the same on a range of examples including interesting corner cases.
-\end{lstlisting}
-
 \subsection{The Lean Project}
 The file \texttt{lean/lean-toolchain} selects Lean 4.35.0: elan runs that version for every command in the folder \texttt{lean}.
 The project has no dependency: the files import only the core library of Lean.
@@ -51,7 +30,7 @@ The files are:
 \begin{itemize}
 \item \leanfile{Syntax.lean}: names, types, ground types, funnels, expressions, methods, values, declarations, class declarations $K$.
 \item \leanfile{Substitution.lean}: substitution of type variables and of variables, and $\mathsf{fresh}$.
-\item \leanfile{Declarations.lean}: expression contexts, $\mathsf{declared}$, $M\in C$, $\mathrm{generic}$, the pairing, $\mathsf{scope}$, $\mathsf{typeOf}$.
+\item \leanfile{Declarations.lean}: expression contexts, $\mathsf{declared}$, $M\in C$, $\mathsf{generic}$, the pairing, $\mathsf{scope}$, $\mathsf{typeOf}$.
 \item \leanfile{WellFormed.lean}: the well-formedness requirements A1-A12.
 \item \leanfile{Typing.lean}: subtyping, kinding, checked casts, $\mathsf{overrideOk}$, $\mathsf{consistent}$, typing, method, class and program typing.
 \item \leanfile{Reduction.lean}: evaluation contexts and the reduction.
@@ -96,7 +75,7 @@ The paper defines $\tsubst{T}{\pl{F}}{\pl{T}}$ only when $\pl{F}$ contains no gr
 The paper defines a simultaneous substitution only when the names in its domain are distinct.
 Rules \textsc{topFound} and \textsc{localFound} have this as premises (\texttt{Nodup}), since their domains hold the names chosen by $\mathsf{fresh}$; in the other rules the domain is distinct by A5, A6 and A7.
 \item \textbf{Definitions.}
-A \textbf{Define} box of the paper with \emph{where} clauses ($\mathsf{declared}$, $\mathrm{generic}$, $\mathsf{scope}$, the pairing, $\mathsf{overrideOk}(T,M)$) is an inductive relation, one constructor per clause; $M\in C$ and $K\gap\mathsf{consistent}$ are definitions with an existential, \texttt{MethodIn} and \texttt{Consistent}.
+A \textbf{Define} box of the paper with \emph{where} clauses ($\mathsf{declared}$, $\mathsf{generic}$, $\mathsf{scope}$, the pairing, $\mathsf{overrideOk}(T,M)$) is an inductive relation, one constructor per clause; $M\in C$ and $K\gap\mathsf{consistent}$ are definitions with an existential, \texttt{MethodIn} and \texttt{Consistent}.
 In $\mathsf{declared}$, $\mathsf{generic}$, $\mathsf{scope}$ and $\mathsf{overrideOk}(T,M)$, the constructor of the clause for a top-level class is \texttt{dec}, and the constructor of the clause for a local class is \texttt{newLocal}; the clause of $\mathsf{overrideOk}(T,M)$ with $m\not\in\pl{M}$ is \texttt{absent}.
 A definition of a function ($\mathrm{dom}$, $\mathrm{cod}$, $|F|$, $\mathsf{typeOf}$, the substitutions) is a function.
 \end{itemize}
@@ -384,7 +363,7 @@ abbrev A12 (e : Expr) : Prop := e.closed [] [] = true
 
 \begin{cmp}{All the requirements}
 \begin{paperside}
-We require the following well-formedness conditions: (A1)-(A12).\\[1ex]
+The following are the well-formedness requirements: (A1)-(A12).\\[1ex]
 The well-formedness requirements A1-A12 of Section~\ref{sec:core} are part of the grammar.
 \end{paperside}
 \begin{leanside}
@@ -1488,7 +1467,7 @@ Type Soundness follows from progress and preservation, by induction on \texttt{R
 Progress, preservation and the lemmas below are components of the proof, not statements of the paper.
 The proofs of progress, preservation and determinism use these lemmas:
 \begin{enumerate}
-\item \textbf{Basic lemmas.} \texttt{lookup} on a substitution built by \texttt{zip}; by A1, A5 and A7, $\mathsf{declared}$, $\mathsf{scope}$ and $\mathrm{generic}$ have one result per class name; subtyping is transitive; $\subtype{\emptyset}{T_0}{\gen{C}{\pl{T}}}$ and $\subtype{\emptyset}{T_0}{\gen{C}{\pl{T}'}}$ imply $\pl{T}=\pl{T}'$.
+\item \textbf{Basic lemmas.} \texttt{lookup} on a substitution built by \texttt{zip}; by A1, A5 and A7, $\mathsf{declared}$, $\mathsf{scope}$ and $\mathsf{generic}$ have one result per class name; subtyping is transitive; $\subtype{\emptyset}{T_0}{\gen{C}{\pl{T}}}$ and $\subtype{\emptyset}{T_0}{\gen{C}{\pl{T}'}}$ imply $\pl{T}=\pl{T}'$.
 \item \textbf{Renaming.} A renaming by \texttt{Fresh} keeps typing and kinding under $\Delta;\Gamma$ when the renamed expression binds no name of $\mathrm{dom}(\Delta)$ or $\mathrm{dom}(\Gamma)$ and satisfies A7 and A8; in the rules, \texttt{VSubstDefined}, \texttt{GSubstDefined} and \texttt{Nodup} give the first condition; \texttt{Fresh} alone does not keep A7 and A8 (W26, W27).
 For \texttt{FreshM}: if $\typing{\Delta,\Delta_m}{\Gamma,\pl{T}\gap\pl{x}}{e}{T_0}$ and \texttt{FreshM} renames $\Delta_m$, $\pl{x}$ and $e$ into $\Delta''$, $\pl{x}'$ and $e_0$, then $\typing{\Delta,\Delta''}{\Gamma,\pl{T}\sigma\gap\pl{x}'}{e_0}{T_0\sigma}$, with $\sigma=[\Delta_m=\mathrm{dom}(\Delta'')]$, when $\mathrm{dom}(\Delta'')$ and $\pl{x}'$ are disjoint from $\mathrm{dom}(\Delta)$ and $\mathrm{dom}(\Gamma)$, and $e_0$ satisfies A7 and A8.
 \item \textbf{Weakening} of $\Gamma$ and $\Delta$, for typing, kinding and subtyping, when the added names are not bound in the expression.
@@ -1518,6 +1497,7 @@ Replacing related names with the same ground types and closed values keeps \text
 
 \subsection{Validation Examples}
 \label{app:lean:examples}
+Each validation example states a verdict of the rules of the paper, and Lean proves the same verdict for the Lean definitions.
 \leanfile{Examples.lean} defines the class tables below and the examples.
 Lean proves every example, with no axiom other than the three standard ones, and \leanfile{ExampleFacts.lean} holds the lemmas that the proofs share.
 The core language has no strings, no lambdas, no \Q@switch@ and no casts.
@@ -1685,7 +1665,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[P2] \texttt{p2}: class \Q@Fixed2@ is Ok: \Q@Holder<X>@ determines \Q@X@.
 \item[P3] \texttt{p3}: in d4F, class \Q@Broken@ is Ok.
 \item[N1] \texttt{n1}: Example~1 is not Ok: rule \textsc{newLocal} fails at $\kind{\emptyset}{\QQ{Foo<X>}}$, since \Q@MyFoo@ funnels nothing.
-Lean derives it from \texttt{typeSoundness}, W6 and J2: the program reduces to a stuck expression.
+Lean derives it from \texttt{typeSoundness}, W6 and J1: the program reduces to a stuck expression.
 \item[N2] \texttt{n2}: in d5, the main expression of Example~1 is ill typed: a \Q@Foo<A<>>@ is passed where a \Q@Foo<B<>>@ is expected.
 \item[N3] \texttt{n3}: Example~2 is not Ok: the method \Q@x@ of \Q@MyFoo2@ returns \Q@X@, which \Q@MyFoo2@ does not funnel.
 Lean derives it from \texttt{typeSoundness}, W9 and R14: the program reduces to a stuck expression.
@@ -1695,7 +1675,7 @@ Lean derives it from \texttt{typeSoundness}, W11 and R15: the program reduces to
 \item[N6] \texttt{n6}: class \Q@Box7@ is not Ok: \Q@MyFoo7@ does not funnel the class type variable \Q@X@.
 \item[N7] \texttt{n7}: class \Q@Box7F@ is not Ok: \Q@Object<>@ does not determine \Q@X@; javac rejects Counterexample~3 for the same reason.
 \item[N8] \texttt{n8}: in d4F, the main expression of the leak is ill typed: a \Q@MyFoo2F<A<>>@ is passed where a \Q@MyFoo2F<B<>>@ is expected.
-\item[J2] \texttt{j2}: Example~1 reduces to \Q@new A<>().onlyB()@, and then to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
-\item[L2] \texttt{l2}: in d4, class \Q@Broken@ is not Ok: the local class in \Q@mk2@ funnels nothing, as in N1.
+\item[J1] \texttt{j1}: Example~1 reduces to \Q@new A<>().onlyB()@, and then to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
+\item[L1] \texttt{l1}: in d4, class \Q@Broken@ is not Ok: the local class in \Q@mk2@ funnels nothing, as in N1.
 \item[S1] \texttt{s1}: \Q@new Object<>().f@ is stuck.
 \end{description}

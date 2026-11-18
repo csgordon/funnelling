@@ -276,8 +276,8 @@ def stuckB : Expr := .superCall vA obj [] (mn "onlyB") []
 -- W6: Example 1 in the core language is well formed.
 theorem w6 : WFDecls d3 /\ WFExpr brokenMain := by decide
 
--- J2: Example 1 reduces to new A<>().onlyB(), then to new A<>().[Object<>]onlyB(), which is stuck.
-theorem j2 : ReducesStar d3 brokenMain stuckB /\ Stuck d3 stuckB :=
+-- J1: Example 1 reduces to new A<>().onlyB(), then to new A<>().[Object<>]onlyB(), which is stuck.
+theorem j1 : ReducesStar d3 brokenMain stuckB /\ Stuck d3 stuckB :=
   And.intro
     (ReducesStar.step (red (cRecv (cRecv (cArg0 (sAdd rfl rfl rfl rfl) rfl rfl) rfl) rfl) (by decide))
     (ReducesStar.step (red (cRecv (cRecv (cArg0 (sFound (D := decBroken) (.tail _ (.tail _ (.tail _ (.tail _ (.head _)))))
@@ -296,7 +296,7 @@ theorem j2 : ReducesStar d3 brokenMain stuckB /\ Stuck d3 stuckB :=
 
 -- N1: Example 1 is not Ok.
 theorem n1 : Not (ProgOk d3 brokenMain) := fun h =>
-  h.2.elim fun _ ht => (typeSoundness w6.1 h.1 w6.2 ht j2.1).2.elim j2.2.1 fun h' => h'.elim j2.2.2
+  h.2.elim fun _ ht => (typeSoundness w6.1 h.1 w6.2 ht j1.1).2.elim j1.2.1 fun h' => h'.elim j1.2.2
 
 def decLeaker : Dec :=
   { C := cn "Broken", Delta := [], C' := Object, Ts := [],
@@ -313,8 +313,8 @@ def d4 : Decls := [decObject, decA, decB, decFoo, decLeaker]
 theorem w7 : WFDecls d4 := by decide
 
 
--- L2: the class Broken of d4 is not Ok.
-theorem l2 : Not (ClassOk d4 decLeaker) := by
+-- L1: the class Broken of d4 is not Ok.
+theorem l1 : Not (ClassOk d4 decLeaker) := by
   intro h
   have hm := h.2.2.1 _ (.head _)
   cases hm with
