@@ -243,31 +243,23 @@ theorem mem_gsubB {s : GSubst} {Delta : Bounds} {b : Bound} (hb : List.Mem b Del
   simp only [gsubB, Bounds.subst, listMem_iff, List.mem_map, List.mem_filter]
   exact Exists.intro b (And.intro (And.intro hb (by simpa using h)) rfl)
 
-theorem Pairing.gsub {s : GSubst} {Delta : Bounds} {Fs : List Funnel} {Ts : List Ty} {Delta' : Bounds} {Ts'' : List Ty}
-    (h : Pairing Delta Fs Ts Delta' Ts'') : Ts = abs Fs -> exists Ts3,
-      Pairing (gsubB s Delta) (Fs.map (Funnel.gsubst s)) (abs (Fs.map (Funnel.gsubst s))) (gsubB s Delta') Ts3 := by
+theorem RestrictB.gsub {s : GSubst} {Delta : Bounds} {Fs : List Funnel} {Delta' : Bounds}
+    (h : RestrictB Delta Fs Delta') : RestrictB (gsubB s Delta) (Fs.map (Funnel.gsubst s)) (gsubB s Delta') := by
   induction h with
-  | nil => intro _; exact Exists.intro [] Pairing.nil
-  | @funnel X T T0 Fs Ts Delta' Ts' hm _ ih =>
-    intro he
-    simp only [abs, List.map_cons, Funnel.abs, List.cons.injEq] at he
-    rcases ih he.2 with ⟨Ts3, hp⟩
+  | nil => exact RestrictB.nil
+  | @funnel X T Fs Delta' hm _ ih =>
     cases hl : List.lookup X s with
     | none =>
       have hX : Not (List.Mem X (s.map Prod.fst)) := fun hm' => by
         cases lookup_isSome hm' with | intro v hv => rw [hv] at hl; cases hl
       rw [gsubB_cons_none (b := { X := X, T := T }) hX]
-      simp only [List.map_cons, Funnel.gsubst, hl, abs, Funnel.abs]
-      exact Exists.intro _ (Pairing.funnel (mem_gsubB (b := { X := X, T := T }) hm hX) hp)
+      simp only [List.map_cons, Funnel.gsubst, hl]
+      exact RestrictB.funnel (mem_gsubB (b := { X := X, T := T }) hm hX) ih
     | some G =>
       rw [gsubB_cons_some (b := { X := X, T := T }) (lookup_some_mem_dom hl)]
-      simp only [List.map_cons, Funnel.gsubst, hl, abs, Funnel.abs]
-      exact Exists.intro _ (Pairing.ground hp)
-  | @ground G Fs Ts Delta' Ts' _ ih =>
-    intro he
-    simp only [abs, List.map_cons, Funnel.abs, List.cons.injEq] at he
-    rcases ih he.2 with ⟨Ts3, hp⟩
-    exact Exists.intro _ (Pairing.ground hp)
+      simp only [List.map_cons, Funnel.gsubst, hl]
+      exact RestrictB.ground ih
+  | ground _ ih => exact RestrictB.ground ih
 
 theorem innerG_gsub_sub {s : GSubst} {Gamma : TypeEnv} {Fs : List Funnel} {C : ClassName} :
     Sub1 (gsubG s (innerG Gamma Fs C)) (innerG (gsubG s Gamma) (Fs.map (Funnel.gsubst s)) C) := by
@@ -333,9 +325,9 @@ theorem dom_mem_tbinders {X : TVarName} : forall {M : Method}, List.Mem X (dom M
 
 theorem Typing.gsub_newLocal {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {Delta : Bounds}
     {Gamma : TypeEnv} {C : ClassName} {Fs : List Funnel} {C0 : ClassName} {Ts : List Ty} {es : List Expr}
-    {Ms : List Method} {Delta' : Bounds} {Ts'' : List Ty} {T'' : Ty} {s : GSubst} {Xs : List TVarName}
+    {Ms : List Method} {Delta' : Bounds} {T'' : Ty} {s : GSubst} {Xs : List TVarName}
     {xs : List VarName}
-    (h1 : Consistent d (.newLocal C Fs C0 Ts es Ms)) (h2 : Pairing Delta Fs (abs Fs) Delta' Ts'')
+    (h1 : Consistent d (.newLocal C Fs C0 Ts es Ms)) (h2 : RestrictB Delta Fs Delta')
     (h3 : forall X, List.Mem X (Ty.ftvList (cod Delta')) -> List.Mem X (dom Delta'))
     (h4 : Kind d Delta' (.cls C (abs Fs))) (h5 : Kind d Delta' (.cls C0 Ts))
     (h8 : OverrideOk d Delta' (.cls C0 Ts) Ms)
@@ -356,7 +348,7 @@ theorem Typing.gsub_newLocal {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd
   simp only [Expr.gsubst] at ih6 |-
   simp only [Ty.subst]
   rw [<- abs_gsubst]
-  rcases Pairing.gsub (s := s) h2 rfl with ⟨Ts3, hp⟩
+  have hp := RestrictB.gsub (s := s) h2
   refine Typing.newLocal (Consistent.gsub hwf hok hd h1 hdisM) hp ?_ ?_ ?_ ih6 ?_ (OverrideOk.gsub hwf hok hd h8 hdisM)
   . intro X hX
     rw [cod_subst] at hX
@@ -407,24 +399,24 @@ theorem Typing.gsub {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk
     have ih := Typing.gsub hwf hok hd h1 hg hdis n1 sc hn ht hu
     rw [subst_bind_comp h4 (field_closed hok h2 h3)]
     exact Typing.field ih h2 h3 (by rw [substList_length, h4])
-  | _, _, _, _, .call (Delta0 := Delta0) (Delta1 := Delta1) (Ts2 := Ts2) (Ts1 := Ts1) h1 h2 h3 h4 h5 h6 h7 h8 h9, s, _, _,
+  | _, _, _, _, .call (Delta0 := Delta0) (Delta1 := Delta1) (Ts0 := Ts0) (Ts1 := Ts1) h1 h2 h3 h4 h5 h6 h7 h8 h9, s, _, _,
       hg, hdis, n1, sc, hn, ht, hu => by
     simp only [Expr.noShadow, Bool.and_eq_true, Expr.tbinders, listMem_iff, List.mem_append, NoThis, Expr.vbinders,
       not_or, Expr.uniq] at hn hdis ht hu
     have hcl := methodIn_closed hwf hok h2 h3
     have ih1 := Typing.gsub hwf hok hd h1 hg (fun X hX => hdis X (Or.inl hX)) n1 sc hn.1 ht.1 hu.1
     have ih2 := TypingSeq.gsub hwf hok hd h9 hg (fun X hX => hdis X (Or.inr hX)) n1 sc hn.2 ht.2 hu.2
-    have hlen : (Ts2 ++ Ts1).length = (Delta0 ++ Delta1).length := by simp [h4, h5]
+    have hlen : (Ts0 ++ Ts1).length = (Delta0 ++ Delta1).length := by simp [h4, h5]
     have e6 := congrArg (Ty.substList s.ty) h6
     rw [substList_bind_comp hlen hcl.1, substList_app] at e6
-    refine Typing.call ih1 (by have := Scope.subst (s := s.ty) h2; simpa only [Ty.subst] using this) h3
+    refine Typing.call ih1 h2 h3
       (by rw [substList_length, h4]) (by rw [substList_length, h5]) e6
       (KindSeq.substC hd hg.substCtx h7) ?_ ih2
     have := SubSeq.subst hd hg.substCtx.sub h8
     rwa [substList_bind_comp hlen hcl.2, substList_app] at this
   | _, _, _, _, .superCall (D0 := D0) (Ts0 := Ts0) (Delta1 := Delta1) (Ts1 := Ts1) h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11,
       s, _, _, hg, hdis, n1, sc, hn, ht, hu => by
-    have hcl := methodIn_closed hwf hok (Scope.dec (Ts := Ts0) h2) h3
+    have hcl := methodIn_closed hwf hok (Scope.dec h2) h3
     have ih := TypingSeq.gsub hwf hok hd h11 hg
       (fun X hX => hdis X (by simpa [Expr.tbindersList, Expr.tbinders] using hX))
       n1 sc (by simpa [Expr.noShadowList, Expr.noShadow] using hn)

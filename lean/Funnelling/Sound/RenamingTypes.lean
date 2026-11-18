@@ -97,12 +97,6 @@ theorem KindSeq.renT {d : Decls} (hd : DeclOk d) {rt : TRen} {Delta Delta' : Bou
   rw [Ty.renList_eq_map] at hT
   rcases List.mem_map.mp hT with ⟨U, hU⟩; rw [<- hU.2]; exact Kind.renT hd hb (h U hU.1)
 
-theorem Scope.renT {d : Decls} {rt : TRen} {C : ClassName} {Ts : List Ty} {Delta0 : Bounds} {Ts0 : List Ty}
-    (h : Scope d (.cls C Ts) Delta0 Ts0) : Scope d (.cls C (Ty.renList rt Ts)) Delta0 (Ty.renList rt Ts0) := by
-  have := h.subst (s := tS rt)
-  rw [Ty.renList_subst, Ty.renList_subst]
-  exact this
-
 theorem abs_ren {rt : TRen} : forall {Fs : List Funnel}, abs (Fs.map (Funnel.ren rt)) = Ty.renList rt (abs Fs)
   | [] => rfl
   | F :: Fs => by
@@ -112,17 +106,13 @@ theorem abs_ren {rt : TRen} : forall {Fs : List Funnel}, abs (Fs.map (Funnel.ren
     | ground G => simp only [Funnel.ren, Funnel.abs]; rw [GTy.ren_ty]; rfl
     | funnel X => rfl
 
-theorem Pairing.renT {rt : TRen} {Delta Delta' : Bounds} (hb : BRen rt Delta Delta') {Fs : List Funnel}
-    {Ts : List Ty} {Dp : Bounds} {Tp : List Ty} (h : Pairing Delta Fs Ts Dp Tp) :
-    Pairing Delta' (Fs.map (Funnel.ren rt)) (Ty.renList rt Ts)
-      (Dp.map fun b => ({ X := rn rt b.X, T := b.T.ren rt } : Bound)) (Ty.renList rt Tp) := by
+theorem RestrictB.renT {rt : TRen} {Delta Delta' : Bounds} (hb : BRen rt Delta Delta') {Fs : List Funnel}
+    {Dp : Bounds} (h : RestrictB Delta Fs Dp) :
+    RestrictB Delta' (Fs.map (Funnel.ren rt)) (Dp.map fun b => ({ X := rn rt b.X, T := b.T.ren rt } : Bound)) := by
   induction h with
-  | nil => exact Pairing.nil
-  | funnel hm _ ih => exact Pairing.funnel (hb _ hm) ih
-  | @ground G Fs Ts Delta0 Ts0 _ ih =>
-    simp only [List.map_cons, Funnel.ren, Ty.renList]
-    rw [GTy.ren_ty]
-    exact Pairing.ground ih
+  | nil => exact RestrictB.nil
+  | funnel hm _ ih => exact RestrictB.funnel (hb _ hm) ih
+  | ground _ ih => exact RestrictB.ground ih
 
 mutual
 theorem Ty.ftv_subst_sub {s : TSubst} {A : List TVarName} : forall {T : Ty},
@@ -265,12 +255,9 @@ theorem declMeth_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {K : Cla
     {Dl : Bounds} {T0 : Ty} {m : MethName} {ps : List VarDecl} {e : Expr} (hM : List.Mem (Method.mk Dl T0 m ps e) K.Ms) :
     (forall X, List.Mem X (Ty.ftvList (cod Dl)) -> List.Mem X (K.gvars ++ dom Dl)) /\
       (forall X, List.Mem X (Ty.ftvList (T0 :: ps.map VarDecl.T)) -> List.Mem X (K.gvars ++ dom Dl)) := by
-  rcases scopeExists hwf hok hk with ⟨Dk, Tk, hs⟩
+  rcases scopeExists hwf hok hk with ⟨Dk, hs⟩
   rcases scopeFacts hwf hok hs with ⟨K', hk'⟩
-  have hname : K'.name = K.name := by
-    rcases hk'.2.1 with ⟨Us, hUs⟩
-    rcases ClassDecl.generic_name K with ⟨Vs, hVs⟩; rw [hVs] at hUs; simp only [Ty.cls.injEq] at hUs; exact hUs.1.symm
-  have ek := Declared.unique hwf hk'.1 hk hname
+  have ek := Declared.unique hwf hk'.1 hk hk'.2.1
   subst ek
   rcases hk'.2.2.meths _ hM with ⟨Gamma, hmo⟩
   have hmi := methodOk_inv hmo

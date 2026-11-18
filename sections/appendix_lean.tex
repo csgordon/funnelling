@@ -31,7 +31,7 @@ The files are:
 \begin{itemize}
 \item \leanfile{Syntax.lean}: names, types, ground types, funnels, expressions, methods, values, declarations, class declarations $K$.
 \item \leanfile{Substitution.lean}: substitution of type variables and of variables, and $\mathsf{fresh}$.
-\item \leanfile{Declarations.lean}: expression contexts, $\mathsf{declared}$, $M\in C$, $\mathsf{generic}$, the pairing, $\mathsf{scope}$, $\mathsf{typeOf}$.
+\item \leanfile{Declarations.lean}: expression contexts, $\mathsf{declared}$, $M\in C$, $\mathsf{generic}$, $\Delta|_{\pl{F}}$, $\mathsf{scope}$, $\mathsf{typeOf}$.
 \item \leanfile{WellFormed.lean}: the well-formedness requirements A1-A12.
 \item \leanfile{Typing.lean}: subtyping, kinding, checked casts, $\mathsf{overrideOk}$, $\mathsf{consistent}$, typing, method, class and program typing.
 \item \leanfile{Reduction.lean}: evaluation contexts and the reduction.
@@ -77,7 +77,7 @@ The paper defines $\tsubst{T}{\pl{F}}{\pl{T}}$ only when $\pl{F}$ contains no gr
 The paper defines a simultaneous substitution only when the names in its domain are distinct.
 Rules \textsc{topFound} and \textsc{localFound} have this as premises (\texttt{Nodup}), since their domains hold the names chosen by $\mathsf{fresh}$; in the other rules the domain is distinct by A5, A6 and A7.
 \item \textbf{Definitions.}
-A \textbf{Define} box of the paper with \emph{where} clauses ($\mathsf{declared}$, $\mathsf{generic}$, $\mathsf{scope}$, the pairing, $\mathsf{overrideOk}(T,M)$) is an inductive relation, one constructor per clause; $M\in C$ and $K\gap\mathsf{consistent}$ are definitions with an existential, \texttt{MethodIn} and \texttt{Consistent}.
+A \textbf{Define} box of the paper with \emph{where} clauses ($\mathsf{declared}$, $\mathsf{generic}$, $\mathsf{scope}$, $\mathsf{overrideOk}(T,M)$) is an inductive relation, one constructor per clause; $M\in C$ and $K\gap\mathsf{consistent}$ are definitions with an existential, \texttt{MethodIn} and \texttt{Consistent}.
 In $\mathsf{declared}$, $\mathsf{generic}$, $\mathsf{scope}$ and $\mathsf{overrideOk}(T,M)$, the constructor of the clause for a top-level class is \texttt{dec}, and the constructor of the clause for a local class is \texttt{newLocal}; the clause of $\mathsf{overrideOk}(T,M)$ with $m\not\in\pl{M}$ is \texttt{absent}.
 A definition of a function ($\mathrm{dom}$, $\mathrm{cod}$, $|F|$, $\mathsf{typeOf}$, the substitutions) is a function.
 \end{itemize}
@@ -475,53 +475,50 @@ def abs (Fs : List Funnel) : List Ty := Fs.map Funnel.abs
 \mapping{$\generic{C}=T$ is \texttt{Generic d C T}; $|F|$ is \texttt{Funnel.abs F} and $|\pl{F}|$ is \texttt{abs Fs}.}
 \end{cmp}
 
-\begin{cmp}{Pairing}
+\begin{cmp}{$\Delta|_{\pl{F}}$}
 \begin{paperside}
 \fit{$\begin{array}{@{}l@{}}
-\pairing{\Delta}{\emptyset}{\emptyset} = \emptyset;\emptyset\\
-\pairing{\Delta}{\funnel{X},\pl{F}}{T,\pl{T}} = \ext{X}{\Delta(X)},\Delta';T,\pl{T}'\\
-\quad\textrm{where }\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'\\
-\pairing{\Delta}{G,\pl{F}}{G,\pl{T}} = \pairing{\Delta}{\pl{F}}{\pl{T}}
+\Delta|_{\pl{F}} = \ext{X_1}{\Delta(X_1)},\ldots,\ext{X_n}{\Delta(X_n)}\\
+\quad\textrm{where }X_1,\ldots,X_n=\mathrm{dom}(\pl{F})
 \end{array}$}
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-inductive Pairing (Delta : Bounds) : List Funnel -> List Ty -> Bounds -> List Ty -> Prop
-  | nil : Pairing Delta [] [] [] []
-  | funnel {X T T0 Fs Ts Delta' Ts'} :
-      List.Mem { X := X, T := T } Delta -> Pairing Delta Fs Ts Delta' Ts' ->
-      Pairing Delta (.funnel X :: Fs) (T0 :: Ts) ({ X := X, T := T } :: Delta') (T0 :: Ts')
-  | ground {G Fs Ts Delta' Ts'} :
-      Pairing Delta Fs Ts Delta' Ts' -> Pairing Delta (.ground G :: Fs) (G.ty :: Ts) Delta' Ts'
+inductive RestrictB (Delta : Bounds) : List Funnel -> Bounds -> Prop
+  | nil : RestrictB Delta [] []
+  | funnel {X T Fs Delta'} :
+      List.Mem { X := X, T := T } Delta -> RestrictB Delta Fs Delta' ->
+      RestrictB Delta (.funnel X :: Fs) ({ X := X, T := T } :: Delta')
+  | ground {G Fs Delta'} : RestrictB Delta Fs Delta' -> RestrictB Delta (.ground G :: Fs) Delta'
 \end{lstlisting}
 \end{leanside}
-\mapping{$\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'$ is \texttt{Pairing Delta Fs Ts Delta' Ts'}; $\Delta(X)=T$ is \texttt{List.Mem \{ X := X, T := T \} Delta}, unique by A5 and A7.}
+\mapping{$\Delta|_{\pl{F}}=\Delta'$ is \texttt{RestrictB Delta Fs Delta'}, by recursion on $\pl{F}$: \texttt{funnel} adds the bound of the type variable of a funnel $\funnel{X}$, and \texttt{ground} skips a ground funnel, so the type variables of $\Delta'$ are $\mathrm{dom}(\pl{F})$; $\Delta(X)=T$ is \texttt{List.Mem \{ X := X, T := T \} Delta}, unique by A5 and A7.}
 \end{cmp}
 
-\begin{cmp}{$\mathsf{scope}(\gen{C}{\pl{T}})$}
+\begin{cmp}{$\mathsf{scope}(C)$}
 \begin{paperside}
 \fit{$\begin{array}{@{}l@{}}
-\mathsf{scope}(\gen{C}{\pl{T}}) = \Delta;\pl{T}\\
+\mathsf{scope}(C) = \Delta\\
 \quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}\\
-\mathsf{scope}(\gen{C_0}{\pl{T}}) = \pairing{\Delta,\Delta'}{\pl{F}}{\pl{T}}\\
+\mathsf{scope}(C_0) = (\Delta,\Delta')|_{\pl{F}}\\
 \quad\textrm{where }\method{\Delta'}{\_}{m}{\_}{\ret{e}}\in C\\
 \quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e\\
-\quad\phantom{\textrm{where }}\mathsf{scope}(\generic{C})=\Delta;\_
+\quad\phantom{\textrm{where }}\mathsf{scope}(C)=\Delta
 \end{array}$}
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-inductive Scope (d : Decls) : Ty -> Bounds -> List Ty -> Prop
-  | dec {D Ts} : Declared d (.dec D) -> Scope d (.cls D.C Ts) D.Delta Ts
-  | newLocal {C Delta' T0 m ps e C0 Fs C' Ts' es Ms T Delta Ts'' Ts Delta0 Ts0} :
+inductive Scope (d : Decls) : ClassName -> Bounds -> Prop
+  | dec {D} : Declared d (.dec D) -> Scope d D.C D.Delta
+  | newLocal {C Delta' T0 m ps e C0 Fs C' Ts' es Ms Delta Delta0} :
       MethodIn d (.mk Delta' T0 m ps e) C ->
       OccursIn (.newLocal C0 Fs C' Ts' es Ms) e ->
-      Generic d C T -> Scope d T Delta Ts'' ->
-      Pairing (Delta ++ Delta') Fs Ts Delta0 Ts0 ->
-      Scope d (.cls C0 Ts) Delta0 Ts0
+      Scope d C Delta ->
+      RestrictB (Delta ++ Delta') Fs Delta0 ->
+      Scope d C0 Delta0
 \end{lstlisting}
 \end{leanside}
-\mapping{$\mathsf{scope}(T)=\Delta;\pl{T}$ is \texttt{Scope d T Delta Ts}; $\mathsf{scope}(\generic{C})$ is \texttt{Generic d C T} followed by \texttt{Scope d T}.}
+\mapping{$\mathsf{scope}(C)=\Delta$ is \texttt{Scope d C Delta}.}
 \end{cmp}
 
 \begin{cmp}{$\mathsf{typeOf}(v)$}
@@ -971,9 +968,9 @@ inductive Sub (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
   \kind{\Delta}{X}
 }$}\\[1ex]
 \fit{$\inferrule{
-  \mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}_0\\
+  \mathsf{scope}(C)=\Delta_0\\
   \kind{\Delta}{\pl{T}}\\\\
-  \subtype{\Delta}{\pl{T}_0}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}_0}}
+  \subtype{\Delta}{\pl{T}}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}}}
 }{
   \kind{\Delta}{\gen{C}{\pl{T}}}
 }$}
@@ -982,11 +979,11 @@ inductive Sub (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
 \begin{lstlisting}[style=leanside]
 inductive Kind (d : Decls) (Delta : Bounds) : Ty -> Prop
   | kindVar {X T} : List.Mem { X := X, T := T } Delta -> Kind d Delta (.var X)
-  | kindClass {C Ts Delta0 Ts0} :
-      Scope d (.cls C Ts) Delta0 Ts0 ->
+  | kindClass {C Ts Delta0} :
+      Scope d C Delta0 ->
       (forall T, List.Mem T Ts -> Kind d Delta T) ->
-      Ts0.length = Delta0.length ->
-      SubSeq d Delta Ts0 (Ty.substList (bind Delta0 Ts0) (cod Delta0)) ->
+      Ts.length = Delta0.length ->
+      SubSeq d Delta Ts (Ty.substList (bind Delta0 Ts) (cod Delta0)) ->
       Kind d Delta (.cls C Ts)
 \end{lstlisting}
 \end{leanside}
@@ -1102,11 +1099,11 @@ inductive Typing (d : Decls) : Bounds -> TypeEnv -> Expr -> Ty -> Prop
 \begin{paperside}
 \fit{$\inferrule{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\\\
-  \mathsf{scope}(\gen{C_0}{\pl{T}_0})=\Delta_0;\pl{T}_2\\\\
+  \mathsf{scope}(C_0)=\Delta_0\\\\
   \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in C_0\\\\
-  \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_2,\pl{T}_1}\\\\
+  \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\\\
   \kind{\Delta}{\pl{T}_1}\\\\
-  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_2,\pl{T}_1}}\\\\
+  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}\\\\
   \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T'_1,\ldots,T'_n}
 }{
   \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}}{T'_0}
@@ -1114,16 +1111,16 @@ inductive Typing (d : Decls) : Bounds -> TypeEnv -> Expr -> Ty -> Prop
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | call {Delta Gamma e0 C0 Ts0 Delta0 Ts2 Delta1 T0 m ps e Ts1 es T0' Ts'} :
+  | call {Delta Gamma e0 C0 Ts0 Delta0 Delta1 T0 m ps e Ts1 es T0' Ts'} :
       Typing d Delta Gamma e0 (.cls C0 Ts0) ->
-      Scope d (.cls C0 Ts0) Delta0 Ts2 ->
+      Scope d C0 Delta0 ->
       MethodIn d (.mk Delta1 T0 m ps e) C0 ->
-      Ts2.length = Delta0.length -> Ts1.length = Delta1.length ->
-      T0' :: Ts' = Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ Ts1))
+      Ts0.length = Delta0.length -> Ts1.length = Delta1.length ->
+      T0' :: Ts' = Ty.substList (bind (Delta0 ++ Delta1) (Ts0 ++ Ts1))
         (T0 :: ps.map VarDecl.T) ->
       KindSeq d Delta Ts1 ->
       SubSeq d Delta Ts1
-        (Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ Ts1)) (cod Delta1)) ->
+        (Ty.substList (bind (Delta0 ++ Delta1) (Ts0 ++ Ts1)) (cod Delta1)) ->
       TypingSeq d Delta Gamma es Ts' ->
       Typing d Delta Gamma (.call e0 Ts1 m es) T0'
 \end{lstlisting}
@@ -1199,7 +1196,7 @@ inductive Typing (d : Decls) : Bounds -> TypeEnv -> Expr -> Ty -> Prop
 \begin{paperside}
 \fit{$\inferrule{
   \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\\\
-  \pairing{\Delta}{\pl{F}}{|\pl{F}|}=\Delta';\_\\
+  \Delta|_{\pl{F}}=\Delta'\\
   \ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')\\\\
   \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\
   \kind{\Delta'}{\gen{C'}{\pl{T}}}\\
@@ -1216,9 +1213,9 @@ $\Gamma\setminus x$ is $\Gamma$ without the variable $x$.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | newLocal {Delta Gamma C Fs C' Ts es Ms Delta' Ts'' T''} :
+  | newLocal {Delta Gamma C Fs C' Ts es Ms Delta' T''} :
       Consistent d (.newLocal C Fs C' Ts es Ms) ->
-      Pairing Delta Fs (abs Fs) Delta' Ts'' ->
+      RestrictB Delta Fs Delta' ->
       (forall X, List.Mem X (Ty.ftvList (cod Delta')) -> List.Mem X (dom Delta')) ->
       Kind d Delta' (.cls C (abs Fs)) ->
       Kind d Delta' (.cls C' Ts) ->
@@ -1476,7 +1473,7 @@ The proofs of progress, preservation and determinism use these lemmas:
 For \texttt{FreshM}: if $\typing{\Delta,\Delta_m}{\Gamma,\pl{T}\gap\pl{x}}{e}{T_0}$ and \texttt{FreshM} renames $\Delta_m$, $\pl{x}$ and $e$ into $\Delta''$, $\pl{x}'$ and $e_0$, then $\typing{\Delta,\Delta''}{\Gamma,\pl{T}\sigma\gap\pl{x}'}{e_0}{T_0\sigma}$, with $\sigma=[\Delta_m=\mathrm{dom}(\Delta'')]$, when $\mathrm{dom}(\Delta'')$ and $\pl{x}'$ are disjoint from $\mathrm{dom}(\Delta)$ and $\mathrm{dom}(\Gamma)$, and $e_0$ satisfies A7 and A8.
 \item \textbf{Weakening} of $\Gamma$ and $\Delta$, for typing, kinding and subtyping, when the added names are not bound in the expression.
 \item \textbf{Substitution of type variables.} If $\Delta$ types $e$, and ground types $\pl{G}$, well kinded under $\emptyset$, satisfy the bounds in $\Delta$ of the type variables $\pl{X}$, then $e\sigma$ is typed with the substituted type under $\Delta_\sigma$, where $\sigma$ is $[\pl{X}=\pl{G}]$ and $\Delta_\sigma$ is $\Delta$ without $\pl{X}$ and with $\sigma$ applied to the other bounds.
-The type variables $\pl{X}$ can be in any position of $\Delta$: rule \textsc{methodOk} appends the bounds of the method, and the pairing of rule \textsc{newLocal} orders the bounds as the funnels.
+The type variables $\pl{X}$ can be in any position of $\Delta$: rule \textsc{methodOk} appends the bounds of the method, and $\Delta|_{\pl{F}}$ of rule \textsc{newLocal} orders the bounds as the funnels.
 Kinding and subtyping are preserved, but the checked cast is not: in rule \textsc{castVar}, after $X$ becomes $G$, the source $G$ may not reach the target through \textsc{castUp} or \textsc{castDown}.
 For rule \textsc{ifInstanceof} the lemma uses, by induction on the checked cast: if $\cast{\Delta}{T_0}{T}$, then there is $T_1$, either $T_0\sigma$ or the substituted bound of a type variable, with $\subtype{\Delta_\sigma}{T_0\sigma}{T_1}$ and $\cast{\Delta_\sigma}{T_1}{T\sigma}$.
 In case \textsc{castVar}, $T_1$ comes from the induction hypothesis, and $\subtype{\Delta_\sigma}{X\sigma}{T_1}$ follows from the bound of $X$ (rule \textsc{subVar} when $X$ stays, the premise on $\pl{G}$ when $X$ is replaced) and transitivity.

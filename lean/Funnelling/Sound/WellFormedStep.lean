@@ -367,13 +367,13 @@ theorem Typing.closed {d : Decls} : forall {Delta Gamma e T}, Typing d Delta Gam
   | _, _, _, _, .newLocal (Fs := Fs) _ h2 _ _ h5 h6 h7 _ => by
     have h6c := Typing.closed h6
     simp only [Expr.closed, Bool.and_eq_true] at h6c
-    have hsD := Pairing.sub h2
+    have hsD := h2.sub
     simp only [Expr.closed, Bool.and_eq_true, List.all_append]
     refine ⟨⟨⟨?_, ?_⟩, h6c.2⟩, closedListM_of (fun M hM => Method.closed_this
       (Method.closed_mono (MethodOk.closed (h7 M hM)) (dom_sub1 hsD) ?_))⟩
     . apply all_contains_iff.mpr
       intro X hX
-      rw [<- Pairing.dom_eq h2] at hX
+      rw [<- h2.dom_eq] at hX
       exact dom_sub1 hsD X hX
     . simp_all
     . intro y hy

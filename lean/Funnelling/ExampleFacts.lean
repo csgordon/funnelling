@@ -389,13 +389,13 @@ theorem inv_callTop {d : Decls} (hwf : WFDecls d) {D : Dec} (hD : List.Mem D d) 
                 | nil => have h7 := hk.2.2; rw [hMs] at h7; cases h7
                 | cons => rw [hMs] at h6; simp at h6
     have hsc := hw.scope
-    rw [hC.1, hC.2] at hsc
+    rw [hC.1] at hsc
     have hsc2 := Scope.dec_eq hwf (.dec hD) hsc
     have hm := hw.meth
     rw [hC.1] at hm
     have hm2 := MethodIn.dec hwf (.dec hD) hm
     have hsig := hw.sig
-    rw [hsc2.1, hsc2.2, hb] at hsig
+    rw [hsc2, hC.2, hb] at hsig
     simp only [List.nil_append] at hsig
     exact Exists.intro _ (Exists.intro _ (Exists.intro _ (Exists.intro _ (Exists.intro _ (Exists.intro _
       (And.intro hm2 (And.intro hw.len1 (And.intro hsig (And.intro hw.args hw.up)))))))))
@@ -448,7 +448,7 @@ theorem overDec {d : Decls} (hwf : WFDecls d) (hN : Closed d [Object]) (hO : Obj
 
 theorem kNull {d : Decls} {D : Dec} (hD : List.Mem D d) (hb : D.Delta = []) {Delta : Bounds} :
     Kind d Delta (.cls D.C []) :=
-  Kind.kindClass (Delta0 := D.Delta) (Ts0 := []) (Scope.dec (.dec hD)) (by intro T h; cases h) (by rw [hb]; rfl)
+  Kind.kindClass (Delta0 := D.Delta) (Scope.dec (.dec hD)) (by intro T h; cases h) (by rw [hb]; rfl)
     (by rw [hb]; exact .nil)
 
 end Funnelling.ExampleFacts

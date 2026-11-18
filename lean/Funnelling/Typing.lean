@@ -25,11 +25,11 @@ abbrev SubSeq (d : Decls) (Delta : Bounds) : List Ty -> List Ty -> Prop := Seq2 
 
 inductive Kind (d : Decls) (Delta : Bounds) : Ty -> Prop
   | kindVar {X T} : List.Mem { X := X, T := T } Delta -> Kind d Delta (.var X)
-  | kindClass {C Ts Delta0 Ts0} :
-      Scope d (.cls C Ts) Delta0 Ts0 ->
+  | kindClass {C Ts Delta0} :
+      Scope d C Delta0 ->
       (forall T, List.Mem T Ts -> Kind d Delta T) ->
-      Ts0.length = Delta0.length ->
-      SubSeq d Delta Ts0 (Ty.substList (bind Delta0 Ts0) (cod Delta0)) ->
+      Ts.length = Delta0.length ->
+      SubSeq d Delta Ts (Ty.substList (bind Delta0 Ts) (cod Delta0)) ->
       Kind d Delta (.cls C Ts)
 
 abbrev KindSeq (d : Decls) (Delta : Bounds) (Ts : List Ty) : Prop := forall T, List.Mem T Ts -> Kind d Delta T
@@ -102,14 +102,14 @@ inductive Typing (d : Decls) : Bounds -> TypeEnv -> Expr -> Ty -> Prop
       List.Mem { T := T, f := f } D.Ss ->
       Ts'.length = D.Delta.length ->
       Typing d Delta Gamma (.field e f) (T.subst (bind D.Delta Ts'))
-  | call {Delta Gamma e0 C0 Ts0 Delta0 Ts2 Delta1 T0 m ps e Ts1 es T0' Ts'} :
+  | call {Delta Gamma e0 C0 Ts0 Delta0 Delta1 T0 m ps e Ts1 es T0' Ts'} :
       Typing d Delta Gamma e0 (.cls C0 Ts0) ->
-      Scope d (.cls C0 Ts0) Delta0 Ts2 ->
+      Scope d C0 Delta0 ->
       MethodIn d (.mk Delta1 T0 m ps e) C0 ->
-      Ts2.length = Delta0.length -> Ts1.length = Delta1.length ->
-      T0' :: Ts' = Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ Ts1)) (T0 :: ps.map VarDecl.T) ->
+      Ts0.length = Delta0.length -> Ts1.length = Delta1.length ->
+      T0' :: Ts' = Ty.substList (bind (Delta0 ++ Delta1) (Ts0 ++ Ts1)) (T0 :: ps.map VarDecl.T) ->
       KindSeq d Delta Ts1 ->
-      SubSeq d Delta Ts1 (Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ Ts1)) (cod Delta1)) ->
+      SubSeq d Delta Ts1 (Ty.substList (bind (Delta0 ++ Delta1) (Ts0 ++ Ts1)) (cod Delta1)) ->
       TypingSeq d Delta Gamma es Ts' ->
       Typing d Delta Gamma (.call e0 Ts1 m es) T0'
   | superCall {Delta Gamma e0 D Ts D0 Ts0 Delta1 T0 m ps e Ts1 es T0' Ts'} :
@@ -131,9 +131,9 @@ inductive Typing (d : Decls) : Bounds -> TypeEnv -> Expr -> Ty -> Prop
       TypingSeq d Delta Gamma es1 (Ty.substList (bind D.Delta Ts') (D.Ss.map Slot.T)) ->
       Typing d Delta Gamma (.new D.C' (Ty.substList (bind D.Delta Ts') D.Ts) es2) T'' ->
       Typing d Delta Gamma (.new D.C Ts' (es1 ++ es2)) (.cls D.C Ts')
-  | newLocal {Delta Gamma C Fs C' Ts es Ms Delta' Ts'' T''} :
+  | newLocal {Delta Gamma C Fs C' Ts es Ms Delta' T''} :
       Consistent d (.newLocal C Fs C' Ts es Ms) ->
-      Pairing Delta Fs (abs Fs) Delta' Ts'' ->
+      RestrictB Delta Fs Delta' ->
       (forall X, List.Mem X (Ty.ftvList (cod Delta')) -> List.Mem X (dom Delta')) ->
       Kind d Delta' (.cls C (abs Fs)) ->
       Kind d Delta' (.cls C' Ts) ->

@@ -95,7 +95,6 @@ structure CallW where
   C0 : ClassName
   Ts0 : List Ty
   Delta0 : Bounds
-  Ts2 : List Ty
   Delta1 : Bounds
   T0 : Ty
   ps : List VarDecl
@@ -106,13 +105,13 @@ structure CallW where
 structure CallP (d : Decls) (Delta : Bounds) (Gamma : TypeEnv) (e0 : Expr) (Ts1 : List Ty) (m : MethName)
     (es : List Expr) (T : Ty) (w : CallW) : Prop where
   ty0 : Typing d Delta Gamma e0 (.cls w.C0 w.Ts0)
-  scope : Scope d (.cls w.C0 w.Ts0) w.Delta0 w.Ts2
+  scope : Scope d w.C0 w.Delta0
   meth : MethodIn d (.mk w.Delta1 w.T0 m w.ps w.body) w.C0
-  len2 : w.Ts2.length = w.Delta0.length
+  len0 : w.Ts0.length = w.Delta0.length
   len1 : Ts1.length = w.Delta1.length
-  sig : w.T0' :: w.Ts' = Ty.substList (bind (w.Delta0 ++ w.Delta1) (w.Ts2 ++ Ts1)) (w.T0 :: w.ps.map VarDecl.T)
+  sig : w.T0' :: w.Ts' = Ty.substList (bind (w.Delta0 ++ w.Delta1) (w.Ts0 ++ Ts1)) (w.T0 :: w.ps.map VarDecl.T)
   kinds : KindSeq d Delta Ts1
-  subs : SubSeq d Delta Ts1 (Ty.substList (bind (w.Delta0 ++ w.Delta1) (w.Ts2 ++ Ts1)) (cod w.Delta1))
+  subs : SubSeq d Delta Ts1 (Ty.substList (bind (w.Delta0 ++ w.Delta1) (w.Ts0 ++ Ts1)) (cod w.Delta1))
   args : TypingSeq d Delta Gamma es w.Ts'
   up : Up d Delta w.T0' T
 
@@ -122,7 +121,7 @@ theorem inv_call {d Delta Gamma e0 Ts1 m es} : forall {e T}, Typing d Delta Gamm
     rcases inv_call h he with ⟨w, hw⟩; exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
   | _, _, .call h1 h2 h3 h4 h5 h6 h7 h8 h9, he => by
     cases he
-    exact Exists.intro (CallW.mk _ _ _ _ _ _ _ _ _ _) (CallP.mk h1 h2 h3 h4 h5 h6 h7 h8 h9 Up.refl)
+    exact Exists.intro (CallW.mk _ _ _ _ _ _ _ _ _) (CallP.mk h1 h2 h3 h4 h5 h6 h7 h8 h9 Up.refl)
   | _, _, .var .., he => by cases he
   | _, _, .newObject, he => by cases he
   | _, _, .field .., he => by cases he
@@ -176,13 +175,12 @@ theorem inv_super {d Delta Gamma e0 T0 Ts1 m es} : forall {e T}, Typing d Delta 
 
 structure LocalW where
   Delta' : Bounds
-  Ts'' : List Ty
   T'' : Ty
 
 structure LocalP (d : Decls) (Delta : Bounds) (Gamma : TypeEnv) (C : ClassName) (Fs : List Funnel) (C0 : ClassName)
     (Ts : List Ty) (es : List Expr) (Ms : List Method) (T' : Ty) (w : LocalW) : Prop where
   cons : Consistent d (.newLocal C Fs C0 Ts es Ms)
-  pair : Pairing Delta Fs (abs Fs) w.Delta' w.Ts''
+  restr : RestrictB Delta Fs w.Delta'
   closedB : forall X, List.Mem X (Ty.ftvList (cod w.Delta')) -> List.Mem X (dom w.Delta')
   kindC : Kind d w.Delta' (.cls C (abs Fs))
   kindS : Kind d w.Delta' (.cls C0 Ts)
@@ -198,7 +196,7 @@ theorem inv_local {d Delta Gamma C Fs C0 Ts es Ms} : forall {e T}, Typing d Delt
     rcases inv_local h he with ⟨w, hw⟩; exact Exists.intro w { hw with up := hw.up.trans (Or.inr (And.intro hs hk)) }
   | _, _, .newLocal h1 h2 h3 h4 h5 h6 h7 h8, he => by
     cases he
-    exact Exists.intro (LocalW.mk _ _ _) (LocalP.mk h1 h2 h3 h4 h5 h6 h7 h8 Up.refl)
+    exact Exists.intro (LocalW.mk _ _) (LocalP.mk h1 h2 h3 h4 h5 h6 h7 h8 Up.refl)
   | _, _, .var .., he => by cases he
   | _, _, .newObject, he => by cases he
   | _, _, .field .., he => by cases he
@@ -313,13 +311,13 @@ theorem typing_plug {d Delta Gamma} {a : Expr} : forall (E : EvalCtx) {T : Ty},
     rcases inv_call h rfl with ⟨w, hw⟩
     rcases typing_plug E hw.ty0 with ⟨Ta, hTa⟩
     exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hw.up.typing
-      (Typing.call (hTa.2 a' h') hw.scope hw.meth hw.len2 hw.len1 hw.sig hw.kinds hw.subs hw.args)))
+      (Typing.call (hTa.2 a' h') hw.scope hw.meth hw.len0 hw.len1 hw.sig hw.kinds hw.subs hw.args)))
   | .callArg v Gs m vs E es, T, h => by
     rcases inv_call h rfl with ⟨w, hw⟩
     rcases TypingSeq.mid hw.args with ⟨Tx, hx⟩
     rcases typing_plug E hx.1 with ⟨Ta, hTa⟩
     exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hw.up.typing
-      (Typing.call hw.ty0 hw.scope hw.meth hw.len2 hw.len1 hw.sig hw.kinds hw.subs (hx.2 _ (hTa.2 a' h')))))
+      (Typing.call hw.ty0 hw.scope hw.meth hw.len0 hw.len1 hw.sig hw.kinds hw.subs (hx.2 _ (hTa.2 a' h')))))
   | .superRecv E G Gs m es, T, h => by
     rcases inv_super h rfl with ⟨w, hw⟩
     have hann := hw.ann
@@ -357,7 +355,7 @@ theorem typing_plug {d Delta Gamma} {a : Expr} : forall (E : EvalCtx) {T : Ty},
     rcases typing_new_mid hw.tyNew rfl with ⟨Tx, hx⟩
     rcases typing_plug E hx.1 with ⟨Ta, hTa⟩
     exact Exists.intro Ta (And.intro hTa.1 (fun a' h' => hw.up.typing
-      (Typing.newLocal hw.cons hw.pair hw.closedB hw.kindC hw.kindS (hx.2 _ (hTa.2 a' h')) hw.meths hw.over)))
+      (Typing.newLocal hw.cons hw.restr hw.closedB hw.kindC hw.kindS (hx.2 _ (hTa.2 a' h')) hw.meths hw.over)))
   | .ifCond E G x e1 e2, T, h => by
     rcases inv_if h rfl with ⟨w, hw⟩
     rcases typing_plug E hw.ty0 with ⟨Ta, hTa⟩

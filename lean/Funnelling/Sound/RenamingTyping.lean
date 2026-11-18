@@ -24,7 +24,7 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
       have ih := Typing.ren hwf hok hd h1 hr1 env hn hn' ht ht' hu hu'
       rw [ren_bind h4 (field_closed hok h2 h3)]
       exact Typing.field ih h2 h3 (by rw [renList_length, h4])
-  | _, _, _, _, .call (Delta0 := Delta0) (Delta1 := Delta1) (Ts2 := Ts2) (Ts1 := Ts1) h1 h2 h3 h4 h5 h6 h7 h8 h9, _, rt, _, _, _, _, _, _, _,
+  | _, _, _, _, .call (Delta0 := Delta0) (Delta1 := Delta1) (Ts0 := Ts0) (Ts1 := Ts1) h1 h2 h3 h4 h5 h6 h7 h8 h9, _, rt, _, _, _, _, _, _, _,
       hr, env, hn, hn', ht, ht', hu, hu' => by
     cases hr with
     | call hr1 hr2 =>
@@ -33,10 +33,10 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
       have hcl := methodIn_closed hwf hok h2 h3
       have ih1 := Typing.ren hwf hok hd h1 hr1 env hn.1 hn'.1 ht.1 ht'.1 hu.1 hu'.1
       have ih2 := TypingSeq.ren hwf hok hd h9 hr2 env hn.2 hn'.2 ht.2 ht'.2 hu.2 hu'.2
-      have hlen : (Ts2 ++ Ts1).length = (Delta0 ++ Delta1).length := by simp [h4, h5]
+      have hlen : (Ts0 ++ Ts1).length = (Delta0 ++ Delta1).length := by simp [h4, h5]
       have e6 := congrArg (Ty.renList rt) h6
       rw [renList_bind hlen hcl.1, renList_append] at e6
-      refine Typing.call ih1 (Scope.renT h2) h3 (by rw [renList_length, h4]) (by rw [renList_length, h5]) e6
+      refine Typing.call ih1 h2 h3 (by rw [renList_length, h4]) (by rw [renList_length, h5]) e6
         (KindSeq.renT hd env.bD h7) ?_ ih2
       have := SubSeq.renT hd env.bD h8
       rwa [renList_bind hlen hcl.2, renList_append] at this
@@ -44,7 +44,7 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
       _, rt, _, _, _, _, _, _, _, hr, env, hn, hn', ht, ht', hu, hu' => by
     cases hr with
     | superCall hr1 hr2 =>
-      have hcl := methodIn_closed hwf hok (Scope.dec (Ts := Ts0) h2) h3
+      have hcl := methodIn_closed hwf hok (Scope.dec h2) h3
       have ih := TypingSeq.ren hwf hok hd h11 (RenEs.cons hr1 hr2) env
         (by simpa [Expr.noShadowList, Expr.noShadow] using hn) (by simpa [Expr.noShadowList, Expr.noShadow] using hn')
         (by simpa [NoThis, Expr.vbindersList, Expr.vbinders] using ht)
@@ -98,8 +98,7 @@ theorem Typing.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
         (by simpa [Expr.noShadow] using hn'.1) (by simpa [NoThis, Expr.vbinders] using ht.1)
         (by simpa [NoThis, Expr.vbinders] using ht'.1) (by simpa [Expr.uniq] using hu.1)
         (by simpa [Expr.uniq] using hu'.1)
-      have hp := Pairing.renT env.bD h2
-      rw [<- abs_ren] at hp
+      have hp := RestrictB.renT env.bD h2
       have hk4 := Kind.renT hd hbq h4
       have hk5 := Kind.renT hd hbq h5
       simp only [Ty.ren] at hk4 hk5 |-

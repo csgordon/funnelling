@@ -71,14 +71,14 @@ theorem bind_append_len {Dl1 Dl2 : Bounds} {as bs : List Ty} (h : as.length = Dl
   simp only [bind, dom_append]
   rw [List.zip_append (by simp [h, dom])]
 
-theorem found_sig {d : Decls} (hwf : WFDecls d) {C0 : ClassName} {Ts0 : List Ty} {Delta0 : Bounds} {Ts2 : List Ty}
+theorem found_sig {d : Decls} (hwf : WFDecls d) {C0 : ClassName} {Ts0 : List Ty} {Delta0 : Bounds}
     {Delta1 : Bounds} {T0c : Ty} {m : MethName} {psc : List VarDecl} {body : Expr} {Dp : Bounds} {T0 : Ty}
-    {ps : List VarDecl} {e : Expr} (hs : Scope d (.cls C0 Ts0) Delta0 Ts2)
-    (hm : MethodIn d (.mk Delta1 T0c m psc body) C0) (hl2 : Ts2.length = Delta0.length)
+    {ps : List VarDecl} {e : Expr} (hs : Scope d C0 Delta0)
+    (hm : MethodIn d (.mk Delta1 T0c m psc body) C0) (hl0 : Ts0.length = Delta0.length)
     (hO : OverrideOkM d (.cls C0 Ts0) (.mk Dp T0 m ps e)) :
-    Ts2 = Ts0 /\ Dp.length = Delta1.length /\
-      Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ vars (dom Dp))) (cod Delta1) = cod Dp /\
-      Ty.substList (bind (Delta0 ++ Delta1) (Ts2 ++ vars (dom Dp))) (T0c :: psc.map VarDecl.T) =
+    Dp.length = Delta1.length /\
+      Ty.substList (bind (Delta0 ++ Delta1) (Ts0 ++ vars (dom Dp))) (cod Delta1) = cod Dp /\
+      Ty.substList (bind (Delta0 ++ Delta1) (Ts0 ++ vars (dom Dp))) (T0c :: psc.map VarDecl.T) =
         T0 :: ps.map VarDecl.T := by
   rcases hm with ⟨K, hk, hkn, hkM⟩
   generalize hTT : Ty.cls C0 Ts0 = TT at hO
@@ -100,9 +100,8 @@ theorem found_sig {d : Decls} (hwf : WFDecls d) {C0 : ClassName} {Ts0 : List Ty}
     have e2 := hTT.2
     subst e1 e2
     have es := Scope.dec_eq hwf h1 hs
-    rcases es with ⟨es1, es2⟩
-    subst es1 es2
-    exact And.intro rfl (And.intro h4 (And.intro h5 h6))
+    subst es
+    exact ⟨h4, h5, h6⟩
   | @newLocal C1 Fs C1' Ts1' es1 Ms1 _ _ _ _ _ _ Do T0x psx ex h1 h2 h3 h4 h5 h6 =>
     simp only [Ty.cls.injEq] at hTT
     have ek := Declared.unique hwf hk h1 (by rw [hkn]; exact hTT.1)
@@ -117,17 +116,14 @@ theorem found_sig {d : Decls} (hwf : WFDecls d) {C0 : ClassName} {Ts0 : List Ty}
     rcases Scope.loc_declared hs with hsd | hsd
     . rcases hsd with ⟨D, hD, hDC, _⟩
       exact absurd (Declared.dec_loc hwf hD h1 hDC) id
-    . rcases hsd with ⟨Fs2, C2, Ts2', es2, Ms2, Delta, hdecl, hpair⟩
+    . rcases hsd with ⟨Fs2, C2, Ts2', es2, Ms2, Delta, hdecl, hrestr⟩
       have eK := Declared.unique hwf hdecl h1 rfl
       simp only [ClassDecl.newLocal.injEq] at eK
       rcases eK with ⟨_, eF, _⟩
       subst eF
-      have hall : forall F, List.Mem F Fs2 -> F.isFunnel = true := fun F hF => hwf.2.2.2.2.2.2.2.2.2.2 _ h1.mem F hF
-      have eT := pairing_funnels hpair hall
-      subst eT
-      have hb := bind_eq_bindF (Pairing.dom_eq hpair) Ts2
-      refine And.intro rfl (And.intro h4 (And.intro ?_ ?_))
-      . rw [bind_append_len hl2, hb]; exact h5
-      . rw [bind_append_len hl2, hb]; exact h6
+      have hb := bind_eq_bindF hrestr.dom_eq Ts0
+      refine ⟨h4, ?_, ?_⟩
+      . rw [bind_append_len hl0, hb]; exact h5
+      . rw [bind_append_len hl0, hb]; exact h6
 
 end Funnelling
