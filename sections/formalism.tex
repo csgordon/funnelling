@@ -148,19 +148,17 @@ M\in C\textrm{ iff }M\in K\\
 |\funnel{X}| = X\\
 |G| = G
 \end{Define}
-\begin{Define}{\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}'}
-\mathsf{scope}(\gen{C}{\pl{T}}) = \Delta;\pl{T}\\
+\begin{Define}{\mathsf{scope}(C)=\Delta}
+\mathsf{scope}(C) = \Delta\\
 \quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}\\
-\mathsf{scope}(\gen{C_0}{\pl{T}}) = \pairing{\Delta,\Delta'}{\pl{F}}{\pl{T}}\\
+\mathsf{scope}(C_0) = (\Delta,\Delta')|_{\pl{F}}\\
 \quad\textrm{where }\method{\Delta'}{\_}{m}{\_}{\ret{e}}\in C\\
 \quad\phantom{\textrm{where }}\innerobj{C_0}{\pl{F}}{\_}{\_}{\_}{\_}\textrm{ occurs in }e\\
-\quad\phantom{\textrm{where }}\mathsf{scope}(\generic{C})=\Delta;\_
+\quad\phantom{\textrm{where }}\mathsf{scope}(C)=\Delta
 \end{Define}
-\begin{Define}{\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'}
-\pairing{\Delta}{\emptyset}{\emptyset} = \emptyset;\emptyset\\
-\pairing{\Delta}{\funnel{X},\pl{F}}{T,\pl{T}} = \ext{X}{\Delta(X)},\Delta';T,\pl{T}'\\
-\quad\textrm{where }\pairing{\Delta}{\pl{F}}{\pl{T}}=\Delta';\pl{T}'\\
-\pairing{\Delta}{G,\pl{F}}{G,\pl{T}} = \pairing{\Delta}{\pl{F}}{\pl{T}}
+\begin{Define}{\Delta|_{\pl{F}}=\Delta'}
+\Delta|_{\pl{F}} = \ext{X_1}{\Delta(X_1)},\ldots,\ext{X_n}{\Delta(X_n)}\\
+\quad\textrm{where }X_1,\ldots,X_n=\mathrm{dom}(\pl{F})
 \end{Define}
 \par}
 
@@ -168,10 +166,8 @@ An expression $e'$ occurs in $e$ when $e=\mathcal{C}[e']$, for an expression con
 By well-formedness requirement A1, a class name $C$ identifies at most one $K$ with $\declared{K}$.
 $M\in K$ holds when $M$ is a method of the class declaration $K$, top-level or local.
 $M\in C$ holds when $M$ is a method of the declared class $C$, top-level or local.
-For a top-level class $C$ with bounds $\Delta$, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$, recovering (effectively) a type substitution which can be used with methods of the class.
-For a local class $C_0$ with funnels $\pl{F}$, $\mathsf{scope}(\gen{C_0}{\pl{T}})=\Delta_0;\pl{T}_0$, where $\Delta_0$ holds, in the order of $\mathrm{dom}(\pl{F})$, the bound $\ext{X}{T}$ in $\Delta,\Delta'$ of each $X\in\mathrm{dom}(\pl{F})$, where $\Delta'$ are the bounds of the method $m$ declaring $C_0$ and $\mathsf{scope}(\generic{C})=\Delta;\_$ for the class $C$ of $m$. Note that $m$ could be a method of either a top-level or local class.
-By A11, every funnel of $\pl{F}$ is of the form $\funnel{X}$, so $\pl{T}_0$ is $\pl{T}$.
-For a top-level class, $\mathsf{scope}(\gen{C}{\pl{T}})=\Delta;\pl{T}$ can return $\Delta$ and $\pl{T}$ of different lengths.
+For a top-level class $C$ with bounds $\Delta$, $\mathsf{scope}(C)=\Delta$; with the type arguments $\pl{T}$ of a type $\gen{C}{\pl{T}}$, this recovers (effectively) a type substitution which can be used with methods of the class.
+For a local class $C_0$ with funnels $\pl{F}$, $\mathsf{scope}(C_0)=\Delta_0$, where $\Delta_0$ holds, in the order of $\mathrm{dom}(\pl{F})$, the bound $\ext{X}{T}$ in $\Delta,\Delta'$ of each $X\in\mathrm{dom}(\pl{F})$, where $\Delta'$ are the bounds of the method $m$ declaring $C_0$ and $\mathsf{scope}(C)=\Delta$ for the class $C$ of $m$. Note that $m$ could be a method of either a top-level or local class.
 The usage points of $\mathsf{scope}$ use the notation $\tsubst{T}{\Delta}{\pl{T}}$, the simultaneous substitution, defined only when $\Delta$ and $\pl{T}$ have the same length;
 in the same way, $\tsubst{T}{\pl{F}}{\pl{T}}$ is defined only when $\pl{F}$ and $\pl{T}$ have the same length, and $\pl{F}$ contains no ground type.
 A simultaneous substitution, of types or of values, is defined only when the names in its domain are distinct.
@@ -193,10 +189,7 @@ $m\not\in\pl{M}$ holds when no method in $\pl{M}$ has name $m$, and $\mathrm{nam
 $\Gamma\setminus x$ is $\Gamma$ without the variable $x$.
 For a set of type variables $\pl{X}$, $\Gamma|_{\pl{X}}$ keeps the variables $T\gap x$ of $\Gamma$ such that $\ftv{T}\subseteq\pl{X}$.
 \\[1ex]
-The pairing $\pairing{\Delta}{\pl{F}}{\pl{T}}$ goes through the funnels $\pl{F}$ and the arguments $\pl{T}$ together, one position at a time, where $\emptyset$ is the empty sequence.
-At the position of a funnel $\funnel{X}$, the pairing adds $\ext{X}{\Delta(X)}$ to the bounds and the argument to the types.
-At the position of a ground funnel $G$, the argument must be $G$ itself, and nothing is added.
-Expression contexts $\mathcal{C}$ do not enter the methods of a local class; thus, by A1, A5 and A7, $\mathsf{scope}(\gen{C}{\pl{T}})$ has at most one value.
+Expression contexts $\mathcal{C}$ do not enter the methods of a local class; thus, by A1, A5 and A7, $\mathsf{scope}(C)$ has at most one value.
 
 \subsection{Operational Semantics}
 \label{sec:opsem}
@@ -410,11 +403,11 @@ A substitution can place a value at several positions, so several occurrences of
 \and
 \inferrule[call]{
   \typing{\Delta}{\Gamma}{e_0}{\classtype{C_0}{\pl{T}_0}}\\
-  \mathsf{scope}(\gen{C_0}{\pl{T}_0})=\Delta_0;\pl{T}_2\\
+  \mathsf{scope}(C_0)=\Delta_0\\
   \method{\Delta_1}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\_} \in C_0\\
-  \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_2,\pl{T}_1}\\
+  \forall i\in 0..n\ldotp T'_i=\tsubst{T_i}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}\\
   \kind{\Delta}{\pl{T}_1}\\
-  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_2,\pl{T}_1}}\\
+  \subtype{\Delta}{\pl{T}_1}{\tsubst{\mathrm{cod}(\Delta_1)}{\Delta_0,\Delta_1}{\pl{T}_0,\pl{T}_1}}\\
   \typing{\Delta}{\Gamma}{e_1,\ldots,e_n}{T'_1,\ldots,T'_n}
 }{
   \typing{\Delta}{\Gamma}{\call{e_0}{\pl{T}_1}{m}{e_1,\ldots,e_n}}{T'_0}
@@ -451,7 +444,7 @@ A substitution can place a value at several positions, so several occurrences of
 \and
 \inferrule[newLocal]{
   \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\\\
-  \pairing{\Delta}{\pl{F}}{|\pl{F}|}=\Delta';\_\\
+  \Delta|_{\pl{F}}=\Delta'\\
   \ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')\\\\
   \kind{\Delta'}{\gen{C}{|\pl{F}|}}\\
   \kind{\Delta'}{\gen{C'}{\pl{T}}}\\
@@ -524,7 +517,7 @@ A substitution can place a value at several positions, so several occurrences of
 Figure \ref{fig:typing} gives the typing rules for the core language, which use funnelling to restore type safety.
 Rule \textsc{subs} is subsumption, where the supertype $T_2$ must be well-kinded (described in the next section). Rule \textsc{var} reads the type of a variable from $\Gamma$.
 Rule \textsc{field} types the access to a field declared by the static class $C$ of the receiver, and rule \textsc{call} types the call of a method declared by the class $C_0$ of the receiver.
-In rule \textsc{call}, $\mathsf{scope}$ gives the type variables of $C_0$ and the types replacing them, and the type arguments $\pl{T}_1$ of the call must satisfy the bounds of $m$.
+In rule \textsc{call}, $\mathsf{scope}$ gives the type variables of $C_0$, the type arguments $\pl{T}_0$ of the receiver replace them, and the type arguments $\pl{T}_1$ of the call must satisfy the bounds of $m$.
 Rule \textsc{superCall} types a super call $\explicitcall{e_0}{\gen{C}{\pl{T}}}{\pl{T}_1}{m}{e_1,\ldots,e_n}$: the receiver $e_0$ has type $\gen{C}{\pl{T}}$, the class $C$ is a top-level class, and the signature of $m$ is read from a class $C_0$ declaring $m$, where $C_0$ is $C$ or a superclass of $C$.
 Rule \textsc{newObject} types the creation of an \Q@Object@.
 We need this dedicated rule: \Q@Object@ extends \Q@Object@ (A9), so typing \Q@new Object<>()@ with rule \textsc{newTop} would need an infinite derivation.
@@ -534,7 +527,7 @@ Rule \textsc{newTop} types the creation of an object of another top-level class 
 Rule \textsc{newLocal} is the heart of funnelling.
 The rule constructs restricted bounds and a restricted type environment, reflecting only the funnelled type variables:
 $\Delta'$ includes only the funnelled type variables, and $\Gamma|_{\ftv{|\pl{F}|}}\setminus\this$ keeps only the variables of $\Gamma$, other than \Q@this@, whose types mention only type variables of the result type $\gen{C}{|\pl{F}|}$ (which must be well kinded under $\Delta'$).
-The bounds $\Delta'$ are computed by $\pairing{\Delta}{\pl{F}}{|\pl{F}|}$, which is undefined when a funnelled type variable is not in $\Delta$.
+The bounds $\Delta'$ are $\Delta|_{\pl{F}}$, which is undefined when a funnelled type variable is not in $\Delta$.
 The premise $\ftv{\mathrm{cod}(\Delta')}\subseteq\mathrm{dom}(\Delta')$ requires the bounds of the funnelled type variables to mention only funnelled type variables.
 However, the rule still uses the \emph{full} $\Delta$ and $\Gamma$ for typing the arguments $\pl{e}$. This is because some $e\in\pl{e}$ may initially contain uses of \emph{non}-funnelled type variables (e.g., in the type arguments of a method call), but will reduce to a value which no longer depends on such type variables.
 This is why the premise $\typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}$ types the object creation of the superclass $\obj{C'}{\pl{T}}{\pl{e}}$ under $\Delta;\Gamma$, but the premise $\kind{\Delta'}{\gen{C'}{\pl{T}}}$ checks the supertype $\gen{C'}{\pl{T}}$ under the more restrictive $\Delta'$.
@@ -622,9 +615,9 @@ Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is $C$ or a subclass of $C
 }
 \and
 \inferrule[kindClass]{
-  \mathsf{scope}(\gen{C}{\pl{T}})=\Delta_0;\pl{T}_0\\
+  \mathsf{scope}(C)=\Delta_0\\
   \kind{\Delta}{\pl{T}}\\\\
-  \subtype{\Delta}{\pl{T}_0}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}_0}}
+  \subtype{\Delta}{\pl{T}}{\tsubst{\mathrm{cod}(\Delta_0)}{\Delta_0}{\pl{T}}}
 }{
   \kind{\Delta}{\gen{C}{\pl{T}}}
 }
@@ -689,8 +682,8 @@ The last case of $\mathsf{overrideOk}(T,M)$ compares a method of a local class w
 
 Figure \ref{fig:progtyping} also gives kinding and subtyping rules.
 Rule \textsc{kindClass} kinds both top-level and local classes, including a local class written in a method of another local class.
-Every type in $\pl{T}_0$ is checked against the bound of its type variable in $\Delta_0$.
-A funnelled type variable of $C$ that is not in the bounds $\Delta,\Delta'$ of the definition of $\mathsf{scope}$ leaves $\mathsf{scope}(\gen{C}{\pl{T}})$ undefined; thus no type $\gen{C}{\pl{T}}$ is well kinded.
+Every type in $\pl{T}$ is checked against the bound of its type variable in $\Delta_0$.
+A funnelled type variable of $C$ that is not in the bounds $\Delta,\Delta'$ of the definition of $\mathsf{scope}$ leaves $\mathsf{scope}(C)$ undefined; thus no type $\gen{C}{\pl{T}}$ is well kinded.
 
 \subsection{Substitution of Type Variables}
 \label{sec:substitution}
