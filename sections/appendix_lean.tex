@@ -17,10 +17,11 @@
 \newcommand{\mapping}[1]{\par\smallskip\noindent{\scriptsize\textit{Mapping.} #1}\par\smallskip\hrule}
 \newcommand{\nomapping}{\par\smallskip\hrule}
 
-This appendix relates the formalism of Section~\ref{sec:core} to a Lean~4 formalization in the folder \texttt{lean} of the paper repository.
+This appendix relates the formalism of Section~\ref{sec:core} to a Lean~4 formalization in the folder \texttt{lean} of the supplementary material.
 Rule \textsc{newLocalJava}, shown in Section~\ref{sec:funnelling} and used in Section~\ref{sec:java}, is not formalized: Type Soundness concerns only the type system with rule \textsc{newLocal}.
 
 \subsection{The Lean Project}
+\begin{sloppypar}
 The file \texttt{lean/lean-toolchain} selects Lean 4.35.0: elan runs that version for every command in the folder \texttt{lean}.
 The project has no dependency: the files import only the core library of Lean.
 \texttt{lake build} in the folder \texttt{lean} checks all the files.
@@ -46,6 +47,7 @@ Section~\ref{app:lean:examples} lists the validation examples.
 \\[1ex]
 The Lean code is written in ASCII:
 \texttt{->} is $\rightarrow$, \texttt{/\char`\\} is $\wedge$, \texttt{\char`\\/} is $\vee$, \texttt{List.Mem x xs} is $x\in xs$, and \texttt{Delta}, \texttt{Gamma}, \texttt{sigma} are $\Delta$, $\Gamma$, $\sigma$.
+\end{sloppypar}
 
 \subsection{Differences Common to All the Pieces}
 \label{app:lean:common}

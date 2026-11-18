@@ -21,14 +21,14 @@ We first show that reduction is deterministic, up to the names chosen by $\maths
 If $\step{e}{e_1}$ and $\step{e}{e_2}$, then $\mathsf{fresh}(e_1,e_2)$.
 \end{theorem}
 
-With this in hand, we may establish type soundness via progress and preservation~\cite{wright1994syntactic}.\todo{ref supplementary materials for Lean proof}
+With this in hand, we may establish type soundness via progress and preservation~\cite{wright1994syntactic}.
 
 \begin{theorem}[Type Soundness]
 Under a class table $\decls$ such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$:
 if $\typing{\emptyset}{\emptyset}{e_0}{T}$, and $e_0\rightarrow^* e$, then $\typing{\emptyset}{\emptyset}{e}{T}$ and either $e$ is of form $v$, or there is an $e'$ such that $\step{e}{e'}$.
 \end{theorem}
 
-Both theorems are proved in Lean~4 (Appendix~\ref{app:lean}).
+Both theorems are proved in Lean~4 (Appendix~\ref{app:lean}); the Lean files are in the supplementary material.
 The proof of preservation uses the standard lemmas of weakening, substitution and inversion.
 % , and these lemmas specific to our core language:
 % a renaming by $\mathsf{fresh}$ preserves typing;
