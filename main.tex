@@ -118,7 +118,15 @@
 \maketitle
 
 \begin{abstract}
-\todo[inline]{TODO}
+Many languages support local types declared within a function or method.
+Many languages also support some form of generics.
+What happens when a local type is declared when generic type parameters are in scope?
+In this paper we explore how Java and other languages with these features handle it.
+We find that Java's type system is unsound in this case, and we discuss partial and sometimes misleading handling of the same case in other languages.
+
+We propose \emph{funnelling}: a sound and principled design.
+We define a variant of Featherweight Java that reproduces the problem, and a type system that uses funnelling to plug the soundness hole in a way that is consistent with Java's other handling of generics.
+We demonstrate the relevance of this approach to other languages, and give a type soundness proof checked in Lean.
 \end{abstract}
 
 \input{sections/introduction}
