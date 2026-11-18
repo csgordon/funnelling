@@ -13,7 +13,6 @@ Here we rely on the \Q@other instanceof MyFoo local@ test to bind
 \footnote{Before Java~16, the type test and the cast are two steps, as in Example~1: \Q@other instanceof MyFoo@ and then \Q@(MyFoo)other@.
 \javac accepts those two steps with no warning.}
 
-\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
 // Example 2
 public class Broken {
@@ -30,7 +29,6 @@ public class Broken {
   }
 }
 \end{lstlisting}
-\end{minipage}
 
 The first call of \Q@m@ instantiates \Q@X@ with \Q@Integer@, and returns a \Q@MyFoo@ whose method \Q@x()@ returns \Q@5@.
 The second call of \Q@m@ instantiates \Q@X@ with \Q@String@.
@@ -124,7 +122,6 @@ Thus the same fault of \Q@m@ is detected in the lambda class, in the anonymous c
 Counterexample~3 moves Example~2 into a generic class:
 \Q@X@ is a generic parameter of the class \Q@Box@ instead of a generic parameter of the method \Q@m@.
 
-\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
 // Counterexample 3
 class Box<X> {
@@ -145,7 +142,6 @@ public class Broken {
   }
 }
 \end{lstlisting}
-\end{minipage}
 
 Counterexample~3 marks the boundary of the family: with class generics, \javac does flag the fault.
 \javac rejects Counterexample~3 at Line~\ref{line:cextest}, with the error\\
@@ -158,7 +154,6 @@ The cast is flagged as well.
 The following method \Q@m@ replaces the method \Q@m@ of Counterexample~3.
 The type test against \Q@String@ replaces the type test against \Q@MyFoo@, which \javac rejects, and the cast of Example~1 follows that type test.
 
-\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
 // Counterexample 3 with a cast: the method m of Box
   Object m(Object other, Function<X,String> f){
@@ -169,7 +164,6 @@ The type test against \Q@String@ replaces the type test against \Q@MyFoo@, which
     return local;
   }
 \end{lstlisting}
-\end{minipage}
 
 \javac accepts this program, but reports an unchecked warning for the cast at Line~\ref{line:cexcast}.
 At run time the cast succeeds, and the program fails as Example~2 fails.
@@ -299,13 +293,11 @@ Thus \Q@other instanceof MyFoo<X> w@ is ill typed for \Q@Object<> other@, and th
 This is the rule by which Java rejects \Q@o instanceof List<String>@ for \Q@Object o@.
 If we change the signature of \Q@m@ as follows, the method \Q@m@ is well typed:
 
-\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}
   <X> Foo<X> m(Foo<X> other, X x){ return
     if (other instanceof MyFoo<X> w){ w }
     else { new MyFoo<X funnel> extends Foo<X>(){ X x(){ return x; } } }; }
 \end{lstlisting}
-\end{minipage}
 
 Now \Q@eA@ is a well typed expression of type \Q@Foo<A<>>@, but the main expression is ill typed:
 the second call of \Q@m@ expects a \Q@Foo<B<>>@ as the first argument, but \Q@eA@ is a \Q@Foo<A<>>@.
