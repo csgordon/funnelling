@@ -147,7 +147,7 @@ def TypeEnv.lookup (Gamma : TypeEnv) (x : VarName) : Option Ty :=
 \fit{$\begin{array}{rcl}
 e & ::= & x \mid \call{e}{\pl{T}}{m}{\pl{e}} \mid \explicitcall{e}{T}{\pl{T}}{m}{\pl{e}}\\
 && \mid e\fstop f \mid \obj{C}{\pl{T}}{\pl{e}}\\
-&& \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}'}{\pl{e}}{\pl{M}}\\
+&& \mid \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\\
 && \mid \ifthen{e_0}{T}{x}{e_1}{e_2}\\
 M & ::= & \method{\Delta}{T_0}{m}{T_1\gap x_1,\ldots,T_n\gap x_n}{\ret{e}}
 \end{array}$}
@@ -258,8 +258,8 @@ inductive EvalCtx where
 \begin{cmp}{A1, A2, A3}
 \begin{paperside}
 (A1) In \decls, class names are unique across top-level and local classes.\\
-(A2) In a class, all the field names, including the field names of the superclasses, are disjoint.\\
-(A3) In a class, top-level or local, all the method names are disjoint.
+(A2) In a class, all the field names, including the field names of the superclasses, are distinct.\\
+(A3) In a class, whether top-level or local, all the method names are distinct.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
@@ -274,9 +274,9 @@ abbrev A3 (Ks : List ClassDecl) : Prop := forall K, List.Mem K Ks -> (K.Ms.map M
 
 \begin{cmp}{A4, A5, A6}
 \begin{paperside}
-(A4) In a method, all the parameter names $x_1,\ldots,x_n$ are disjoint.\\
-(A5) In a $\Delta$, all the $X$ in $\mathrm{dom}(\Delta)$ are disjoint.\\
-(A6) In a list of funnels $\pl{F}$, all the $X$ in $\mathrm{dom}(\pl{F})$ are disjoint.
+(A4) In a method, all the parameter names $x_1,\ldots,x_n$ are distinct.\\
+(A5) In a $\Delta$, all the $X$ in $\mathrm{dom}(\Delta)$ are distinct.\\
+(A6) In a list of funnels $\pl{F}$, all the $X$ in $\mathrm{dom}(\pl{F})$ are distinct.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
@@ -318,7 +318,7 @@ abbrev A7Decls (d : Decls) : Prop :=
 
 \begin{cmp}{A8, A9, A10, A11}
 \begin{paperside}
-(A8) No parameter and no variable of an \Q@if@ is \Q@this@.\\
+(A8) In the syntax \ifthen{\_}{T}{x}{\_}{\_}, $x$ is not \Q@this@, and \Q@this@ does not appear as a method parameter name.\\
 (A9) \decls contains $\subclass{\Object}{}{\Object}{}{}{}$, and the chain of superclasses of every other top-level class reaches \Q@Object@.\\
 (A10) In \decls, the superclass of every class, top-level or local, is a top-level class.\\
 (A11) In \decls, every funnel is of the form $\funnel{X}$.
@@ -335,7 +335,7 @@ abbrev A10 (d : Decls) : Prop := forall K, List.Mem K (classes d) -> (findDec d 
 abbrev A11 (d : Decls) : Prop := forall K, List.Mem K (classes d) -> forall F, List.Mem F K.Fs -> F.isFunnel
 \end{lstlisting}
 \end{leanside}
-\mapping{\texttt{ifVars} lists the variables of all the \Q@if@.}
+\mapping{\texttt{ifVars} lists the variables of all the type tests.}
 \end{cmp}
 
 \begin{cmp}{A12}
@@ -589,7 +589,7 @@ abbrev GSubstDefined (Xs : List TVarName) (e : Expr) : Prop :=
 \tsubst{(\methodsig{\Delta}{T_0}{m}{T_1\gap x'_1,\ldots,T_k\gap x'_k}\gap\OC\ldots\CC)}{\pl{x}}{\pl{v}} = \ldots\quad\textrm{if }x'_1,\ldots,x'_k\not\in\pl{x}
 \end{array}$}\\[1ex]
 The other cases go into every subterm.
-Substitution of variables is defined only when the variable $x'$ of an \Q@if@ and the parameters $x'_1,\ldots,x'_k$ of a method are not in $\pl{x}$.
+Substitution of variables is defined only when the variable $x'$ of a type test and the parameters $x'_1,\ldots,x'_k$ of a method are not in $\pl{x}$.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
@@ -612,7 +612,7 @@ abbrev VSubstDefined (xs : List VarName) (e : Expr) : Prop :=
 
 \begin{cmp}{$\mathsf{fresh}(e,e')$ and $\mathsf{fresh}(M,M')$}
 \begin{paperside}
-The names bound in an expression $e$ are the variable of every \Q@if@ occurring in $e$, and the names bound in every method of a local class occurring in $e$.
+The names bound in an expression $e$ are the variable of every type test occurring in $e$, and the names bound in every method of a local class occurring in $e$.
 The names bound in a method $M$ are the type variables of its signature, its parameters, and the names bound in its body.
 $\mathsf{fresh}(e,e')$ holds when $e'$ is $e$ with the names bound in $e$ renamed: $e$ and $e'$ are equal up to the names of their binders.
 $\mathsf{fresh}(M,M')$ holds when $M'$ is $M$ renamed in the same way.
@@ -1587,7 +1587,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \begin{description}
 \item[W1] \texttt{w1}: d1 satisfies A1-A11.
 \item[W2] \texttt{w2}: a method with two parameters \Q@x@ violates A4.
-\item[W3] \texttt{w3}: an \Q@if@ binding the parameter \Q@x@ again violates A7.
+\item[W3] \texttt{w3}: a type test binding the parameter \Q@x@ again violates A7.
 \item[W4] \texttt{w4}: an undeclared superclass violates A9 and A10.
 \item[W5] \texttt{w5}: d2 satisfies A1-A11.
 \item[W6] \texttt{w6}: d3 satisfies A1-A11, and the main expression of Example~1 satisfies A3-A8 and A12.
