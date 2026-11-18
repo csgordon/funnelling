@@ -742,13 +742,13 @@ theorem r15 : ReducesStar d7 main6 stuckB /\ Stuck d7 stuckB := r15p
 -- Counterexample 3: class generics; javac rejects it, and so does funnelling.
 
 def decBox7 : Dec :=
-  { C := cn "Box7", Delta := [bnd "X" obj], C' := Object, Ts := [],
+  { C := cn "NotBroken", Delta := [bnd "X" obj], C' := Object, Ts := [],
     Ms := [meth [] obj "m" [par obj "other", par (tv "X") "x", par (tFun (tv "X") tB) "f"]
       (.ifInst (ev "other") (.cls (cn "MyFoo7") []) (vn "local") (call0 (ev "f") "apply" [call0 (ev "local") "x" []])
         (.newLocal (cn "MyFoo7") [] Object [] [] [meth [] (tv "X") "x" [] (ev "x")]))],
     Ss := [] }
 def decBox7F : Dec :=
-  { C := cn "Box7F", Delta := [bnd "X" obj], C' := Object, Ts := [],
+  { C := cn "NotBrokenF", Delta := [bnd "X" obj], C' := Object, Ts := [],
     Ms := [meth [] obj "m" [par obj "other", par (tv "X") "x", par (tFun (tv "X") tB) "f"]
       (.ifInst (ev "other") (.cls (cn "MyFoo7F") [tv "X"]) (vn "local") (call0 (ev "f") "apply" [call0 (ev "local") "x" []])
         (.newLocal (cn "MyFoo7F") [.funnel (tn "X")] Object [] [] [meth [] (tv "X") "x" [] (ev "x")]))],
@@ -757,8 +757,8 @@ def decBox7F : Dec :=
 def d8 : Decls := [decObject, decA, decB, decFun, decAToB, decAsB, decBox7, decBox7F]
 
 def main7 : Expr :=
-  .call (Value.new (cn "Box7") [gB] []) [] (mn "m")
-    [.call (Value.new (cn "Box7") [gA] []) [] (mn "m") [vA, vA, vAToB], vB, vAsB]
+  .call (Value.new (cn "NotBroken") [gB] []) [] (mn "m")
+    [.call (Value.new (cn "NotBroken") [gA] []) [] (mn "m") [vA, vA, vAToB], vB, vAsB]
 
 -- W12: Counterexample 3 is well formed.
 theorem w12 : WFDecls d8 /\ WFExpr main7 := by decide
