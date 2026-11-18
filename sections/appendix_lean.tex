@@ -61,7 +61,7 @@ A ground type is also a type, and a value is also an expression: Lean inserts th
 A rule written with $G$ or $v$ in the paper is written with a \texttt{GTy} or a \texttt{Value} in Lean.
 A Lean constructor has the name of the rule of the paper.
 \item \textbf{Grammar and well-formedness.}
-In the paper, the well-formedness requirements restrict the grammar (Section~\ref{sec:clarifications}).
+In the paper, the well-formedness requirements restrict the grammar.
 Lean defines the syntax as inductive types, and A1-A12 as the propositions \texttt{WFDecls} and \texttt{WFExpr}.
 Type Soundness assumes them for the initial program, and Determinism for the expression that reduces.
 A step $\step{e}{e'}$ of the paper is \texttt{Reduces d e e'}: a \texttt{Step} whose result satisfies \texttt{WFExpr}, since an instance of a rule of the paper exists only when its result is an expression, and the result of a step is the new main expression (A12).
@@ -881,7 +881,7 @@ inductive Step (d : Decls) : Expr -> Expr -> Prop
 }{
     \step{\ctx{e}}{\ctx{e'}}
 }$}\\[1ex]
-An instance of a reduction rule $\step{e}{e'}$ exists only when the right side $e'$ is an expression (Section~\ref{sec:clarifications}).
+An instance of a reduction rule $\step{e}{e'}$ exists only when the right side $e'$ is an expression.
 $e\rightarrow^* e'$ holds when $e$ reduces to $e'$ in zero or more steps.
 \end{paperside}
 \begin{leanside}
