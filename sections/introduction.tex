@@ -9,7 +9,7 @@ Unfortunately, as Servetto et al.~\cite{unsound_presentation} pointed out, there
 A non-generic method-local inner class \Q@MyFoo@ written in a generic method can implicitly see the generic parameters in scope.
 Instances of \Q@MyFoo@ can then escape the lifetime of their enclosing method, where the generic parameters had a certain run-time instantiation,
 and re-enter a second call of the same enclosing method, where the generic parameters could have a different run-time instantiation.
-Servetto et al.\ probed the behaviour of JVM languages that support the same feature (Scala and Kotlin) and found that these had the same unsoundness problem for some use cases, but did flag concerns in other cases. However, this was not systematically investigated.
+Servetto et al.\ probed the behaviour of JVM languages that support the same feature  and found that some had the same unsoundness problem for some use cases, but others did flag concerns. However, this was not systematically investigated.
 
 In this paper we clearly articulate the problem they observed, characterize the key properties that lead to the issue, and propose
 a static solution for future languages.
