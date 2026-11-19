@@ -18,7 +18,7 @@
 \newcommand{\nomapping}{\par\smallskip\hrule}
 
 This appendix relates the formalism of Section~\ref{sec:core} to a Lean~4 formalization in the folder \texttt{lean} of the supplementary material.
-Rule \textsc{newLocalJava}, shown in Section~\ref{sec:funnelling} and used in Section~\ref{sec:java}, is not formalized: Type Soundness concerns only the type system with rule \textsc{newLocal}.
+Rule \textsc{newLocalJava}, shown in Section~\ref{sec:funnelling}, is not formalized: Type Soundness concerns only the type system with rule \textsc{newLocal}.
 
 \subsection{The Lean Project}
 \begin{sloppypar}
@@ -1555,7 +1555,7 @@ class P4<> extends P1<>{ <Z extends A<>> Z id(Z z){ return z; } }
 // d12, fields of a superclass: Object, A, B, and
 class Base<X extends Object<>> extends Object<>{ X f; }
 class Derived<> extends Base<A<>>{ B<> g; }
-// d13, the example of Section 4.4: Object, and
+// d13, the example of Section 4.3: Object, and
 class K<> extends Object<>{ Object<> k(L<> y){ return
   new L<> extends Object<>(){ Object<> m(Object<> x){ return y.m(x); } }; } }
 \end{lstlisting}
