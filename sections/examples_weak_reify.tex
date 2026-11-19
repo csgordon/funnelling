@@ -121,6 +121,7 @@ Thus the same fault of \Q@m@ is detected in the lambda class, in the anonymous c
 Counterexample~3 moves Example~2 into a generic class:
 \Q@X@ is a generic parameter of the class \Q@NotBroken@ instead of a generic parameter of the method \Q@m@.
 
+\medskip\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
 // Counterexample 3
 public class NotBroken<X> {
@@ -137,6 +138,7 @@ public class NotBroken<X> {
   }
 }
 \end{lstlisting}
+\end{minipage}
 
 Counterexample~3 marks the boundary of the family: with class generics, \javac does flag the fault.
 \javac rejects Counterexample~3 at Line~\ref{line:cextest}, with the error\\
@@ -221,6 +223,7 @@ In the listings, we omit the empty \Q@<>@ of methods and calls, and we write \Q@
 The core language has no abstract methods, so the method \Q@x@ of \Q@Foo@ calls itself.
 This is Example~1 in the core language, without funnels:
 
+\medskip\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}
 class A<> extends Object<>{}
 class B<> extends Object<>{ B<> onlyB(){ return new B<>(); } }
@@ -231,12 +234,14 @@ class Broken<> extends Object<>{
     else { new MyFoo<> extends Foo<X>(){ X x(){ return x; } } }; }
 }
 \end{lstlisting}
+\end{minipage}
 
 As in Java, the type of the local class is \Q@MyFoo<>@, with no generic parameters.
 Section~\ref{sec:core} presents the type rules and the small step reduction of the core language.
 The type rules of Section~\ref{sec:core} encode funnelling.
 With those type rules, the example above is ill typed: the supertype \Q@Foo<X>@ of \Q@MyFoo@ mentions \Q@X@, but \Q@MyFoo@ does not funnel \Q@X@.
 Rule \textsc{newLocalJava} enables the unsound Java typing:
+\begin{linenomath*}
 \begin{mathpar}
 \inferrule*[left=newLocalJava]{
   \kind{\Delta}{\gen{C'}{\pl{T}}}\\
@@ -249,6 +254,7 @@ Rule \textsc{newLocalJava} enables the unsound Java typing:
   }{\gen{C}{}}
 }
 \end{mathpar}
+\end{linenomath*}
 Rule \textsc{newLocalJava} uses the syntax \Q@new C<> extends C'<Ts>(es){Ms}@.
 This syntax is an intermediate form between method-local classes and anonymous classes of Java.
 A Java method-local class \Q@class C<> extends C'<Ts>{ C(){ super(es); } ... }@ is declared first, and then instantiated with \Q@new C<>()@.
@@ -256,7 +262,7 @@ A Java anonymous class \Q@new C'<Ts>(es){...}@ is declared and instantiated by a
 In our core language, the syntax \Q@new C<> extends C'<Ts>(es){Ms}@ forms a (named) local class.
 A local class creates an instance as an anonymous class does, thus a local class is easy to use in an expression-based language.
 A local class also declares its own name, thus \Q@instanceof@ can test for a local class.
-\\[1ex]
+
 Rule \textsc{newLocalJava} types the methods $\pl{M}$ of the local class $C$ under all the bounds $\Delta$ and all the variables $\Gamma$ in scope, except \Q@this@, which has type $\gen{C}{}$.
 The example above is well typed using the type rules of Section~\ref{sec:core} and rule \textsc{newLocalJava}.
 The main expression is the first line of the reduction below, and it has type \Q@B<>@.
@@ -288,11 +294,13 @@ Thus \Q@other instanceof MyFoo<X> w@ is ill typed for \Q@Object<> other@, and th
 This is the rule by which Java rejects \Q@o instanceof List<String>@ for \Q@Object o@.
 If we change the signature of \Q@m@ as follows, the method \Q@m@ is well typed:
 
+\medskip\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}
   <X> Foo<X> m(Foo<X> other, X x){ return
     if (other instanceof MyFoo<X> w){ w }
     else { new MyFoo<X funnel> extends Foo<X>(){ X x(){ return x; } } }; }
 \end{lstlisting}
+\end{minipage}
 
 Now \Q@eA@ is a well typed expression of type \Q@Foo<A<>>@, but the main expression is ill typed:
 the second call of \Q@m@ expects a \Q@Foo<B<>>@ as the first argument, but \Q@eA@ is a \Q@Foo<A<>>@.

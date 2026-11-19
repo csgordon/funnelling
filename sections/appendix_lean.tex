@@ -12,9 +12,9 @@
 \lstdefinestyle{leanside}{language=lean,basicstyle=\scriptsize\ttfamily,breaklines=true,breakindent=1.5em,columns=fullflexible,aboveskip=0pt,belowskip=0pt}
 \DeclareFontShape{T1}{lmr}{bx}{sc}{<->ssub*cmr/bx/sc}{}
 \newenvironment{cmp}[1]{\par\medskip\noindent\begin{minipage}{\textwidth}\textbf{#1}\par\smallskip\noindent}{\end{minipage}\par}
-\newenvironment{paperside}{\begin{minipage}[t]{0.45\textwidth}\vspace{0pt}\scriptsize}{\end{minipage}\hfill}
+\newenvironment{paperside}{\begin{minipage}[t]{0.45\textwidth}\vspace{0pt}\scriptsize\raggedright\lstset{basicstyle=\scriptsize\ttfamily}}{\end{minipage}\hfill}
 \newenvironment{leanside}{\begin{minipage}[t]{0.53\textwidth}\vspace{0pt}}{\end{minipage}}
-\newcommand{\mapping}[1]{\par\smallskip\noindent{\scriptsize\textit{Mapping.} #1}\par\smallskip\hrule}
+\newcommand{\mapping}[1]{\par\smallskip\noindent{\scriptsize\lstset{basicstyle=\scriptsize\ttfamily}\textit{Mapping.} #1}\par\smallskip\hrule}
 \newcommand{\nomapping}{\par\smallskip\hrule}
 
 This appendix relates the formalism of Section~\ref{sec:core} to a Lean~4 formalization in the folder \texttt{lean} of the supplementary material.
@@ -25,26 +25,26 @@ Rule \textsc{newLocalJava}, shown in Section~\ref{sec:funnelling}, is not formal
 The file \texttt{lean/lean-toolchain} selects Lean 4.35.0: elan runs that version for every command in the folder \texttt{lean}.
 The project has no dependency: the files import only the core library of Lean.
 \texttt{lake build} in the folder \texttt{lean} checks all the files.
-\\[1ex]
+
 The Lean definitions follow the metarules of the paper as closely as Lean allows; Section~\ref{app:lean:sidebyside} compares them with the paper.
-The files are:
+The files, in the folder \texttt{lean/Funnelling}, are:
 \begin{itemize}
-\item \leanfile{Syntax.lean}: names, types, ground types, funnels, expressions, methods, values, declarations, class declarations $K$.
-\item \leanfile{Substitution.lean}: substitution of type variables and of variables, and $\mathsf{fresh}$.
-\item \leanfile{Declarations.lean}: expression contexts, $\mathsf{declared}$, $M\in C$, $\Delta|_{\pl{F}}$, $\mathsf{scope}$, $\mathsf{typeOf}$.
-\item \leanfile{WellFormed.lean}: the well-formedness requirements A1-A12.
-\item \leanfile{Typing.lean}: subtyping, kinding, checked casts, $\mathsf{overrideOk}$, $\mathsf{consistent}$, typing, method, class and program typing.
-\item \leanfile{Reduction.lean}: evaluation contexts and the reduction.
-\item \leanfile{Sound/*.lean}: the lemmas of the proofs, and \leanfile{Sound/Soundness.lean}, progress and preservation.
-\item \leanfile{Soundness.lean}: Type Soundness and Determinism, and their proofs.
-\item \leanfile{ExampleFacts.lean} and \leanfile{Examples.lean}: the validation examples and their proofs.
+\item \texttt{Syntax.lean}: names, types, ground types, funnels, expressions, methods, values, declarations, class declarations $K$.
+\item \texttt{Substitution.lean}: substitution of type variables and of variables, and $\mathsf{fresh}$.
+\item \texttt{Declarations.lean}: expression contexts, $\mathsf{declared}$, $M\in C$, $\Delta|_{\pl{F}}$, $\mathsf{scope}$, $\mathsf{typeOf}$.
+\item \texttt{WellFormed.lean}: the well-formedness requirements A1-A12.
+\item \texttt{Typing.lean}: subtyping, kinding, checked casts, $\mathsf{overrideOk}$, $\mathsf{consistent}$, typing, method, class and program typing.
+\item \texttt{Reduction.lean}: evaluation contexts and the reduction.
+\item \texttt{Sound/*.lean}: the lemmas of the proofs, and \texttt{Sound/Soundness.lean}, progress and preservation.
+\item \texttt{Soundness.lean}: Type Soundness and Determinism, and their proofs.
+\item \texttt{ExampleFacts.lean} and \texttt{Examples.lean}: the validation examples and their proofs.
 \end{itemize}
 Lean accepts all the files.
-The theorems \texttt{typeSoundness} and \texttt{determinism} in \leanfile{Soundness.lean} are the two theorems of the paper.
-\leanfile{Soundness.lean} proves \texttt{typeSoundness} from progress and preservation.
+The theorems \texttt{typeSoundness} and \texttt{determinism} in \texttt{Soundness.lean} are the two theorems of the paper.
+\texttt{Soundness.lean} proves \texttt{typeSoundness} from progress and preservation.
 The two proofs are complete: they use no \texttt{sorry}, and they depend on no axiom other than the three standard axioms of Lean, \texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound} (Section~\ref{app:lean:statements}).
 Section~\ref{app:lean:examples} lists the validation examples.
-\\[1ex]
+
 The Lean code is written in ASCII:
 \texttt{->} is $\rightarrow$, \texttt{/\char`\\} is $\wedge$, \texttt{\char`\\/} is $\vee$, \texttt{List.Mem x xs} is $x\in xs$, and \texttt{Delta}, \texttt{Gamma}, \texttt{sigma} are $\Delta$, $\Gamma$, $\sigma$.
 \end{sloppypar}
@@ -1432,8 +1432,8 @@ theorem determinism {d e e1 e2} (hwf : WFDecls d) (he : WFExpr e) (h1 : Reduces 
     (h2 : Reduces d e e2) : Fresh e1 e2
 \end{lstlisting}
 \texttt{hok} says that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$; \texttt{hwf} says that \decls satisfies A1-A11, and \texttt{he0} says that the initial expression satisfies A3-A8 and A12, as every program of the paper does; in \texttt{determinism}, \texttt{he} says that the expression that reduces satisfies A3-A8 and A12.
-\\[1ex]
-The proofs are in \leanfile{Soundness.lean} and \leanfile{Sound/*.lean}, and they are complete.
+
+The proofs are in \texttt{Soundness.lean} and \texttt{Sound/*.lean}, and they are complete.
 In a Lean file that imports \texttt{Funnelling.Soundness}, the commands
 \begin{lstlisting}[language=lean,basicstyle=\scriptsize\ttfamily]
 #print axioms Funnelling.typeSoundness
@@ -1561,7 +1561,7 @@ class K<> extends Object<>{ Object<> k(L<> y){ return
 \end{lstlisting}
 In the list, the paper verdict follows from the rule or the requirement named in the item.
 A program that is \emph{ill typed} has no type under the rules of Section~\ref{sec:core}, as Lean states it; a program that is \emph{stuck} is not a value and has no reduction step.
-\begin{description}
+\begin{description}\sloppy
 \item[W1] \texttt{w1}: d1 satisfies A1-A11.
 \item[W2] \texttt{w2}: a method with two parameters \Q@x@ violates A4.
 \item[W3] \texttt{w3}: a type test binding the parameter \Q@x@ again violates A7.

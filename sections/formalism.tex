@@ -313,7 +313,7 @@ A local class declares no fields, so rule \textsc{localFieldSuper} reads every f
 
 Rules \textsc{ifThen} and \textsc{ifElse} test the class of the value $v$ against the class $C'$ of the type test, ignoring the type arguments $\pl{T}$ of $\gen{C'}{\pl{T}}$.
 Rule \textsc{ifThen} reduces to $e'_1$ with $x$ replaced by $v$, where $e'_1$ is $e_1$ renamed by $\mathsf{fresh}$; rule \textsc{ifElse} reduces to $e_2$.
-They rely on the metafunction
+They rely on the metafunction:
 {\small
 \begin{Define}{\mathsf{typeOf}(v)=G}
 \mathsf{typeOf}(v)=\gen{C}{\pl{G}}\\
@@ -560,7 +560,7 @@ Thus a value of type $\gen{C'}{\pl{T}_0}$ whose class is $C$ or a subclass of $C
 
 \subsection{Typing of Programs, Classes and Methods}
 \label{sec:classtyping}
-\begin{figure}[t]
+\begin{figure}[p]
 \begin{mathpar}
 \fbox{$\vdash\decls\gap e\gap\mathrm{Ok}$}
 \and
@@ -671,7 +671,7 @@ Every type in $\pl{T}$ is checked against the bound of its type variable in $\De
 
 \subsection{Substitution of Type Variables}
 \label{sec:substitution}
-\begin{figure}
+\begin{figure}[p]
 {\footnotesize
 \setlength{\arraycolsep}{3pt}
 \newcommand{\s}[1]{\tsubst{#1}{\pl{X}}{\pl{T}}}
@@ -711,7 +711,7 @@ In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)
 
 \subsection{Substitution of Variables}
 \label{sec:termsubstitution}
-\begin{figure}
+\begin{figure}[p]
 {\footnotesize
 \setlength{\arraycolsep}{3pt}
 \newcommand{\s}[1]{\tsubst{#1}{\pl{x}}{\pl{v}}}
