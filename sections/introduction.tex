@@ -94,7 +94,7 @@ Section~\ref{sec:impact} reports how Scala and Kotlin handle Example~1.
 In the remainder of this paper:
 \begin{itemize}
 \item We detail the breadth of the problem, and how it is handled by various existing language implementations (Sections~\ref{sec:examples} and~\ref{sec:impact}).
-\item We develop a core language modelling Java's generics, method-local classes and type tests, and show that typing method-local classes as Java does is unsound (Section~\ref{sec:core}).
+\item We develop a core language modelling Java's generics, method-local classes and type tests, and show that typing method-local classes as Java does is unsound (Sections~\ref{sec:funnelling} and~\ref{sec:core}).
 \item We develop a new type system mechanism for systematically tracking dependence of a
 method-local class on generic parameters, and show that it soundly prevents the problem (Sections~\ref{sec:funnelling} and~\ref{sec:soundness}).
 Our solution, \emph{funnelling}, makes the dependency of a method-local class on the generic parameters in scope explicit in its type:

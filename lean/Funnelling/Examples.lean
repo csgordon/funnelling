@@ -345,7 +345,7 @@ def tv (X : String) : Ty := .var (tn X)
 def call0 (e : Expr) (m : String) (es : List Expr) : Expr := .call e [] (mn m) es
 def onlyBCall (e : Expr) : Expr := call0 e "onlyB" []
 
--- Example 1, funnelled as in Section 4.10.
+-- Example 1, funnelled as in Section 3.
 
 def decFixed : Dec :=
   { C := cn "Broken", Delta := [], C' := Object, Ts := [],
@@ -823,7 +823,7 @@ theorem r16 : ReducesStar d8 main7 stuckB /\ Stuck d8 stuckB :=
       ReducesStar.refl)))))))))))
     (stuckS (by decide))
 
--- The method leak of Section 4.10.
+-- The method leak of d4.
 
 def leakMain : Expr :=
   onlyBCall (call0 (.call (Value.new (cn "Broken") [] []) [tB] (mn "leak")
@@ -1321,7 +1321,7 @@ theorem r21 : Reduces d1 (.ifInst vA tA (vn "x") nestedIf vB) (.ifInst vA tA (vn
       (e2 := vB) .subRefl (And.intro (RenE.ifInst .var .var .var) (RenE.ifInst .var .var .var)) (by decide))
     (by decide)
 
--- The example of Section 4.4: a local class L whose method m calls m on a captured value y of class L.
+-- The example of Section 4.3: a local class L whose method m calls m on a captured value y of class L.
 
 def lMethod : Method := meth [] obj "m" [par obj "x"] (call0 (ev "y") "m" [ev "x"])
 def decK : Dec :=
