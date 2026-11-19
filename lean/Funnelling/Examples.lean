@@ -307,7 +307,7 @@ theorem n1 : Not (ProgOk d3 brokenMain) := fun h =>
 def decLeaker : Dec :=
   { C := cn "Broken", Delta := [], C' := Object, Ts := [],
     Ms := [
-      .mk [{ X := tn "Y", T := obj }] (.cls (cn "MyFoo2") []) (mn "mk2") [{ T := .var (tn "Y"), x := vn "y" }]
+      .mk [{ X := tn "Y", T := obj }] (.cls (cn "MyFoo2") []) (mn "m2") [{ T := .var (tn "Y"), x := vn "y" }]
         (.newLocal (cn "MyFoo2") [] (cn "Foo") [.var (tn "Y")] [] [.mk [] (.var (tn "Y")) (mn "x") [] (.var (vn "y"))]),
       .mk [{ X := tn "Y", T := obj }] (tFoo (.var (tn "Y"))) (mn "leak") [{ T := .cls (cn "MyFoo2") [], x := vn "z" }]
         (.var (vn "z"))],
@@ -345,7 +345,7 @@ def tv (X : String) : Ty := .var (tn X)
 def call0 (e : Expr) (m : String) (es : List Expr) : Expr := .call e [] (mn m) es
 def onlyBCall (e : Expr) : Expr := call0 e "onlyB" []
 
--- Example 1, funnelled as in Section 4.10.
+-- Example 1, funnelled as in Section 4.9.
 
 def decFixed : Dec :=
   { C := cn "Broken", Delta := [], C' := Object, Ts := [],
@@ -823,11 +823,11 @@ theorem r16 : ReducesStar d8 main7 stuckB /\ Stuck d8 stuckB :=
       ReducesStar.refl)))))))))))
     (stuckS (by decide))
 
--- The method leak of Section 4.10.
+-- The method leak of Section 4.9.
 
 def leakMain : Expr :=
   onlyBCall (call0 (.call (Value.new (cn "Broken") [] []) [tB] (mn "leak")
-    [.call (Value.new (cn "Broken") [] []) [tA] (mn "mk2") [vA]]) "x" [])
+    [.call (Value.new (cn "Broken") [] []) [tA] (mn "m2") [vA]]) "x" [])
 
 -- R17: leak returns a MyFoo2 built with A<> as a Foo<B<>>; the program reduces to new A<>().[Object<>]onlyB(), which is stuck.
 theorem r17 : ReducesStar d4 leakMain stuckB /\ Stuck d4 stuckB :=
@@ -845,7 +845,7 @@ theorem r17 : ReducesStar d4 leakMain stuckB /\ Stuck d4 stuckB :=
 def decLeakerF : Dec :=
   { C := cn "Broken", Delta := [], C' := Object, Ts := [],
     Ms := [
-      meth [bnd "Y" obj] (.cls (cn "MyFoo2F") [tv "Y"]) "mk2" [par (tv "Y") "y"]
+      meth [bnd "Y" obj] (.cls (cn "MyFoo2F") [tv "Y"]) "m2" [par (tv "Y") "y"]
         (.newLocal (cn "MyFoo2F") [.funnel (tn "Y")] (cn "Foo") [tv "Y"] [] [meth [] (tv "Y") "x" [] (ev "y")]),
       meth [bnd "Y" obj] (tFoo (tv "Y")) "leak" [par (.cls (cn "MyFoo2F") [tv "Y"]) "z"] (ev "z")],
     Ss := [] }
@@ -854,7 +854,7 @@ def d4F : Decls := [decObject, decA, decB, decFoo, decLeakerF]
 
 def leakMainF : Expr :=
   onlyBCall (call0 (.call (Value.new (cn "Broken") [] []) [tB] (mn "leak")
-    [.call (Value.new (cn "Broken") [] []) [tA] (mn "mk2") [vA]]) "x" [])
+    [.call (Value.new (cn "Broken") [] []) [tA] (mn "m2") [vA]]) "x" [])
 
 -- W13: the funnelled leak is well formed.
 theorem w13 : WFDecls d4F := by decide

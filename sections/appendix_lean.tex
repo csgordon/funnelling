@@ -1503,11 +1503,11 @@ class Broken<> extends Object<>{ <X extends Object<>> Foo<X> m(Object<> other, X
   else { new MyFoo<> extends Foo<X>(){ X x(){ return x; } } }; } }
 // d4: Object, A, B, Foo, and
 class Broken<> extends Object<>{
-  <Y extends Object<>> MyFoo2<> mk2(Y y){ return new MyFoo2<> extends Foo<Y>(){ Y x(){ return y; } }; }
+  <Y extends Object<>> MyFoo2<> m2(Y y){ return new MyFoo2<> extends Foo<Y>(){ Y x(){ return y; } }; }
   <Y extends Object<>> Foo<Y> leak(MyFoo2<> z){ return z; } }
 // d4F: Object, A, B, Foo, and
 class Broken<> extends Object<>{
-  <Y extends Object<>> MyFoo2F<Y> mk2(Y y){ return new MyFoo2F<Y funnel> extends Foo<Y>(){ Y x(){ return y; } }; }
+  <Y extends Object<>> MyFoo2F<Y> m2(Y y){ return new MyFoo2F<Y funnel> extends Foo<Y>(){ Y x(){ return y; } }; }
   <Y extends Object<>> Foo<Y> leak(MyFoo2F<Y> z){ return z; } }
 // d5, Example 1 funnelled: Object, A, B, Foo, and
 class Broken<> extends Object<>{ <X extends Object<>> Foo<X> m(Foo<X> other, X x){ return
@@ -1608,7 +1608,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[R14] \texttt{r14}: Example~2 reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck: the second call finds the \Q@MyFoo2@ of the first call, and \Q@AsB@ receives the \Q@A<>@ of the first call.
 \item[R15] \texttt{r15}: Example~2 with \Q@show@ reduces to \Q@new A<>().[Object<>]onlyB()@, which is stuck: \Q@mine.show(local)@ applies the \Q@f@ of the second call to the \Q@x()@ of the first call.
 \item[R16] \texttt{r16}: Counterexample~3 reduces as Example~2, to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
-\item[R17] \texttt{r17}: \Q@new Broken<>().<B<>>leak(new Broken<>().<A<>>mk2(new A<>())).x().onlyB()@ reduces in d4 to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
+\item[R17] \texttt{r17}: \Q@new Broken<>().<B<>>leak(new Broken<>().<A<>>m2(new A<>())).x().onlyB()@ reduces in d4 to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
 \item[R18] \texttt{r18}: \Q@new Nest<>().<A<>>mk(new A<>()).x()@ $\rightarrow^*$ \Q@new A<>()@, through a value of \Q@Outer@ and a value of \Q@Inner@.
 \item[R19] \texttt{r19}: calling \Q@g<B<>>(new B<>())@ on the value of W16 gives \Q@new Inner2<B<>> extends Foo<B<>>(){ B<> x(){ return new B<>(); } }@.
 \item[R20] \texttt{r20}: \Q@new Derived<>(new B<>(), new A<>()).f@ $\rightarrow$ \Q@new Base<A<>>(new A<>()).f@ $\rightarrow$ \Q@new A<>()@, by \textsc{topFieldSuper} and \textsc{topFieldFound}.
@@ -1653,6 +1653,6 @@ Lean derives it from \texttt{typeSoundness}, W11 and R15: the program reduces to
 \item[N7] \texttt{n7}: class \Q@NotBrokenF@ is not Ok: \Q@Object<>@ does not determine \Q@X@; javac rejects Counterexample~3 for the same reason.
 \item[N8] \texttt{n8}: in d4F, the main expression of the leak is ill typed: a \Q@MyFoo2F<A<>>@ is passed where a \Q@MyFoo2F<B<>>@ is expected.
 \item[J1] \texttt{j1}: Example~1 reduces to \Q@new A<>().onlyB()@, and then to \Q@new A<>().[Object<>]onlyB()@, which is stuck.
-\item[L1] \texttt{l1}: in d4, class \Q@Broken@ is not Ok: the local class in \Q@mk2@ funnels nothing, as in N1.
+\item[L1] \texttt{l1}: in d4, class \Q@Broken@ is not Ok: the local class in \Q@m2@ funnels nothing, as in N1.
 \item[S1] \texttt{s1}: \Q@new Object<>().f@ is stuck.
 \end{description}

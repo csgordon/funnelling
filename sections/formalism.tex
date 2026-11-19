@@ -758,35 +758,31 @@ Since $\mathsf{scope}(\QQ{MyFoo})$ is empty, \Q@MyFoo@ has no type variables, an
 Thus the call \Q@new Broken<>().<String>m(new Broken<>().<Integer>m(o, i), s)@ has type \Q@Foo<String>@, but it returns a \Q@Foo<Integer>@.
 This is the unsoundness of Java.
 This unsoundness is there even if we keep the restriction of Java that the name of a local class can only be written inside the method declaring it, as \Q@m@ does.
-Our formal system shows two more failure points.
-The two failure points are the same failure, shown more explicitly:
+Our formal system shows two more consequences of \Q@MyFoo<>@ being a subtype of \Q@Foo<X>@:
 \begin{itemize}
-\item Reduction does not preserve types.
+\item Values of the same type extend different types.
 The call \Q@new Broken<>().<Integer>m(o, i)@ has type \Q@Foo<Integer>@.
 The value \Q@o@ is not a \Q@MyFoo@, so the type test is false and the call takes the \Q@else@ branch.
 The call reduces to the value
 \begin{lstlisting}
 new MyFoo<> extends Foo<Integer>(){ Integer x(){ return i; } }
 \end{lstlisting}
-The type of this value is \Q@MyFoo<>@, and \Q@MyFoo<>@ is not a subtype of \Q@Foo<Integer>@.
-The supertypes of \Q@MyFoo<>@ come from the declaration of \Q@MyFoo@ in \Q@m@, not from the value:
-rule \textsc{subInheritLocal} derives $\subtype{\emptyset}{\QQ{MyFoo<>}}{\QQ{Foo<X>}}$, where \Q@X@ is the type variable of \Q@m@.
-Subtyping does not check kinding, so this judgement holds in the empty bounds $\emptyset$, where \Q@X@ is not in scope.
-However, \Q@Foo<X>@ is not well kinded under $\emptyset$, so rule \textsc{subs} cannot give the value the type \Q@Foo<X>@ either.
-Java has no typing of values during reduction, so in Java this failure is invisible.
+The type of this value is \Q@MyFoo<>@.
+The call \Q@new Broken<>().<String>m(o, s)@ reduces to a value of the same type \Q@MyFoo<>@ that extends \Q@Foo<String>@.
+Thus no type of the form \Q@Foo<T>@ is a correct supertype of \Q@MyFoo<>@ for both values.
 \item Typing depends on the names of type variables.
 Our system lets the name of a local class be written anywhere.
 Consider two more methods of \Q@Broken@:
 \begin{lstlisting}
-<Y> MyFoo2<> mk2(Y y){
+<Y> MyFoo2<> m2(Y y){
   return new MyFoo2<> extends Foo<Y>(){ Y x(){ return y; } }; }
 <Y> Foo<Y> leak(MyFoo2<> z){ return z; }
 \end{lstlisting}
-The method \Q@leak@ is well typed, since the type variable \Q@Y@ of \Q@leak@ has the same name as the type variable \Q@Y@ of \Q@mk2@.
+The method \Q@leak@ is well typed, since the type variable \Q@Y@ of \Q@leak@ has the same name as the type variable \Q@Y@ of \Q@m2@.
 Renaming \Q@Y@ into \Q@Z@ in \Q@leak@ makes \Q@leak@ ill typed.
 The call
 \begin{lstlisting}
-new Broken<>().<String>leak(new Broken<>().<Integer>mk2(i))
+new Broken<>().<String>leak(new Broken<>().<Integer>m2(i))
 \end{lstlisting}
 has type \Q@Foo<String>@, but it returns a \Q@Foo<Integer>@, without type tests.
 \end{itemize}
@@ -795,3 +791,4 @@ Under rule \textsc{newLocal}, the object created by \Q@m@ has type \Q@MyFoo<X>@,
 Since $\mathsf{scope}(\QQ{MyFoo})$ holds the bound of \Q@X@, rule \textsc{castDown} accepts the type test \Q@instanceof MyFoo<X>@ from \Q@Foo<X>@, but not from \Q@Object<>@.
 Thus the funnelled \Q@m@ takes \Q@Foo<X> other@ instead of \Q@Object<> other@, and tests \Q@other instanceof MyFoo<X> w@.
 With \Q@o@ of type \Q@Foo<Integer>@, the call \Q@new Broken<>().<Integer>m(o, i)@ reduces to a value of type \Q@MyFoo<Integer>@, a subtype of \Q@Foo<Integer>@.
+The funnelled \Q@m2@ returns a \Q@MyFoo2<Y>@ and the funnelled \Q@leak@ takes a \Q@MyFoo2<Y>@, so the call of \Q@leak@ above is ill typed: a \Q@MyFoo2<Integer>@ is passed where a \Q@MyFoo2<String>@ is expected.
