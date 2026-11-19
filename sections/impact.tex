@@ -74,7 +74,7 @@ In a release build, \Q@s@ is the JavaScript number \Q@5@, \Q@s.length@ reads the
 Thus with Scala~2.13.18 and a release build of Scala.js, this program has no warning at compile time and no error at run time.
 In Examples~1 and~2, the failure is detected at run time by a check that not every compilation target performs.
 
-The key issues at work in the interaction of method-local inner classes and generics arise from the interaction of (1) nominal dynamic downcasts, (2) design choices about what runtime information about generic parameters is both persisted \emph{and checked} by casts, and (3) (not) tracking all dependencies on type parameters in the type system.
+The key issues at work in the interaction of method-local inner classes and generics arise from the interaction of (i) nominal dynamic downcasts, (ii) design choices about what runtime information about generic parameters is both persisted \emph{and checked} by casts, and (iii) (not) tracking all dependencies on type parameters in the type system.
 Essentially, Java and Scala both treat \Q@MyFoo@ as a sort of existential type --- that there exists some \Q@X@  such that
 \Q@MyFoo@ extends \Q@Foo<X>@. However, treating \Q@MyFoo@ as a closed rather than generic type is equivalent
 to assuming that there is only one existential for all instances --- associated with the declaration site --- rather than potentially
@@ -96,7 +96,7 @@ def m[Y](other: Any, newx: Y) : Foo =
         case _ => MyFoo()
     }
 \end{lstlisting}
-This code compiles with the same warning that the cast cannot be checked because \texttt{MyFoo} is a local class, but in this case the warning is spurious:
+Scala~3 compiles this code with the same warning that the type test cannot be checked because \texttt{MyFoo} is a local class, but in this case the warning is spurious:
 compiling the corresponding analogue of Example~1's client code
 \begin{lstlisting}[language=Scala]
 def main(a: Array[String]) : Unit = {

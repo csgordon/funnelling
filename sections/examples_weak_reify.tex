@@ -188,7 +188,7 @@ In the same way, the generic class declaration \Q@class Foo<X>@ declares infinit
 So each method \Q@m<T>@ declares its own method-local class \Q@MyFoo@, since the body of each \Q@m<T>@ is the body of a different method.
 \item \textbf{Identity as Dynamic Evaluation}: 
 Each evaluation of the declaration creates a new class, even for the same instantiation of the generic parameters.
-Scala has this granularity for inner classes.
+Scala has this granularity for inner classes that are members of a class, but not for method-local classes (\S\ref{sec:impact}).
 An instance of an inner class \Q@Inner@ captures its enclosing instance \Q@a@ as \Q@$outer@, and its type is the path-dependent type \Q@a.Inner@.
 For the pattern \Q@case i: a.Inner@, the Scala compiler emits an ``outer test'' that compares the captured \Q@$outer@ with \Q@a@~\cite[Section~8.2]{scala_spec}.%
 \footnote{Even here the type system exposes what is captured: inside the class of \Q@a@, \Q@Inner@ means \Q@this.Inner@.}

@@ -763,7 +763,7 @@ The two failure points are the same failure, shown more explicitly:
 \begin{itemize}
 \item Reduction does not preserve types.
 The call \Q@new Broken<>().<Integer>m(o, i)@ has type \Q@Foo<Integer>@.
-The value \Q@o@ is not a \Q@MyFoo@, so the type test fails and the call takes the \Q@else@ branch.
+The value \Q@o@ is not a \Q@MyFoo@, so the type test is false and the call takes the \Q@else@ branch.
 The call reduces to the value
 \begin{lstlisting}
 new MyFoo<> extends Foo<Integer>(){ Integer x(){ return i; } }
