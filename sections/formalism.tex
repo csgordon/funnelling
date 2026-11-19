@@ -172,8 +172,6 @@ $\mathrm{dom}(\Delta)$ is the sequence of the type variables in $\Delta$, and $\
 For a variable $x$, $\Gamma(x)$ is the type of $x$ in $\Gamma$.
 $\mathrm{dom}(\pl{F})$ is the sequence of the $X$ such that $\funnel{X}$ is in $\pl{F}$.
 $\ftv{T}$ is the set of the type variables occurring in $T$.
-The rules and the definitions leave the following conventions implicit.
-A sequence $e_1,\ldots,e_n$, or $\pl{e}$, separates its elements with commas; a comma also concatenates two sequences, and either sequence may be empty.
 A function or a judgement applied to sequences stands for one application at every position, and requires the sequences to have the same length:
 $|F_1,\ldots,F_n|$ is $|F_1|,\ldots,|F_n|$;
 $\ftv{T_1,\ldots,T_n}$ is $\ftv{T_1}\cup\ldots\cup\ftv{T_n}$;
@@ -345,9 +343,6 @@ Object<> k(L<> y){ return
 \end{lstlisting}
 In a call of \Q@k@ with a value \Q@v@ of class \Q@L@, the body of \Q@m@ becomes \Q@v.m(x)@, and the method \Q@m@ of \Q@v@ binds \Q@x@ again.
 Without $\mathsf{fresh}$, the substitution would attempt to place a binder of a name under a binder of the same name, breaking well-formedness requirement A7.
-Rules \textsc{ifThen}, \textsc{topFound} and \textsc{localFound} place values under the binders of the expression they substitute into.
-Requirement A7 on the result requires those binders to differ from the names bound in the values.
-A substitution can place a value at several positions, so several occurrences of a value can bind the same names; those occurrences are never nested, so they do not shadow each other.
 
 %Not totally sure about Ts vs Gs vs Fs in LHS of match
 %\[
