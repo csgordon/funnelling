@@ -31,7 +31,7 @@ The files are:
 \begin{itemize}
 \item \leanfile{Syntax.lean}: names, types, ground types, funnels, expressions, methods, values, declarations, class declarations $K$.
 \item \leanfile{Substitution.lean}: substitution of type variables and of variables, and $\mathsf{fresh}$.
-\item \leanfile{Declarations.lean}: expression contexts, $\mathsf{declared}$, $M\in C$, $\mathsf{generic}$, $\Delta|_{\pl{F}}$, $\mathsf{scope}$, $\mathsf{typeOf}$.
+\item \leanfile{Declarations.lean}: expression contexts, $\mathsf{declared}$, $M\in C$, $\Delta|_{\pl{F}}$, $\mathsf{scope}$, $\mathsf{typeOf}$.
 \item \leanfile{WellFormed.lean}: the well-formedness requirements A1-A12.
 \item \leanfile{Typing.lean}: subtyping, kinding, checked casts, $\mathsf{overrideOk}$, $\mathsf{consistent}$, typing, method, class and program typing.
 \item \leanfile{Reduction.lean}: evaluation contexts and the reduction.
@@ -72,13 +72,12 @@ The premise of \texttt{Step.ctx} is a \texttt{Step}: an evaluation context binds
 A judgement on sequences has its own name: $\kind{\Delta}{\pl{T}}$ is \texttt{KindSeq d Delta Ts}, $\subtype{\Delta}{\pl{T}}{\pl{T}'}$ is \texttt{SubSeq d Delta Ts Ts'}, and $\typing{\Delta}{\Gamma}{\pl{e}}{\pl{T}}$ is \texttt{TypingSeq d Delta Gamma es Ts}; $\mok{\Delta}{\Gamma}{\pl{M}}$ is a premise for every method.
 \item \textbf{Substitution and lengths.}
 The paper defines $\tsubst{T}{\Delta}{\pl{T}}$ only when $\Delta$ and $\pl{T}$ have the same length.
-$\tsubst{T}{\Delta}{\pl{T}}$ is \texttt{T.subst (bind Delta Ts)} and $\tsubst{T}{\pl{F}}{\pl{T}}$ is \texttt{T.subst (bindF Fs Ts)}; the rule has the premise that the lengths are the same.
-The paper defines $\tsubst{T}{\pl{F}}{\pl{T}}$ only when $\pl{F}$ contains no ground type; in the rules $\pl{F}$ are the funnels of a declared local class, so $\pl{F}$ contains no ground type by A11.
+$\tsubst{T}{\Delta}{\pl{T}}$ is \texttt{T.subst (bind Delta Ts)}; the rule has the premise that the lengths are the same.
 The paper defines a simultaneous substitution only when the names in its domain are distinct.
 Rules \textsc{topFound} and \textsc{localFound} have this as premises (\texttt{Nodup}), since their domains hold the names chosen by $\mathsf{fresh}$; in the other rules the domain is distinct by A5, A6 and A7.
 \item \textbf{Definitions.}
-A \textbf{Define} box of the paper with \emph{where} clauses ($\mathsf{declared}$, $\mathsf{generic}$, $\mathsf{scope}$, $\mathsf{overrideOk}(T,M)$) is an inductive relation, one constructor per clause; $M\in C$ and $K\gap\mathsf{consistent}$ are definitions with an existential, \texttt{MethodIn} and \texttt{Consistent}.
-In $\mathsf{declared}$, $\mathsf{generic}$, $\mathsf{scope}$ and $\mathsf{overrideOk}(T,M)$, the constructor of the clause for a top-level class is \texttt{dec}, and the constructor of the clause for a local class is \texttt{newLocal}; the clause of $\mathsf{overrideOk}(T,M)$ with $m\not\in\pl{M}$ is \texttt{absent}.
+A \textbf{Define} box of the paper with \emph{where} clauses ($\mathsf{declared}$, $\mathsf{overrideOk}(T,M)$, $\mathsf{scope}$) is an inductive relation, one constructor per clause; $M\in C$ and $K\gap\mathsf{consistent}$ are definitions with an existential, \texttt{MethodIn} and \texttt{Consistent}.
+In $\mathsf{declared}$ and $\mathsf{scope}$, the constructor of the clause for a top-level class is \texttt{dec}, and the constructor of the clause for a local class is \texttt{newLocal}; in $\mathsf{overrideOk}(T,M)$, the clause with $m\not\in\pl{M}$ is \texttt{absent}, and the other clause is \texttt{found}.
 A definition of a function ($\mathrm{dom}$, $\mathrm{cod}$, $|F|$, $\mathsf{typeOf}$, the substitutions) is a function.
 \end{itemize}
 
@@ -450,29 +449,21 @@ def MethodIn (d : Decls) (M : Method) (C : ClassName) : Prop :=
 \mapping{$\declared{K}$ is \texttt{Declared d K}; $M\in K$ is \texttt{List.Mem M K.Ms}; $M\in C$ is \texttt{MethodIn d M C}.}
 \end{cmp}
 
-\begin{cmp}{$\generic{C}$, $|F|$}
+\begin{cmp}{$|F|$}
 \begin{paperside}
 \fit{$\begin{array}{@{}l@{}}
-\generic{C} = \gen{C}{\mathrm{dom}(\Delta)}\\
-\quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\_}{\_}}\\
-\generic{C} = \gen{C}{\mathrm{dom}(\pl{F})}\\
-\quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\_}}\\[1ex]
 |\funnel{X}| = X\qquad|G| = G
 \end{array}$}
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-inductive Generic (d : Decls) : ClassName -> Ty -> Prop
-  | dec {D} : Declared d (.dec D) -> Generic d D.C (.cls D.C (vars (dom D.Delta)))
-  | newLocal {C Fs C' Ts es Ms} :
-      Declared d (.newLocal C Fs C' Ts es Ms) -> Generic d C (.cls C (vars (domF Fs)))
 def Funnel.abs : Funnel -> Ty
   | .ground G => G
   | .funnel X => .var X
 def abs (Fs : List Funnel) : List Ty := Fs.map Funnel.abs
 \end{lstlisting}
 \end{leanside}
-\mapping{$\generic{C}=T$ is \texttt{Generic d C T}; $|F|$ is \texttt{Funnel.abs F} and $|\pl{F}|$ is \texttt{abs Fs}.}
+\mapping{$|F|$ is \texttt{Funnel.abs F} and $|\pl{F}|$ is \texttt{abs Fs}.}
 \end{cmp}
 
 \begin{cmp}{$\Delta|_{\pl{F}}$}
@@ -552,9 +543,7 @@ def typeOf : Value -> Ty
 \end{array}$}\\[1ex]
 The other cases go into every subterm, including the methods of a local class.
 Substitution of type variables is defined only when the type variables of the methods it enters are not in its domain.
-In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$, and funnels $\pl{F}$ stand for their funnelled type variables:
-$\tsubst{T}{F_1,\ldots,F_n}{T_1,\ldots,T_n}$ replaces $X_i$ with $T_i$ for every $i\in 1..n$, where $F_i=\funnel{X_i}$.
-No funnel $F_i$ is of the form $G$: the funnels in the domain of a substitution are the funnels of a declared local class, and by A11 every funnel in \decls is of the form $\funnel{X}$.
+In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
 \end{paperside}
 \begin{leanside}
@@ -564,7 +553,6 @@ def Ty.subst (sigma : TSubst) : Ty -> Ty
   | .var X => (sigma.lookup X).getD (.var X)
   | .cls C Ts => .cls C (Ty.substList sigma Ts)
 def bind {A : Type} (Delta : Bounds) (as : List A) : List (Prod TVarName A) := (dom Delta).zip as
-def bindF (Fs : List Funnel) (Ts : List Ty) : TSubst := (domF Fs).zip Ts
 abbrev GSubst := List (Prod TVarName GTy)
 def Funnel.gsubst (sigma : GSubst) : Funnel -> Funnel
   | .ground G => .ground G
@@ -576,7 +564,7 @@ abbrev GSubstDefined (Xs : List TVarName) (e : Expr) : Prop :=
   forall X, List.Mem X e.tbinders -> Not (List.Mem X Xs)
 \end{lstlisting}
 \end{leanside}
-\mapping{$[\Delta=\pl{T}]$ is \texttt{bind Delta Ts}, with a premise that the lengths are the same; $[\pl{F}=\pl{T}]$ is \texttt{bindF Fs Ts}. The function \texttt{Expr.gsubst} is total; a rule that substitutes into an expression \texttt{e} has the premise \texttt{GSubstDefined Xs e}, which is the condition under which the substitution of the paper is defined. Substitution into expressions, \texttt{Expr.gsubst}, takes ground types, so $\tsubst{\funnel{X_i}}{\ldots}{\ldots}$ is again a funnel.}
+\mapping{$[\Delta=\pl{T}]$ is \texttt{bind Delta Ts}, with a premise that the lengths are the same. The function \texttt{Expr.gsubst} is total; a rule that substitutes into an expression \texttt{e} has the premise \texttt{GSubstDefined Xs e}, which is the condition under which the substitution of the paper is defined. Substitution into expressions, \texttt{Expr.gsubst}, takes ground types, so $\tsubst{\funnel{X_i}}{\ldots}{\ldots}$ is again a funnel.}
 \end{cmp}
 
 \begin{cmp}{Substitution of variables}
@@ -942,18 +930,20 @@ inductive Sub (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
 \begin{cmp}{\textsc{subInheritLocal}}
 \begin{paperside}
 \fit{$\inferrule{
-  \declared{\innerobj{C}{\pl{F}}{C'}{\pl{T}'}{\_}{\_}}\\\\
-  \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}'}}{\pl{F}}{\pl{T}}}{T'}
+  \declared{\innerobj{C}{\_}{C'}{\pl{T}'}{\_}{\_}}\\
+  \mathsf{scope}(C)=\Delta_0\\\\
+  \subtype{\Delta}{\tsubst{\gen{C'}{\pl{T}'}}{\Delta_0}{\pl{T}}}{T'}
 }{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{T'}
 }$}
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | subInheritLocal {C Fs C' Ts' es Ms Ts T'} :
+  | subInheritLocal {C Fs C' Ts' es Ms Delta0 Ts T'} :
       Declared d (.newLocal C Fs C' Ts' es Ms) ->
-      Ts.length = Fs.length ->
-      Sub d Delta ((Ty.cls C' Ts').subst (bindF Fs Ts)) T' ->
+      Scope d C Delta0 ->
+      Ts.length = Delta0.length ->
+      Sub d Delta ((Ty.cls C' Ts').subst (bind Delta0 Ts)) T' ->
       Sub d Delta (.cls C Ts) T'
 \end{lstlisting}
 \end{leanside}
@@ -1021,24 +1011,24 @@ inductive Cast (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
 \begin{paperside}
 \fit{$\inferrule{
   \subtype{\Delta}{\gen{C}{\pl{T}}}{\gen{C'}{\pl{T}_0}}\\
-  \generic{C}=\gen{C}{\pl{X}}\\\\
-  \subtype{\emptyset}{\gen{C}{\pl{X}}}{\gen{C'}{\pl{T}'}}\\
-  \pl{X}\subseteq\ftv{\pl{T}'}
+  \mathsf{scope}(C)=\Delta_0\\\\
+  \subtype{\emptyset}{\gen{C}{\mathrm{dom}(\Delta_0)}}{\gen{C'}{\pl{T}'}}\\
+  \mathrm{dom}(\Delta_0)\subseteq\ftv{\pl{T}'}
 }{
   \cast{\Delta}{\gen{C'}{\pl{T}_0}}{\gen{C}{\pl{T}}}
 }$}
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
-  | castDown {C Ts C' Ts0 Xs Ts'} :
+  | castDown {C Ts C' Ts0 Delta0 Ts'} :
       Sub d Delta (.cls C Ts) (.cls C' Ts0) ->
-      Generic d C (.cls C (vars Xs)) ->
-      Sub d [] (.cls C (vars Xs)) (.cls C' Ts') ->
-      (forall X, List.Mem X Xs -> List.Mem X (Ty.ftvList Ts')) ->
+      Scope d C Delta0 ->
+      Sub d [] (.cls C (vars (dom Delta0))) (.cls C' Ts') ->
+      (forall X, List.Mem X (dom Delta0) -> List.Mem X (Ty.ftvList Ts')) ->
       Cast d Delta (.cls C' Ts0) (.cls C Ts)
 \end{lstlisting}
 \end{leanside}
-\mapping{$\gen{C}{\pl{X}}$ is \texttt{.cls C (vars Xs)}.}
+\mapping{$\gen{C}{\mathrm{dom}(\Delta_0)}$ is \texttt{.cls C (vars (dom Delta0))}.}
 \end{cmp}
 
 \subsubsection{Typing}
@@ -1291,7 +1281,8 @@ inductive Seq2 {A B : Type} (R : A -> B -> Prop) : List A -> List B -> Prop
 \fit{$\begin{array}{@{}l@{}}
 \innerobj{C}{\pl{F}}{C'}{\pl{T}}{\pl{e}}{\pl{M}}\gap\mathsf{consistent}\\
 \quad\textrm{where }\declared{\innerobj{C}{\pl{F}'}{C'}{\pl{T}'}{\_}{\pl{M}'}}\\
-\quad\phantom{\textrm{where }}\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}\\
+\quad\phantom{\textrm{where }}\mathsf{scope}(C)=\Delta_0\\
+\quad\phantom{\textrm{where }}\pl{T}=\tsubst{\pl{T}'}{\Delta_0}{|\pl{F}|}\\
 \quad\phantom{\textrm{where }}\mathrm{names}(\pl{M}')=\mathrm{names}(\pl{M})\\
 \quad\phantom{\textrm{where }}\mathsf{overrideOk}(\gen{C}{|\pl{F}|},\pl{M})
 \end{array}$}\\[1ex]
@@ -1301,10 +1292,11 @@ $\mathrm{names}(\pl{M})$ is the set of the names of the methods in $\pl{M}$.
 \begin{lstlisting}[style=leanside]
 def Consistent (d : Decls) : ClassDecl -> Prop
   | .newLocal C Fs C' Ts _ Ms =>
-    exists Fs' Ts' es' Ms',
+    exists Fs' Ts' es' Ms' Delta0,
       Declared d (.newLocal C Fs' C' Ts' es' Ms') /\
-      Fs.length = Fs'.length /\
-      Ts = Ty.substList (bindF Fs' (abs Fs)) Ts' /\
+      Scope d C Delta0 /\
+      Fs.length = Delta0.length /\
+      Ts = Ty.substList (bind Delta0 (abs Fs)) Ts' /\
       (forall m, List.Mem m (Ms'.map Method.name) <-> List.Mem m (Ms.map Method.name)) /\
       forall M, List.Mem M Ms -> OverrideOkM d (.cls C (abs Fs)) M
   | .dec _ => False
@@ -1336,15 +1328,10 @@ def OverrideOk (d : Decls) (Delta : Bounds) (T : Ty) (Ms : List Method) : Prop :
 \quad\textrm{where }\declared{\subclass{C}{\_}{\_}{\_}{\pl{M}}{\_}}\\
 \quad\phantom{\textrm{where }}m\not\in\pl{M}\\[1ex]
 \mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_n\gap x_n}{\_})\\
-\quad\textrm{where }\declared{\subclass{C}{\Delta}{\_}{\_}{\pl{M}}{\_}}\\
-\quad\phantom{\textrm{where }}\method{\Delta''}{T_0}{m}{T_1\gap x'_1,\ldots,T_n\gap x'_n}{\_}\in\pl{M}\\
+\quad\textrm{where }\method{\Delta''}{T_0}{m}{T_1\gap x'_1,\ldots,T_n\gap x'_n}{\_}\in C\\
+\quad\phantom{\textrm{where }}\mathsf{scope}(C)=\Delta\\
 \quad\phantom{\textrm{where }}\tsubst{\mathrm{cod}(\Delta'')}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\
-\quad\phantom{\textrm{where }}\tsubst{T_0,\ldots,T_n}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n\\[1ex]
-\mathsf{overrideOk}(\gen{C}{\pl{T}},\method{\Delta'}{T'_0}{m}{T'_1\gap x_1,\ldots,T'_n\gap x_n}{\_})\\
-\quad\textrm{where }\declared{\innerobj{C}{\pl{F}}{\_}{\_}{\_}{\pl{M}}}\\
-\quad\phantom{\textrm{where }}\method{\Delta''}{T_0}{m}{T_1\gap x'_1,\ldots,T_n\gap x'_n}{\_}\in\pl{M}\\
-\quad\phantom{\textrm{where }}\tsubst{\mathrm{cod}(\Delta'')}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=\mathrm{cod}(\Delta')\\
-\quad\phantom{\textrm{where }}\tsubst{T_0,\ldots,T_n}{\pl{F},\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n
+\quad\phantom{\textrm{where }}\tsubst{T_0,\ldots,T_n}{\Delta,\Delta''}{\pl{T},\mathrm{dom}(\Delta')}=T'_0,\ldots,T'_n
 \end{array}$}
 \end{paperside}
 \begin{leanside}
@@ -1354,27 +1341,18 @@ inductive OverrideOkM (d : Decls) : Ty -> Method -> Prop
       Declared d (.dec D) ->
       Not (List.Mem m (D.Ms.map Method.name)) ->
       OverrideOkM d (.cls D.C Ts) (.mk Delta' T0' m ps' e')
-  | dec {D Ts Delta' T0' m ps' e' Delta'' T0 ps e} :
-      Declared d (.dec D) ->
-      List.Mem (Method.mk Delta'' T0 m ps e) D.Ms ->
-      Ts.length = D.Delta.length -> Delta'.length = Delta''.length ->
-      Ty.substList (bind (D.Delta ++ Delta'') (Ts ++ vars (dom Delta')))
+  | found {C Ts Delta0 Delta' T0' m ps' e' Delta'' T0 ps e} :
+      MethodIn d (.mk Delta'' T0 m ps e) C ->
+      Scope d C Delta0 ->
+      Ts.length = Delta0.length -> Delta'.length = Delta''.length ->
+      Ty.substList (bind (Delta0 ++ Delta'') (Ts ++ vars (dom Delta')))
         (cod Delta'') = cod Delta' ->
-      Ty.substList (bind (D.Delta ++ Delta'') (Ts ++ vars (dom Delta')))
-        (T0 :: ps.map VarDecl.T) = T0' :: ps'.map VarDecl.T ->
-      OverrideOkM d (.cls D.C Ts) (.mk Delta' T0' m ps' e')
-  | newLocal {C Fs C0 Ts0 es Ms Ts Delta' T0' m ps' e' Delta'' T0 ps e} :
-      Declared d (.newLocal C Fs C0 Ts0 es Ms) ->
-      List.Mem (Method.mk Delta'' T0 m ps e) Ms ->
-      Ts.length = Fs.length -> Delta'.length = Delta''.length ->
-      Ty.substList (bindF Fs Ts ++ bind Delta'' (vars (dom Delta')))
-        (cod Delta'') = cod Delta' ->
-      Ty.substList (bindF Fs Ts ++ bind Delta'' (vars (dom Delta')))
+      Ty.substList (bind (Delta0 ++ Delta'') (Ts ++ vars (dom Delta')))
         (T0 :: ps.map VarDecl.T) = T0' :: ps'.map VarDecl.T ->
       OverrideOkM d (.cls C Ts) (.mk Delta' T0' m ps' e')
 \end{lstlisting}
 \end{leanside}
-\mapping{One constructor per case of the paper. Comparing the lists $T_0,\ldots,T_n$ and $T'_0,\ldots,T'_n$ also requires the same number of parameters, as the paper does by writing $n$ in both methods.}
+\mapping{One constructor per case of the paper; $\Delta$ is \texttt{Delta0}. Comparing the lists $T_0,\ldots,T_n$ and $T'_0,\ldots,T'_n$ also requires the same number of parameters, as the paper does by writing $n$ in both methods.}
 \end{cmp}
 
 \subsubsection{Methods, Classes and Programs}
@@ -1468,7 +1446,7 @@ Type Soundness follows from progress and preservation, by induction on \texttt{R
 Progress, preservation and the lemmas below are components of the proof, not statements of the paper.
 The proofs of progress, preservation and determinism use these lemmas:
 \begin{enumerate}
-\item \textbf{Basic lemmas.} \texttt{lookup} on a substitution built by \texttt{zip}; by A1, A5 and A7, $\mathsf{declared}$, $\mathsf{scope}$ and $\mathsf{generic}$ have one result per class name; subtyping is transitive; $\subtype{\emptyset}{T_0}{\gen{C}{\pl{T}}}$ and $\subtype{\emptyset}{T_0}{\gen{C}{\pl{T}'}}$ imply $\pl{T}=\pl{T}'$.
+\item \textbf{Basic lemmas.} \texttt{lookup} on a substitution built by \texttt{zip}; by A1, $\mathsf{declared}$ has one result per class name, and the results of $\mathsf{scope}$ for one class name have the same type variables; subtyping is transitive; $\subtype{\emptyset}{T_0}{\gen{C}{\pl{T}}}$ and $\subtype{\emptyset}{T_0}{\gen{C}{\pl{T}'}}$ imply $\pl{T}=\pl{T}'$.
 \item \textbf{Renaming.} A renaming by \texttt{Fresh} keeps typing and kinding under $\Delta;\Gamma$ when the renamed expression binds no name of $\mathrm{dom}(\Delta)$ or $\mathrm{dom}(\Gamma)$ and satisfies A7 and A8; in the rules, \texttt{VSubstDefined}, \texttt{GSubstDefined} and \texttt{Nodup} give the first condition; \texttt{Fresh} alone does not keep A7 and A8 (W26, W27).
 For \texttt{FreshM}: if $\typing{\Delta,\Delta_m}{\Gamma,\pl{T}\gap\pl{x}}{e}{T_0}$ and \texttt{FreshM} renames $\Delta_m$, $\pl{x}$ and $e$ into $\Delta''$, $\pl{x}'$ and $e_0$, then $\typing{\Delta,\Delta''}{\Gamma,\pl{T}\sigma\gap\pl{x}'}{e_0}{T_0\sigma}$, with $\sigma=[\Delta_m=\mathrm{dom}(\Delta'')]$, when $\mathrm{dom}(\Delta'')$ and $\pl{x}'$ are disjoint from $\mathrm{dom}(\Delta)$ and $\mathrm{dom}(\Gamma)$, and $e_0$ satisfies A7 and A8.
 \item \textbf{Weakening} of $\Gamma$ and $\Delta$, for typing, kinding and subtyping, when the added names are not bound in the expression.
@@ -1482,7 +1460,7 @@ $T_0\sigma$ is a type variable when $T_0$ is a type variable of a method of a lo
 \item \textbf{Substitution of variables.} Values are closed and typed under $\emptyset;\emptyset$, so substituting values for variables of the same types preserves typing when the result satisfies A7; \Q@this@ is not substituted into the methods of a local class.
 \item \textbf{Inversion} of typing for each form of expression, through rule \textsc{subs}.
 \item \textbf{Canonical forms.} If $\typing{\emptyset}{\emptyset}{v}{T}$ then $\subtype{\emptyset}{\mathsf{typeOf}(v)}{T}$.
-\item \textbf{Copies of a local class.} By $\mathsf{consistent}$, the methods of a copy have the signatures of the declaration with the funnelled type variables substituted; so rule \textsc{call} agrees with rule \textsc{localFound}; by $\pl{T}=\tsubst{\pl{T}'}{\pl{F}'}{|\pl{F}|}$, rule \textsc{subInheritLocal} agrees with rules \textsc{localSuper} and \textsc{localFieldSuper}.
+\item \textbf{Copies of a local class.} By $\mathsf{consistent}$, the methods of a copy have the signatures of the declaration with the funnelled type variables substituted; so rule \textsc{call} agrees with rule \textsc{localFound}; by $\pl{T}=\tsubst{\pl{T}'}{\Delta_0}{|\pl{F}|}$, rule \textsc{subInheritLocal} agrees with rules \textsc{localSuper} and \textsc{localFieldSuper}.
 \item \textbf{Overriding.} By $\mathsf{overrideOk}$ in rules \textsc{classOk} and \textsc{newLocal}, the first class declaring $m$ above the class of the receiver gives $m$ the signature, substituted, of $m$ in every supertype.
 \item \textbf{Checked cast.} If $\emptyset\vdash\mathsf{typeOf}(v)<:\gen{C}{\_}$, $v$ has type $T_0$, $\cast{\emptyset}{T_0}{\gen{C}{\pl{T}}}$ and $\kind{\emptyset}{\gen{C}{\pl{T}}}$, then $v$ has type $\gen{C}{\pl{T}}$.
 The proof uses that the chain of superclasses is unique and that $\pl{X}\subseteq\ftv{\pl{T}'}$ fixes $\pl{T}$.
@@ -1647,7 +1625,7 @@ A program that is \emph{ill typed} has no type under the rules of Section~\ref{s
 \item[T6] \texttt{t6}: \Q@if (new A<>() instanceof A<> x){ x } else { new A<>() } : A<>@, by \textsc{ifInstanceof} and \textsc{castUp}.
 \item[T7] \texttt{t7}: in d2, \Q@if (v instanceof MyFoo<A<>> w){ w } else { v } : Foo<A<>>@, where \Q@v@ is the result of R7, by \textsc{ifInstanceof} and \textsc{castDown}.
 \item[C1] \texttt{c1}: $\cast{\QQ{X extends Object<>}}{\QQ{Foo<X>}}{\QQ{MyFoo<X>}}$ in d2, by \textsc{castDown}.
-\item[C2] \texttt{c2}: not $\cast{\QQ{X extends Object<>}}{\QQ{Object<>}}{\QQ{MyFoo<X>}}$ in d2: \textsc{castDown} needs $\QQ{Y}\in\ftv{\emptyset}$, since $\generic{\QQ{MyFoo}}$ is \Q@MyFoo<Y>@, and \Q@MyFoo<Y>@ has the supertype \Q@Object<>@ with no type arguments.
+\item[C2] \texttt{c2}: not $\cast{\QQ{X extends Object<>}}{\QQ{Object<>}}{\QQ{MyFoo<X>}}$ in d2: \textsc{castDown} needs $\QQ{Y}\in\ftv{\emptyset}$, since $\mathsf{scope}(\QQ{MyFoo})$ has the type variable \Q@Y@, and \Q@MyFoo<Y>@ has the supertype \Q@Object<>@ with no type arguments.
 \item[C3] \texttt{c3}: $\cast{\QQ{X extends Foo<A<>>}}{\QQ{X}}{\QQ{MyFoo<A<>>}}$ in d2, by \textsc{castVar} and then \textsc{castDown}.
 \item[C4] \texttt{c4}: $\cast{\emptyset}{\QQ{B<>}}{\QQ{Object<>}}$, by \textsc{castUp}.
 \item[C5] \texttt{c5}: not $\cast{\emptyset}{\QQ{A<>}}{\QQ{B<>}}$: the classes are unrelated.

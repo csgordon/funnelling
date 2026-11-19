@@ -9,7 +9,7 @@ theorem Sub.trans {d : Decls} {Delta : Bounds} {T1 T2 T3 : Ty} (h1 : Sub d Delta
   induction h1 with
   | subRefl => exact h2
   | subInherit hD hl _ ih => exact .subInherit hD hl (ih h2)
-  | subInheritLocal hD hl _ ih => exact .subInheritLocal hD hl (ih h2)
+  | subInheritLocal hD hs hl _ ih => exact .subInheritLocal hD hs hl (ih h2)
   | subVar hm _ ih => exact .subVar hm (ih h2)
 
 abbrev Up (d : Decls) (Delta : Bounds) (T1 T : Ty) : Prop :=

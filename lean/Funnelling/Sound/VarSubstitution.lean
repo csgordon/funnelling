@@ -56,8 +56,7 @@ theorem OverrideOkM.body {d : Decls} {T : Ty} {Delta : Bounds} {T0 : Ty} {m : Me
     {e e' : Expr} (h : OverrideOkM d T (.mk Delta T0 m ps e)) : OverrideOkM d T (.mk Delta T0 m ps e') := by
   cases h with
   | absent h1 h2 => exact OverrideOkM.absent h1 h2
-  | dec h1 h2 h3 h4 h5 h6 => exact OverrideOkM.dec h1 h2 h3 h4 h5 h6
-  | newLocal h1 h2 h3 h4 h5 h6 => exact OverrideOkM.newLocal h1 h2 h3 h4 h5 h6
+  | found h1 h2 h3 h4 h5 h6 => exact OverrideOkM.found h1 h2 h3 h4 h5 h6
 
 theorem OverrideOkM.vsubst {d : Decls} {T : Ty} {n : VSubst} {M : Method} (h : OverrideOkM d T M) :
     OverrideOkM d T (M.vsubst n) := by
@@ -74,12 +73,11 @@ theorem names_vsubst {n : VSubst} : forall {Ms : List Method},
 theorem Consistent.vsubst {d : Decls} {n n' : VSubst} {C : ClassName} {Fs : List Funnel} {C0 : ClassName}
     {Ts : List Ty} {es : List Expr} {Ms : List Method} (h : Consistent d (.newLocal C Fs C0 Ts es Ms)) :
     Consistent d (.newLocal C Fs C0 Ts (Expr.vsubstList n es) (Method.vsubstList n' Ms)) := by
-  rcases consistent_unfold h with ⟨Fs', Ts', es', Ms', h⟩
-  refine Exists.intro Fs' (Exists.intro Ts' (Exists.intro es' (Exists.intro Ms' (And.intro h.1
-    (And.intro h.2.1 (And.intro h.2.2.1 (And.intro ?_ ?_)))))))
-  . intro m; rw [names_vsubst]; exact h.2.2.2.1 m
+  rcases consistent_unfold h with ⟨Fs', Ts', es', Ms', Delta0, h1, h2, h3, h4, h5, h6⟩
+  refine ⟨Fs', Ts', es', Ms', Delta0, h1, h2, h3, h4, ?_, ?_⟩
+  . intro m; rw [names_vsubst]; exact h5 m
   . intro M hM
-    rcases Method.vsubstList_mem hM with ⟨M0, hM0⟩; rw [hM0.2]; exact (h.2.2.2.2 M0 hM0.1).vsubst
+    rcases Method.vsubstList_mem hM with ⟨M0, hM0⟩; rw [hM0.2]; exact (h6 M0 hM0.1).vsubst
 
 theorem OverrideOk.vsubst {d : Decls} {Delta : Bounds} {T : Ty} {n : VSubst} {Ms : List Method}
     (h : OverrideOk d Delta T Ms) : OverrideOk d Delta T (Method.vsubstList n Ms) := by

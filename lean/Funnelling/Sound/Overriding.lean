@@ -54,27 +54,21 @@ theorem dec_override {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclO
     rw [e3.2]
     cases M with
     | mk Dm T0m m ps e =>
-      have hcl := declMeth_closed hwf hok hD hM
-      simp only [ClassDecl.gvars, <- dom_append] at hcl
+      have hcl := methodIn_closed hwf hok (Scope.dec hD) ⟨.dec D, hD, rfl, hM⟩
       have hv : vars (dom D.Delta) ++ vars (dom Dm) = vars (dom (D.Delta ++ Dm)) := by rw [dom_append, vars_append]
-      refine OverrideOkM.dec hD hM (by simp [vars, dom]) rfl ?_ ?_
-      . rw [hv, substList_bind_vars_id hcl.1]
+      refine OverrideOkM.found ⟨.dec D, hD, rfl, hM⟩ (Scope.dec hD) (by simp [vars, dom]) rfl ?_ ?_
       . rw [hv, substList_bind_vars_id hcl.2]
+      . rw [hv, substList_bind_vars_id hcl.1]
   . have hsup : (Ty.cls D.C' D.Ts).subst (bind D.Delta (vars (dom D.Delta))) = Ty.cls D.C' D.Ts := by
       simp only [Ty.subst]
       rw [substList_bind_vars_id (hd.supD D hD)]
     rw [hsup] at e3
     exact (hok D hD.dec_mem).2.2.2 M D0.C U0 hM e3.2
 
-theorem bind_append_len {Dl1 Dl2 : Bounds} {as bs : List Ty} (h : as.length = Dl1.length) :
-    bind (Dl1 ++ Dl2) (as ++ bs) = bind Dl1 as ++ bind Dl2 bs := by
-  simp only [bind, dom_append]
-  rw [List.zip_append (by simp [h, dom])]
-
 theorem found_sig {d : Decls} (hwf : WFDecls d) {C0 : ClassName} {Ts0 : List Ty} {Delta0 : Bounds}
     {Delta1 : Bounds} {T0c : Ty} {m : MethName} {psc : List VarDecl} {body : Expr} {Dp : Bounds} {T0 : Ty}
     {ps : List VarDecl} {e : Expr} (hs : Scope d C0 Delta0)
-    (hm : MethodIn d (.mk Delta1 T0c m psc body) C0) (hl0 : Ts0.length = Delta0.length)
+    (hm : MethodIn d (.mk Delta1 T0c m psc body) C0)
     (hO : OverrideOkM d (.cls C0 Ts0) (.mk Dp T0 m ps e)) :
     Dp.length = Delta1.length /\
       Ty.substList (bind (Delta0 ++ Delta1) (Ts0 ++ vars (dom Dp))) (cod Delta1) = cod Dp /\
@@ -88,42 +82,21 @@ theorem found_sig {d : Decls} (hwf : WFDecls d) {C0 : ClassName} {Ts0 : List Ty}
     have ek := Declared.unique hwf hk h1 (by rw [hkn]; exact hTT.1)
     subst ek
     exact absurd (List.mem_map_of_mem (f := Method.name) hkM) h2
-  | @dec D2 _ _ _ _ _ _ Do T0x psx ex h1 h2 h3 h4 h5 h6 =>
+  | @found Cx _ Dl _ _ _ _ _ Do T0x psx ex h1 h2 h3 h4 h5 h6 =>
     simp only [Ty.cls.injEq] at hTT
-    have ek := Declared.unique hwf hk h1 (by rw [hkn]; exact hTT.1)
+    have hs' : Scope d Cx Delta0 := hTT.1 ▸ hs
+    have hdm := Scope.dom_unique hwf hs' h2
+    rw [<- bind_dom (D1 := Delta0 ++ Do) (D2 := Dl ++ Do) (by rw [dom_append, dom_append, hdm])] at h5 h6
+    rcases h1 with ⟨K2, hk2, hkn2, hkM2⟩
+    have ek := Declared.unique hwf hk2 hk (by rw [hkn2, hkn]; exact hTT.1.symm)
     subst ek
-    have eM := names_unique (Declared.namesNodup hwf h1) h2 hkM rfl
+    have eM := names_unique (Declared.namesNodup hwf hk) hkM2 hkM rfl
     simp only [Method.mk.injEq] at eM
     rcases eM with ⟨eM1, eM2, _, eM4, _⟩
     subst eM1 eM2 eM4
     have e1 := hTT.1
     have e2 := hTT.2
     subst e1 e2
-    have es := Scope.dec_eq hwf h1 hs
-    subst es
     exact ⟨h4, h5, h6⟩
-  | @newLocal C1 Fs C1' Ts1' es1 Ms1 _ _ _ _ _ _ Do T0x psx ex h1 h2 h3 h4 h5 h6 =>
-    simp only [Ty.cls.injEq] at hTT
-    have ek := Declared.unique hwf hk h1 (by rw [hkn]; exact hTT.1)
-    subst ek
-    have eM := names_unique (Declared.namesNodup hwf h1) h2 hkM rfl
-    simp only [Method.mk.injEq] at eM
-    rcases eM with ⟨eM1, eM2, _, eM4, _⟩
-    subst eM1 eM2 eM4
-    have e1 := hTT.1
-    have e2 := hTT.2
-    subst e1 e2
-    rcases Scope.loc_declared hs with hsd | hsd
-    . rcases hsd with ⟨D, hD, hDC, _⟩
-      exact absurd (Declared.dec_loc hwf hD h1 hDC) id
-    . rcases hsd with ⟨Fs2, C2, Ts2', es2, Ms2, Delta, hdecl, hrestr⟩
-      have eK := Declared.unique hwf hdecl h1 rfl
-      simp only [ClassDecl.newLocal.injEq] at eK
-      rcases eK with ⟨_, eF, _⟩
-      subst eF
-      have hb := bind_eq_bindF hrestr.dom_eq Ts0
-      refine ⟨h4, ?_, ?_⟩
-      . rw [bind_append_len hl0, hb]; exact h5
-      . rw [bind_append_len hl0, hb]; exact h6
 
 end Funnelling

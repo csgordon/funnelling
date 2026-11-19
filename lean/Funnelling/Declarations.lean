@@ -42,11 +42,6 @@ inductive Declared (d : Decls) : ClassDecl -> Prop
 def MethodIn (d : Decls) (M : Method) (C : ClassName) : Prop :=
   exists K, Declared d K /\ K.name = C /\ List.Mem M K.Ms
 
-inductive Generic (d : Decls) : ClassName -> Ty -> Prop
-  | dec {D} : Declared d (.dec D) -> Generic d D.C (.cls D.C (vars (dom D.Delta)))
-  | newLocal {C Fs C' Ts es Ms} :
-      Declared d (.newLocal C Fs C' Ts es Ms) -> Generic d C (.cls C (vars (domF Fs)))
-
 inductive RestrictB (Delta : Bounds) : List Funnel -> Bounds -> Prop
   | nil : RestrictB Delta [] []
   | funnel {X T Fs Delta'} :

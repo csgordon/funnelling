@@ -87,25 +87,22 @@ theorem pres_localSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {Ms : L
   subst hv
   have ty0 := hw.ty0
   rcases inv_local ty0 rfl with ⟨w2, hw2⟩
-  rcases consistent_unfold hw2.cons with ⟨Fs', Ts', es', Ms', hc⟩
-  have hDl := hc.1
+  rcases consistent_unfold hw2.cons with ⟨Fs', Ts', es', Ms', Dl, hDl, hsc, _, hts, hnames, _⟩
   have hup := hw2.up
   rw [abs_ground] at hup
   have hne : Not (w.C0 = C) := by
     intro e
     have hM := MethodIn.newLocal hwf hDl (by rw [<- e]; exact hw.meth)
-    exact hm ((hc.2.2.2.1 m).mp (List.mem_map_of_mem (f := Method.name) hM))
+    exact hm ((hnames m).mp (List.mem_map_of_mem (f := Method.name) hM))
   have hsub : Sub d [] (.cls C (GTy.tys Gs0)) (.cls w.C0 w.Ts0) := by
     rcases hup with e | hs
     . simp only [Ty.cls.injEq] at e; exact absurd e.1.symm hne
     . exact hs.1
-  rcases Sub.loc_step hwf hDl hsub with e | hs2
+  rcases Sub.loc_step hwf hDl hsub with e | ⟨Dl2, hsc2, hl2, hs3⟩
   . simp only [Ty.cls.injEq] at e; exact absurd e.1 hne
-  . have hts := hc.2.2.1
-    rw [abs_ground] at hts
-    have hs3 := hs2.2
+  . rw [abs_ground] at hts
     simp only [Ty.subst] at hs3
-    rw [<- hts] at hs3
+    rw [bind_dom (Scope.dom_unique hwf hsc2 hsc), <- hts] at hs3
     rcases Declared.super hwf hDl with ⟨D', hD'⟩
     have hsup := hD'.2
     simp only [ClassDecl.sup] at hsup
@@ -124,8 +121,8 @@ theorem pres_localSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {Ms : L
     rw [restrictB_ground_nil hw2.restr] at hK
     rw [<- hsup] at hK
     have hv0 := vt.2.1
-    have hv1 := Typing.subs hv0 hK (Sub.subInheritLocal hDl hs2.1
-      (by simp only [Ty.subst]; rw [<- hts, <- hsup]; exact Sub.subRefl))
+    have hv1 := Typing.subs hv0 hK (Sub.subInheritLocal hDl hsc2 hl2
+      (by simp only [Ty.subst]; rw [bind_dom (Scope.dom_unique hwf hsc2 hsc), <- hts, <- hsup]; exact Sub.subRefl))
     have hres := Typing.superCall hs3 hD0.1 hmeth hlen0 hw.len1 hsig hD'.1 hK hw.kinds hsubs
       (TypingSeq.cons hv1 hw.args)
     rw [hsup] at hres
@@ -153,20 +150,17 @@ theorem pres_localFieldSuper {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {M
   rcases inv_field h rfl with ⟨w, hw⟩
   have ty := hw.ty
   rcases inv_local ty rfl with ⟨w2, hw2⟩
-  rcases consistent_unfold hw2.cons with ⟨Fs', Ts', es', Ms', hc⟩
-  have hDl := hc.1
+  rcases consistent_unfold hw2.cons with ⟨Fs', Ts', es', Ms', Dl, hDl, hsc, _, hts, _⟩
   have hup := hw2.up
   rw [abs_ground] at hup
   have hne : Not (w.D.C = C) := fun e => Declared.dec_loc hwf hw.decl hDl e
   rcases hup with e | hs
   . simp only [Ty.cls.injEq] at e; exact absurd e.1.symm hne
-  . rcases Sub.loc_step hwf hDl hs.1 with e | hs2
+  . rcases Sub.loc_step hwf hDl hs.1 with e | ⟨Dl2, hsc2, _, hs3⟩
     . simp only [Ty.cls.injEq] at e; exact absurd e.1 hne
-    . have hts := hc.2.2.1
-      rw [abs_ground] at hts
-      have hs3 := hs2.2
+    . rw [abs_ground] at hts
       simp only [Ty.subst] at hs3
-      rw [<- hts] at hs3
+      rw [bind_dom (Scope.dom_unique hwf hsc2 hsc), <- hts] at hs3
       have hnew := typing_new_exact hw2.tyNew
       exact hw.up.typing (Typing.field (Typing.subs hnew hs.2 hs3) hw.decl hw.mem hw.len)
 
@@ -272,7 +266,7 @@ theorem value_declared {d : Decls} (hwf : WFDecls d) {v : Value} {T : Ty} (h : T
     | intro D hD => exact Exists.intro (.dec D) (Exists.intro (GTy.tys Gs) (And.intro hD.1 (by simp [typeOf, ClassDecl.name, hD.2])))
   | newLocal C Gs C' Gs' vs Ms =>
     rcases inv_local h rfl with ⟨w, hw⟩
-    rcases consistent_unfold hw.cons with ⟨Fs', Ts', es', Ms', h⟩
+    rcases consistent_unfold hw.cons with ⟨Fs', Ts', es', Ms', Dl, h⟩
     exact Exists.intro _ (Exists.intro (GTy.tys Gs) (And.intro h.1 (by simp [typeOf, ClassDecl.name])))
 
 theorem pres_ifThen {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {C' : ClassName}
