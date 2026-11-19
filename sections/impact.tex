@@ -29,8 +29,9 @@ If the cast \Q@other as MyFoo@ replaces the type test, Kotlin~2.4.21 accepts the
 % Kotlin~1.9.25 reports the same error and the same warning, in different words.
 These are the error and the warning that funnelling brings to Example~1 (Section~\ref{sec:funnelling}).
 Thus we can view our results as enabling a soundness proof by translation for Kotlin's approach, showing that it is guaranteed to avoid Java's unsoundness: Kotlin's automatic addition of type parameters to the local class can be justified by funnelling.
-This guarantee covers the type tests \Q@is@ and the casts \Q@as@, but not a type test through a reified type parameter, which checks only the class of the type argument~\cite{kotlin_generics}.
-If \Q@listOf(other).filterIsInstance<MyFoo>()@ replaces the type test, Kotlin~2.4.21 accepts the function \Q@m@ with no warning, and two calls of \Q@m@ as in Example~1 throw a \Q@ClassCastException@.
+This guarantee covers the type tests \Q@is@ and the casts \Q@as@, but not a type test through a reified type parameter (only available in limited circumstances in Kotlin), which checks only the class of the type argument~\cite{kotlin_generics}.
+Kotlin also has other ways of effectively casting via trusted standard library APIs which are not covered by the appropriate checks.
+\Q@listOf(other).filterIsInstance<MyFoo>()@ returns a list of type \Q@List<MyFoo>@ containing \Q@other@, from which it can be extracted and returned at type \Q@MyFoo@. Kotlin~2.4.21 accepts such a modified version of \Q@m@ with no warning, and the direct adaptation of Example~1's main method throws a \Q@ClassCastException@. 
 
 Kotlin conservatively adds to the type of a local class \emph{every} type parameter in scope: the type parameters of the enclosing function and the type parameters of the enclosing class.
 It does this even for type parameters that the local class does not mention or otherwise depend on:

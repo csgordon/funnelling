@@ -5,7 +5,7 @@ This section shows more programs of this family.
 
 \subsection{Example 2: No Generic Supertype, No Explicit Cast}
 In Example~1, the method-local class \Q@MyFoo@ mentions \Q@X@ in its supertype \Q@Foo<X>@, and the method \Q@m@ has an explicit cast.
-Example~2 exercises the same fault without needing a generic supertype, and without needing an explicit cast.
+Example~2 (Figure \ref{fig:ex2}) exercises the same fault without needing a generic supertype, and without needing an explicit cast.
 Here \Q@MyFoo@ extends \Q@Object@, and \Q@X@ occurs only in the return type of the method \Q@x()@ of \Q@MyFoo@.
 The method \Q@m@ returns \Q@Object@, so no type outside \Q@m@ mentions \Q@X@.
 Here we rely on the \Q@other instanceof MyFoo local@ test to bind
@@ -13,6 +13,7 @@ Here we rely on the \Q@other instanceof MyFoo local@ test to bind
 \footnote{Before Java~16, the type test and the cast are two steps, as in Example~1: \Q@other instanceof MyFoo@ and then \Q@(MyFoo)other@.
 \javac accepts those two steps with no warning.}
 
+\begin{figure}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
 // Example 2
 public class Broken {
@@ -29,6 +30,9 @@ public class Broken {
   }
 }
 \end{lstlisting}
+\caption{An alternative manifestation of the soundness issue.} 
+\label{fig:ex2}
+\end{figure}
 
 The first call of \Q@m@ instantiates \Q@X@ with \Q@Integer@, and returns a \Q@MyFoo@ whose method \Q@x()@ returns \Q@5@.
 The second call of \Q@m@ instantiates \Q@X@ with \Q@String@.
@@ -118,10 +122,8 @@ No failure is detected, at compile time or at run time, but the second call of \
 Thus the same fault of \Q@m@ is detected in the lambda class, in the anonymous class, in \Q@m@, or nowhere, depending only on how the caller of \Q@m@ creates \Q@f@.
 
 \subsection{Counterexample 3: Class Generics}
-Counterexample~3 moves Example~2 into a generic class:
-\Q@X@ is a generic parameter of the class \Q@NotBroken@ instead of a generic parameter of the method \Q@m@.
 
-\medskip\noindent\begin{minipage}{\linewidth}
+\begin{figure}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
 // Counterexample 3
 public class NotBroken<X> {
@@ -138,8 +140,12 @@ public class NotBroken<X> {
   }
 }
 \end{lstlisting}
-\end{minipage}
+\caption{An analogue of Example~2 using class generics rather than method generics --- which does fail to compile.}
+\label{fig:ex3}
+\end{figure}
 
+Counterexample~3 (Figure \ref{fig:ex3}) moves Example~2 into a generic class:
+\Q@X@ is a generic parameter of the class \Q@NotBroken@ instead of a generic parameter of the method \Q@m@.
 Counterexample~3 marks the boundary of the family: with class generics, \javac does flag the fault.
 \javac rejects Counterexample~3 at Line~\ref{line:cextest}, with the error\\
 \centerline{\mbox{\Q@Object cannot be safely cast to MyFoo@}.}

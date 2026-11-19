@@ -14,9 +14,8 @@ Servetto et al.\ probed the behaviour of JVM languages that support the same fea
 In this paper we clearly articulate the problem they observed, characterize the key properties that lead to the issue, and propose
 a static solution for future languages.
 
-Example~1 demonstrates the issue.
 
-\noindent\begin{minipage}{\linewidth}
+\begin{figure}
 \begin{lstlisting}[numbers=left,xleftmargin=2em]
 // Example 1
 public class Broken {
@@ -34,8 +33,11 @@ public class Broken {
 }
 abstract class Foo<X>{ public abstract X x(); }
 \end{lstlisting}
-\end{minipage}
+\caption{A Java program that compiles without issue but exposes a type unsoundness in Java.}
+\label{fig:ex1}
+\end{figure}
 
+Example~1 (Figure \ref{fig:ex1}) demonstrates the issue.
 Line~\ref{line:MyFoo} declares a method-local inner class
 \Q@MyFoo@, which depends on the generic parameter instantiation for \Q@X@ when the method is called.
 The \Q@main@ method calls \Q@m@ twice. Line~\ref{line:intcall} calls \Q@m@ and instantiates \Q@X@ with \Q@Integer@.
