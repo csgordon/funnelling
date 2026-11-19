@@ -26,7 +26,7 @@ Kotlin types the local class \Q@MyFoo@ as \Q@MyFoo<X>@.
 Kotlin~2.4.21 rejects the type test \Q@other !is MyFoo@ with the error\\
 \centerline{\texttt{cannot check for instance of erased type 'MyFoo<X (of fun <X> m)>'}} (note that \texttt{MyFoo} has picked up an explicit type parameter that was not present in the source).
 If the cast \Q@other as MyFoo@ replaces the type test, Kotlin~2.4.21 accepts the function \Q@m@ with the warning \texttt{unchecked cast of 'Any' to 'MyFoo<X (of fun <X> m)>'}.
-Kotlin~1.9.25 reports the same error and the same warning, in different words.
+% Kotlin~1.9.25 reports the same error and the same warning, in different words.
 These are the error and the warning that funnelling brings to Example~1 (Section~\ref{sec:funnelling}).
 Thus we can view our results as enabling a soundness proof by translation for Kotlin's approach, showing that it is guaranteed to avoid Java's unsoundness: Kotlin's automatic addition of type parameters to the local class can be justified by funnelling.
 
