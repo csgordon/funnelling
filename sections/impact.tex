@@ -47,15 +47,13 @@ object Broken {
     other match {
       case f: MyFoo => f (*\label{line:scalatest}*)
       case _ => new MyFoo
-    }
-  }
+    } }
   def main(a: Array[String]): Unit = {
     val r1: Foo[Integer] = m[Integer]("anything", 5)
     val r2: Foo[String] = m[String](r1, "Hi")
     val s: String = r2.x (*\label{line:scalause}*)
     println(s.length)
-  }
-}
+  } }
 \end{lstlisting}
 
 Scala~2.13.18 accepts this program with no warning, as Java accepts Example~1.
@@ -98,6 +96,8 @@ def m[Y](other: Any, newx: Y) : Foo =
 \end{lstlisting}
 Scala~3 compiles this code with the same warning that the type test cannot be checked because \texttt{MyFoo} is a local class, but in this case the warning is spurious:
 compiling the corresponding analogue of Example~1's client code
+
+\medskip\noindent\begin{minipage}{\linewidth}
 \begin{lstlisting}[language=Scala]
 def main(a: Array[String]) : Unit = {
     val r1: Foo = m[Integer]("anything", 5)
@@ -106,6 +106,9 @@ def main(a: Array[String]) : Unit = {
     println(s.length)
 }
 \end{lstlisting}
+\end{minipage}
+
+\noindent
 yields a static type error because the fact that \texttt{r2} (should) wrap a string is abstracted.
 
 \subsection{Other Languages}
