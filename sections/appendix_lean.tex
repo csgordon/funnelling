@@ -542,7 +542,6 @@ def typeOf : Value -> Ty
 \tsubst{(\methodsig{\Delta}{T'_0}{m}{\ldots}\gap\OC\ldots\CC)}{\pl{X}}{\pl{T}} & = & \ldots\quad\textrm{if }\mathrm{dom}(\Delta)\cap\pl{X}=\emptyset
 \end{array}$}\\[1ex]
 The other cases go into every subterm, including the methods of a local class.
-Substitution of type variables is defined only when the type variables of the methods it enters are not in its domain.
 In the domain of a substitution, bounds $\Delta$ stand for $\mathrm{dom}(\Delta)$.
 Substitution of type variables into expressions happens only during reduction, where the substituted types are ground.
 \end{paperside}
@@ -578,7 +577,6 @@ abbrev GSubstDefined (Xs : List TVarName) (e : Expr) : Prop :=
 \tsubst{(\methodsig{\Delta}{T_0}{m}{T_1\gap x'_1,\ldots,T_k\gap x'_k}\gap\OC\ldots\CC)}{\pl{x}}{\pl{v}} = \ldots\quad\textrm{if }x'_1,\ldots,x'_k\not\in\pl{x}
 \end{array}$}\\[1ex]
 The other cases go into every subterm.
-Substitution of variables is defined only when the variable $x'$ of a type test and the parameters $x'_1,\ldots,x'_k$ of a method are not in $\pl{x}$.
 \end{paperside}
 \begin{leanside}
 \begin{lstlisting}[style=leanside]
