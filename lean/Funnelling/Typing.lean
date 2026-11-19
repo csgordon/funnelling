@@ -13,10 +13,11 @@ inductive Sub (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
       Ts0.length = D.Delta.length ->
       Sub d Delta ((Ty.cls D.C' D.Ts).subst (bind D.Delta Ts0)) T' ->
       Sub d Delta (.cls D.C Ts0) T'
-  | subInheritLocal {C Fs C' Ts' es Ms Ts T'} :
+  | subInheritLocal {C Fs C' Ts' es Ms Delta0 Ts T'} :
       Declared d (.newLocal C Fs C' Ts' es Ms) ->
-      Ts.length = Fs.length ->
-      Sub d Delta ((Ty.cls C' Ts').subst (bindF Fs Ts)) T' ->
+      Scope d C Delta0 ->
+      Ts.length = Delta0.length ->
+      Sub d Delta ((Ty.cls C' Ts').subst (bind Delta0 Ts)) T' ->
       Sub d Delta (.cls C Ts) T'
   | subVar {X T T'} :
       List.Mem { X := X, T := T } Delta -> Sub d Delta T T' -> Sub d Delta (.var X) T'
@@ -38,11 +39,11 @@ inductive Cast (d : Decls) (Delta : Bounds) : Ty -> Ty -> Prop
   | castUp {T T'} : Sub d Delta T T' -> Cast d Delta T T'
   | castVar {X T T'} :
       List.Mem { X := X, T := T } Delta -> Cast d Delta T T' -> Cast d Delta (.var X) T'
-  | castDown {C Ts C' Ts0 Xs Ts'} :
+  | castDown {C Ts C' Ts0 Delta0 Ts'} :
       Sub d Delta (.cls C Ts) (.cls C' Ts0) ->
-      Generic d C (.cls C (vars Xs)) ->
-      Sub d [] (.cls C (vars Xs)) (.cls C' Ts') ->
-      (forall X, List.Mem X Xs -> List.Mem X (Ty.ftvList Ts')) ->
+      Scope d C Delta0 ->
+      Sub d [] (.cls C (vars (dom Delta0))) (.cls C' Ts') ->
+      (forall X, List.Mem X (dom Delta0) -> List.Mem X (Ty.ftvList Ts')) ->
       Cast d Delta (.cls C' Ts0) (.cls C Ts)
 
 inductive OverrideOkM (d : Decls) : Ty -> Method -> Prop
@@ -50,22 +51,13 @@ inductive OverrideOkM (d : Decls) : Ty -> Method -> Prop
       Declared d (.dec D) ->
       Not (List.Mem m (D.Ms.map Method.name)) ->
       OverrideOkM d (.cls D.C Ts) (.mk Delta' T0' m ps' e')
-  | dec {D Ts Delta' T0' m ps' e' Delta'' T0 ps e} :
-      Declared d (.dec D) ->
-      List.Mem (Method.mk Delta'' T0 m ps e) D.Ms ->
-      Ts.length = D.Delta.length -> Delta'.length = Delta''.length ->
-      Ty.substList (bind (D.Delta ++ Delta'') (Ts ++ vars (dom Delta'))) (cod Delta'')
+  | found {C Ts Delta0 Delta' T0' m ps' e' Delta'' T0 ps e} :
+      MethodIn d (.mk Delta'' T0 m ps e) C ->
+      Scope d C Delta0 ->
+      Ts.length = Delta0.length -> Delta'.length = Delta''.length ->
+      Ty.substList (bind (Delta0 ++ Delta'') (Ts ++ vars (dom Delta'))) (cod Delta'')
         = cod Delta' ->
-      Ty.substList (bind (D.Delta ++ Delta'') (Ts ++ vars (dom Delta')))
-        (T0 :: ps.map VarDecl.T) = T0' :: ps'.map VarDecl.T ->
-      OverrideOkM d (.cls D.C Ts) (.mk Delta' T0' m ps' e')
-  | newLocal {C Fs C0 Ts0 es Ms Ts Delta' T0' m ps' e' Delta'' T0 ps e} :
-      Declared d (.newLocal C Fs C0 Ts0 es Ms) ->
-      List.Mem (Method.mk Delta'' T0 m ps e) Ms ->
-      Ts.length = Fs.length -> Delta'.length = Delta''.length ->
-      Ty.substList (bindF Fs Ts ++ bind Delta'' (vars (dom Delta'))) (cod Delta'')
-        = cod Delta' ->
-      Ty.substList (bindF Fs Ts ++ bind Delta'' (vars (dom Delta')))
+      Ty.substList (bind (Delta0 ++ Delta'') (Ts ++ vars (dom Delta')))
         (T0 :: ps.map VarDecl.T) = T0' :: ps'.map VarDecl.T ->
       OverrideOkM d (.cls C Ts) (.mk Delta' T0' m ps' e')
 
@@ -74,10 +66,11 @@ def OverrideOk (d : Decls) (Delta : Bounds) (T : Ty) (Ms : List Method) : Prop :
 
 def Consistent (d : Decls) : ClassDecl -> Prop
   | .newLocal C Fs C' Ts _ Ms =>
-    exists Fs' Ts' es' Ms',
+    exists Fs' Ts' es' Ms' Delta0,
       Declared d (.newLocal C Fs' C' Ts' es' Ms') /\
-      Fs.length = Fs'.length /\
-      Ts = Ty.substList (bindF Fs' (abs Fs)) Ts' /\
+      Scope d C Delta0 /\
+      Fs.length = Delta0.length /\
+      Ts = Ty.substList (bind Delta0 (abs Fs)) Ts' /\
       (forall m, List.Mem m (Ms'.map Method.name) <-> List.Mem m (Ms.map Method.name)) /\
       forall M, List.Mem M Ms -> OverrideOkM d (.cls C (abs Fs)) M
   | .dec _ => False

@@ -139,22 +139,12 @@ theorem ftv_var_subst {s : TSubst} {Y X : TVarName} {U : Ty} (hl : List.lookup Y
 theorem mem_bind_snd {A : Type} {Dl : Bounds} {Us : List A} {Y : TVarName} {U : A} (h : List.Mem (Y, U) (bind Dl Us)) :
     List.Mem U Us := (List.of_mem_zip h).2
 
-theorem mem_bindF_snd {Fs : List Funnel} {Us : List Ty} {Y : TVarName} {U : Ty} (h : List.Mem (Y, U) (bindF Fs Us)) :
-    List.Mem U Us := (List.of_mem_zip h).2
-
 theorem ftv_bind_sub {Dl : Bounds} {Us : List Ty} {L : List Ty} (hl : Us.length = Dl.length)
     (hL : forall X, List.Mem X (Ty.ftvList L) -> List.Mem X (dom Dl)) :
     forall X, List.Mem X (Ty.ftvList (Ty.substList (bind Dl Us) L)) -> List.Mem X (Ty.ftvList Us) := by
   refine Ty.ftvList_subst_sub (fun Y hY X hX => ?_)
   cases bind_lookup_some hl (hL Y hY) with
   | intro U hU => exact Ty.mem_ftvList.mpr (Exists.intro U (And.intro (mem_bind_snd (lookup_mem hU)) (ftv_var_subst hU hX)))
-
-theorem ftv_bindF_sub {Fs : List Funnel} {Us : List Ty} {L : List Ty} (hl : Us.length = Fs.length)
-    (hL : forall X, List.Mem X (Ty.ftvList L) -> List.Mem X (domF Fs)) :
-    forall X, List.Mem X (Ty.ftvList (Ty.substList (bindF Fs Us) L)) -> List.Mem X (Ty.ftvList Us) := by
-  refine Ty.ftvList_subst_sub (fun Y hY X hX => ?_)
-  cases bindF_lookup_some hl (hL Y hY) with
-  | intro U hU => exact Ty.mem_ftvList.mpr (Exists.intro U (And.intro (mem_bindF_snd (lookup_mem hU)) (ftv_var_subst hU hX)))
 
 theorem Sub.inv_subst {d : Decls} (hd : DeclOk d) {Delta Delta2 : Bounds} {s : TSubst} {A : List TVarName}
     {T1 T' : Ty} (h : Sub d Delta T1 T') : forall {C : ClassName} {Ts : List Ty}, T1 = .cls C (Ty.substList s Ts) ->
@@ -181,27 +171,20 @@ theorem Sub.inv_subst {d : Decls} (hd : DeclOk d) {Delta Delta2 : Bounds} {s : T
     | intro T0 h0 =>
       refine Exists.intro T0 (And.intro h0.1 (And.intro (Sub.subInherit hD hl' ?_) h0.2.2))
       exact h0.2.1
-  | @subInheritLocal C0 Fs C' Ts' es Ms Ts0 T' hD hl _ ih =>
+  | @subInheritLocal C0 Fs C' Ts' es Ms Delta0 Ts0 T' hD hs hl _ ih =>
     intro C Ts he hA
     simp only [Ty.cls.injEq] at he
     have e1 := he.1
     have e2 := he.2
     subst e1 e2
-    have hl' : Ts.length = Fs.length := by rw [<- hl, substList_length]
-    have hcl := hd.supL _ _ _ _ _ _ hD
-    have heq : (Ty.cls C' Ts').subst (bindF Fs (Ty.substList s Ts)) =
-        .cls C' (Ty.substList s (Ty.substList (bindF Fs Ts) Ts')) := by
+    have hl' : Ts.length = Delta0.length := by rw [<- hl, substList_length]
+    have hcl := hd.supL _ _ _ _ _ _ _ hD hs
+    have heq : (Ty.cls C' Ts').subst (bind Delta0 (Ty.substList s Ts)) =
+        .cls C' (Ty.substList s (Ty.substList (bind Delta0 Ts) Ts')) := by
       simp only [Ty.subst]
-      rw [substList_eq_map (Us := Ts'), substList_eq_map (Us := Ty.substList (bindF Fs Ts) Ts'),
-        substList_eq_map (Us := Ts'), List.map_map]
-      congr 1
-      apply List.map_congr_left
-      intro T hT
-      show _ = (T.subst (bindF Fs Ts)).subst s
-      exact (subst_bindF_comp hl' (fun X hX => hcl X (Ty.mem_ftvList.mpr (Exists.intro T (And.intro hT hX))))).symm
-    rcases ih heq (fun X hX => by exact hA X (ftv_bindF_sub hl' hcl X hX)) with ⟨T0, h0⟩
-    refine Exists.intro T0 (And.intro h0.1 (And.intro (Sub.subInheritLocal hD hl' ?_) h0.2.2))
-    exact h0.2.1
+      rw [substList_bind_comp hl' hcl]
+    rcases ih heq (fun X hX => hA X (ftv_bind_sub hl' hcl X hX)) with ⟨T0, h0⟩
+    exact ⟨T0, h0.1, Sub.subInheritLocal hD hs hl' h0.2.1, h0.2.2⟩
   | subVar _ _ _ =>
     simp_all
 
@@ -250,22 +233,5 @@ theorem ren_disj {Xs Ys : List TVarName} {r : TRen} {Ts : List Ty}
   apply List.map_congr_left
   intro T hT
   exact Ty.ren_congr (fun X hX => rn_zip_not_mem (h X (Ty.mem_ftvList.mpr (Exists.intro T (And.intro hT hX)))))
-
-theorem declMeth_closed {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {K : ClassDecl} (hk : Declared d K)
-    {Dl : Bounds} {T0 : Ty} {m : MethName} {ps : List VarDecl} {e : Expr} (hM : List.Mem (Method.mk Dl T0 m ps e) K.Ms) :
-    (forall X, List.Mem X (Ty.ftvList (cod Dl)) -> List.Mem X (K.gvars ++ dom Dl)) /\
-      (forall X, List.Mem X (Ty.ftvList (T0 :: ps.map VarDecl.T)) -> List.Mem X (K.gvars ++ dom Dl)) := by
-  rcases scopeExists hwf hok hk with ⟨Dk, hs⟩
-  rcases scopeFacts hwf hok hs with ⟨K', hk'⟩
-  have ek := Declared.unique hwf hk'.1 hk hk'.2.1
-  subst ek
-  rcases hk'.2.2.meths _ hM with ⟨Gamma, hmo⟩
-  have hmi := methodOk_inv hmo
-  rw [<- hk'.2.2.gv, <- dom_append]
-  refine And.intro ?_ ?_
-  . intro X hX
-    rcases Ty.mem_ftvList.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.1 T hT.1) X hT.2
-  . intro X hX
-    rcases Ty.mem_ftvList.mp hX with ⟨T, hT⟩; exact Kind.ftv (hmi.2.1 T hT.1) X hT.2
 
 end Funnelling

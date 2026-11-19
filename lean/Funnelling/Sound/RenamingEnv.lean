@@ -365,33 +365,15 @@ theorem OverrideOkM.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {rv : VR
     have hdisj := ren_disj (Ys := Xs') (r := rt) hdis
     cases h with
     | absent h1 h2 => exact OverrideOkM.absent h1 h2
-    | @dec D _ _ _ _ _ _ Do T0o pso eo h1 h2 h3 h4 h5 h6 =>
-      have hcl := declMeth_closed hwf hok h1 h2
-      simp only [ClassDecl.gvars, <- dom_append] at hcl
-      have hlen : (Us ++ vars (dom Dp)).length = (D.Delta ++ Do).length := by simp [h3, h4, vars, dom]
-      have hfst := bind_fst (D := D.Delta ++ Do) hlen
-      refine OverrideOkM.dec h1 h2 (by rw [renList_length, h3]) (by rw [hlenD, h4]) ?_ ?_
-      . rw [dom_renBounds hL, hcod, <- h5, <- Ty.renList_eq_map, renList_subst_gen (fun X hX => hfst ▸ hcl.1 X hX),
+    | @found _ _ Dl0 _ _ _ _ _ Do T0o pso eo h1 h2 h3 h4 h5 h6 =>
+      have hcl := methodIn_closed hwf hok h2 h1
+      have hlen : (Us ++ vars (dom Dp)).length = (Dl0 ++ Do).length := by simp [h3, h4, vars, dom]
+      have hfst := bind_fst (D := Dl0 ++ Do) hlen
+      refine OverrideOkM.found h1 h2 (by rw [renList_length, h3]) (by rw [hlenD, h4]) ?_ ?_
+      . rw [dom_renBounds hL, hcod, <- h5, <- Ty.renList_eq_map, renList_subst_gen (fun X hX => hfst ▸ hcl.2 X hX),
           <- bind_map, List.map_append, hvars, hdisj]
       . have e := congrArg (Ty.renList ((dom Dp).zip Xs' ++ rt)) h6
-        rw [renList_subst_gen (fun X hX => hfst ▸ hcl.2 X hX), <- bind_map, List.map_append, hvars, hdisj] at e
-        rw [dom_renBounds hL, e, Ty.renList, Ty.renList_eq_map, hps]
-    | @newLocal C Fs C0 Ts0 es Ms _ _ _ _ _ _ Do T0o pso eo h1 h2 h3 h4 h5 h6 =>
-      have hcl := declMeth_closed hwf hok h1 h2
-      have hfst : forall X, List.Mem X (domF Fs ++ dom Do) ->
-          List.Mem X ((bindF Fs Us ++ bind Do (vars (dom Dp))).map Prod.fst) := by
-        intro X hX
-        simp only [listMem_iff, List.mem_append, List.map_append] at hX |-
-        rcases hX with hX | hX
-        . cases bindF_lookup_some h3 hX with
-          | intro U hU => exact Or.inl (lookup_some_mem_dom hU)
-        . exact Or.inr (by rw [bind_fst (by simp [h4, vars, dom])]; exact hX)
-      refine OverrideOkM.newLocal h1 h2 (by rw [renList_length, h3]) (by rw [hlenD, h4]) ?_ ?_
-      . rw [dom_renBounds hL, hcod, <- h5, <- Ty.renList_eq_map, renList_subst_gen (fun X hX => hfst X (hcl.1 X hX)),
-          List.map_append, <- bindF_map, <- bind_map, hvars, hdisj]
-      . have e := congrArg (Ty.renList ((dom Dp).zip Xs' ++ rt)) h6
-        rw [renList_subst_gen (fun X hX => hfst X (hcl.2 X hX)), List.map_append, <- bindF_map, <- bind_map, hvars,
-          hdisj] at e
+        rw [renList_subst_gen (fun X hX => hfst ▸ hcl.1 X hX), <- bind_map, List.map_append, hvars, hdisj] at e
         rw [dom_renBounds hL, e, Ty.renList, Ty.renList_eq_map, hps]
 
 theorem Consistent.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {rv : VRen} {rt : TRen}
@@ -400,18 +382,17 @@ theorem Consistent.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Dec
     (hdis : forall M, List.Mem M Ms -> forall X, List.Mem X (Ty.ftvList (abs Fs)) -> Not (List.Mem X (dom M.Delta)))
     (hu : forall M, List.Mem M Ms -> M.uniq) :
     Consistent d (.newLocal C (Fs.map (Funnel.ren rt)) C0 (Ty.renList rt Ts) es' Ms') := by
-  rcases consistent_unfold h with ⟨Fs', Ts', es'', Ms'', h⟩
-  have hcl := hd.supL _ _ _ _ _ _ h.1
-  refine Exists.intro Fs' (Exists.intro Ts' (Exists.intro es'' (Exists.intro Ms'' (And.intro h.1
-    (And.intro (by simp [h.2.1]) (And.intro ?_ (And.intro ?_ ?_)))))))
-  . rw [abs_ren, h.2.2.1, renList_subst_gen (fun X hX => by
-      cases bindF_lookup_some (Us := abs Fs) (by rw [abs_length]; exact h.2.1) (hcl X hX) with
-      | intro U hU => exact lookup_some_mem_dom hU), <- bindF_map, Ty.renList_eq_map]
-  . intro m; rw [RenMs.names hr]; exact h.2.2.2.1 m
+  rcases consistent_unfold h with ⟨Fs', Ts', es'', Ms'', Delta0, h1, h2, h3, h4, h5, h6⟩
+  have hcl := hd.supL _ _ _ _ _ _ _ h1 h2
+  refine ⟨Fs', Ts', es'', Ms'', Delta0, h1, h2, by simp [h3], ?_, ?_, ?_⟩
+  . rw [abs_ren, h4, renList_subst_gen (fun X hX => by
+      cases bind_lookup_some (Us := abs Fs) (by rw [abs_length]; exact h3) (hcl X hX) with
+      | intro U hU => exact lookup_some_mem_dom hU), <- bind_map, Ty.renList_eq_map]
+  . intro m; rw [RenMs.names hr]; exact h5 m
   . intro M' hM'
     rw [abs_ren]
     cases RenMs.mem_inv hr hM' with
-    | intro M hM => exact OverrideOkM.ren hwf hok (h.2.2.2.2 M hM.1) hM.2 (hdis M hM.1) (hu M hM.1)
+    | intro M hM => exact OverrideOkM.ren hwf hok (h6 M hM.1) hM.2 (hdis M hM.1) (hu M hM.1)
 
 theorem OverrideOk.ren {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {rv : VRen} {rt : TRen}
     {Delta Delta' : Bounds} {C0 : ClassName} {Ts : List Ty} {Ms Ms' : List Method}

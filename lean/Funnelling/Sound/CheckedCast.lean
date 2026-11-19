@@ -20,7 +20,7 @@ theorem sub_from_object {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {U0 : Lis
     simp only [Ty.cls.injEq] at he
     have ho := Declared.object hwf hD he.1.symm
     exact ih (U0 := Ty.substList (bind D.Delta Ts0) D.Ts) (by simp only [Ty.subst]; rw [ho.1])
-  | subInheritLocal hD _ _ =>
+  | subInheritLocal hD _ _ _ =>
     simp only [Ty.cls.injEq] at he
     rcases object_declared hwf with ⟨D0, hD0⟩; exact absurd (Declared.dec_loc hwf hD0.1 hD (by rw [hD0.2.1, he.1])) id
   | subVar => cases he
@@ -206,7 +206,7 @@ theorem rank_sub {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (hD : 
       rw [ho2, <- ho] at r
       exact r
     . rw [rank_super hwf hD' ho]; exact Nat.le_succ_of_le r
-  | subInheritLocal hD' _ _ =>
+  | subInheritLocal hD' _ _ _ =>
     simp only [Ty.cls.injEq] at he
     exact absurd (Declared.dec_loc hwf hD hD' he.1) id
   | subVar => cases he
@@ -234,7 +234,7 @@ theorem object_args {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {U0 U : List 
     rcases ih (U0 := Ty.substList (bind D.Delta Ts0) D.Ts) (by simp only [Ty.subst]; rw [ho.1]) ht with e | e
     . right; rw [e, ho.2.1]; rfl
     . exact Or.inr e
-  | subInheritLocal hD _ _ =>
+  | subInheritLocal hD _ _ _ =>
     simp only [Ty.cls.injEq] at he
     rcases object_declared hwf with ⟨D0, hD0⟩; exact absurd (Declared.dec_loc hwf hD0.1 hD (by rw [hD0.2.1, he.1])) id
   | subVar => cases he
@@ -288,18 +288,13 @@ theorem sub_unique_dec {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {T1 : Ty}
       refine Exists.intro D'' (Exists.intro (Ty.substList (bind D.Delta Ts0) D.Ts) (And.intro hD''.1 ?_))
       simp only [Ty.subst]
       rw [hD''.2]; rfl
-  | subInheritLocal hD _ _ =>
+  | subInheritLocal hD _ _ _ =>
     intro _ _
     rcases h1 with ⟨D, Ts, h1⟩
     simp only [Ty.cls.injEq] at h1
     exact absurd (Declared.dec_loc hwf h1.1 hD h1.2.1.symm) id
   | subVar =>
     simp_all
-
-theorem bind_eq_bindF {Dl : Bounds} {Fs : List Funnel} (hg : dom Dl = domF Fs) (Ts : List Ty) :
-    bind Dl Ts = bindF Fs Ts := by
-  simp only [bind, bindF]
-  rw [hg]
 
 theorem kind_chain {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {Delta : Bounds}
     {C : ClassName} {Ts : List Ty} {T2 : Ty} (hk : Kind d Delta (.cls C Ts)) (h : Sub d Delta (.cls C Ts) T2) :
@@ -313,7 +308,7 @@ theorem kind_chain {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
     have hK := Kind.subst hd (Delta' := Delta) (s := bind D.Delta Ts0) (fun b hb => (hka.2 b hb).1)
       (fun b hb => (hka.2 b hb).2) hcls
     exact ih rfl hK
-  | @subInheritLocal C1 Fs C' Ts' es Ms Ts1 T' hD hl _ ih =>
+  | @subInheritLocal C1 Fs C' Ts' es Ms Delta0 Ts1 T' hD hs hl _ ih =>
     cases hk with
     | kindClass h1 h2 h3 h4 =>
       rcases scopeFacts hwf hok h1 with ⟨K', hk'⟩
@@ -323,35 +318,16 @@ theorem kind_chain {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk 
       have hsat := bounds_sat sf.ndom h3 h4 h2
       have hK := Kind.subst hd (Delta' := Delta) (fun b hb => (hsat b hb).1)
         (fun b hb => (hsat b hb).2) (sf.supK _ _ _ _ _ _ rfl)
-      rw [bind_eq_bindF sf.gv] at hK
+      rw [bind_dom (sf.gv.trans (Scope.loc_dom hwf hD hs).symm)] at hK
       exact ih rfl hK
   | subVar => cases he
 
-theorem kind_len {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {C : ClassName} {Us : List Ty} {Xs : List TVarName}
-    (hk : Kind d Delta (.cls C Us)) (hg : Generic d C (.cls C (vars Xs))) : Us.length = Xs.length := by
-  generalize hgT : Ty.cls C (vars Xs) = T at hg
+theorem kind_len {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {C : ClassName} {Us : List Ty} {Delta0 : Bounds}
+    (hk : Kind d Delta (.cls C Us)) (hs : Scope d C Delta0) : Us.length = (dom Delta0).length := by
   cases hk with
-  | kindClass h1 h2 h3 h4 =>
-    cases hg with
-    | @dec D hD =>
-      simp only [Ty.cls.injEq] at hgT
-      have hlx := congrArg List.length hgT.2
-      simp only [vars, List.length_map, dom] at hlx
-      rw [Scope.dec_eq hwf hD h1] at h3
-      rw [h3, hlx]
-    | @newLocal C0 Fs C' Ts' es Ms hD =>
-      simp only [Ty.cls.injEq] at hgT
-      have hlx := congrArg List.length hgT.2
-      simp only [vars, List.length_map] at hlx
-      rcases h1.loc_declared with h' | h'
-      . cases h' with
-        | intro D hD' => exact absurd (Declared.dec_loc hwf hD'.1 hD hD'.2.1) id
-      . rcases h' with ⟨Fs2, C2, Ts2, es2, Ms2, Dl, hp⟩
-        have ek2 := Declared.unique hwf hp.1 hD rfl
-        cases ek2
-        have hd := congrArg List.length hp.2.dom_eq
-        simp only [dom, List.length_map] at hd
-        rw [h3, hd, hlx]
+  | kindClass h1 _ h3 _ =>
+    rw [h3, <- Scope.dom_unique hwf h1 hs]
+    simp [dom]
 
 theorem sub_unique {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {K : ClassDecl} (hk : Declared d K) {Ts : List Ty}
     {C' : ClassName} {U1 U2 : List Ty} (h1 : Sub d Delta (.cls K.name Ts) (.cls C' U1))
@@ -362,18 +338,20 @@ theorem sub_unique {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {K : ClassDecl
     rcases Declared.super hwf hk with ⟨D', hD'⟩
     have hsup := hD'.2
     simp only [ClassDecl.sup] at hsup
-    have back : forall {U : List Ty}, Sub d Delta ((Ty.cls C0 Ts0).subst (bindF Fs Ts)) (.cls C U) -> False := by
-      intro U hs
+    have back : forall {U : List Ty} {Dl : Bounds},
+        Sub d Delta ((Ty.cls C0 Ts0).subst (bind Dl Ts)) (.cls C U) -> False := by
+      intro U Dl hs
       rw [<- hsup] at hs
       rcases Sub.top_target hwf hD'.1 hs with ⟨D0, hD0⟩; exact Declared.dec_loc hwf hD0.1 hk hD0.2
-    rcases Sub.loc_step hwf hk h1 with e1 | s1
-    . rcases Sub.loc_step hwf hk h2 with e2 | s2
+    rcases Sub.loc_step hwf hk h1 with e1 | ⟨Dl1, sc1, _, s1⟩
+    . rcases Sub.loc_step hwf hk h2 with e2 | ⟨Dl2, _, _, s2⟩
       . simp only [Ty.cls.injEq] at e1 e2; rw [e1.2, e2.2]
-      . simp only [Ty.cls.injEq] at e1; rw [e1.1] at s2; exact absurd (back s2.2) id
-    . rcases Sub.loc_step hwf hk h2 with e2 | s2
-      . simp only [Ty.cls.injEq] at e2; rw [e2.1] at s1; exact absurd (back s1.2) id
-      . refine sub_unique_dec hwf ?_ s1.2 s2.2
-        refine Exists.intro D' (Exists.intro (Ty.substList (bindF Fs Ts) Ts0) (And.intro hD'.1 ?_))
+      . simp only [Ty.cls.injEq] at e1; rw [e1.1] at s2; exact absurd (back s2) id
+    . rcases Sub.loc_step hwf hk h2 with e2 | ⟨Dl2, sc2, _, s2⟩
+      . simp only [Ty.cls.injEq] at e2; rw [e2.1] at s1; exact absurd (back s1) id
+      . rw [bind_dom (Scope.dom_unique hwf sc2 sc1)] at s2
+        refine sub_unique_dec hwf ?_ s1 s2
+        refine Exists.intro D' (Exists.intro (Ty.substList (bind Dl1 Ts) Ts0) (And.intro hD'.1 ?_))
         simp only [Ty.subst]; rw [hsup]
 
 theorem var_subst_cons_ne {X Y : TVarName} {U : Ty} {r : TSubst} (h : Not (Y = X)) :
@@ -437,39 +415,6 @@ theorem list_eq_of_pointwise : forall {Xs : List TVarName} {Ts Us : List Ty}, Xs
       rwa [var_subst_cons_ne hne, var_subst_cons_ne hne] at e)
     rw [hh, ih]
 
-theorem vars_inj : forall {Xs Ys : List TVarName}, vars Xs = vars Ys -> Xs = Ys
-  | [], [], _ => rfl
-  | [], _ :: _, h => by simp [vars] at h
-  | _ :: _, [], h => by simp [vars] at h
-  | X :: Xs, Y :: Ys, h => by
-    simp only [vars, List.map_cons, List.cons.injEq, Ty.var.injEq] at h
-    have ih := vars_inj (Xs := Xs) (Ys := Ys) (by simpa [vars] using h.2)
-    rw [h.1, ih]
-
-theorem Generic.nodup {d : Decls} (hwf : WFDecls d) {C : ClassName} {Xs : List TVarName}
-    (hg : Generic d C (.cls C (vars Xs))) : Xs.Nodup /\ exists K, Declared d K /\ K.name = C := by
-  generalize hgT : Ty.cls C (vars Xs) = T at hg
-  cases hg with
-  | @dec D hD =>
-    simp only [Ty.cls.injEq] at hgT
-    have hx : Xs = dom D.Delta := by
-      have := hgT.2
-      exact vars_inj this
-    refine And.intro ?_ (Exists.intro _ (And.intro hD rfl))
-    rw [hx]
-    exact hwf.2.2.2.2.1 D.Delta (by
-      simp only [listMem_iff, List.mem_append, List.mem_map]
-      exact Or.inl (Exists.intro D (And.intro hD.dec_mem rfl)))
-  | @newLocal C0 Fs C' Ts' es Ms hD =>
-    simp only [Ty.cls.injEq] at hgT
-    have hx : Xs = domF Fs := by
-      have := hgT.2
-      simp only [vars] at this
-      exact vars_inj this
-    refine And.intro ?_ (Exists.intro _ (And.intro hD rfl))
-    rw [hx]
-    exact hwf.2.2.2.2.2.1 _ hD.mem
-
 theorem cast_runtime {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclOk d) {T0 : Ty} {C : ClassName}
     {Ts Ts'' : List Ty} {K1 : ClassDecl} {U1 : List Ty} (hk1d : Declared d K1) (hc : Cast d [] T0 (.cls C Ts))
     (hv : Sub d [] (.cls K1.name U1) T0) (hr : Sub d [] (.cls K1.name U1) (.cls C Ts''))
@@ -477,13 +422,13 @@ theorem cast_runtime {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclO
   cases hc with
   | castUp h => exact hv.trans h
   | castVar hm => cases hm
-  | @castDown C9 Ts9 C' Ts0 Xs Ts' h1 h2 h3 h4 =>
-    have hg := Generic.nodup hwf h2
+  | @castDown C9 Ts9 C' Ts0 Delta0 Ts' h1 h2 h3 h4 =>
+    have hg := Scope.nodup hwf h2
     have hk2 := kind_chain hwf hok hd hk1 hr
     have l1 := kind_len hwf hk h2
     have l2 := kind_len hwf hk2 h2
-    have hs1 := Sub.subst hd (Delta' := []) (s := Xs.zip Ts) (fun b hb => by cases hb) h3
-    have hs2 := Sub.subst hd (Delta' := []) (s := Xs.zip Ts'') (fun b hb => by cases hb) h3
+    have hs1 := Sub.subst hd (Delta' := []) (s := (dom Delta0).zip Ts) (fun b hb => by cases hb) h3
+    have hs2 := Sub.subst hd (Delta' := []) (s := (dom Delta0).zip Ts'') (fun b hb => by cases hb) h3
     simp only [Ty.subst] at hs1 hs2
     rw [vars_subst hg.1 l1] at hs1
     rw [vars_subst hg.1 l2] at hs2
@@ -494,7 +439,8 @@ theorem cast_runtime {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : DeclO
     have hr' := hr
     rw [<- hkn] at hr'
     have e2 := sub_unique hwf hk1d hv (hr'.trans hs2)
-    have eq : Ty.substList (Xs.zip Ts) Ts' = Ty.substList (Xs.zip Ts'') Ts' := by rw [<- e1, <- e2]
+    have eq : Ty.substList ((dom Delta0).zip Ts) Ts' = Ty.substList ((dom Delta0).zip Ts'') Ts' := by
+      rw [<- e1, <- e2]
     have hts := list_eq_of_pointwise hg.1 l1 l2 (fun X hX => substList_agree eq X (h4 X hX))
     rw [hts]
     exact hr

@@ -58,7 +58,7 @@ theorem Sub.top_target {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} 
   | @subInherit D' Ts0' T' hD' hl _ ih =>
     rcases Declared.super hwf hD' with ⟨D'', hD''⟩
     exact ih hD''.1 (Ts := Ty.substList (bind D'.Delta Ts0') D'.Ts) (by simp only [Ty.subst]; rw [hD''.2]; rfl) ht
-  | subInheritLocal hD' _ _ =>
+  | subInheritLocal hD' _ _ _ =>
     simp only [Ty.cls.injEq] at he
     exact absurd (Declared.dec_loc hwf hD hD' he.1) id
   | subVar => cases he

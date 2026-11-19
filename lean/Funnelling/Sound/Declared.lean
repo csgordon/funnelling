@@ -111,26 +111,27 @@ theorem Sub.dec_step {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {D : Dec} (h
     cases e
     rw [he.2]
     exact Or.inr (And.intro hl h')
-  | subInheritLocal hD' _ _ =>
+  | subInheritLocal hD' _ _ _ =>
     simp only [Ty.cls.injEq] at he
     exact absurd (Declared.dec_loc hwf hD hD' he.1) id
   | subVar => cases he
 
 theorem Sub.loc_step {d : Decls} (hwf : WFDecls d) {Delta : Bounds} {C Fs C' Ts' es Ms}
     (hD : Declared d (.newLocal C Fs C' Ts' es Ms)) {Ts : List Ty} {T : Ty} (h : Sub d Delta (.cls C Ts) T) :
-    T = .cls C Ts \/ (Ts.length = Fs.length /\ Sub d Delta ((Ty.cls C' Ts').subst (bindF Fs Ts)) T) := by
+    T = .cls C Ts \/ exists Delta0, Scope d C Delta0 /\ Ts.length = Delta0.length /\
+      Sub d Delta ((Ty.cls C' Ts').subst (bind Delta0 Ts)) T := by
   generalize he : Ty.cls C Ts = T0 at h
   cases h with
   | subRefl => exact Or.inl rfl
   | subInherit hD' _ _ =>
     simp only [Ty.cls.injEq] at he
     exact absurd (Declared.dec_loc hwf hD' hD he.1.symm) id
-  | @subInheritLocal C2 Fs2 C2' Ts2' es2 Ms2 Ts2 T' hD' hl h' =>
+  | @subInheritLocal C2 Fs2 C2' Ts2' es2 Ms2 Delta0 Ts2 T' hD' hs hl h' =>
     simp only [Ty.cls.injEq] at he
     have e := Declared.unique hwf hD' hD he.1.symm
     cases e
     rw [he.2]
-    exact Or.inr (And.intro hl h')
+    exact Or.inr ⟨Delta0, hs, hl, h'⟩
   | subVar => cases he
 
 theorem Scope.loc_declared {d : Decls} {Delta0 : Bounds} {C0 : ClassName} (h : Scope d C0 Delta0) :
@@ -184,8 +185,8 @@ theorem abs_ground {Gs : List GTy} : abs (Gs.map Funnel.ground) = GTy.tys Gs := 
 
 theorem consistent_unfold {d : Decls} {C : ClassName} {Fs : List Funnel} {C0 : ClassName} {Ts : List Ty}
     {es : List Expr} {Ms : List Method} (h : Consistent d (.newLocal C Fs C0 Ts es Ms)) :
-    exists Fs' Ts' es' Ms', Declared d (.newLocal C Fs' C0 Ts' es' Ms') /\ Fs.length = Fs'.length /\
-      Ts = Ty.substList (bindF Fs' (abs Fs)) Ts' /\
+    exists Fs' Ts' es' Ms' Delta0, Declared d (.newLocal C Fs' C0 Ts' es' Ms') /\ Scope d C Delta0 /\
+      Fs.length = Delta0.length /\ Ts = Ty.substList (bind Delta0 (abs Fs)) Ts' /\
       (forall m, List.Mem m (Ms'.map Method.name) <-> List.Mem m (Ms.map Method.name)) /\
       (forall M, List.Mem M Ms -> OverrideOkM d (.cls C (abs Fs)) M) := h
 
@@ -237,6 +238,44 @@ theorem RestrictB.sub {Delta : Bounds} {Fs : List Funnel} {Delta0 : Bounds}
     | head => exact hm
     | tail _ hb => exact ih b hb
   | ground _ ih => exact ih
+
+theorem Scope.loc_dom {d : Decls} (hwf : WFDecls d) {C : ClassName} {Fs : List Funnel} {C' : ClassName}
+    {Ts : List Ty} {es : List Expr} {Ms : List Method} (hD : Declared d (.newLocal C Fs C' Ts es Ms))
+    {Delta0 : Bounds} (hs : Scope d C Delta0) : dom Delta0 = domF Fs := by
+  rcases hs.loc_declared with h' | h'
+  . rcases h' with ⟨D, h'⟩
+    exact absurd (Declared.dec_loc hwf h'.1 hD h'.2.1) id
+  . rcases h' with ⟨Fs2, C2, Ts2, es2, Ms2, Dl, h'⟩
+    have e := Declared.unique hwf h'.1 hD rfl
+    cases e
+    exact h'.2.dom_eq
+
+theorem Scope.dom_unique {d : Decls} (hwf : WFDecls d) {C : ClassName} {Dl Dl' : Bounds} (h1 : Scope d C Dl)
+    (h2 : Scope d C Dl') : dom Dl = dom Dl' := by
+  rcases h1.loc_declared with a | a
+  . rcases a with ⟨D, hD, hC, e⟩
+    subst hC
+    rw [e, Scope.dec_eq hwf hD h2]
+  . rcases a with ⟨Fs, C', Ts', es, Ms, Dx, hD, _⟩
+    rw [Scope.loc_dom hwf hD h1, Scope.loc_dom hwf hD h2]
+
+theorem Scope.nodup {d : Decls} (hwf : WFDecls d) {C : ClassName} {Delta0 : Bounds} (hs : Scope d C Delta0) :
+    (dom Delta0).Nodup /\ exists K, Declared d K /\ K.name = C := by
+  rcases hs.loc_declared with a | a
+  . rcases a with ⟨D, hD, hC, e⟩
+    refine ⟨?_, .dec D, hD, hC⟩
+    rw [e]
+    exact hwf.2.2.2.2.1 D.Delta (by
+      simp only [listMem_iff, List.mem_append, List.mem_map]
+      exact Or.inl (Exists.intro D (And.intro hD.dec_mem rfl)))
+  . rcases a with ⟨Fs, C', Ts', es, Ms, Dx, hD, hr⟩
+    refine ⟨?_, _, hD, rfl⟩
+    rw [hr.dom_eq]
+    exact hwf.2.2.2.2.2.1 _ hD.mem
+
+theorem bind_dom {A : Type} {D1 D2 : Bounds} (h : dom D1 = dom D2) (as : List A) : bind D1 as = bind D2 as := by
+  simp only [bind]
+  rw [h]
 
 theorem bound_unique {Delta : Bounds} (hn : (dom Delta).Nodup) {X : TVarName} {T1 T2 : Ty}
     (h1 : List.Mem { X := X, T := T1 } Delta) (h2 : List.Mem { X := X, T := T2 } Delta) : T1 = T2 := by

@@ -183,20 +183,19 @@ theorem inner_lens {d : Decls} (hwf : WFDecls d) {C C' : ClassName} {Gs Gs'' Gs'
   have hD2 := restrictB_ground_nil hw2.restr
   have hover := hw2.over
   rw [hD2] at hover
-  rcases consistent_unfold hw2.cons with ⟨Fs', Ts'd, es', Ms'd, hcd, _, hcts, _, hcov⟩
+  rcases consistent_unfold hw2.cons with ⟨Fs', Ts'd, es', Ms'd, Dl, hcd, hsc, _, hcts, _, hcov⟩
   have hO : OverrideOkM d (.cls C0 Ts0) (Method.mk Delta' T0 m ps e0) := by
-    rcases Sub.loc_step hwf hcd hsv with e | e
+    rcases Sub.loc_step hwf hcd hsv with e | ⟨Dl2, hsc2, _, hs2⟩
     . simp only [Ty.cls.injEq] at e
       rcases e with ⟨e1, e2⟩
       subst e1 e2
       have := hcov _ hM
       rwa [abs_ground] at this
-    . have hs2 := e.2
-      simp only [Ty.subst] at hs2
+    . simp only [Ty.subst] at hs2
       rw [abs_ground] at hcts
-      rw [<- hcts] at hs2
+      rw [bind_dom (Scope.dom_unique hwf hsc2 hsc), <- hcts] at hs2
       exact hover _ C0 Ts0 hM hs2
-  rcases found_sig hwf hw.scope hw.meth hw.len0 hO with ⟨h4, _, h6⟩
+  rcases found_sig hwf hw.scope hw.meth hO with ⟨h4, _, h6⟩
   have hl6 := congrArg List.length h6
   have hls := congrArg List.length hw.sig
   have hla : vs.length = Ts'.length := by
@@ -294,8 +293,7 @@ theorem redex_step {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {r : Expr} {T
         subst hMn
         have hd := declOk hwf hok
         rcases dec_override hwf hok hd hw'.decl hM hw'.decl0 hkd0 hw'.sub with ⟨Us, hUs, hO, _⟩
-        have hl2 : Us.length = w.D0.Delta.length := by rw [<- hw'.len0, hUs, substList_length]
-        rcases found_sig hwf (Scope.dec hw'.decl0) hw'.meth hl2 hO with ⟨h4, _, h6⟩
+        rcases found_sig hwf (Scope.dec hw'.decl0) hw'.meth hO with ⟨h4, _, h6⟩
         have hl6 := congrArg List.length h6
         have hls := congrArg List.length hw'.sig
         have hla := TypingSeq.length hw'.args

@@ -189,7 +189,7 @@ theorem pres_topFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : Decl
     (fun X hX hm => Method.noShadow_dom hwm.2.2 X hm (hUf X hX)) hwm.1
   rw [Ty.renList_id (fun _ _ => rn_nil)] at hO'
   have h3 : Us.length = D0.Delta.length := by rw [<- hw.len0, hUs, substList_length]
-  rcases found_sig hwf (Scope.dec hw.decl0) hw.meth h3 hO' with ⟨h4, h5, h6⟩
+  rcases found_sig hwf (Scope.dec hw.decl0) hw.meth hO' with ⟨h4, h5, h6⟩
   have hv1 := f.subst_vars hG
   have hcomp1 : forall L, (forall X, List.Mem X (Ty.ftvList L) -> List.Mem X (dom D.Delta)) ->
       Ty.substList (GSubst.ty (bind (D.Delta ++ Delta') (Gs ++ Gs'))) L =
@@ -258,25 +258,24 @@ theorem pres_localFound {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) (hd : De
   rw [hD2, abs_ground] at hmeth
   have hover := hw2.over
   rw [hD2] at hover
-  rcases consistent_unfold hw2.cons with ⟨Fs', Ts'd, es', Ms'd, hcd, _, hcts, _, hcov⟩
+  rcases consistent_unfold hw2.cons with ⟨Fs', Ts'd, es', Ms'd, Dl, hcd, hsc, _, hcts, _, hcov⟩
   have hO : OverrideOkM d (.cls C0 Ts0) M := by
-    rcases Sub.loc_step hwf hcd hsv with e | e
+    rcases Sub.loc_step hwf hcd hsv with e | ⟨Dl2, hsc2, _, hs2⟩
     . simp only [Ty.cls.injEq] at e
       rcases e with ⟨e1, e2⟩
       subst e1 e2
       have := hcov M hM
       rwa [abs_ground] at this
-    . have hs2 := e.2
-      simp only [Ty.subst] at hs2
+    . simp only [Ty.subst] at hs2
       rw [abs_ground] at hcts
-      rw [<- hcts] at hs2
+      rw [bind_dom (Scope.dom_unique hwf hsc2 hsc), <- hcts] at hs2
       exact hover M C0 Ts0 hM hs2
   have hTs0 : forall X, List.Mem X (Ty.ftvList Ts0) -> False := fun X hX => by
     have := Kind.ftv hk0 X (by simpa [Ty.ftv] using hX)
     cases this
   have hO' := OverrideOkM.ren (rv := []) (rt := []) hwf hok hO f.fresh.1 (fun X hX _ => hTs0 X hX) huM
   rw [Ty.renList_id (fun _ _ => rn_nil)] at hO'
-  rcases found_sig hwf hw.scope hw.meth hw.len0 hO' with ⟨h4, h5, h6⟩
+  rcases found_sig hwf hw.scope hw.meth hO' with ⟨h4, h5, h6⟩
   have hT0 : Ty.substList (GSubst.ty (bind ([] ++ Delta') ([] ++ Gs'))) Ts0 = Ts0 :=
     Ty.substList_id (fun X hX => absurd hX (hTs0 X))
   have hcl0 := methodIn_closed hwf hok hw.scope hw.meth

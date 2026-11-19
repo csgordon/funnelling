@@ -6,8 +6,8 @@ namespace Funnelling
 
 structure DeclOk (d : Decls) : Prop where
   supD : forall D, Declared d (.dec D) -> forall X, List.Mem X (Ty.ftvList D.Ts) -> List.Mem X (dom D.Delta)
-  supL : forall C Fs C' Ts es Ms, Declared d (.newLocal C Fs C' Ts es Ms) ->
-    forall X, List.Mem X (Ty.ftvList Ts) -> List.Mem X (domF Fs)
+  supL : forall C Fs C' Ts es Ms Delta0, Declared d (.newLocal C Fs C' Ts es Ms) -> Scope d C Delta0 ->
+    forall X, List.Mem X (Ty.ftvList Ts) -> List.Mem X (dom Delta0)
   scopeB : forall C Delta0, Scope d C Delta0 ->
     forall X, List.Mem X (Ty.ftvList (cod Delta0)) -> List.Mem X (dom Delta0)
 
@@ -49,24 +49,11 @@ theorem bind_map {A : Type} {f : A -> A} {Delta : Bounds} {Us : List A} :
   rw [List.zip_map_right]
   rfl
 
-theorem bindF_map {f : Ty -> Ty} {Fs : List Funnel} {Us : List Ty} :
-    bindF Fs (Us.map f) = (bindF Fs Us).map fun p => (p.1, f p.2) := by
-  simp only [bindF]
-  rw [List.zip_map_right]
-  rfl
-
 theorem bind_lookup_some {A : Type} {Delta : Bounds} {Us : List A} {X : TVarName} (hl : Us.length = Delta.length)
     (hX : List.Mem X (dom Delta)) : exists U, List.lookup X (bind Delta Us) = some U := by
   apply lookup_isSome
   simp only [bind]
   rw [zip_map_fst (by simp [dom, hl])]
-  exact hX
-
-theorem bindF_lookup_some {Fs : List Funnel} {Us : List Ty} {X : TVarName} (hl : Us.length = Fs.length)
-    (hX : List.Mem X (domF Fs)) : exists U, List.lookup X (bindF Fs Us) = some U := by
-  apply lookup_isSome
-  simp only [bindF]
-  rw [List.map_fst_zip (hl ▸ List.length_filterMap_le _ _)]
   exact hX
 
 theorem subst_bind_comp {s' : TSubst} {Delta : Bounds} {Us : List Ty} {T : Ty} (hl : Us.length = Delta.length)
@@ -81,12 +68,6 @@ theorem substList_bind_comp {s' : TSubst} {Delta : Bounds} {Us Ts : List Ty} (hl
   rw [substList_eq_map (Us := Us), bind_map]
   exact Ty.substList_comp (fun X hX => var_subst_comp_of_some (bind_lookup_some hl (hT X hX)))
 
-theorem subst_bindF_comp {s' : TSubst} {Fs : List Funnel} {Us : List Ty} {T : Ty} (hl : Us.length = Fs.length)
-    (hT : forall X, List.Mem X T.ftv -> List.Mem X (domF Fs)) :
-    (T.subst (bindF Fs Us)).subst s' = T.subst (bindF Fs (Ty.substList s' Us)) := by
-  rw [substList_eq_map, bindF_map]
-  exact Ty.subst_comp (fun X hX => var_subst_comp_of_some (bindF_lookup_some hl (hT X hX)))
-
 theorem substList_length {s : TSubst} {Ts : List Ty} : (Ty.substList s Ts).length = Ts.length := by
   rw [substList_eq_map]; simp
 
@@ -98,9 +79,9 @@ theorem Sub.subst {d : Decls} (hd : DeclOk d) {Delta Delta' : Bounds} {s : TSubs
   | @subInherit D Ts0 T' hD hl _ ih =>
     rw [subst_bind_comp hl (fun X hX => hd.supD D hD X (by simpa [Ty.ftv] using hX))] at ih
     exact Sub.subInherit hD (by rw [substList_length, hl]) ih
-  | @subInheritLocal C Fs C' Ts' es Ms Ts T' hD hl _ ih =>
-    rw [subst_bindF_comp hl (fun X hX => hd.supL C Fs C' Ts' es Ms hD X (by simpa [Ty.ftv] using hX))] at ih
-    exact Sub.subInheritLocal hD (by rw [substList_length, hl]) ih
+  | @subInheritLocal C Fs C' Ts' es Ms Delta0 Ts T' hD hs hl _ ih =>
+    rw [subst_bind_comp hl (fun X hX => hd.supL C Fs C' Ts' es Ms Delta0 hD hs X (by simpa [Ty.ftv] using hX))] at ih
+    exact Sub.subInheritLocal hD hs (by rw [substList_length, hl]) ih
   | @subVar X T T' hm _ ih => exact (hb { X := X, T := T } hm).trans ih
 
 theorem Sub.mono {d : Decls} {Delta Delta' : Bounds} (hs : Sub1 Delta Delta') {T1 T2 : Ty}
@@ -108,7 +89,7 @@ theorem Sub.mono {d : Decls} {Delta Delta' : Bounds} (hs : Sub1 Delta Delta') {T
   induction h with
   | subRefl => exact Sub.subRefl
   | subInherit hD hl _ ih => exact Sub.subInherit hD hl ih
-  | subInheritLocal hD hl _ ih => exact Sub.subInheritLocal hD hl ih
+  | subInheritLocal hD hs hl _ ih => exact Sub.subInheritLocal hD hs hl ih
   | subVar hm _ ih => exact Sub.subVar (hs _ hm) ih
 
 theorem Sub.cls_indep {d : Decls} {Delta Delta' : Bounds} {C : ClassName} {Ts : List Ty} {T : Ty}
@@ -117,7 +98,7 @@ theorem Sub.cls_indep {d : Decls} {Delta Delta' : Bounds} {C : ClassName} {Ts : 
   induction h generalizing C Ts with
   | subRefl => exact Sub.subRefl
   | subInherit hD hl _ ih => cases he; exact Sub.subInherit hD hl (ih rfl)
-  | subInheritLocal hD hl _ ih => cases he; exact Sub.subInheritLocal hD hl (ih rfl)
+  | subInheritLocal hD hs hl _ ih => cases he; exact Sub.subInheritLocal hD hs hl (ih rfl)
   | subVar => cases he
 
 mutual
@@ -363,33 +344,17 @@ theorem scopeFacts {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {C0 : ClassNa
       cases e
       exact hw.kindS
 
-theorem scopeExists {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) {K : ClassDecl} (hk : Declared d K) :
-    exists Delta0, Scope d K.name Delta0 := by
-  induction hk with
-  | @dec D hD => exact ⟨_, Scope.dec (Declared.dec hD)⟩
-  | @newLocal K Delta T0 m ps e C0 Fs C' Ts es Ms hk hM hO ih =>
-    rcases ih with ⟨Dk, hs⟩
-    rcases scopeFacts hwf hok hs with ⟨K', hk'⟩
-    have ek := Declared.unique hwf hk'.1 hk hk'.2.1
-    subst ek
-    rcases hk'.2.2.meths _ hM with ⟨Gamma, hmo⟩
-    have hmi := methodOk_inv hmo
-    rcases hO with ⟨E, hE⟩
-    rw [hE] at hmi
-    rcases occ_typing E hmi.2.2 with ⟨Gamma', hg⟩
-    rcases hg with ⟨Ta, hTa⟩
-    rcases inv_local hTa rfl with ⟨w, hw⟩
-    exact ⟨_, Scope.newLocal ⟨K', hk, rfl, hM⟩ ⟨E, hE⟩ hs hw.restr⟩
-
 theorem declOk {d : Decls} (hwf : WFDecls d) (hok : DeclsOk d) : DeclOk d where
   supD := by
     intro D hD X hX
     exact Kind.ftv ((hok D hD.dec_mem).2.1 _ (List.Mem.head _)) X (by simpa [Ty.ftv] using hX)
   supL := by
-    intro C Fs C' Ts es Ms hD X hX
-    rcases scopeExists hwf hok hD with ⟨Dk, hs⟩
+    intro C Fs C' Ts es Ms Delta0 hD hs X hX
     rcases scopeFacts hwf hok hs with ⟨K', hk'⟩
-    exact hk'.2.2.sup C Fs C' Ts es Ms (Declared.unique hwf hk'.1 hD hk'.2.1) X hX
+    have ek := Declared.unique hwf hk'.1 hD hk'.2.1
+    subst ek
+    rw [hk'.2.2.gv]
+    exact hk'.2.2.sup C Fs C' Ts es Ms rfl X hX
   scopeB := by
     intro C Delta0 hs
     rcases scopeFacts hwf hok hs with ⟨K', hk'⟩; exact hk'.2.2.closedB

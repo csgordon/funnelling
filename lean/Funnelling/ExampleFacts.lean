@@ -210,7 +210,7 @@ theorem subNames {d : Decls} {N : List ClassName}
     injection hS with hC' _
     subst hC'
     exact ih rfl (hN (.dec D) hD.mem hC)
-  | @subInheritLocal C0 Fs C' Ts' es Ms Ts T' hD _ _ ih =>
+  | @subInheritLocal C0 Fs C' Ts' es Ms Delta0 Ts T' hD _ _ _ ih =>
     intro C Ts hS hC
     injection hS with hC' _
     subst hC'
@@ -265,7 +265,7 @@ theorem subObjArgs {d : Decls} (hO : ObjArgs d) {Delta : Bounds} {S T : Ty} (h :
     have h1 := hO (.dec D) hD.mem hTs.1
     simp only [kTs, List.isEmpty_iff] at h1
     rw [<- hTs.2, h1]; rfl
-  | @subInheritLocal C Fs C' Ts' es Ms Ts T' hD _ _ ih =>
+  | @subInheritLocal C Fs C' Ts' es Ms Delta0 Ts T' hD _ _ _ ih =>
     intro _ _
     apply ih (Exists.intro _ (Exists.intro _ rfl))
     intro Ts hTs
@@ -295,24 +295,13 @@ theorem upObj {d : Decls} (hN : Closed d [Object]) (hO : ObjArgs d) {Delta : Bou
         rw [h2.1, hC, subObjArgs hO h.1 (Exists.intro _ (Exists.intro _ rfl)) (fun _ e => by injection e with _ e; exact e.symm)
           Ts (by rw [h2.1, hC])]
 
-theorem vars_inj : forall {Xs Ys : List TVarName}, vars Xs = vars Ys -> Xs = Ys
-  | [], [], _ => rfl
-  | [], _ :: _, h => by simp [vars] at h
-  | _ :: _, [], h => by simp [vars] at h
-  | X :: Xs, Y :: Ys, h => by
-    simp only [vars, List.map_cons, List.cons.injEq, Ty.var.injEq] at h
-    rw [h.1, vars_inj (Xs := Xs) (Ys := Ys) h.2]
-
-theorem genericK {d : Decls} {C : ClassName} {Xs : List TVarName} (h : Generic d C (.cls C (vars Xs))) :
-    exists K, List.Mem K (classes d) /\ K.name = C /\ Xs = kVars K := by
-  generalize hT : Ty.cls C (vars Xs) = T at h
-  cases h with
-  | @dec D hD =>
-    injection hT with h1 h2
-    exact Exists.intro (.dec D) (And.intro hD.mem (And.intro rfl (vars_inj h2)))
-  | @newLocal _ Fs C' Ts es Ms hD =>
-    injection hT with h1 h2
-    exact Exists.intro _ (And.intro hD.mem (And.intro rfl (vars_inj h2)))
+theorem scopeK {d : Decls} {C : ClassName} {Delta0 : Bounds} (h : Scope d C Delta0) :
+    exists K, List.Mem K (classes d) /\ K.name = C /\ dom Delta0 = kVars K := by
+  rcases h.loc_declared with a | a
+  . rcases a with ⟨D, hD, hC, e⟩
+    exact ⟨.dec D, hD.mem, hC, by rw [e]; rfl⟩
+  . rcases a with ⟨Fs, C', Ts', es, Ms, Dx, hD, hr⟩
+    exact ⟨_, hD.mem, rfl, hr.dom_eq⟩
 
 theorem castObj {d : Decls} (hN : Closed d [Object]) (hO : ObjArgs d) {C : ClassName}
     (hG : forall K, List.Mem K (classes d) -> K.name = C -> (kVars K).isEmpty = false) (hC : Not (C = Object))
@@ -321,18 +310,18 @@ theorem castObj {d : Decls} (hN : Closed d [Object]) (hO : ObjArgs d) {C : Class
   cases h with
   | castUp hs =>
     exact notSub [Object] hN (.head _) (by intro hm; cases hm with | head => exact hC rfl | tail _ hm => cases hm) hs
-  | @castDown _ _ _ _ Xs Ts' hs1 hg hs2 hX =>
+  | @castDown _ _ _ _ Dl Ts' hs1 hg hs2 hX =>
     have hT : Ts' = [] := subObjArgs hO hs2 (Exists.intro _ (Exists.intro _ rfl))
       (by intro Ts e; injection e with e; exact absurd e hC) Ts' rfl
     subst hT
-    cases genericK hg with
+    cases scopeK hg with
     | intro K hk =>
       have h1 := hG K hk.1 hk.2.1
       rw [<- hk.2.2] at h1
-      cases Xs with
-      | nil => simp at h1
+      cases hdl : dom Dl with
+      | nil => rw [hdl] at h1; simp at h1
       | cons X _ =>
-        have h2 := hX X (.head _)
+        have h2 := hX X (by rw [hdl]; exact .head _)
         simp [Ty.ftvList] at h2
         cases h2
 
