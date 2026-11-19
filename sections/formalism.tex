@@ -522,9 +522,9 @@ This is why the premise $\typing{\Delta}{\Gamma}{\obj{C'}{\pl{T}}{\pl{e}}}{\_}$ 
 
 The funnelled type variables are a subset of the type variables in scope: $\mathrm{dom}(\Delta')\subseteq\mathrm{dom}(\Delta)$.
 The premises of rule \textsc{newLocal} require only that this subset holds every type variable that the local class uses.
-This is how funnelling lies between the granularities (i) and (ii) of Section~\ref{sec:funnelling}.
-Rule \textsc{newLocalJava} puts no type variable in the type of a local class: this is granularity (i).
-A rule requiring $\mathrm{dom}(\Delta')=\mathrm{dom}(\Delta)$ would give granularity (ii): every local class would have to funnel all the type variables in scope, also the type variables that the local class does not use, as Kotlin does (Section~\ref{sec:impact}).
+This is how funnelling lies between the granularities (1) and (2) of Section~\ref{sec:funnelling}.
+Rule \textsc{newLocalJava} puts no type variable in the type of a local class: this is granularity (1).
+A rule requiring $\mathrm{dom}(\Delta')=\mathrm{dom}(\Delta)$ would give granularity (2): every local class would have to funnel all the type variables in scope, also the type variables that the local class does not use, as Kotlin does (Section~\ref{sec:impact}).
 
 A local class appears in two kinds of places:
 (1) The (original) declaration of the local class is written in the body of a method of a top-level class, possibly nested inside other local classes.
